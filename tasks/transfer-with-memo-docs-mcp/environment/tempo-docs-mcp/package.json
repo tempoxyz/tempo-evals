@@ -1,0 +1,12 @@
+{
+  "name": "@tempo-bench/tempo-docs-mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0"
+  }
+}

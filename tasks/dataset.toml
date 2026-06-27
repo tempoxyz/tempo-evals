@@ -1,0 +1,20 @@
+# Dataset manifest for tempo/tempo-bench
+# Add tasks using: harbor add <org>/<name>
+# Publish using: harbor publish
+
+[dataset]
+name = "tempo/tempo-bench"
+description = "Tempo integration benchmark"
+keywords = []
+[[dataset.authors]]
+name = "Tempo"
+
+
+[[tasks]]
+name = "tempo/transfer-with-memo"
+digest = "sha256:87aea84bcfb342fe297dd2bb25c9842a8ca8c30847c0bfbe04f915bbeadfe9fd"
+
+[[tasks]]
+name = "tempo/transfer-with-memo-docs-mcp"
+digest = "sha256:1e0d4536df87b5a97835758b1dfae67659cb7ab978a0599090abbb695e33d7ba"
+

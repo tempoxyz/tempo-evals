@@ -1,0 +1,6 @@
+jobs/
+.DS_Store
+node_modules/
+package-lock.json
+tasks/**/tests/node_modules/
+tasks/**/tests/package-lock.json
