@@ -61,8 +61,8 @@ Docker/Harbor require files inside the task context.
 
 ## Harbor Concepts
 
-- `job.yaml` is the Harbor sanity-check job. It selects the local Docker
-  orchestrator, the `oracle` agent, and the `tasks/` dataset.
+- `job.yaml` is the Harbor oracle baseline job. It selects the local Docker
+  environment, the `oracle` agent, and the `tasks/` dataset.
 - `job.agents.yaml` is the local harness matrix for real agents. It currently
   runs `codex` and `claude-code` over the same dataset.
 - `tasks/dataset.toml` is the Harbor dataset manifest for the future
@@ -157,16 +157,40 @@ Refresh task digests in the dataset:
 make dataset
 ```
 
-Run the oracle solution:
+Run the default model benchmark:
 
 ```bash
 make benchmark
+```
+
+This defaults to:
+
+```bash
+make benchmark AGENT=claude-code MODEL=haiku
+```
+
+Run the oracle baseline:
+
+```bash
+make benchmark-oracle
 ```
 
 Run the Codex and Claude Code harness matrix:
 
 ```bash
 make benchmark-agents
+```
+
+Run a different harness/model over all tasks:
+
+```bash
+make benchmark AGENT=claude-code MODEL=sonnet
+```
+
+Run a single harness/model over matching tasks:
+
+```bash
+make benchmark AGENT=claude-code MODEL=sonnet TASK_FILTER='tempo/transfer-*'
 ```
 
 Open Harbor's viewer:
@@ -196,6 +220,42 @@ This Harbor install lists `codex` and `claude-code` as built-ins. It does not
 list `amp`; to add AMP, wrap it as a Harbor custom agent and set
 `import_path: module.path:ClassName`, or use an ACP registry shorthand if AMP
 ships an ACP adapter.
+
+For ad hoc model runs, use `make benchmark`. It is a thin wrapper over
+`harbor run --path tasks --agent ... --model ...`.
+
+Common examples:
+
+```bash
+# Claude Code with latest Haiku over all tasks
+make benchmark
+
+# Claude Code with Sonnet over all tasks
+make benchmark MODEL=sonnet
+
+# Codex with an explicit model
+make benchmark AGENT=codex MODEL=gpt-5
+
+# Only transfer tasks
+make benchmark TASK_FILTER='tempo/transfer-*'
+
+# One matching task, useful for smoke tests
+make benchmark TASK_FILTER='tempo/set-*' N_TASKS=1
+
+# Custom job name
+make benchmark JOB_NAME=tempo-bench-claude-haiku-smoke N_TASKS=1
+
+# Oracle baseline
+make benchmark-oracle
+```
+
+`TASK_FILTER` is passed to Harbor's `--include-task-name` and supports glob
+patterns. `N_TASKS` limits the task count after filtering. `benchmark-model` is
+kept as an alias for `benchmark`:
+
+```bash
+make benchmark-model AGENT=codex MODEL=gpt-5 TASK_FILTER='tempo/set-*' N_TASKS=1
+```
 
 ## Adding Pieces
 
