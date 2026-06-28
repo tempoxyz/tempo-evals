@@ -20,6 +20,8 @@ Requirements:
 
 - Put the submission directly in `/app`.
 - Include a `package.json`.
+- Include `tsconfig.json`.
+- Put the runtime source in `src/index.ts`.
 - Include scripts named exactly `build` and `run`.
 - `npm run build` must typecheck or compile the project.
 - `npm run run` must execute the transfer on Tempo localnet.

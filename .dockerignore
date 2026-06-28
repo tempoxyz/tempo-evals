@@ -1,6 +1,51 @@
+.git
+.gitignore
+.dockerignore
+
+# Harbor/local outputs
 jobs
+
+# OS/editor noise
 .DS_Store
+.idea
+.vscode
+*.swp
+*.swo
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# JavaScript package/install output
 node_modules
 package-lock.json
+yarn.lock
+pnpm-lock.yaml
 tasks/**/tests/node_modules
 tasks/**/tests/package-lock.json
+
+# Python caches
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.venv
+venv
+
+# Build/cache output
+dist
+build
+coverage
+.cache
+.turbo

@@ -14,6 +14,7 @@ feature = "transfer-with-memo"
 
 [verifier]
 timeout_sec = 300.0
+environment_mode = "shared"
 
 [verifier.env]
 TEMPO_BENCH_CASE = "transfer-with-memo"

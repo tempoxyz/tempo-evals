@@ -1,0 +1,4 @@
+[[reward]]
+name = "reward"
+aggregation = "threshold"
+threshold = 1.0

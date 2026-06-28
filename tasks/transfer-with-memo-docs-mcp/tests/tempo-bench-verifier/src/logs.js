@@ -16,6 +16,13 @@ function writeText(config, fileName, value) {
 }
 
 function writeReward(config, scores) {
+  const rewardFile = process.env.TEMPO_BENCH_INTERNAL_REWARD_FILE;
+  if (rewardFile) {
+    ensureLogDir(config);
+    fs.writeFileSync(rewardFile, `${JSON.stringify(scores, null, 2)}\n`);
+    return;
+  }
+
   writeJson(config, "reward.json", scores);
 }
 

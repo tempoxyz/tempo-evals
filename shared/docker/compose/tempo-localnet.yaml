@@ -1,0 +1,29 @@
+# The runner configures the `main` service. This file only adds the Tempo
+# localnet sidecar and makes the agent container wait for it.
+services:
+  main:
+    depends_on:
+      tempo-localnet:
+        condition: service_healthy
+
+  tempo-localnet:
+    build:
+      context: ./tempo-localnet
+    expose:
+      - "8545"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-sf",
+          "http://localhost:8545",
+          "-H",
+          "content-type: application/json",
+          "-d",
+          "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+      start_period: 5s
