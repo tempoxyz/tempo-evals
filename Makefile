@@ -8,9 +8,11 @@ MODEL ?= haiku
 TASK_FILTER ?=
 N_TASKS ?=
 TASKS ?= tasks
+N_CONCURRENT ?= $(shell sysctl -n hw.logicalcpu 2>/dev/null || nproc 2>/dev/null || echo 4)
 MODEL_ARGS = $(if $(MODEL),--model '$(MODEL)',)
 TASK_FILTER_ARGS = $(if $(TASK_FILTER),--include-task-name '$(TASK_FILTER)',)
 N_TASKS_ARGS = $(if $(N_TASKS),--n-tasks $(N_TASKS),)
+CONCURRENCY_ARGS = --n-concurrent $(N_CONCURRENT)
 
 help:
 	@printf '%s\n' \
@@ -22,6 +24,7 @@ help:
 		'  make benchmark-agents Run Claude Code benchmark (AGENT_JOB_NAME=...)' \
 		'  make benchmark-model Alias for benchmark' \
 		'  make check-agent-auth Verify Claude Code and quality judge auth is available' \
+		'  make benchmark* N_CONCURRENT=4 Override Harbor trial concurrency' \
 		'  make view        Open Harbor job viewer' \
 		'  make check       Syntax-check shared JS/Python and sync dataset' \
 		'  make check-generated Verify sync/check leave no generated diff' \
@@ -35,10 +38,10 @@ dataset: sync
 	harbor sync $(TASKS)
 
 benchmark: dataset
-	harbor run --path $(TASKS) --agent $(AGENT) $(MODEL_ARGS) $(TASK_FILTER_ARGS) $(N_TASKS_ARGS) --job-name $(JOB_NAME) -y
+	harbor run --path $(TASKS) --agent $(AGENT) $(MODEL_ARGS) $(TASK_FILTER_ARGS) $(N_TASKS_ARGS) $(CONCURRENCY_ARGS) --job-name $(JOB_NAME) -y
 
 benchmark-oracle: dataset
-	harbor run -c job.yaml --job-name $(ORACLE_JOB_NAME) -y
+	harbor run -c job.yaml $(CONCURRENCY_ARGS) --job-name $(ORACLE_JOB_NAME) -y
 
 check-agent-auth:
 	@if env | grep -q '^CLAUDE_FORCE_OAUTH=$$'; then \
@@ -56,7 +59,7 @@ check-agent-auth:
 	fi
 
 benchmark-agents: check-agent-auth dataset
-	harbor run -c job.agents.yaml --job-name $(AGENT_JOB_NAME) -y
+	harbor run -c job.agents.yaml $(CONCURRENCY_ARGS) --job-name $(AGENT_JOB_NAME) -y
 
 benchmark-model: benchmark
 
