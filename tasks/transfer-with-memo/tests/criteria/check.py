@@ -1,4 +1,6 @@
-from rewardkit import file_contains_regex, file_exists
+import os
+
+from rewardkit import command_succeeds, file_contains_regex, file_exists
 
 
 file_exists("package.json", name="package_json_exists")
@@ -12,3 +14,9 @@ file_contains_regex("src/index.ts", r"\b(Address|Hex)\b", name="source_uses_addr
 file_contains_regex("src/index.ts", r"transferWithMemo|transferSync", name="source_uses_transfer_with_memo_semantics")
 file_contains_regex("src/index.ts", r"TEMPO_MEMO", name="source_reads_tempo_memo")
 file_contains_regex("src/index.ts", r"parseUnits", name="source_parses_token_units")
+
+command_succeeds(
+    "bash /tests/e2e/verify-tempo.sh",
+    timeout=int(os.environ.get("TEMPO_BENCH_REWARDKIT_TIMEOUT_SECONDS", "900")),
+    name="tempo_submission_builds_runs_and_emits_onchain_evidence",
+)

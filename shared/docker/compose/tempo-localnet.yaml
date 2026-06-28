@@ -2,6 +2,36 @@
 # localnet sidecar and makes the agent container wait for it.
 services:
   main:
+    environment:
+      - TEMPO_AMOUNT
+      - TEMPO_BENCH_CASE
+      - TEMPO_BENCH_LOG_WAIT_MS
+      - TEMPO_BENCH_RPC_WAIT_MS
+      - TEMPO_BENCH_SUBMISSION_TIMEOUT_MS
+      - TEMPO_DECIMALS
+      - TEMPO_DEX_MAKER_PRIVATE_KEY
+      - TEMPO_FAUCET_PRIVATE_KEY
+      - TEMPO_FEE_MANAGER
+      - TEMPO_FEE_PAYER_PRIVATE_KEY
+      - TEMPO_FEE_TOKEN
+      - TEMPO_MEMO
+      - TEMPO_PAYER_PRIVATE_KEY
+      - TEMPO_POLICY_ACCOUNT
+      - TEMPO_POLICY_TYPE
+      - TEMPO_RECIPIENT
+      - TEMPO_RPC_URL
+      - TEMPO_STABLECOIN_CURRENCY
+      - TEMPO_STABLECOIN_DEX
+      - TEMPO_STABLECOIN_NAME
+      - TEMPO_STABLECOIN_SALT
+      - TEMPO_STABLECOIN_SYMBOL
+      - TEMPO_SWAP_AMOUNT_IN
+      - TEMPO_SWAP_MIN_AMOUNT_OUT
+      - TEMPO_SWAP_TOKEN_IN
+      - TEMPO_SWAP_TOKEN_OUT
+      - TEMPO_TIP20_FACTORY
+      - TEMPO_TIP403_REGISTRY
+      - TEMPO_TOKEN
     depends_on:
       tempo-localnet:
         condition: service_healthy
