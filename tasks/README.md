@@ -2,15 +2,17 @@
 
 Local Harbor dataset for Tempo integration evaluations.
 
-Current tasks:
+Current task intents:
 
 - `tempo/transfer-with-memo`
-- `tempo/transfer-with-memo-docs-mcp`
 - `tempo/transfer-with-memo-fee-payer`
 - `tempo/set-fee-token`
 - `tempo/create-stablecoin-with-policy`
 - `tempo/faucet-funded-transfer`
 - `tempo/stablecoin-dex-swap`
+
+Each intent is materialized into `-docs` and `-mcp` profile variants
+by `../scripts/sync-shared.mjs`.
 
 Each task should stay Harbor-native and self-contained:
 
@@ -22,11 +24,13 @@ Each task should stay Harbor-native and self-contained:
 - `environment/` contains the task runtime and Docker Compose additions. Common
   sidecars are symlinked from `../shared/` where Harbor and Docker can consume
   them.
-- `tests/criteria/check.py` contains the task's explicit built-in RewardKit
-  file/regex/docs criteria plus the e2e command criterion. `tests/reward.toml`
-  is task-local and uses `threshold = 1.0`. `tests/test.sh` is the verifier
-  entrypoint, and `tests/tempo-bench-verifier/` is a minimal copied verifier
-  package for the selected `TEMPO_BENCH_CASE`.
+- `tests/correctness/` contains the task's explicit built-in RewardKit
+  file/regex/docs criteria plus the e2e command criterion.
+  `tests/quality/` contains non-binary turn/token efficiency checks and the
+  Claude Haiku LLM judge. `tests/test.sh` writes Harbor's primary
+  `/logs/verifier/reward.json` as a single binary `reward` key from the
+  `correctness` dimension, and `tests/tempo-bench-verifier/` is a minimal
+  copied verifier package for the selected `TEMPO_BENCH_CASE`.
 - `solution/` contains the oracle solution used for sanity checks. It is a
   normal minimal TypeScript app; `solve.sh` only copies the files into `/app`.
 

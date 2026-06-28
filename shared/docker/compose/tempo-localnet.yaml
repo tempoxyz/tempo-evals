@@ -39,6 +39,8 @@ services:
   tempo-localnet:
     build:
       context: ./tempo-localnet
+    networks:
+      - default
     expose:
       - "8545"
     healthcheck:
