@@ -1,0 +1,43 @@
+# The runner configures the `main` service. This file adds the Tempo localnet
+# and docs MCP sidecars and makes the agent container wait for both.
+services:
+  main:
+    depends_on:
+      tempo-localnet:
+        condition: service_healthy
+      tempo-docs-mcp:
+        condition: service_healthy
+
+  tempo-localnet:
+    build:
+      context: ./tempo-localnet
+    expose:
+      - "8545"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-sf",
+          "http://localhost:8545",
+          "-H",
+          "content-type: application/json",
+          "-d",
+          "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+      start_period: 5s
+
+  tempo-docs-mcp:
+    build:
+      context: ./tempo-docs-mcp
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/health"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

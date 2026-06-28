@@ -5,16 +5,36 @@
 [dataset]
 name = "tempo/tempo-bench"
 description = "Tempo integration benchmark"
-keywords = []
+keywords = [ "stablecoins", "docs", "tempo",]
 [[dataset.authors]]
 name = "Tempo"
 
 
 [[tasks]]
 name = "tempo/transfer-with-memo"
-digest = "sha256:87aea84bcfb342fe297dd2bb25c9842a8ca8c30847c0bfbe04f915bbeadfe9fd"
+digest = "sha256:627eee630439cd3d77601ada3c5cab8354a488631cd417e1877b91172ba099cb"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-docs-mcp"
-digest = "sha256:1e0d4536df87b5a97835758b1dfae67659cb7ab978a0599090abbb695e33d7ba"
+digest = "sha256:d8df6c481e992b7bb901478345003e120788eae3dc37eaf0cf2213bf63b138eb"
+
+[[tasks]]
+name = "tempo/transfer-with-memo-fee-payer"
+digest = "sha256:be7cc210be4e088665fea37de889ef40d07cd8499128b857aa98144de38a88ff"
+
+[[tasks]]
+name = "tempo/set-fee-token"
+digest = "sha256:de82c72a5795385a4a543ed3c5352c23b50238b563bd73cd97cd201beb912c30"
+
+[[tasks]]
+name = "tempo/create-stablecoin-with-policy"
+digest = "sha256:e4724dc4f80c57163ad2060d534bd1932f75b803cdab593b7d97336748226ccf"
+
+[[tasks]]
+name = "tempo/faucet-funded-transfer"
+digest = "sha256:a6fcc5f931ef9e7df4bc71a2bdebace1c6b32a86634b8549c1a02ab779a2dac6"
+
+[[tasks]]
+name = "tempo/stablecoin-dex-swap"
+digest = "sha256:0c6fc478e8da292e884a3e02d8fd605478e310f6bbfedeb5a260c0f4a18097c8"
 
