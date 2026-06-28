@@ -200,6 +200,14 @@ Run the Claude Code harness matrix:
 make benchmark-agents
 ```
 
+Benchmark Make targets run Harbor with one concurrent trial per detected logical
+CPU by default. Override this if Docker Desktop, memory, API limits, or localnet
+load become the bottleneck:
+
+```bash
+make benchmark-agents N_CONCURRENT=4
+```
+
 Run a different harness/model over all tasks:
 
 ```bash
