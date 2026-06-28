@@ -1,8 +1,8 @@
-.PHONY: help sync dataset benchmark benchmark-oracle benchmark-agents benchmark-model view check clean-jobs clean
+.PHONY: help sync dataset benchmark benchmark-oracle check-agent-auth benchmark-agents benchmark-model view check clean-jobs clean
 
 JOB_NAME ?= tempo-bench-model-local
 ORACLE_JOB_NAME ?= tempo-bench-oracle-local
-AGENT_JOB_NAME ?= tempo-bench-agents-local
+AGENT_JOB_NAME ?= tempo-bench-agents-local-$(shell date +%Y%m%d-%H%M%S)
 AGENT ?= claude-code
 MODEL ?= haiku
 TASK_FILTER ?=
@@ -19,8 +19,9 @@ help:
 		'  make dataset     Refresh Harbor task digests' \
 		'  make benchmark   Run one harness/model (AGENT=claude-code MODEL=haiku by default)' \
 		'  make benchmark-oracle Run Harbor oracle baseline (ORACLE_JOB_NAME=...)' \
-		'  make benchmark-agents Run Codex and Claude Code benchmark (AGENT_JOB_NAME=...)' \
+		'  make benchmark-agents Run Claude Code benchmark (AGENT_JOB_NAME=...)' \
 		'  make benchmark-model Alias for benchmark' \
+		'  make check-agent-auth Verify Claude Code and quality judge auth is available' \
 		'  make view        Open Harbor job viewer' \
 		'  make check       Syntax-check shared JS/Python and sync dataset' \
 		'  make clean-jobs  Remove local Harbor job outputs' \
@@ -38,7 +39,22 @@ benchmark: dataset
 benchmark-oracle: dataset
 	harbor run -c job.yaml --job-name $(ORACLE_JOB_NAME) -y
 
-benchmark-agents: dataset
+check-agent-auth:
+	@if env | grep -q '^CLAUDE_FORCE_OAUTH=$$'; then \
+		printf '%s\n' 'Invalid Claude Code auth: CLAUDE_FORCE_OAUTH is set but empty. Set it to 1/true or unset it.'; \
+		exit 1; \
+	fi
+	@if [ -z "$$ANTHROPIC_API_KEY$$ANTHROPIC_AUTH_TOKEN$$CLAUDE_CODE_OAUTH_TOKEN" ]; then \
+		printf '%s\n' 'Missing Claude Code auth: set ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, or CLAUDE_CODE_OAUTH_TOKEN before running agent evals.'; \
+		printf '%s\n' 'For subscription auth, run `claude setup-token`, export CLAUDE_CODE_OAUTH_TOKEN, and optionally set CLAUDE_FORCE_OAUTH=1.'; \
+		exit 1; \
+	fi
+	@if [ -z "$$ANTHROPIC_API_KEY$$ANTHROPIC_AUTH_TOKEN" ]; then \
+		printf '%s\n' 'Missing verifier judge auth: set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN for RewardKit quality judging.'; \
+		exit 1; \
+	fi
+
+benchmark-agents: check-agent-auth dataset
 	harbor run -c job.agents.yaml --job-name $(AGENT_JOB_NAME) -y
 
 benchmark-model: benchmark

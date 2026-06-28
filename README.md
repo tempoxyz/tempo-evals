@@ -3,16 +3,20 @@
 Minimal Harbor-based benchmark for measuring whether Tempo docs and agent tools
 help agents build real Tempo integrations.
 
-The current V0 covers baseline payments plus additional Tempo integration
-surfaces:
+The current V0 covers six Tempo integration intents across two access profiles:
 
-- `tempo/transfer-with-memo`: baseline task with the prompt and fixture env.
-- `tempo/transfer-with-memo-docs-mcp`: same task with a Tempo docs MCP sidecar.
-- `tempo/transfer-with-memo-fee-payer`: memo transfer using fee sponsorship.
-- `tempo/set-fee-token`: persistent fee token preference via Fee Manager.
-- `tempo/create-stablecoin-with-policy`: TIP-20 creation plus TIP-403 policy.
-- `tempo/faucet-funded-transfer`: faucet funding followed by AlphaUSD transfer.
-- `tempo/stablecoin-dex-swap`: Stablecoin DEX liquidity plus swap execution.
+- `tempo/transfer-with-memo-docs` / `tempo/transfer-with-memo-mcp`
+- `tempo/transfer-with-memo-fee-payer-docs` / `tempo/transfer-with-memo-fee-payer-mcp`
+- `tempo/set-fee-token-docs` / `tempo/set-fee-token-mcp`
+- `tempo/create-stablecoin-with-policy-docs` / `tempo/create-stablecoin-with-policy-mcp`
+- `tempo/faucet-funded-transfer-docs` / `tempo/faucet-funded-transfer-mcp`
+- `tempo/stablecoin-dex-swap-docs` / `tempo/stablecoin-dex-swap-mcp`
+
+`scripts/sync-shared.mjs` materializes each intent into two task variants:
+
+- `-docs`: exposes `TEMPO_DOCS_URL=https://docs.tempo.xyz/`.
+- `-mcp`: configures the official MCP server at
+  `https://mcp.tempo.xyz`.
 
 Each asks for a TypeScript script against Tempo localnet. The verifier
 independently builds and runs the submission, then checks localnet for the
@@ -41,7 +45,8 @@ expected onchain event.
     ├── dataset.toml
     ├── README.md
     ├── transfer-with-memo/
-    ├── transfer-with-memo-docs-mcp/
+    ├── transfer-with-memo-docs/
+    ├── transfer-with-memo-mcp/
     ├── transfer-with-memo-fee-payer/
     ├── set-fee-token/
     ├── create-stablecoin-with-policy/
@@ -61,15 +66,17 @@ Docker/Harbor require files inside the task context.
 
 ## Harbor Concepts
 
-- `job.yaml` is the Harbor oracle baseline job. It selects the local Docker
-  environment, the `oracle` agent, and the `tasks/` dataset.
+- `job.yaml` is the Harbor sanity-check job. It selects the local Docker
+  orchestrator, the `oracle` agent, and the `tasks/` dataset.
 - `job.agents.yaml` is the local harness matrix for real agents. It currently
-  runs `codex` and `claude-code` over the same dataset.
+  runs `claude-code` over the docs and mcp task variants.
 - `tasks/dataset.toml` is the Harbor dataset manifest for the future
   `tempo/tempo-bench` benchmark.
 - `tasks/*/task.toml` is the task config. This is the main place to change
   fixture values, verifier case, timeouts, MCP servers, and environment
-  resources.
+  resources. Generated tasks currently use public Docker networking so agent
+  setup, package installs, docs access, and the remote MCP endpoint can all
+  work reliably.
 - `tasks/*/task.toml` sets `[verifier].environment_mode = "shared"` explicitly.
   The verifier needs the submitted app, live localnet sidecars, and the same
   service network. Harbor's separate verifier mode is useful for artifact-only
@@ -83,16 +90,21 @@ Docker/Harbor require files inside the task context.
   symlink to a shared file outside the task. Test-only Python packages are not
   baked into this image; `tests/test.sh` installs the pinned RewardKit package
   during verification, matching Harbor's quality rubric.
-- `tasks/transfer-with-memo-docs-mcp` also declares a `tempo-docs` MCP server in
-  `task.toml` and runs it as the `tempo-docs-mcp` Compose sidecar.
+- `tasks/*-mcp` declares the official remote `tempo` MCP server in
+  `task.toml`. No local docs MCP sidecar is used for the main matrix.
 - `tasks/*/tests/test.sh` is Harbor's verifier entrypoint. It runs RewardKit,
-  which discovers the task-local criteria in `tests/criteria/check.py`, then
-  writes `/logs/verifier/reward.json`.
-  `tests/reward.toml` is intentionally task-local and uses `threshold = 1.0`,
-  so final `reward` is `1` only when every explicit file, regex, docs-usage,
-  and e2e criterion passes. The e2e criterion runs
-  `tests/e2e/verify-tempo.sh`, which is copied from shared code because Harbor
-  mounts `/tests` without following external symlink targets.
+  writes RewardKit's dimension output to `/logs/verifier/rewardkit-output.json`,
+  writes dimension details to `/logs/verifier/reward-details.json`, and writes
+  Harbor's primary `/logs/verifier/reward.json` as exactly one binary key:
+  `reward`.
+- `tasks/*/tests/correctness` contains all current file, regex, docs/tool-use,
+  build, run, and onchain checks. Harbor's binary `reward` is `1` only when the
+  `correctness` dimension scores `1.0`.
+- `tasks/*/tests/quality` contains non-binary quality scoring. It combines
+  cutoff-based turn/token efficiency checks with a Claude Haiku LLM judge over
+  the submitted TypeScript files. Raw efficiency counts are written to
+  `/logs/verifier/efficiency.json`. Quality does not affect Harbor's binary
+  pass/fail reward.
 - `tasks/*/tests/tempo-bench-verifier` is a minimal copied verifier package
   containing only the shared core plus the task's selected case. Harbor mounts
   `/tests` without following external package symlinks, so the package must be
@@ -123,6 +135,16 @@ same `main` container environment. The shared compose templates inject the
 `[environment.env]` keys into that container, so fixture values still have one
 source of truth. The verifier records the starting block, runs the submission,
 and verifies the onchain event independently of anything the submission writes.
+
+Efficiency score cutoffs are configurable per task through `[environment.env]`:
+
+```toml
+TEMPO_BENCH_TURNS_SCORE_CUTOFFS = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
+TEMPO_BENCH_TOKENS_SCORE_CUTOFFS = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"
+```
+
+The first cutoff whose max is greater than or equal to the measured value wins;
+`*` is the fallback score.
 
 Run `make sync` after changing task config. The sync script
 also checks that `[verifier.env]` stays absent for shared-mode tasks, avoiding
@@ -172,7 +194,7 @@ Run the oracle baseline:
 make benchmark-oracle
 ```
 
-Run the Codex and Claude Code harness matrix:
+Run the Claude Code harness matrix:
 
 ```bash
 make benchmark-agents
@@ -204,55 +226,40 @@ make check
 
 ## Agent Harnesses
 
-Harbor runs one trial per task per configured agent. Add built-in agents under
-`agents:` in `job.agents.yaml`:
+Harbor runs three attempts per task per configured agent in `job.agents.yaml`.
+The checked-in agent job is Claude Code only, defaults to Haiku, and passes auth
+from the host env. The verifier also receives Anthropic auth so the RewardKit
+quality judge can run Claude Haiku:
 
 ```yaml
 agents:
-  - name: codex
   - name: claude-code
+    model_name: claude-haiku-4-5
+    env:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      CLAUDE_FORCE_OAUTH: ${CLAUDE_FORCE_OAUTH:-false}
 ```
 
-This Harbor install lists `codex` and `claude-code` as built-ins. It does not
-list `amp`; to add AMP, wrap it as a Harbor custom agent and set
+`make benchmark-agents` runs `make check-agent-auth` first. Without one of
+`ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or `CLAUDE_CODE_OAUTH_TOKEN`,
+Claude Code exits before writing `/app/package.json` or `/app/src`, and Harbor's
+artifact collection reports Docker copy errors for those missing paths.
+The RewardKit quality judge also requires `ANTHROPIC_API_KEY` or
+`ANTHROPIC_AUTH_TOKEN` in the verifier environment.
+If using `CLAUDE_FORCE_OAUTH`, set it to `1`/`true` or leave it unset; an empty
+value is invalid.
+
+Agent benchmarks use a timestamped `AGENT_JOB_NAME` by default so changing
+`job.agents.yaml` does not collide with an existing `jobs/` directory. Override
+`AGENT_JOB_NAME=tempo-bench-agents-local` only when intentionally reusing a
+stable job name with the same config.
+
+This Harbor install lists `claude-code` as a built-in. It does not list `amp`;
+to add AMP, wrap it as a Harbor custom agent and set
 `import_path: module.path:ClassName`, or use an ACP registry shorthand if AMP
 ships an ACP adapter.
-
-For ad hoc model runs, use `make benchmark`. It is a thin wrapper over
-`harbor run --path tasks --agent ... --model ...`.
-
-Common examples:
-
-```bash
-# Claude Code with latest Haiku over all tasks
-make benchmark
-
-# Claude Code with Sonnet over all tasks
-make benchmark MODEL=sonnet
-
-# Codex with an explicit model
-make benchmark AGENT=codex MODEL=gpt-5
-
-# Only transfer tasks
-make benchmark TASK_FILTER='tempo/transfer-*'
-
-# One matching task, useful for smoke tests
-make benchmark TASK_FILTER='tempo/set-*' N_TASKS=1
-
-# Custom job name
-make benchmark JOB_NAME=tempo-bench-claude-haiku-smoke N_TASKS=1
-
-# Oracle baseline
-make benchmark-oracle
-```
-
-`TASK_FILTER` is passed to Harbor's `--include-task-name` and supports glob
-patterns. `N_TASKS` limits the task count after filtering. `benchmark-model` is
-kept as an alias for `benchmark`:
-
-```bash
-make benchmark-model AGENT=codex MODEL=gpt-5 TASK_FILTER='tempo/set-*' N_TASKS=1
-```
 
 ## Adding Pieces
 
@@ -271,13 +278,12 @@ Add a verifier:
 3. Set `TEMPO_BENCH_CASE` in the task TOML.
 4. Run `make sync`.
 
-Add an MCP profile:
+Add an access profile:
 
-1. Add the MCP server under `shared/mcp/` if it is reusable.
-2. Add the MCP server as a sidecar in the task's `environment/docker-compose.yaml`.
-3. Declare it in `task.toml` using Harbor's `[[environment.mcp_servers]]`.
-4. Keep the fixture and verifier unchanged unless the actual task changes.
-5. Run `make sync`.
+1. Update `profiles` in `scripts/sync-shared.mjs`.
+2. Add any profile-specific TOML, instruction, and criteria rewrites there.
+3. Keep the fixture and verifier unchanged unless the actual task changes.
+4. Run `make sync`.
 
 Add a metric:
 
@@ -290,14 +296,12 @@ Add a metric:
 RewardKit writes Harbor's score file:
 
 ```json
-{
-  "reward": 1
-}
+{"reward":1}
 ```
 
-The Tempo verifier also writes detailed component scores to
+The Tempo verifier writes detailed component scores to
 `/logs/verifier/tempo-bench-scores.json`, including `build`, `run`, and
-`onchain`. `reward` is `1` only when the submission builds, runs, and the
-verifier observes the expected onchain evidence on Tempo localnet. RewardKit
-also writes `/logs/verifier/reward-details.json`, listing each explicit
-built-in criterion and its pass/fail score.
+`onchain`. RewardKit writes correctness and quality dimensions to
+`/logs/verifier/reward-details.json`. Harbor's primary `reward` is `1` only
+when the correctness dimension passes, while quality remains diagnostic so
+pass@K can be computed from a single binary reward key.
