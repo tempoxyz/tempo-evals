@@ -86,8 +86,8 @@ Docker/Harbor require files inside the task context.
 - `tasks/transfer-with-memo-docs-mcp` also declares a `tempo-docs` MCP server in
   `task.toml` and runs it as the `tempo-docs-mcp` Compose sidecar.
 - `tasks/*/tests/test.sh` is Harbor's verifier entrypoint. It runs RewardKit,
-  which discovers the task-local criteria in `tests/criteria/check.py` and
-  `tests/e2e/check.py`, then writes `/logs/verifier/reward.json`.
+  which discovers the task-local criteria in `tests/criteria/check.py`, then
+  writes `/logs/verifier/reward.json`.
   `tests/reward.toml` is intentionally task-local and uses `threshold = 1.0`,
   so final `reward` is `1` only when every explicit file, regex, docs-usage,
   and e2e criterion passes. The e2e criterion runs
@@ -104,12 +104,7 @@ Docker/Harbor require files inside the task context.
 
 ## Configuration
 
-The task TOML has two Harbor-native env maps:
-
-- `[environment.env]` is injected into the agent/submission container.
-- `[verifier.env]` is injected into Harbor's verifier process.
-
-For this benchmark, both maps carry the same Tempo fixture:
+The task TOML keeps Tempo fixture values in `[environment.env]`:
 
 ```toml
 TEMPO_BENCH_CASE = "transfer-with-memo"
@@ -123,13 +118,15 @@ TEMPO_DECIMALS = "6"
 ```
 
 The instruction tells the agent to read these values from environment variables.
-The verifier reads the same values from `[verifier.env]`, records the starting
-block, runs the submission, and verifies the onchain event independently of
-anything the submission writes.
+Because the verifier runs in shared mode, Harbor's verifier command inherits the
+same `main` container environment. The shared compose templates inject the
+`[environment.env]` keys into that container, so fixture values still have one
+source of truth. The verifier records the starting block, runs the submission,
+and verifies the onchain event independently of anything the submission writes.
 
 Run `make sync` after changing task config. The sync script
-also checks that Tempo fixture keys in `[environment.env]` and `[verifier.env]`
-match, because Harbor keeps those phase env maps separate.
+also checks that `[verifier.env]` stays absent for shared-mode tasks, avoiding
+duplicated fixture maps.
 
 ## Development Loop
 

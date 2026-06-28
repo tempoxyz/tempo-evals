@@ -48,7 +48,7 @@ view:
 
 check: dataset
 	find shared/verifier tasks/*/tests/tempo-bench-verifier -path '*/node_modules' -prune -o -type f -name '*.js' -print0 | xargs -0 -n1 node -c
-	find shared/rewardkit tasks/*/tests -path '*/node_modules' -prune -o -type f -name '*.py' -print0 | xargs -0 -n1 python3 -m py_compile
+	python3 -c 'from pathlib import Path; [compile(p.read_text(), str(p), "exec") for root in [Path("shared/rewardkit"), *Path("tasks").glob("*/tests")] for p in root.rglob("*.py") if "node_modules" not in p.parts]'
 	find shared/rewardkit tasks/*/tests tasks/*/solution -path '*/node_modules' -prune -o -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 
 clean-jobs:

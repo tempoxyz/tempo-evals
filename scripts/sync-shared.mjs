@@ -72,7 +72,6 @@ function assertTaskRewardKit(taskDir) {
   for (const relativePath of [
     "tests/reward.toml",
     "tests/criteria/check.py",
-    "tests/e2e/check.py",
   ]) {
     const absolutePath = path.join(taskDir, relativePath);
     if (!fs.existsSync(absolutePath)) {
@@ -127,34 +126,46 @@ function readStringTable(filePath, tableName) {
   return values;
 }
 
-function assertTempoEnvSynced(taskDir) {
-  const taskConfigPath = path.join(taskDir, "task.toml");
-  const environmentEnv = readStringTable(taskConfigPath, "environment.env");
-  const verifierEnv = readStringTable(taskConfigPath, "verifier.env");
-  const keys = new Set([
-    ...Object.keys(environmentEnv).filter((key) => key.startsWith("TEMPO_")),
-    ...Object.keys(verifierEnv).filter((key) => key.startsWith("TEMPO_")),
-  ]);
-  const mismatches = [];
+function readStringValue(filePath, dottedKey) {
+  let currentTable = "";
 
-  for (const key of keys) {
-    if (environmentEnv[key] !== verifierEnv[key]) {
-      mismatches.push(
-        `${key}: environment=${environmentEnv[key] ?? "<missing>"} verifier=${verifierEnv[key] ?? "<missing>"}`,
-      );
+  for (const line of fs.readFileSync(filePath, "utf8").split(/\r?\n/)) {
+    const tableMatch = line.match(/^\s*\[([^\]]+)\]\s*$/);
+    if (tableMatch) {
+      currentTable = tableMatch[1];
+      continue;
+    }
+
+    const valueMatch = line.match(
+      /^\s*([A-Za-z0-9_.]+)\s*=\s*"([^"]*)"\s*(?:#.*)?$/,
+    );
+    const fullKey =
+      valueMatch && currentTable
+        ? `${currentTable}.${valueMatch[1]}`
+        : valueMatch?.[1];
+    if (valueMatch && fullKey === dottedKey) {
+      return valueMatch[2];
     }
   }
 
-  if (mismatches.length > 0) {
+  return undefined;
+}
+
+function assertVerifierEnvAllowed(taskDir) {
+  const taskConfigPath = path.join(taskDir, "task.toml");
+  const verifierEnv = readStringTable(taskConfigPath, "verifier.env");
+  const environmentMode = readStringValue(taskConfigPath, "verifier.environment_mode");
+
+  if (environmentMode !== "separate" && Object.keys(verifierEnv).length > 0) {
     throw new Error(
-      `Tempo bench env mismatch in ${taskConfigPath}\n${mismatches.join("\n")}`,
+      `[verifier.env] must be absent unless [verifier].environment_mode = "separate" in ${taskConfigPath}`,
     );
   }
 }
 
 function readTaskCaseId(taskDir) {
   const taskConfigPath = path.join(taskDir, "task.toml");
-  return readStringTable(taskConfigPath, "verifier.env").TEMPO_BENCH_CASE;
+  return readStringTable(taskConfigPath, "environment.env").TEMPO_BENCH_CASE;
 }
 
 function taskUsesTempoDocsMcp(taskDir) {
@@ -177,7 +188,7 @@ function taskDirs() {
 const tasks = taskDirs();
 
 for (const taskDir of tasks) {
-  assertTempoEnvSynced(taskDir);
+  assertVerifierEnvAllowed(taskDir);
   const caseId = readTaskCaseId(taskDir);
   if (!caseId) {
     throw new Error(`TEMPO_BENCH_CASE is missing in ${path.join(taskDir, "task.toml")}`);
