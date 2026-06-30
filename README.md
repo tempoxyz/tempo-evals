@@ -104,7 +104,9 @@ Docker/Harbor require files inside the task context.
   cutoff-based turn/token efficiency checks with a Claude Haiku LLM judge over
   the submitted TypeScript files. Raw efficiency counts are written to
   `/logs/verifier/efficiency.json`. Quality does not affect Harbor's binary
-  pass/fail reward.
+  pass/fail reward. Local runs without `ANTHROPIC_API_KEY` or
+  `ANTHROPIC_AUTH_TOKEN` skip the LLM quality reward and write
+  `/logs/verifier/quality-skipped.txt`.
 - `tasks/*/tests/tempo-bench-verifier` is a minimal copied verifier package
   containing only the shared core plus the task's selected case. Harbor mounts
   `/tests` without following external package symlinks, so the package must be
@@ -254,8 +256,9 @@ agents:
 `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or `CLAUDE_CODE_OAUTH_TOKEN`,
 Claude Code exits before writing `/app/package.json` or `/app/src`, and Harbor's
 artifact collection reports Docker copy errors for those missing paths.
-The RewardKit quality judge also requires `ANTHROPIC_API_KEY` or
-`ANTHROPIC_AUTH_TOKEN` in the verifier environment.
+The RewardKit quality judge requires `ANTHROPIC_API_KEY` or
+`ANTHROPIC_AUTH_TOKEN` in the verifier environment. Without one, local verifier
+runs skip the LLM quality reward and still report the binary correctness reward.
 If using `CLAUDE_FORCE_OAUTH`, set it to `1`/`true` or leave it unset; an empty
 value is invalid.
 
