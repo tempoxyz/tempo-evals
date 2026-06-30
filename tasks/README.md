@@ -5,6 +5,7 @@ Local Harbor dataset for Tempo integration evaluations.
 Current task intents:
 
 - `tempo/transfer-with-memo`
+- `tempo/access-key-transfer`
 - `tempo/transfer-with-memo-fee-payer`
 - `tempo/set-fee-token`
 - `tempo/create-stablecoin-with-policy`

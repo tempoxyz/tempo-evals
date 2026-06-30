@@ -4,6 +4,9 @@ services:
   main:
     environment:
       - TEMPO_AMOUNT
+      - TEMPO_ACCESS_KEY_LIMIT
+      - TEMPO_ACCESS_KEY_PRIVATE_KEY
+      - TEMPO_ACCOUNT_KEYCHAIN
       - TEMPO_BENCH_CASE
       - TEMPO_BENCH_LOG_WAIT_MS
       - TEMPO_BENCH_RPC_WAIT_MS

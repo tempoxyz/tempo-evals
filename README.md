@@ -3,9 +3,10 @@
 Minimal Harbor-based benchmark for measuring whether Tempo docs and agent tools
 help agents build real Tempo integrations.
 
-The current V0 covers six Tempo integration intents across two access profiles:
+The current V0 covers seven Tempo integration intents across two access profiles:
 
 - `tempo/transfer-with-memo-docs` / `tempo/transfer-with-memo-mcp`
+- `tempo/access-key-transfer-docs` / `tempo/access-key-transfer-mcp`
 - `tempo/transfer-with-memo-fee-payer-docs` / `tempo/transfer-with-memo-fee-payer-mcp`
 - `tempo/set-fee-token-docs` / `tempo/set-fee-token-mcp`
 - `tempo/create-stablecoin-with-policy-docs` / `tempo/create-stablecoin-with-policy-mcp`
@@ -47,6 +48,7 @@ expected onchain event.
     ├── transfer-with-memo/
     ├── transfer-with-memo-docs/
     ├── transfer-with-memo-mcp/
+    ├── access-key-transfer/
     ├── transfer-with-memo-fee-payer/
     ├── set-fee-token/
     ├── create-stablecoin-with-policy/

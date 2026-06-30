@@ -11,6 +11,7 @@ const defaultTurnCutoffs = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0";
 const defaultTokenCutoffs = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0";
 const sourceTaskSlugs = [
   "transfer-with-memo",
+  "access-key-transfer",
   "transfer-with-memo-fee-payer",
   "set-fee-token",
   "create-stablecoin-with-policy",
