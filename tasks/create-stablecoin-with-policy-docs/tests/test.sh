@@ -3,6 +3,7 @@ set -u
 
 mkdir -p /logs/verifier
 REWARDKIT_VENV="${TEMPO_BENCH_REWARDKIT_VENV:-/tmp/tempo-bench-rewardkit}"
+REWARDKIT_PYTHON="$REWARDKIT_VENV/bin/python"
 REWARD_FILE="/logs/verifier/reward.json"
 DETAILS_FILE="/logs/verifier/reward-details.json"
 REWARDKIT_OUTPUT_FILE="/logs/verifier/rewardkit-output.json"
@@ -50,21 +51,23 @@ write_zero_reward() {
   printf '{"reward":0}\n' > "$REWARD_FILE"
 }
 
-if ! python3 -m venv "$REWARDKIT_VENV" \
-  > /logs/verifier/rewardkit-venv.stdout.txt \
-  2> /logs/verifier/rewardkit-venv.stderr.txt; then
-  write_zero_reward
-  exit 0
+if [ ! -x "$REWARDKIT_PYTHON" ]; then
+  if ! python3 -m venv "$REWARDKIT_VENV" \
+    > /logs/verifier/rewardkit-venv.stdout.txt \
+    2> /logs/verifier/rewardkit-venv.stderr.txt; then
+    write_zero_reward
+    exit 0
+  fi
+
+  if ! "$REWARDKIT_PYTHON" -m pip install --quiet --no-cache-dir 'harbor-rewardkit==0.1.7' \
+    > /logs/verifier/rewardkit-install.stdout.txt \
+    2> /logs/verifier/rewardkit-install.stderr.txt; then
+    write_zero_reward
+    exit 0
+  fi
 fi
 
-if ! "$REWARDKIT_VENV/bin/python" -m pip install --quiet --no-cache-dir 'harbor-rewardkit==0.1.7' \
-  > /logs/verifier/rewardkit-install.stdout.txt \
-  2> /logs/verifier/rewardkit-install.stderr.txt; then
-  write_zero_reward
-  exit 0
-fi
-
-if ! "$REWARDKIT_VENV/bin/python" -m rewardkit "$REWARDKIT_TESTS_DIR" \
+if ! "$REWARDKIT_PYTHON" -m rewardkit "$REWARDKIT_TESTS_DIR" \
   --workspace /app \
   --output "$REWARDKIT_OUTPUT_FILE" \
   > /logs/verifier/rewardkit.stdout.txt \

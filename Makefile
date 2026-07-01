@@ -68,7 +68,7 @@ view:
 
 check: dataset
 	find shared/verifier tasks/*/tests/tempo-bench-verifier -path '*/node_modules' -prune -o -type f -name '*.js' -print0 | xargs -0 -n1 node -c
-	python3 -c 'from pathlib import Path; [compile(p.read_text(), str(p), "exec") for root in [Path("shared/rewardkit"), *Path("tasks").glob("*/tests")] for p in root.rglob("*.py") if "node_modules" not in p.parts]'
+	python3 -c 'from pathlib import Path; [compile(p.read_text(), str(p), "exec") for root in [Path("shared/rewardkit"), Path("shared/rewardkit-package"), *Path("tasks").glob("*/tests")] for p in root.rglob("*.py") if "node_modules" not in p.parts]'
 	find shared/rewardkit tasks/*/tests tasks/*/solution -path '*/node_modules' -prune -o -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 
 check-generated: check

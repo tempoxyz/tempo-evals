@@ -79,6 +79,7 @@ function copyGeneratedTask(source, destination) {
         "environment/docker-compose.yaml",
         "environment/tempo-localnet",
         "environment/tempo-docs-mcp",
+        "environment/rewardkit-package",
         "tests/tempo-bench-verifier",
         "tests/e2e/verify-tempo.sh",
         "tests/correctness/verify-tempo.sh",
@@ -275,31 +276,20 @@ function updateProfileCriteria(taskDir, profile) {
   const criteriaPath = taskCriteriaPath(taskDir);
   let content = fs.readFileSync(criteriaPath, "utf8");
   content = content.replace(
-    /from rewardkit import ([^\n]+)/,
-    (_match, imports) => {
-      const names = new Set(imports.split(",").map((name) => name.trim()).filter(Boolean));
-      names.add("command_succeeds");
-      return `from rewardkit import ${Array.from(names).sort().join(", ")}`;
-    },
+    /\nrk\.tempo_trajectory_matches\([\s\S]*?\n\)\n/g,
+    "\n",
   );
-  content = content.replace(/\ncommand_succeeds\([\s\S]*?name="trajectory_uses_[^"]+",\n\)\n/g, "\n");
 
   if (profile.id === "docs") {
     content += `
-command_succeeds(
-    "test ! -f /logs/trajectory.json || "
-    "(grep -Eiq 'docs\\\\.tempo\\\\.xyz|TEMPO_DOCS_URL|Tempo docs|documentation' /logs/trajectory.json)",
-    timeout=5,
-    name="trajectory_uses_tempo_docs_when_available",
+rk.tempo_trajectory_matches(
+    r"docs\\.tempo\\.xyz|TEMPO_DOCS_URL|Tempo docs|documentation",
 )
 `;
   } else if (profile.id === "mcp") {
     content += `
-command_succeeds(
-    "test ! -f /logs/trajectory.json || "
-    "(grep -Eiq 'tempo|mcp|docs|documentation|search' /logs/trajectory.json)",
-    timeout=5,
-    name="trajectory_uses_mcp_when_available",
+rk.tempo_trajectory_matches(
+    r"tempo|mcp|docs|documentation|search",
 )
 `;
   }
@@ -452,6 +442,7 @@ function syncRewardKit(taskDir) {
   removePath(path.join(taskDir, "tests/tokens"));
   removePath(path.join(taskDir, "tests/reward"));
   removePath(path.join(taskDir, "tests/criteria"));
+  removePath(path.join(taskDir, "tests/criteria.py"));
   removePath(path.join(taskDir, "tests/e2e"));
   removePath(path.join(taskDir, "tests/correctness"));
   removePath(path.join(taskDir, "tests/quality"));
@@ -625,6 +616,10 @@ for (const taskDir of tasks) {
   copyFile(
     path.join(root, "shared/docker/main-node/Dockerfile"),
     path.join(taskDir, "environment/Dockerfile"),
+  );
+  copyDir(
+    path.join(root, "shared/rewardkit-package"),
+    path.join(taskDir, "environment/rewardkit-package"),
   );
 
   linkDir(
