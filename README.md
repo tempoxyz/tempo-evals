@@ -87,9 +87,9 @@ Docker/Harbor require files inside the task context.
   file into its base Compose config.
 - `tasks/*/environment/Dockerfile` is copied from `shared/docker/main-node/`.
   BuildKit expects the Dockerfile inside the build context, so this cannot be a
-  symlink to a shared file outside the task. Test-only Python packages are not
-  baked into this image; `tests/test.sh` installs the pinned RewardKit package
-  during verification, matching Harbor's quality rubric.
+  symlink to a shared file outside the task. `make sync` also materializes the
+  ignored `tasks/*/environment/rewardkit-package/` build-context copy so the
+  image can bake in the shared Tempo RewardKit helpers.
 - `tasks/*-mcp` declares the official remote `tempo` MCP server in
   `task.toml`. No local docs MCP sidecar is used for the main matrix.
 - `tasks/*/tests/test.sh` is Harbor's verifier entrypoint. It runs RewardKit,
@@ -97,9 +97,13 @@ Docker/Harbor require files inside the task context.
   writes dimension details to `/logs/verifier/reward-details.json`, and writes
   Harbor's primary `/logs/verifier/reward.json` as exactly one binary key:
   `reward`.
-- `tasks/*/tests/correctness` contains all current file, regex, docs/tool-use,
-  build, run, and onchain checks. Harbor's binary `reward` is `1` only when the
-  `correctness` dimension scores `1.0`.
+- `shared/rewardkit-package` defines reusable RewardKit criteria for Tempo
+  TypeScript project shape, source-pattern checks, trajectory checks, and the
+  onchain verifier. The package is installed into the task image as
+  `tempo_bench_rewardkit`.
+- `tasks/*/tests/correctness` registers task-specific source patterns plus the
+  shared build/run/onchain checks. Harbor's binary `reward` is `1` only when
+  the `correctness` dimension scores `1.0`.
 - `tasks/*/tests/quality` contains non-binary quality scoring. It combines
   cutoff-based turn/token efficiency checks with a Claude Haiku LLM judge over
   the submitted TypeScript files. Raw efficiency counts are written to

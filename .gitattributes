@@ -1,0 +1,7 @@
+tasks/*/environment/Dockerfile linguist-generated=true
+tasks/*/environment/rewardkit-package/** linguist-generated=true
+tasks/*/tests/quality/** linguist-generated=true
+tasks/*/tests/tempo-bench-verifier/** linguist-generated=true
+tasks/*/tests/test.sh linguist-generated=true
+tasks/*-docs/tests/correctness/criteria.py linguist-generated=true
+tasks/*-mcp/tests/correctness/criteria.py linguist-generated=true
