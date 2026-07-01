@@ -102,15 +102,18 @@ Docker/Harbor require files inside the task context.
   onchain verifier. The package is installed into the task image as
   `tempo_bench_rewardkit`.
 - `tasks/*/tests/correctness` registers task-specific source patterns plus the
-  shared build/run/onchain checks. Harbor's binary `reward` is `1` only when
-  the `correctness` dimension scores `1.0`.
+  shared build/run/onchain checks. These criteria are diagnostic; Harbor's
+  binary `reward` follows the independent Tempo verifier's build/run/onchain
+  result.
 - `tasks/*/tests/quality` contains non-binary quality scoring. It combines
   cutoff-based turn/token efficiency checks with a Claude Haiku LLM judge over
   the submitted TypeScript files. Raw efficiency counts are written to
   `/logs/verifier/efficiency.json`. Quality does not affect Harbor's binary
   pass/fail reward. Local runs without `ANTHROPIC_API_KEY` or
   `ANTHROPIC_AUTH_TOKEN` skip the LLM quality reward and write
-  `/logs/verifier/quality-skipped.txt`.
+  `/logs/verifier/quality-skipped.txt`. If the LLM judge returns an unparsable
+  response, the verifier reruns the programmatic rewards without the LLM judge
+  so primary scoring and efficiency metrics still get written.
 - `tasks/*/tests/tempo-bench-verifier` is a minimal copied verifier package
   containing only the shared core plus the task's selected case. Harbor mounts
   `/tests` without following external package symlinks, so the package must be
@@ -317,6 +320,7 @@ RewardKit writes Harbor's score file:
 The Tempo verifier writes detailed component scores to
 `/logs/verifier/tempo-bench-scores.json`, including `build`, `run`, and
 `onchain`. RewardKit writes correctness and quality dimensions to
-`/logs/verifier/reward-details.json`. Harbor's primary `reward` is `1` only
-when the correctness dimension passes, while quality remains diagnostic so
-pass@K can be computed from a single binary reward key.
+`/logs/verifier/reward-details.json`. Harbor's primary `reward` is `1` when the
+Tempo verifier's independent build/run/onchain score passes, while RewardKit
+correctness and quality remain diagnostic so pass@K can be computed from a
+single binary reward key.

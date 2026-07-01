@@ -29,8 +29,9 @@ Each task should stay Harbor-native and self-contained:
   `tests/quality/` contains non-binary turn/token efficiency checks and the
   Claude Haiku LLM judge. `tests/test.sh` writes Harbor's primary
   `/logs/verifier/reward.json` as a single binary `reward` key from the
-  `correctness` dimension, and `tests/tempo-bench-verifier/` is a minimal
-  copied verifier package for the selected `TEMPO_BENCH_CASE`.
+  independent Tempo verifier's build/run/onchain result; RewardKit correctness
+  and quality dimensions are diagnostic. `tests/tempo-bench-verifier/` is a
+  minimal copied verifier package for the selected `TEMPO_BENCH_CASE`.
 - `solution/` contains the oracle solution used for sanity checks. It is a
   normal minimal TypeScript app; `solve.sh` only copies the files into `/app`.
 

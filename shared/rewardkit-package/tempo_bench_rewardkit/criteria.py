@@ -18,7 +18,10 @@ def _write_json(name: str, payload: dict) -> None:
 
 
 def _trajectory_path() -> Path | None:
-    for candidate in (Path("/logs/trajectory.json"), Path("/logs/agent/trajectory.json")):
+    for candidate in (
+        Path("/logs/trajectory.json"),
+        Path("/logs/agent/trajectory.json"),
+    ):
         if candidate.exists():
             return candidate
     return None
@@ -53,15 +56,14 @@ def _merge_efficiency(section: str, payload: dict) -> None:
     log_path = LOG_DIR / "efficiency.json"
     lock_path = LOG_DIR / "efficiency.lock"
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    with _EFFICIENCY_LOCK:
-        with lock_path.open("w", encoding="utf-8") as lock_file:
-            fcntl.flock(lock_file, fcntl.LOCK_EX)
-            try:
-                metrics = json.loads(log_path.read_text(encoding="utf-8"))
-            except (FileNotFoundError, json.JSONDecodeError):
-                metrics = {}
-            metrics[section] = payload
-            log_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    with _EFFICIENCY_LOCK, lock_path.open("w", encoding="utf-8") as lock_file:
+        fcntl.flock(lock_file, fcntl.LOCK_EX)
+        try:
+            metrics = json.loads(log_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            metrics = {}
+        metrics[section] = payload
+        log_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
 
 
 def _token_metrics(trajectory: dict) -> dict[str, int]:
@@ -79,8 +81,12 @@ def _token_metrics(trajectory: dict) -> dict[str, int]:
         metrics["completion_tokens"] += int(step_metrics.get("completion_tokens") or 0)
         metrics["cached_tokens"] += int(step_metrics.get("cached_tokens") or 0)
         extra = step_metrics.get("extra") or {}
-        metrics["cache_creation_input_tokens"] += int(extra.get("cache_creation_input_tokens") or 0)
-        metrics["cache_read_input_tokens"] += int(extra.get("cache_read_input_tokens") or 0)
+        metrics["cache_creation_input_tokens"] += int(
+            extra.get("cache_creation_input_tokens") or 0
+        )
+        metrics["cache_read_input_tokens"] += int(
+            extra.get("cache_read_input_tokens") or 0
+        )
 
     metrics["total_tokens"] = metrics["prompt_tokens"] + metrics["completion_tokens"]
     metrics["uncached_token_estimate"] = (
@@ -122,9 +128,7 @@ def tempo_typescript_project(workspace: Path) -> bool:
     pattern_checks = [
         ("package_has_build_script", "package.json", r'"build"\s*:'),
         ("package_has_run_script", "package.json", r'"run"\s*:'),
-        ("package_depends_on_viem", "package.json", r'"viem"\s*:'),
         ("source_uses_environment_variables", "src/index.ts", r"process\.env"),
-        ("source_uses_address_or_hex_types", "src/index.ts", r"\b(Address|Hex)\b"),
     ]
 
     results = []
@@ -234,7 +238,9 @@ def agent_turn_efficiency(_workspace: Path) -> float:
         return 0.0
 
     trajectory = json.loads(path.read_text(encoding="utf-8"))
-    turn_count = sum(1 for step in trajectory.get("steps", []) if step.get("source") == "agent")
+    turn_count = sum(
+        1 for step in trajectory.get("steps", []) if step.get("source") == "agent"
+    )
     score = _score_by_cutoff(turn_count, raw_cutoffs)
     _merge_efficiency(
         "turns",
