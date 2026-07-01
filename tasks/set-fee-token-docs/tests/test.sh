@@ -6,7 +6,17 @@ REWARDKIT_VENV="${TEMPO_BENCH_REWARDKIT_VENV:-/tmp/tempo-bench-rewardkit}"
 REWARD_FILE="/logs/verifier/reward.json"
 DETAILS_FILE="/logs/verifier/reward-details.json"
 REWARDKIT_OUTPUT_FILE="/logs/verifier/rewardkit-output.json"
+REWARDKIT_TESTS_DIR="/tests"
 rm -f "$REWARD_FILE" "$DETAILS_FILE" "$REWARDKIT_OUTPUT_FILE"
+
+if [ -z "${ANTHROPIC_API_KEY:-}${ANTHROPIC_AUTH_TOKEN:-}" ] && [ -f /tests/quality/reward.toml ]; then
+  REWARDKIT_TESTS_DIR="/tmp/tempo-bench-rewardkit-tests"
+  rm -rf "$REWARDKIT_TESTS_DIR"
+  cp -R /tests "$REWARDKIT_TESTS_DIR"
+  rm -f "$REWARDKIT_TESTS_DIR/quality/reward.toml"
+  printf '%s\n' 'Skipping LLM quality reward because ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN is not set.' \
+    > /logs/verifier/quality-skipped.txt
+fi
 
 write_binary_reward() {
   python3 - "$DETAILS_FILE" "$REWARD_FILE" <<'PY'
@@ -54,7 +64,7 @@ if ! "$REWARDKIT_VENV/bin/python" -m pip install --quiet --no-cache-dir 'harbor-
   exit 0
 fi
 
-if ! "$REWARDKIT_VENV/bin/python" -m rewardkit /tests \
+if ! "$REWARDKIT_VENV/bin/python" -m rewardkit "$REWARDKIT_TESTS_DIR" \
   --workspace /app \
   --output "$REWARDKIT_OUTPUT_FILE" \
   > /logs/verifier/rewardkit.stdout.txt \
