@@ -39,8 +39,11 @@ jobs:
       - name: Install Harbor
         run: uv tool install harbor
 
+      - name: Install npm dependencies
+        run: npm install --no-audit --no-fund
+
       - name: Run lint checks
-        run: make lint
+        run: npm run check
 
       - name: Verify dataset freshness
-        run: make check-dataset
+        run: npm run check:dataset

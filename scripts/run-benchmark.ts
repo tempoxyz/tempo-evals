@@ -1,15 +1,18 @@
 #!/usr/bin/env node
-// Daytona benchmark entrypoint. Keep tracked task assets symlinked in tasks/.
-// For Daytona runs, this script creates a temporary dereferenced task tree under
-// .cache/harbor-daytona/<job>/tasks and rewrites the Harbor config to use it.
-// Do not commit that staged tree or copy its files back into tasks/.
+// Benchmark entrypoint for local Docker and Daytona jobs. Keep tracked task
+// assets symlinked in tasks/. Daytona runs create a temporary dereferenced task
+// tree under .cache/harbor-daytona/<job>/tasks and rewrite the Harbor config to
+// use it. Do not commit that staged tree or copy its files back into tasks/.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
 type Variant = {
-  config: string;
+  config?: string;
   prefix: string;
+  path?: string;
+  defaultAgent?: string;
+  defaultModel?: string;
   needsAgentAuth?: boolean;
   needsDaytonaAuth?: boolean;
 };
@@ -20,10 +23,36 @@ type Options = {
   jobName?: string;
   concurrency?: string;
   agentConcurrency?: string;
+  agent?: string;
+  model?: string;
+  taskFilter?: string;
+  nTasks?: string;
+  tasks?: string;
   sync: boolean;
 };
 
 const variants: Record<string, Variant> = {
+  "local-oracle": {
+    config: "config/job.local.oracle.yaml",
+    prefix: "tempo-bench-oracle-local",
+  },
+  "local-agent": {
+    config: "config/job.local.agent.yaml",
+    prefix: "tempo-bench-agents-local",
+    needsAgentAuth: true,
+  },
+  "local-agent-dev": {
+    config: "config/job.local.agent.dev.yaml",
+    prefix: "tempo-bench-agents-dev-local",
+    needsAgentAuth: true,
+  },
+  model: {
+    path: "tasks",
+    prefix: "tempo-bench-model-local",
+    defaultAgent: "claude-code",
+    defaultModel: "haiku",
+    needsAgentAuth: true,
+  },
   "daytona-oracle": {
     config: "config/job.daytona.oracle.yaml",
     prefix: "tempo-bench-oracle-daytona",
@@ -49,17 +78,30 @@ function usage() {
 Direct: node scripts/run-benchmark.ts <variant> [options]
 
 Variants:
+  local-oracle       Oracle validation on local Docker
+  local-agent        Full Claude Code matrix on local Docker
+  local-agent-dev    One-attempt Claude Code smoke run on local Docker
+  model              One local harness/model run over tasks
   daytona-oracle     Oracle validation on Daytona
   daytona-agent      Full Claude Code matrix on Daytona
   daytona-agent-dev  One-attempt Claude Code smoke run on Daytona
   sync               Sync generated task assets only
   dataset            Sync generated task assets and Harbor dataset digests
+  check-dataset      Verify dataset digests are fresh
+  check-generated    Verify sync leaves no generated diff
+  clean-jobs         Remove local Harbor job outputs
+  clean              Remove local Harbor job outputs and Daytona staging cache
 
 Options:
   --env-file PATH          Load env file for Harbor and preflight checks (default: .env when present)
   --job-name NAME          Override generated job name
   --concurrency N         Override n_concurrent_trials
   --agent-concurrency N   Override per-agent n_concurrent
+  --agent NAME            Agent for the model variant (default: claude-code)
+  --model NAME            Model for the model variant (default: haiku)
+  --task-filter GLOB      Include matching task names for the model variant
+  --n-tasks N             Limit task count for the model variant
+  --tasks PATH            Task dataset path for dataset/model variants (default: tasks)
   --no-sync               Skip task asset and dataset sync before running Harbor
 `);
 }
@@ -108,6 +150,21 @@ function parseArgs(argv: string[]): { variant?: string; options: Options } {
     } else if (arg === "--agent-concurrency") {
       options.agentConcurrency = readPositiveInteger(readOptionValue(rest, i, arg), arg);
       i += 1;
+    } else if (arg === "--agent") {
+      options.agent = readOptionValue(rest, i, arg);
+      i += 1;
+    } else if (arg === "--model") {
+      options.model = readOptionValue(rest, i, arg);
+      i += 1;
+    } else if (arg === "--task-filter") {
+      options.taskFilter = readOptionValue(rest, i, arg);
+      i += 1;
+    } else if (arg === "--n-tasks") {
+      options.nTasks = readPositiveInteger(readOptionValue(rest, i, arg), arg);
+      i += 1;
+    } else if (arg === "--tasks") {
+      options.tasks = readOptionValue(rest, i, arg);
+      i += 1;
     } else {
       throw new Error(`Unknown option: ${arg}`);
     }
@@ -136,7 +193,7 @@ function loadEnvFile(filePath?: string) {
 
 function timestamp() {
   const now = new Date();
-  const pad = (value) => String(value).padStart(2, "0");
+  const pad = (value: number) => String(value).padStart(2, "0");
   return [
     now.getFullYear(),
     pad(now.getMonth() + 1),
@@ -188,9 +245,13 @@ function preflight(variant: Variant) {
   }
 }
 
-function syncDataset() {
+function taskPath(options: Options): string {
+  return options.tasks ?? "tasks";
+}
+
+function syncDataset(options: Options) {
   run("node", ["scripts/sync-shared.mjs"]);
-  run("uv", ["run", "harbor", "sync", "tasks"]);
+  run("uv", ["run", "harbor", "sync", taskPath(options)]);
 }
 
 function stageDaytonaConfig(configPath: string, runId: string): string {
@@ -231,7 +292,28 @@ try {
     process.exit(0);
   }
   if (variantName === "dataset") {
-    syncDataset();
+    syncDataset(options);
+    process.exit(0);
+  }
+  if (variantName === "check-dataset") {
+    syncDataset(options);
+    run("git", ["diff", "--exit-code", `${taskPath(options)}/dataset.toml`]);
+    process.exit(0);
+  }
+  if (variantName === "check-generated") {
+    syncDataset(options);
+    run("git", ["diff", "--exit-code"]);
+    process.exit(0);
+  }
+  if (variantName === "clean-jobs") {
+    fs.rmSync("jobs", { recursive: true, force: true });
+    fs.mkdirSync("jobs", { recursive: true });
+    process.exit(0);
+  }
+  if (variantName === "clean") {
+    fs.rmSync("jobs", { recursive: true, force: true });
+    fs.rmSync(path.join(".cache", "harbor-daytona"), { recursive: true, force: true });
+    fs.mkdirSync("jobs", { recursive: true });
     process.exit(0);
   }
 
@@ -243,14 +325,23 @@ try {
 
   loadEnvFile(options.envFile);
   preflight(variant);
-  if (options.sync) syncDataset();
+  if (options.sync) syncDataset(options);
 
   const runId = options.jobName ?? `${variant.prefix}-${timestamp()}`;
-  const config = variant.needsDaytonaAuth
-    ? stageDaytonaConfig(variant.config, runId)
-    : variant.config;
-
-  const args = ["run", "harbor", "run", "-c", config];
+  const args = ["run", "harbor", "run"];
+  if (variant.config) {
+    const config = variant.needsDaytonaAuth
+      ? stageDaytonaConfig(variant.config, runId)
+      : variant.config;
+    args.push("-c", config);
+  } else {
+    args.push("--path", options.tasks ?? variant.path ?? "tasks");
+    args.push("--agent", options.agent ?? variant.defaultAgent ?? "claude-code");
+    const model = options.model ?? variant.defaultModel;
+    if (model) args.push("--model", model);
+    if (options.taskFilter) args.push("--include-task-name", options.taskFilter);
+    if (options.nTasks) args.push("--n-tasks", options.nTasks);
+  }
   if (options.envFile) args.push("--env-file", options.envFile);
   args.push("--job-name", runId);
   if (options.concurrency) args.push("--n-concurrent", options.concurrency);
