@@ -1,4 +1,5 @@
-job_name: tempo-bench-local
+# Local Agent dev job: one-attempt Claude Code smoke run in local Docker.
+job_name: tempo-bench-agents-dev-local
 jobs_dir: jobs
 n_attempts: 1
 timeout_multiplier: 1.0
@@ -14,7 +15,13 @@ verifier:
     ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
     REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
 agents:
-  - name: oracle
+  - name: claude-code
+    model_name: claude-haiku-4-5
+    env:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      CLAUDE_FORCE_OAUTH: ${CLAUDE_FORCE_OAUTH:-false}
 datasets:
   - path: tasks
     task_names:

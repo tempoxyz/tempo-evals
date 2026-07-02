@@ -25,6 +25,7 @@ pnpm-debug.log*
 # JavaScript package/install output
 node_modules/
 package-lock.json
+!/package-lock.json
 yarn.lock
 pnpm-lock.yaml
 tasks/**/tests/node_modules/

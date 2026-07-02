@@ -1,3 +1,4 @@
+# Local Agent job: runs the full Claude Code benchmark matrix in local Docker.
 job_name: tempo-bench-agents-local
 jobs_dir: jobs
 n_attempts: 3

@@ -27,12 +27,12 @@ jobs:
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Add uv tool directory to PATH
-        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Install Harbor
-        run: uv tool install harbor
+      - name: Install Python dependencies
+        run: uv sync --locked --dev --all-extras
 
       - name: Verify generated artifacts
-        run: make check-generated
+        run: npm run check:generated
