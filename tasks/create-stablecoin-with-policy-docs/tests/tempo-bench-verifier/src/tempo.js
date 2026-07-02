@@ -32,6 +32,10 @@ function sameAddress(left, right) {
   return left?.toLowerCase() === right?.toLowerCase();
 }
 
+function transactionKeyId(transaction) {
+  return transaction?.keyId ?? transaction?.signature?.keyId;
+}
+
 async function waitForRpc(client, config) {
   const deadline = Date.now() + config.rpcWaitMs;
   while (Date.now() < deadline) {
@@ -60,6 +64,7 @@ module.exports = {
   memoEncodings,
   sameAddress,
   sleep,
+  transactionKeyId,
   waitForEvidence,
   waitForRpc,
 };

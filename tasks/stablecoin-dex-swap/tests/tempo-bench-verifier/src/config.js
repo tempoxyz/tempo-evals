@@ -15,6 +15,13 @@ function numberEnv(name) {
   return value;
 }
 
+function listEnv(name, fallback = "") {
+  return env(name, fallback)
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 function readConfig() {
   return {
     caseId: env("TEMPO_BENCH_CASE", "transfer-with-memo"),
@@ -27,7 +34,11 @@ function readConfig() {
     tip20Factory: env("TEMPO_TIP20_FACTORY", "0x20fc000000000000000000000000000000000000"),
     tip403Registry: env("TEMPO_TIP403_REGISTRY", "0x403c000000000000000000000000000000000000"),
     stablecoinDex: env("TEMPO_STABLECOIN_DEX", "0xdec0000000000000000000000000000000000000"),
+    accountKeychain: env("TEMPO_ACCOUNT_KEYCHAIN", "0xaAAAaaAA00000000000000000000000000000000"),
+    receivePolicyGuard: env("TEMPO_RECEIVE_POLICY_GUARD", "0xB10C000000000000000000000000000000000000"),
     payerPrivateKey: requiredEnv("TEMPO_PAYER_PRIVATE_KEY"),
+    accessKeyPrivateKey: env("TEMPO_ACCESS_KEY_PRIVATE_KEY"),
+    recipientPrivateKey: env("TEMPO_RECIPIENT_PRIVATE_KEY"),
     feePayerPrivateKey: env("TEMPO_FEE_PAYER_PRIVATE_KEY"),
     faucetPrivateKey: env("TEMPO_FAUCET_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
     dexMakerPrivateKey: env("TEMPO_DEX_MAKER_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
@@ -41,10 +52,16 @@ function readConfig() {
     stablecoinSalt: env("TEMPO_STABLECOIN_SALT"),
     policyType: env("TEMPO_POLICY_TYPE", "blacklist"),
     policyAccount: env("TEMPO_POLICY_ACCOUNT", env("TEMPO_RECIPIENT")),
+    accessKeyLimit: env("TEMPO_ACCESS_KEY_LIMIT"),
+    accessKeyPeriodSeconds: env("TEMPO_ACCESS_KEY_PERIOD_SECONDS"),
+    receivePolicySenderPolicyId: BigInt(env("TEMPO_RECEIVE_POLICY_SENDER_POLICY_ID", "0")),
+    receivePolicyTokenPolicyId: BigInt(env("TEMPO_RECEIVE_POLICY_TOKEN_POLICY_ID", "1")),
     swapTokenIn: env("TEMPO_SWAP_TOKEN_IN", env("TEMPO_TOKEN")),
     swapTokenOut: env("TEMPO_SWAP_TOKEN_OUT", "0x20c0000000000000000000000000000000000002"),
     swapAmountIn: env("TEMPO_SWAP_AMOUNT_IN", env("TEMPO_AMOUNT")),
     swapMinAmountOut: env("TEMPO_SWAP_MIN_AMOUNT_OUT", "0"),
+    multiRecipients: listEnv("TEMPO_MULTI_RECIPIENTS", env("TEMPO_RECIPIENT")),
+    multiAmounts: listEnv("TEMPO_MULTI_AMOUNTS", env("TEMPO_AMOUNT")),
     submissionTimeoutMs: Number(env("TEMPO_BENCH_SUBMISSION_TIMEOUT_MS", "180000")),
     rpcWaitMs: Number(env("TEMPO_BENCH_RPC_WAIT_MS", "60000")),
     logWaitMs: Number(env("TEMPO_BENCH_LOG_WAIT_MS", "30000")),
@@ -54,7 +71,11 @@ function readConfig() {
 function redactedConfig(config) {
   return {
     ...config,
+    receivePolicySenderPolicyId: config.receivePolicySenderPolicyId.toString(),
+    receivePolicyTokenPolicyId: config.receivePolicyTokenPolicyId.toString(),
     payerPrivateKey: "<redacted>",
+    accessKeyPrivateKey: config.accessKeyPrivateKey ? "<redacted>" : "",
+    recipientPrivateKey: config.recipientPrivateKey ? "<redacted>" : "",
     feePayerPrivateKey: config.feePayerPrivateKey ? "<redacted>" : "",
     faucetPrivateKey: config.faucetPrivateKey ? "<redacted>" : "",
     dexMakerPrivateKey: config.dexMakerPrivateKey ? "<redacted>" : "",

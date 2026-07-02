@@ -12,10 +12,14 @@ const defaultTokenCutoffs = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0
 const sourceTaskSlugs = [
   "transfer-with-memo",
   "transfer-with-memo-fee-payer",
+  "create-access-key-transfer",
+  "access-key-spending-limit",
   "set-fee-token",
   "create-stablecoin-with-policy",
+  "receive-policy-bounced-transfer",
   "faucet-funded-transfer",
   "stablecoin-dex-swap",
+  "multiparty-batch-transfer",
 ];
 const profiles = [
   {

@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@tempo-bench/verifier": "file:./tempo-bench-verifier"
+  },
+  "scripts": {
+    "verify": "tempo-bench-verify"
+  }
+}

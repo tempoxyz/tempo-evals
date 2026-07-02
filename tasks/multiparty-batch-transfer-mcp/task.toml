@@ -1,0 +1,48 @@
+schema_version = "1.3"
+
+artifacts = ["/app/package.json", "/app/src"]
+
+[task]
+name = "tempo/multiparty-batch-transfer-mcp"
+description = "Build a Tempo localnet integration that pays multiple parties in a single Tempo transaction. (MCP profile)."
+authors = []
+keywords = ["tempo", "batch", "multiparty", "tip20", "localnet", "typescript", "mcp"]
+
+[metadata]
+category = "integration"
+feature = "multiparty-batch-transfer"
+profile = "mcp"
+[verifier]
+timeout_sec = 300.0
+environment_mode = "shared"
+
+
+[agent]
+timeout_sec = 900.0
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
+[[environment.mcp_servers]]
+name = "tempo"
+transport = "streamable-http"
+url = "https://mcp.tempo.xyz"
+
+[environment.env]
+TEMPO_BENCH_CASE = "multiparty-batch-transfer"
+TEMPO_BENCH_SUBMISSION_TIMEOUT_MS = "180000"
+TEMPO_BENCH_RPC_WAIT_MS = "60000"
+TEMPO_BENCH_LOG_WAIT_MS = "30000"
+TEMPO_RPC_URL = "http://tempo-localnet:8545"
+TEMPO_TOKEN = "0x20c0000000000000000000000000000000000001"
+TEMPO_PAYER_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+TEMPO_RECIPIENT = "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+TEMPO_AMOUNT = "0.03"
+TEMPO_MEMO = "TEMPO-MULTI-001"
+TEMPO_DECIMALS = "6"
+TEMPO_MULTI_RECIPIENTS = "0x90F79bf6EB2c4f870365E785982E1f101E93b906,0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65,0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+TEMPO_MULTI_AMOUNTS = "0.03,0.04,0.05"
+TEMPO_BENCH_TURNS_SCORE_CUTOFFS = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
+TEMPO_BENCH_TOKENS_SCORE_CUTOFFS = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"

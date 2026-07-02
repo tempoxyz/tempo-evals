@@ -78,7 +78,7 @@ lint:
 	find shared/rewardkit tasks/*/tests tasks/*/solution -path '*/node_modules' -prune -o -type f -name '*.sh' -print0 | xargs -0 shellcheck
 
 test:
-	find tasks -path '*/solution/package.json' -print0 | xargs -0 -n1 sh -c 'dir=$$(dirname "$$0"); npm --prefix "$$dir" install --ignore-scripts --no-package-lock && npm --prefix "$$dir" run build'
+	find tasks -path '*/solution/package.json' -print0 | xargs -0 -n1 sh -c 'dir=$$(dirname "$$0"); rm -rf "$$dir/node_modules" "$$dir/package-lock.json"; trap '\''rm -rf "$$dir/node_modules" "$$dir/package-lock.json"'\'' EXIT; npm --prefix "$$dir" install --ignore-scripts --no-package-lock && npm --prefix "$$dir" run build'
 
 check: dataset lint test
 

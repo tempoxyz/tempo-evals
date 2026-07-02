@@ -6,10 +6,14 @@ Current task intents:
 
 - `tempo/transfer-with-memo`
 - `tempo/transfer-with-memo-fee-payer`
+- `tempo/create-access-key-transfer`
+- `tempo/access-key-spending-limit`
 - `tempo/set-fee-token`
 - `tempo/create-stablecoin-with-policy`
+- `tempo/receive-policy-bounced-transfer`
 - `tempo/faucet-funded-transfer`
 - `tempo/stablecoin-dex-swap`
+- `tempo/multiparty-batch-transfer`
 
 Each intent is materialized into `-docs` and `-mcp` profile variants
 by `../scripts/sync-shared.mjs`.

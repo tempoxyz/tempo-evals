@@ -3,14 +3,18 @@
 Minimal Harbor-based benchmark for measuring whether Tempo docs and agent tools
 help agents build real Tempo integrations.
 
-The current V0 covers six Tempo integration intents across two access profiles:
+The current V0 covers ten Tempo integration intents across two access profiles:
 
 - `tempo/transfer-with-memo-docs` / `tempo/transfer-with-memo-mcp`
 - `tempo/transfer-with-memo-fee-payer-docs` / `tempo/transfer-with-memo-fee-payer-mcp`
+- `tempo/create-access-key-transfer-docs` / `tempo/create-access-key-transfer-mcp`
+- `tempo/access-key-spending-limit-docs` / `tempo/access-key-spending-limit-mcp`
 - `tempo/set-fee-token-docs` / `tempo/set-fee-token-mcp`
 - `tempo/create-stablecoin-with-policy-docs` / `tempo/create-stablecoin-with-policy-mcp`
+- `tempo/receive-policy-bounced-transfer-docs` / `tempo/receive-policy-bounced-transfer-mcp`
 - `tempo/faucet-funded-transfer-docs` / `tempo/faucet-funded-transfer-mcp`
 - `tempo/stablecoin-dex-swap-docs` / `tempo/stablecoin-dex-swap-mcp`
+- `tempo/multiparty-batch-transfer-docs` / `tempo/multiparty-batch-transfer-mcp`
 
 `scripts/sync-shared.mjs` materializes each intent into two task variants:
 
@@ -48,10 +52,14 @@ expected onchain event.
     ├── transfer-with-memo-docs/
     ├── transfer-with-memo-mcp/
     ├── transfer-with-memo-fee-payer/
+    ├── create-access-key-transfer/
+    ├── access-key-spending-limit/
     ├── set-fee-token/
     ├── create-stablecoin-with-policy/
+    ├── receive-policy-bounced-transfer/
     ├── faucet-funded-transfer/
-    └── stablecoin-dex-swap/
+    ├── stablecoin-dex-swap/
+    └── multiparty-batch-transfer/
         ├── instruction.md
         ├── task.toml
         ├── environment/
