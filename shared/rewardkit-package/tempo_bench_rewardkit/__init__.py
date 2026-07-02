@@ -1,4 +1,6 @@
 from .criteria import (
+    agent_token_efficiency,
+    agent_turn_efficiency,
     tempo_onchain_verifier,
     tempo_source_patterns,
     tempo_trajectory_matches,
@@ -6,6 +8,8 @@ from .criteria import (
 )
 
 __all__ = [
+    "agent_token_efficiency",
+    "agent_turn_efficiency",
     "tempo_onchain_verifier",
     "tempo_source_patterns",
     "tempo_trajectory_matches",
