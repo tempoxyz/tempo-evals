@@ -6,7 +6,6 @@ from pathlib import Path
 
 from rewardkit import criterion
 
-
 LOG_DIR = Path("/logs/verifier")
 
 
@@ -55,12 +54,14 @@ def tempo_typescript_project(workspace: Path) -> bool:
     results = []
     for name, relative_path in file_checks:
         exists = (workspace / relative_path).exists()
-        results.append({
-            "name": name,
-            "file": relative_path,
-            "passed": exists,
-            "error": None if exists else "missing file",
-        })
+        results.append(
+            {
+                "name": name,
+                "file": relative_path,
+                "passed": exists,
+                "error": None if exists else "missing file",
+            }
+        )
 
     results.extend(
         _pattern_check(workspace, name, file, pattern)
@@ -94,8 +95,7 @@ def tempo_onchain_verifier(workspace: Path) -> bool:
         ["bash", "/tests/correctness/verify-tempo.sh"],
         cwd=workspace,
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         timeout=timeout,
         check=False,
     )
@@ -113,10 +113,15 @@ def tempo_onchain_verifier(workspace: Path) -> bool:
 
 @criterion(shared=True)
 def tempo_trajectory_matches(_workspace: Path, pattern: str) -> bool:
-    for candidate in (Path("/logs/trajectory.json"), Path("/logs/agent/trajectory.json")):
+    for candidate in (
+        Path("/logs/trajectory.json"),
+        Path("/logs/agent/trajectory.json"),
+    ):
         if candidate.exists():
             content = candidate.read_text(encoding="utf-8", errors="replace")
-            matched = re.search(pattern, content, re.IGNORECASE | re.MULTILINE) is not None
+            matched = (
+                re.search(pattern, content, re.IGNORECASE | re.MULTILINE) is not None
+            )
             _write_json(
                 "trajectory-match.json",
                 {

@@ -7,7 +7,10 @@ from rewardkit import criterion
 
 
 def _trajectory_path() -> Path | None:
-    for candidate in (Path("/logs/trajectory.json"), Path("/logs/agent/trajectory.json")):
+    for candidate in (
+        Path("/logs/trajectory.json"),
+        Path("/logs/agent/trajectory.json"),
+    ):
         if candidate.exists():
             return candidate
     return None
@@ -67,8 +70,12 @@ def _token_metrics(trajectory: dict) -> dict[str, int]:
         metrics["completion_tokens"] += int(step_metrics.get("completion_tokens") or 0)
         metrics["cached_tokens"] += int(step_metrics.get("cached_tokens") or 0)
         extra = step_metrics.get("extra") or {}
-        metrics["cache_creation_input_tokens"] += int(extra.get("cache_creation_input_tokens") or 0)
-        metrics["cache_read_input_tokens"] += int(extra.get("cache_read_input_tokens") or 0)
+        metrics["cache_creation_input_tokens"] += int(
+            extra.get("cache_creation_input_tokens") or 0
+        )
+        metrics["cache_read_input_tokens"] += int(
+            extra.get("cache_read_input_tokens") or 0
+        )
 
     metrics["total_tokens"] = metrics["prompt_tokens"] + metrics["completion_tokens"]
     metrics["uncached_token_estimate"] = (
@@ -93,7 +100,9 @@ def agent_turn_efficiency(_workspace: Path) -> float:
         return 0.0
 
     trajectory = json.loads(path.read_text(encoding="utf-8"))
-    turn_count = sum(1 for step in trajectory.get("steps", []) if step.get("source") == "agent")
+    turn_count = sum(
+        1 for step in trajectory.get("steps", []) if step.get("source") == "agent"
+    )
     score = _score_by_cutoff(turn_count, raw_cutoffs)
     _merge_efficiency(
         "turns",
