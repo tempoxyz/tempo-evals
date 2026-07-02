@@ -1,0 +1,30 @@
+# Daytona Oracle job: validates all task variants with the oracle solution on Daytona DinD, one attempt per task.
+# Keep this config thin. scripts/run-benchmark.ts copies tasks into a temporary
+# dereferenced .cache/harbor-daytona/<job>/tasks tree before invoking Harbor.
+# Do not materialize task symlinks in tasks/ to fix Daytona upload issues; update
+# the runner staging logic instead.
+job_name: tempo-bench-oracle-daytona
+jobs_dir: jobs
+n_attempts: 1
+timeout_multiplier: 1.0
+n_concurrent_trials: 32
+quiet: false
+environment:
+  type: daytona
+  force_build: false
+  delete: true
+  kwargs:
+    dind_snapshot: tempo-bench-dind-28-3-3
+    connection_pool_maxsize: null
+verifier:
+  env:
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+    REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
+agents:
+  - name: oracle
+datasets:
+  - path: tasks
+    task_names:
+      - "*-docs"
+      - "*-mcp"
