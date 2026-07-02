@@ -1,3 +1,21 @@
+[project]
+name = "tempo-bench"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "harbor-rewardkit==0.1.7",
+    "harbor[daytona]>=0.16.1,<0.17",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.0",
+    "shellcheck-py>=0.11.0.1",
+]
+
+[tool.uv]
+package = false
+
 [tool.ruff]
 target-version = "py312"
 line-length = 88

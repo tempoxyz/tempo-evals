@@ -1,0 +1,23 @@
+{
+  "name": "tempo-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/run-benchmark.ts sync",
+    "dataset": "node scripts/run-benchmark.ts dataset",
+    "bench": "node scripts/run-benchmark.ts daytona-agent-dev",
+    "bench:daytona:oracle": "node scripts/run-benchmark.ts daytona-oracle",
+    "bench:daytona:agent": "node scripts/run-benchmark.ts daytona-agent",
+    "bench:daytona:agent:dev": "node scripts/run-benchmark.ts daytona-agent-dev",
+    "harbor:view": "uv run harbor view jobs",
+    "check": "npm run check:scripts && npm run check:format && npm run check:lint",
+    "check:format": "uv run ruff format --check .",
+    "check:lint": "uv run ruff check .",
+    "check:scripts": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
