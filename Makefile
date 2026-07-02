@@ -1,4 +1,4 @@
-.PHONY: help sync dataset benchmark benchmark-oracle check-agent-auth benchmark-agents benchmark-model view check check-generated clean-jobs clean
+.PHONY: help sync dataset benchmark benchmark-oracle check-agent-auth benchmark-agents benchmark-model view lint test check check-dataset check-generated clean-jobs clean
 
 JOB_NAME ?= tempo-bench-model-local
 ORACLE_JOB_NAME ?= tempo-bench-oracle-local
@@ -26,8 +26,11 @@ help:
 		'  make check-agent-auth Verify Claude Code and quality judge auth is available' \
 		'  make benchmark* N_CONCURRENT=4 Override Harbor trial concurrency' \
 		'  make view        Open Harbor job viewer' \
-		'  make check       Syntax-check shared JS/Python and sync dataset' \
-		'  make check-generated Verify sync/check leave no generated diff' \
+		'  make lint        Run Ruff and syntax checks' \
+		'  make test        Build task solution packages' \
+		'  make check       Sync dataset, run lint checks, and build task solutions' \
+		'  make check-dataset Verify dataset digests are fresh' \
+		'  make check-generated Verify sync leaves no generated diff' \
 		'  make clean-jobs  Remove local Harbor job outputs' \
 		'  make clean       Remove generated local caches and job outputs'
 
@@ -66,12 +69,23 @@ benchmark-model: benchmark
 view:
 	harbor view jobs
 
-check: dataset
+lint:
+	ruff format --check .
+	ruff check .
 	find shared/verifier tasks/*/tests/tempo-bench-verifier -path '*/node_modules' -prune -o -type f -name '*.js' -print0 | xargs -0 -n1 node -c
 	python3 -c 'from pathlib import Path; [compile(p.read_text(), str(p), "exec") for root in [Path("shared/rewardkit"), Path("shared/rewardkit-package"), *Path("tasks").glob("*/tests")] for p in root.rglob("*.py") if "node_modules" not in p.parts]'
 	find shared/rewardkit tasks/*/tests tasks/*/solution -path '*/node_modules' -prune -o -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+	find shared/rewardkit tasks/*/tests tasks/*/solution -path '*/node_modules' -prune -o -type f -name '*.sh' -print0 | xargs -0 shellcheck
 
-check-generated: check
+test:
+	find tasks -path '*/solution/package.json' -print0 | xargs -0 -n1 sh -c 'dir=$$(dirname "$$0"); npm --prefix "$$dir" install --ignore-scripts --no-package-lock && npm --prefix "$$dir" run build'
+
+check: dataset lint test
+
+check-dataset: dataset
+	git diff --exit-code tasks/dataset.toml
+
+check-generated: dataset
 	git diff --exit-code
 
 clean-jobs:

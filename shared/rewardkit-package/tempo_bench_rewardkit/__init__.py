@@ -5,7 +5,6 @@ from .criteria import (
     tempo_typescript_project,
 )
 
-
 __all__ = [
     "tempo_onchain_verifier",
     "tempo_source_patterns",
