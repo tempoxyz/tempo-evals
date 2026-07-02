@@ -1,0 +1,14 @@
+{% block content %}
+[dataset]
+name = "{{ dataset_name }}"
+description = "{{ dataset_description }}"
+keywords = [{% for keyword in dataset_keywords %}"{{ keyword }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+[[dataset.authors]]
+name = "{{ dataset_author_name }}"
+
+{% for task in tasks %}
+[[tasks]]
+name = "{{ task.name }}"
+digest = "{{ task.digest }}"
+{% endfor %}
+{% endblock %}

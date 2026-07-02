@@ -1,0 +1,26 @@
+{% extends "obrist/criteria.py.j2" %}
+{% block imports %}
+import rewardkit as rk
+import tempo_bench_rewardkit
+{% endblock %}
+
+{% block criteria %}
+rk.tempo_typescript_project()
+
+rk.tempo_source_patterns([
+{% for pattern in patterns %}
+    {
+        "name": "{{ pattern.name }}",
+        "pattern": {{ pattern.pattern }},
+    },
+{% endfor %}
+])
+
+rk.tempo_onchain_verifier()
+{% if trajectory_pattern %}
+
+rk.tempo_trajectory_matches(
+    {{ trajectory_pattern }},
+)
+{% endif %}
+{% endblock %}

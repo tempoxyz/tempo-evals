@@ -1,4 +1,4 @@
-name: Sync artifacts
+name: Compile checks
 
 on:
   pull_request:
@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  check-generated:
-    name: Check generated artifacts
+  check-compile:
+    name: Check compiler output
     runs-on: ubuntu-latest
 
     steps:
@@ -28,11 +28,17 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
 
+      - name: Check Ruff formatting
+        run: uv run ruff format --check obrist datasets tests
+
+      - name: Run Ruff lint
+        run: uv run ruff check obrist datasets tests
+
       - name: Add uv tool directory to PATH
         run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Install Harbor
         run: uv tool install harbor
 
-      - name: Verify generated artifacts
-        run: make check-generated
+      - name: Run checks
+        run: make check

@@ -2,8 +2,9 @@
 .gitignore
 .dockerignore
 
-# Harbor/local outputs
+# Local generated outputs
 jobs
+.generated
 
 # OS/editor noise
 .DS_Store
@@ -31,8 +32,6 @@ node_modules
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
-tasks/**/tests/node_modules
-tasks/**/tests/package-lock.json
 
 # Python caches
 __pycache__

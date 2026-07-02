@@ -1,5 +1,6 @@
 # Harbor outputs
 jobs/
+.generated/
 
 # OS/editor noise
 .DS_Store
@@ -27,13 +28,11 @@ node_modules/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
-tasks/**/tests/node_modules/
-tasks/**/tests/package-lock.json
-tasks/**/environment/rewardkit-package/
 
 # Python caches
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/

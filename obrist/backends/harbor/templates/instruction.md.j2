@@ -1,0 +1,19 @@
+{% block content %}
+# {{ title }}
+
+{{ prompt }}
+
+## Access Profile
+
+{{ profile_instruction }}
+
+## Execution Constraints
+{% for constraint in execution_constraints %}
+- {{ constraint }}
+{% endfor %}
+
+Requirements:
+{% for requirement in requirements %}
+- {{ requirement }}
+{% endfor %}
+{% endblock %}

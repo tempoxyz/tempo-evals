@@ -1,0 +1,55 @@
+[project]
+name = "obrist-bench"
+version = "0.1.0"
+description = "Obrist benchmark DSL with Tempo benchmark collection"
+requires-python = ">=3.11"
+dependencies = [
+  "click>=8.4",
+  "jinja2>=3.1",
+  "pydantic>=2.0",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.10",
+  "ruff>=0.15.20",
+]
+
+[project.scripts]
+obrist = "obrist.cli:main"
+
+[project.entry-points."obrist.collections"]
+tempobench = "datasets.tempobench.collections:get_collection"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["obrist*", "datasets*"]
+
+[tool.setuptools.package-data]
+obrist = ["py.typed", "backends/harbor/templates/*.j2"]
+"datasets.tempobench" = ["py.typed", "shared/**/*", "solutions/**/*", "templates/*.j2"]
+"datasets.mppbench" = ["py.typed"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = ["."]
+explicit_package_bases = true
+files = ["obrist", "datasets", "tests"]
+exclude = ["datasets/tempobench/shared/"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = [
+  ".generated",
+  "datasets/tempobench/shared",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

@@ -1,0 +1,11 @@
+{% block content %}
+{
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+{% for name, value in dependencies.items() %}
+    "{{ name }}": "{{ value }}"{% if not loop.last %},{% endif %}
+{% endfor %}
+  }
+}
+{% endblock %}

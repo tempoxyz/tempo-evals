@@ -1,0 +1,42 @@
+{% block content %}
+schema_version = "1.3"
+
+artifacts = [{% for artifact in artifacts %}"{{ artifact }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+
+[task]
+name = "{{ name }}"
+description = "{{ description }}"
+authors = []
+keywords = [{% for keyword in keywords %}"{{ keyword }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+
+[metadata]
+category = "{{ category }}"
+feature = "{{ feature }}"
+profile = "{{ profile }}"
+
+[verifier]
+timeout_sec = {{ verifier.timeout_sec }}
+environment_mode = "{{ verifier.environment_mode }}"
+
+[agent]
+timeout_sec = {{ agent.timeout_sec }}
+
+[environment]
+build_timeout_sec = {{ environment.build_timeout_sec }}
+cpus = {{ environment.cpus }}
+memory_mb = {{ environment.memory_mb }}
+storage_mb = {{ environment.storage_mb }}
+{% for server in mcp_servers %}
+[[environment.mcp_servers]]
+name = "{{ server.name }}"
+transport = "{{ server.transport }}"
+{% if server.url %}url = "{{ server.url }}"{% endif %}
+{% if server.command %}command = "{{ server.command }}"{% endif %}
+{% if server.args %}args = [{% for arg in server.args %}"{{ arg }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}
+{% endfor %}
+
+[environment.env]
+{% for name, value in env.items() %}
+{{ name }} = "{{ value }}"
+{% endfor %}
+{% endblock %}

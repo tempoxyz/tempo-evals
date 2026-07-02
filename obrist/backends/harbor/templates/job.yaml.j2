@@ -1,0 +1,27 @@
+{% block content %}
+job_name: {{ job_name }}
+jobs_dir: {{ jobs_dir }}
+n_attempts: {{ attempts }}
+timeout_multiplier: 1.0
+orchestrator:
+  type: local
+  n_concurrent_trials: 1
+  quiet: false
+environment:
+  type: docker
+  force_build: true
+  delete: true
+verifier:
+  env:
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+    REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
+agents:
+  - name: {{ oracle_agent_name }}
+datasets:
+  - path: {{ tasks_path }}
+    task_names:
+{% for task_name_glob in task_name_globs %}
+      - "{{ task_name_glob }}"
+{% endfor %}
+{% endblock %}
