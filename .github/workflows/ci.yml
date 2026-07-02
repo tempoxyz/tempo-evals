@@ -23,24 +23,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
 
-      - name: Add uv tool directory to PATH
-        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
-
-      - name: Install Ruff
-        run: python -m pip install ruff==0.15.0
-
-      - name: Install Harbor
-        run: uv tool install harbor
+      - name: Install Python dependencies
+        run: uv sync --locked --dev --all-extras
 
       - name: Install npm dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Run lint checks
         run: npm run check
