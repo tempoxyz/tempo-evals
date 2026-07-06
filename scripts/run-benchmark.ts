@@ -7,6 +7,12 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
+type DocsLock = {
+  schemaVersion: number;
+  repo: string;
+  sha: string;
+};
+
 type Variant = {
   config?: string;
   prefix: string;
@@ -219,6 +225,29 @@ function run(command: string, args: string[]) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
+function readDocsLock(): DocsLock {
+  const lockPath = path.join("config", "tempo-docs.lock.json");
+  const lock = JSON.parse(fs.readFileSync(lockPath, "utf8")) as DocsLock;
+  if (lock.schemaVersion !== 1 || !lock.repo || !lock.sha) {
+    throw new Error(`Invalid Tempo docs lock: ${lockPath}`);
+  }
+  return lock;
+}
+
+function docsBundlePath(): string {
+  const lock = readDocsLock();
+  return path.resolve(".cache", "tempo-docs", lock.sha, "public");
+}
+
+function ensureDocsBundle(): string {
+  run("node", ["scripts/prepare-docs-bundle.mjs"]);
+  const bundlePath = docsBundlePath();
+  if (!fs.existsSync(path.join(bundlePath, "developers", "llms.txt"))) {
+    throw new Error(`Pinned Tempo docs bundle was not created at ${bundlePath}`);
+  }
+  return bundlePath;
+}
+
 function requireAny(names: string[], message: string) {
   if (!names.some((name) => process.env[name])) {
     throw new Error(message);
@@ -261,9 +290,12 @@ function syncDataset(options: Options) {
 
 function applyTaskFilter(config: string, taskFilter?: string): string {
   if (!taskFilter) return config;
+  const filters = taskFilter.startsWith("tempo/")
+    ? [taskFilter, taskFilter.slice("tempo/".length)]
+    : [taskFilter];
   const filtered = config.replace(
     /(^\s+task_names:\n)(?:^\s+-\s+.*\n)+/m,
-    `$1      - ${JSON.stringify(taskFilter)}\n`,
+    `$1${filters.map((filter) => `      - ${JSON.stringify(filter)}\n`).join("")}`,
   );
   if (filtered === config) {
     throw new Error("Could not apply task filter to config");
@@ -274,6 +306,7 @@ function applyTaskFilter(config: string, taskFilter?: string): string {
 function stageDaytonaConfig(
   configPath: string,
   runId: string,
+  docsBundle: string,
   taskFilter?: string,
 ): string {
   const stagingRoot = path.join(".cache", "harbor-daytona", runId);
@@ -289,6 +322,17 @@ function stageDaytonaConfig(
       !sourcePath.includes(`${path.sep}node_modules${path.sep}`) &&
       !sourcePath.endsWith(`${path.sep}package-lock.json`),
   });
+  for (const entry of fs.readdirSync(stagedTasks, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const taskDir = path.join(stagedTasks, entry.name);
+    const taskConfigPath = path.join(taskDir, "task.toml");
+    if (!fs.existsSync(taskConfigPath)) continue;
+    const taskConfig = fs.readFileSync(taskConfigPath, "utf8");
+    if (!taskConfig.includes("TEMPO_DOCS_URL")) continue;
+    fs.cpSync(docsBundle, path.join(taskDir, "environment", "tempo-docs-bundle"), {
+      recursive: true,
+    });
+  }
 
   const config = fs.readFileSync(configPath, "utf8");
   const redirected = applyTaskFilter(config, taskFilter).replace(
@@ -299,6 +343,17 @@ function stageDaytonaConfig(
     throw new Error(`Could not redirect dataset path in ${configPath}`);
   }
   fs.writeFileSync(stagedConfig, redirected);
+  return stagedConfig;
+}
+
+function stageFilteredConfig(configPath: string, runId: string, taskFilter?: string): string {
+  if (!taskFilter) return configPath;
+  const stagingRoot = path.join(".cache", "harbor-config", runId);
+  const stagedConfig = path.join(stagingRoot, path.basename(configPath));
+
+  fs.rmSync(stagingRoot, { recursive: true, force: true });
+  fs.mkdirSync(stagingRoot, { recursive: true });
+  fs.writeFileSync(stagedConfig, applyTaskFilter(fs.readFileSync(configPath, "utf8"), taskFilter));
   return stagedConfig;
 }
 
@@ -334,6 +389,7 @@ try {
   if (variantName === "clean") {
     fs.rmSync("jobs", { recursive: true, force: true });
     fs.rmSync(path.join(".cache", "harbor-daytona"), { recursive: true, force: true });
+    fs.rmSync(path.join(".cache", "harbor-config"), { recursive: true, force: true });
     fs.mkdirSync("jobs", { recursive: true });
     process.exit(0);
   }
@@ -347,13 +403,14 @@ try {
   loadEnvFile(options.envFile);
   preflight(variant);
   if (options.sync) syncDataset(options);
+  const docsBundle = ensureDocsBundle();
 
   const runId = options.jobName ?? `${variant.prefix}-${timestamp()}`;
   const args = ["run", "harbor", "run"];
   if (variant.config) {
     const config = variant.needsDaytonaAuth
-      ? stageDaytonaConfig(variant.config, runId, options.taskFilter)
-      : variant.config;
+      ? stageDaytonaConfig(variant.config, runId, docsBundle, options.taskFilter)
+      : stageFilteredConfig(variant.config, runId, options.taskFilter);
     args.push("-c", config);
   } else {
     args.push("--path", options.tasks ?? variant.path ?? "tasks");
@@ -371,6 +428,7 @@ try {
   }
   const maxRetries = options.maxRetries ?? (variant.needsDaytonaAuth ? "2" : undefined);
   if (maxRetries) args.push("--max-retries", maxRetries);
+  process.env.TEMPO_DOCS_BUNDLE_PATH = variant.needsDaytonaAuth ? "" : docsBundle;
   args.push("-y");
   run("uv", args);
 } catch (error) {

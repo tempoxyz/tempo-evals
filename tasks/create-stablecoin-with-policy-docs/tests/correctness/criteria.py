@@ -29,5 +29,5 @@ rk.tempo_source_patterns(
 rk.tempo_onchain_verifier()
 
 rk.tempo_trajectory_matches(
-    r"docs\.tempo\.xyz|TEMPO_DOCS_URL|Tempo docs|documentation",
+    r"tempo-docs:3000/developers|/developers/llms\.txt|/developers/llms-full\.txt|/developers/docs/.*\.md|TEMPO_DOCS_URL",
 )

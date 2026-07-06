@@ -1,7 +1,7 @@
 # Tempo Bench
 
 Tempo Bench is a Harbor benchmark for testing whether agents can build real
-Tempo localnet integrations from either docs or the Tempo MCP server.
+Tempo localnet integrations from pinned docs or the Tempo MCP server.
 
 Each task asks an agent to create a minimal TypeScript app in `/app`. Harbor
 starts the task environment, runs the agent, runs the verifier in the same
@@ -20,8 +20,12 @@ Each intent has two access profiles:
 | Faucet-funded transfer | `tempo/faucet-funded-transfer-docs` | `tempo/faucet-funded-transfer-mcp` |
 | Stablecoin DEX swap | `tempo/stablecoin-dex-swap-docs` | `tempo/stablecoin-dex-swap-mcp` |
 
-The docs profile exposes `TEMPO_DOCS_URL=https://docs.tempo.xyz/`. The MCP
-profile configures the remote `tempo` MCP server at `https://mcp.tempo.xyz`.
+The docs profile exposes a local HTTP docs sidecar at
+`TEMPO_DOCS_URL=http://tempo-docs:3000/developers`. The sidecar is generated
+from the locked `tempoxyz/docs` commit in `config/tempo-docs.lock.json` and
+serves public-compatible agent docs routes such as `/developers/llms.txt`,
+`/developers/llms-full.txt`, and `/developers/docs/*.md`. The MCP profile
+configures the remote `tempo` MCP server at `https://mcp.tempo.xyz`.
 
 ## Structure
 
@@ -29,6 +33,8 @@ profile configures the remote `tempo` MCP server at `https://mcp.tempo.xyz`.
 | --- | --- |
 | `config/job.local.*.yaml` | Local Docker Harbor jobs. |
 | `config/job.daytona.*.yaml` | Daytona DinD Harbor jobs. |
+| `config/tempo-docs.lock.json` | Pinned `tempoxyz/docs` commit used by docs-profile tasks. |
+| `scripts/prepare-docs-bundle.mjs` | Builds the local static docs bundle under `.cache/tempo-docs/<sha>/public`. |
 | `scripts/run-benchmark.ts` | Single entrypoint for sync, dataset refresh, checks, local runs, Daytona runs, and cleanup. |
 | `scripts/create-daytona-dind-snapshot.py` | Optional helper for creating reusable Daytona DinD snapshots. |
 | `scripts/sync-shared.mjs` | Generates docs/MCP task variants and syncs shared verifier/assets into task contexts. |
@@ -81,6 +87,12 @@ Install project tools:
 ```bash
 npm install
 uv sync
+```
+
+Prepare the pinned docs bundle:
+
+```bash
+npm run docs:prepare
 ```
 
 Optional global Harbor install:

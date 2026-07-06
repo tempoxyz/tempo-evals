@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "docs:prepare": "node scripts/prepare-docs-bundle.mjs",
+    "docs:check": "node scripts/prepare-docs-bundle.mjs --check",
     "sync": "node scripts/run-benchmark.ts sync",
     "dataset": "node scripts/run-benchmark.ts dataset",
     "bench": "node scripts/run-benchmark.ts local-agent",

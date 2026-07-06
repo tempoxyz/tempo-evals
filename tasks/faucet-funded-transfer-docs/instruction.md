@@ -30,7 +30,7 @@ Use environment variables for all values:
 
 ## Tempo Access Profile
 
-Tempo docs are available at https://docs.tempo.xyz/ and through the `TEMPO_DOCS_URL` environment variable. You may use WebSearch/WebFetch for Tempo docs; prefer docs from docs.tempo.xyz and do not use public RPC endpoints.
+Tempo docs are available through the local docs service at `TEMPO_DOCS_URL` (http://tempo-docs:3000/developers). Use those docs for Tempo-specific APIs and examples. Do not use WebSearch, WebFetch, public docs sites, or public RPC endpoints.
 
 ## Execution Constraints
 
