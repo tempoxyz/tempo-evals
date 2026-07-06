@@ -23,6 +23,7 @@ type Options = {
   jobName?: string;
   concurrency?: string;
   agentConcurrency?: string;
+  maxRetries?: string;
   agent?: string;
   model?: string;
   taskFilter?: string;
@@ -97,6 +98,7 @@ Options:
   --job-name NAME          Override generated job name
   --concurrency N         Override n_concurrent_trials
   --agent-concurrency N   Override per-agent n_concurrent
+  --max-retries N         Retry transient trial/setup failures
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and Daytona config variants
@@ -149,6 +151,9 @@ function parseArgs(argv: string[]): { variant?: string; options: Options } {
       i += 1;
     } else if (arg === "--agent-concurrency") {
       options.agentConcurrency = readPositiveInteger(readOptionValue(rest, i, arg), arg);
+      i += 1;
+    } else if (arg === "--max-retries") {
+      options.maxRetries = readPositiveInteger(readOptionValue(rest, i, arg), arg);
       i += 1;
     } else if (arg === "--agent") {
       options.agent = readOptionValue(rest, i, arg);
@@ -364,6 +369,7 @@ try {
   if (options.agentConcurrency) {
     args.push("--n-concurrent-agents", options.agentConcurrency);
   }
+  if (options.maxRetries) args.push("--max-retries", options.maxRetries);
   args.push("-y");
   run("uv", args);
 } catch (error) {
