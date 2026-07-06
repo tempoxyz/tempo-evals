@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tasksDir = path.join(root, "tasks");
-const tempoDocsUrl = "https://docs.tempo.xyz/";
+const tempoDocsUrl = "http://tempo-docs:3000/developers";
 const tempoMcpUrl = "https://mcp.tempo.xyz";
 const defaultTurnCutoffs = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0";
 const defaultTokenCutoffs = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0";
@@ -78,7 +78,8 @@ function copyGeneratedTask(source, destination) {
         "environment/Dockerfile",
         "environment/docker-compose.yaml",
         "environment/tempo-localnet",
-        "environment/tempo-docs-mcp",
+        "environment/tempo-docs",
+        "environment/tempo-docs-bundle",
         "environment/rewardkit-package",
         "tests/tempo-bench-verifier",
         "tests/e2e/verify-tempo.sh",
@@ -247,7 +248,7 @@ function appendProfileInstruction(taskDir, profile) {
   if (profile.id === "docs") {
     content = content.replace(
       "\nRequirements:",
-      `\n## Tempo Access Profile\n\nTempo docs are available at ${tempoDocsUrl} and through the \`TEMPO_DOCS_URL\` environment variable. You may use WebSearch/WebFetch for Tempo docs; prefer docs from docs.tempo.xyz and do not use public RPC endpoints.\n\nRequirements:`,
+      `\n## Tempo Access Profile\n\nTempo docs are available through the local docs service at \`TEMPO_DOCS_URL\` (${tempoDocsUrl}). Use those docs for Tempo-specific APIs and examples. Do not use WebSearch, WebFetch, public docs sites, or public RPC endpoints.\n\nRequirements:`,
     );
   } else if (profile.id === "mcp") {
     content = content.replace(
@@ -283,7 +284,7 @@ function updateProfileCriteria(taskDir, profile) {
   if (profile.id === "docs") {
     content += `
 rk.tempo_trajectory_matches(
-    r"docs\\.tempo\\.xyz|TEMPO_DOCS_URL|Tempo docs|documentation",
+    r"tempo-docs:3000/developers|/developers/llms\\.txt|/developers/llms-full\\.txt|/developers/docs/.*\\.md|TEMPO_DOCS_URL",
 )
 `;
   } else if (profile.id === "mcp") {
@@ -558,13 +559,13 @@ function readTaskCaseId(taskDir) {
   return readStringTable(taskConfigPath, "environment.env").TEMPO_BENCH_CASE;
 }
 
-function taskUsesLocalTempoDocsMcp(taskDir) {
+function taskUsesLocalTempoDocs(taskDir) {
   const taskConfigPath = path.join(taskDir, "task.toml");
   const composePath = path.join(taskDir, "environment/docker-compose.yaml");
   const taskConfig = fs.existsSync(taskConfigPath) ? fs.readFileSync(taskConfigPath, "utf8") : "";
   const compose = fs.existsSync(composePath) ? fs.readFileSync(composePath, "utf8") : "";
 
-  return taskConfig.includes("tempo-docs-mcp") || compose.includes("tempo-docs-mcp");
+  return taskConfig.includes('profile = "docs"') || taskConfig.includes("TEMPO_DOCS_URL") || compose.includes("tempo-docs");
 }
 
 function assertComposeBuildContexts(taskDir) {
@@ -627,14 +628,14 @@ for (const taskDir of tasks) {
     path.join(taskDir, "environment/tempo-localnet"),
   );
 
-  if (taskUsesLocalTempoDocsMcp(taskDir)) {
+  if (taskUsesLocalTempoDocs(taskDir)) {
     linkFile(
-      path.join(root, "shared/docker/compose/tempo-localnet-docs-mcp.yaml"),
+      path.join(root, "shared/docker/compose/tempo-localnet-docs.yaml"),
       path.join(taskDir, "environment/docker-compose.yaml"),
     );
     linkDir(
-      path.join(root, "shared/mcp/tempo-docs"),
-      path.join(taskDir, "environment/tempo-docs-mcp"),
+      path.join(root, "shared/docs/tempo-docs"),
+      path.join(taskDir, "environment/tempo-docs"),
     );
   } else {
     linkFile(
