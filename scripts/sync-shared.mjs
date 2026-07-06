@@ -280,6 +280,7 @@ function updateProfileCriteria(taskDir, profile) {
     /\nrk\.tempo_trajectory_matches\([\s\S]*?\n\)\n/g,
     "\n",
   );
+  content = content.replace(/\nrk\.tempo_mcp_tool_used\([\s\S]*?\)\n/g, "\n");
 
   if (profile.id === "docs") {
     content += `
@@ -289,9 +290,7 @@ rk.tempo_trajectory_matches(
 `;
   } else if (profile.id === "mcp") {
     content += `
-rk.tempo_trajectory_matches(
-    r"tempo|mcp|docs|documentation|search",
-)
+rk.tempo_mcp_tool_used("tempo")
 `;
   }
 
@@ -565,7 +564,11 @@ function taskUsesLocalTempoDocs(taskDir) {
   const taskConfig = fs.existsSync(taskConfigPath) ? fs.readFileSync(taskConfigPath, "utf8") : "";
   const compose = fs.existsSync(composePath) ? fs.readFileSync(composePath, "utf8") : "";
 
-  return taskConfig.includes('profile = "docs"') || taskConfig.includes("TEMPO_DOCS_URL") || compose.includes("tempo-docs");
+  return (
+    taskConfig.includes('profile = "docs"') ||
+    taskConfig.includes("TEMPO_DOCS_URL") ||
+    compose.includes("tempo-docs:")
+  );
 }
 
 function assertComposeBuildContexts(taskDir) {
