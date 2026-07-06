@@ -131,11 +131,11 @@ npm run bench:daytona:agent
 Override concurrency:
 
 ```bash
-npm run bench:daytona:agent -- --concurrency 4 --agent-concurrency 2 --max-retries 2
+npm run bench:daytona:agent -- --concurrency 4 --agent-concurrency 2
 ```
 
-For Daytona runs, use `--max-retries 2` to retry transient remote Docker
-startup failures in a fresh sandbox.
+Daytona runs default to two retries for transient remote Docker startup
+failures in a fresh sandbox.
 
 Run a single task through a config-backed Daytona job:
 

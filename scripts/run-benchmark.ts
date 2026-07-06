@@ -98,7 +98,7 @@ Options:
   --job-name NAME          Override generated job name
   --concurrency N         Override n_concurrent_trials
   --agent-concurrency N   Override per-agent n_concurrent
-  --max-retries N         Retry transient trial/setup failures
+  --max-retries N         Retry transient trial/setup failures (default: 2 for Daytona runs)
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and Daytona config variants
@@ -369,7 +369,8 @@ try {
   if (options.agentConcurrency) {
     args.push("--n-concurrent-agents", options.agentConcurrency);
   }
-  if (options.maxRetries) args.push("--max-retries", options.maxRetries);
+  const maxRetries = options.maxRetries ?? (variant.needsDaytonaAuth ? "2" : undefined);
+  if (maxRetries) args.push("--max-retries", maxRetries);
   args.push("-y");
   run("uv", args);
 } catch (error) {
