@@ -30,7 +30,7 @@ profile configures the remote `tempo` MCP server at `https://mcp.tempo.xyz`.
 | `config/job.local.*.yaml` | Local Docker Harbor jobs. |
 | `config/job.daytona.*.yaml` | Daytona DinD Harbor jobs. |
 | `scripts/run-benchmark.ts` | Single entrypoint for sync, dataset refresh, checks, local runs, Daytona runs, and cleanup. |
-| `scripts/create-daytona-dind-snapshot.py` | Creates the DinD snapshot referenced by Daytona configs. |
+| `scripts/create-daytona-dind-snapshot.py` | Optional helper for creating reusable Daytona DinD snapshots. |
 | `scripts/sync-shared.mjs` | Generates docs/MCP task variants and syncs shared verifier/assets into task contexts. |
 | `shared/` | Source of truth for reusable Docker, verifier, RewardKit, MCP, and localnet code. |
 | `tasks/` | Harbor dataset and task directories. Some shared assets are intentionally symlinked. |
@@ -97,13 +97,12 @@ Create `.env` with the runtime credentials you need:
 | `CLAUDE_CODE_OAUTH_TOKEN` | Claude Code subscription auth. |
 | `CLAUDE_FORCE_OAUTH` | Optional Claude Code OAuth forcing; use `1`/`true`, not an empty value. |
 | `DAYTONA_API_KEY` | Daytona runs. |
-| `DAYTONA_TARGET` | Optional Daytona target; defaults to `us`. |
+| `DAYTONA_TARGET` | Optional Daytona target. |
 
-Create or verify the Daytona DinD snapshot:
-
-```bash
-uv run scripts/create-daytona-dind-snapshot.py --recreate-error
-```
+The checked-in Daytona configs start from `docker:28.3.3-dind` directly. If you
+want to experiment with snapshot-backed startup later, create a snapshot with
+`uv run scripts/create-daytona-dind-snapshot.py --recreate-error` and set
+`environment.kwargs.dind_snapshot` in the Daytona config.
 
 ## Run
 
@@ -133,6 +132,12 @@ Override concurrency:
 
 ```bash
 npm run bench:daytona:agent -- --concurrency 4 --agent-concurrency 2
+```
+
+Run a single task through a config-backed Daytona job:
+
+```bash
+npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
 ```
 
 Use a stable job name:

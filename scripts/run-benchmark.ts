@@ -99,7 +99,7 @@ Options:
   --agent-concurrency N   Override per-agent n_concurrent
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
-  --task-filter GLOB      Include matching task names for the model variant
+  --task-filter GLOB      Include matching task names for model and Daytona config variants
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants (default: tasks)
   --no-sync               Skip task asset and dataset sync before running Harbor
@@ -254,7 +254,23 @@ function syncDataset(options: Options) {
   run("uv", ["run", "harbor", "sync", taskPath(options)]);
 }
 
-function stageDaytonaConfig(configPath: string, runId: string): string {
+function applyTaskFilter(config: string, taskFilter?: string): string {
+  if (!taskFilter) return config;
+  const filtered = config.replace(
+    /(^\s+task_names:\n)(?:^\s+-\s+.*\n)+/m,
+    `$1      - ${JSON.stringify(taskFilter)}\n`,
+  );
+  if (filtered === config) {
+    throw new Error("Could not apply task filter to config");
+  }
+  return filtered;
+}
+
+function stageDaytonaConfig(
+  configPath: string,
+  runId: string,
+  taskFilter?: string,
+): string {
   const stagingRoot = path.join(".cache", "harbor-daytona", runId);
   const stagedTasks = path.join(stagingRoot, "tasks");
   const stagedConfig = path.join(stagingRoot, path.basename(configPath));
@@ -270,7 +286,7 @@ function stageDaytonaConfig(configPath: string, runId: string): string {
   });
 
   const config = fs.readFileSync(configPath, "utf8");
-  const redirected = config.replace(
+  const redirected = applyTaskFilter(config, taskFilter).replace(
     /(^\s*-\s*path:\s*)tasks\s*$/m,
     `$1${JSON.stringify(stagedTasks)}`,
   );
@@ -331,7 +347,7 @@ try {
   const args = ["run", "harbor", "run"];
   if (variant.config) {
     const config = variant.needsDaytonaAuth
-      ? stageDaytonaConfig(variant.config, runId)
+      ? stageDaytonaConfig(variant.config, runId, options.taskFilter)
       : variant.config;
     args.push("-c", config);
   } else {
