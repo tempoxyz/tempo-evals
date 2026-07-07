@@ -262,33 +262,6 @@ function appendProfileInstruction(taskDir, profile) {
   writeFile(instructionPath, `${content.replace(/\s*$/, "")}\n`);
 }
 
-function taskCriteriaPath(taskDir) {
-  for (const relativePath of [
-    "tests/correctness/criteria.py",
-    "tests/criteria/check.py",
-  ]) {
-    const absolutePath = path.join(taskDir, relativePath);
-    if (fs.existsSync(absolutePath)) return absolutePath;
-  }
-  throw new Error(`Missing task-local criteria checks in ${taskDir}`);
-}
-
-function removeProfileUsageChecks(content) {
-  content = content.replace(
-    /\nrk\.tempo_trajectory_matches\([\s\S]*?\n\)\n/g,
-    "\n",
-  );
-  return content.replace(/\nrk\.tempo_mcp_tool_used\([\s\S]*?\)\n/g, "\n");
-}
-
-function updateProfileCriteria(taskDir, profile) {
-  const criteriaPath = taskCriteriaPath(taskDir);
-  let content = fs.readFileSync(criteriaPath, "utf8");
-  content = removeProfileUsageChecks(content);
-
-  writeFile(criteriaPath, `${content.replace(/\s*$/, "")}\n`);
-}
-
 function profileQualityCheck(profileId) {
   if (profileId === "docs") {
     return `
@@ -313,8 +286,7 @@ function updateProfileQuality(taskDir) {
   if (!check) return;
 
   const checkPath = path.join(taskDir, "tests/quality/check.py");
-  let content = fs.readFileSync(checkPath, "utf8");
-  content = removeProfileUsageChecks(content);
+  const content = fs.readFileSync(checkPath, "utf8");
   writeFile(checkPath, `${content.replace(/\s*$/, "")}\n${check}`);
 }
 
@@ -333,7 +305,6 @@ function materializeTaskMatrix() {
       generatedSlugs.add(slug);
       updateTaskToml(taskDir, sourceSlug, profile);
       appendProfileInstruction(taskDir, profile);
-      updateProfileCriteria(taskDir, profile);
     }
   }
 
