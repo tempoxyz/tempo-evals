@@ -36,15 +36,24 @@ function runStep(config, name, command, args, env = {}) {
 }
 
 function defaultRuntimeEnv(config) {
-  return {
+  const runtimeEnv = {
     TEMPO_RPC_URL: config.rpcUrl,
-    TEMPO_TOKEN: config.token,
-    TEMPO_PAYER_PRIVATE_KEY: config.payerPrivateKey,
-    TEMPO_RECIPIENT: config.recipient,
-    TEMPO_AMOUNT: config.amount,
-    TEMPO_MEMO: config.memo,
-    TEMPO_DECIMALS: String(config.decimals),
   };
+
+  for (const [key, value] of [
+    ["TEMPO_TOKEN", config.token],
+    ["TEMPO_PAYER_PRIVATE_KEY", config.payerPrivateKey],
+    ["TEMPO_RECIPIENT", config.recipient],
+    ["TEMPO_AMOUNT", config.amount],
+    ["TEMPO_MEMO", config.memo],
+    ["TEMPO_DECIMALS", config.decimals === undefined ? undefined : String(config.decimals)],
+  ]) {
+    if (value !== undefined && value !== "") {
+      runtimeEnv[key] = value;
+    }
+  }
+
+  return runtimeEnv;
 }
 
 module.exports = {
