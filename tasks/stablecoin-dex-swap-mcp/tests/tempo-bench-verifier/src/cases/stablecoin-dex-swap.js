@@ -1,7 +1,16 @@
-const { parseAbiItem } = require("viem");
+const { erc20Abi, getAbiItem, parseAbiItem, parseUnits } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const { defaultRuntimeEnv } = require("../submission");
-const { blockEvidence, waitForEvidence } = require("../tempo");
+const { blockEvidence, sameAddress, waitForEvidence } = require("../tempo");
+
+const approvalEvent = getAbiItem({ abi: erc20Abi, name: "Approval" });
+const transferEvent = getAbiItem({ abi: erc20Abi, name: "Transfer" });
+const orderPlacedEvent = parseAbiItem(
+  "event OrderPlaced(uint128 indexed orderId, address indexed maker, address indexed token, uint128 amount, bool isBid, int16 tick, bool isFlipOrder, int16 flipTick)",
+);
+const orderFilledEvent = parseAbiItem(
+  "event OrderFilled(uint128 indexed orderId, address indexed maker, address indexed taker, uint128 amountFilled, bool partialFill)",
+);
 
 function runtimeEnv(config) {
   return {
@@ -17,26 +26,87 @@ function runtimeEnv(config) {
 
 async function verify({ client, config, fromBlock }) {
   const taker = privateKeyToAccount(config.payerPrivateKey).address;
-  const event = parseAbiItem(
-    "event OrderFilled(uint128 indexed orderId, address indexed maker, address indexed taker, uint128 amountFilled, bool partialFill)",
-  );
+  const maker = privateKeyToAccount(config.dexMakerPrivateKey).address;
+  const amountIn = parseUnits(config.swapAmountIn, config.decimals);
+  const minAmountOut = parseUnits(config.swapMinAmountOut, config.decimals);
 
   return waitForEvidence(config, async () => {
     const latestBlock = await client.getBlockNumber();
-    const logs = await client.getLogs({
+    const fillLogs = await client.getLogs({
       address: config.stablecoinDex,
-      event,
-      args: { taker },
+      event: orderFilledEvent,
+      args: { maker, taker },
       fromBlock,
       toBlock: latestBlock,
     });
 
-    const match = logs[0];
-    return match && blockEvidence(match, {
-      orderId: match.args.orderId.toString(),
-      amountFilled: match.args.amountFilled.toString(),
-    });
-  }, "no matching Stablecoin DEX OrderFilled event observed");
+    for (const fillLog of fillLogs) {
+      const [orderLog] = await client.getLogs({
+        address: config.stablecoinDex,
+        event: orderPlacedEvent,
+        args: { orderId: fillLog.args.orderId, maker, token: config.swapTokenOut },
+        fromBlock,
+        toBlock: latestBlock,
+      });
+      if (!orderLog || orderLog.args.isBid || orderLog.args.amount < fillLog.args.amountFilled) {
+        continue;
+      }
+
+      const [takerApprovals, makerApprovals, inputTransfers, outputTransfers] = await Promise.all([
+        client.getLogs({
+          address: config.swapTokenIn,
+          event: approvalEvent,
+          args: { owner: taker, spender: config.stablecoinDex },
+          fromBlock,
+          toBlock: latestBlock,
+        }),
+        client.getLogs({
+          address: config.swapTokenOut,
+          event: approvalEvent,
+          args: { owner: maker, spender: config.stablecoinDex },
+          fromBlock,
+          toBlock: latestBlock,
+        }),
+        client.getLogs({
+          address: config.swapTokenIn,
+          event: transferEvent,
+          args: { from: taker, to: config.stablecoinDex },
+          fromBlock,
+          toBlock: latestBlock,
+        }),
+        client.getLogs({
+          address: config.swapTokenOut,
+          event: transferEvent,
+          args: { from: config.stablecoinDex, to: taker },
+          fromBlock,
+          toBlock: latestBlock,
+        }),
+      ]);
+
+      const sameTx = (log) => sameAddress(log.transactionHash, fillLog.transactionHash);
+      if (
+        fillLog.args.amountFilled < minAmountOut ||
+        !takerApprovals.some((log) => log.args.value >= amountIn) ||
+        !makerApprovals.some((log) => log.args.value >= orderLog.args.amount) ||
+        !inputTransfers.some((log) => sameTx(log) && log.args.value === amountIn) ||
+        !outputTransfers.some((log) => sameTx(log) && log.args.value === fillLog.args.amountFilled)
+      ) {
+        continue;
+      }
+
+      return blockEvidence(fillLog, {
+        orderId: fillLog.args.orderId.toString(),
+        maker,
+        tokenIn: config.swapTokenIn,
+        tokenOut: config.swapTokenOut,
+        amountIn: amountIn.toString(),
+        minAmountOut: minAmountOut.toString(),
+        amountFilled: fillLog.args.amountFilled.toString(),
+      });
+    }
+
+    return null;
+  }, "no matching Stablecoin DEX swap, liquidity order, and approvals observed");
 }
 
 module.exports = {

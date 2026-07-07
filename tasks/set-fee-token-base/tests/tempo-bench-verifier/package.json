@@ -7,6 +7,6 @@
     "tempo-bench-verify": "bin/tempo-bench-verify.js"
   },
   "dependencies": {
-    "viem": "^2.53.1"
+    "viem": "^2.54.6"
   }
 }
