@@ -4,8 +4,6 @@ import rewardkit as rk
 from tempo_bench_rewardkit.common.constants import (
     WORKSPACE_PATH,
     HttpStatus,
-    OutKey,
-    ScorePath,
     SourcePattern,
     WorkspaceFile,
 )
@@ -36,8 +34,8 @@ if out_path.exists():
         out = json.loads(out_path.read_text(encoding="utf-8"))
     except ValueError:
         out = {}
-    free_url = out.get(OutKey.FREE_URL)
-    paid_url = out.get(OutKey.PAID_URL)
+    free_url = out.get("freeUrl")
+    paid_url = out.get("paidUrl")
     if isinstance(free_url, str):
         rk.http_status_equals(free_url, HttpStatus.OK)
         rk.http_response_contains(free_url, "{")
@@ -46,127 +44,127 @@ if out_path.exists():
 
 # Check MPP Results
 rk.file_exists(WorkspaceFile.SCORES_JSON)
-rk.json_path_equals(WorkspaceFile.SCORES_JSON, ScorePath.REWARD, 1)
-rk.json_path_equals(WorkspaceFile.SCORES_JSON, ScorePath.PAID_STATUS, HttpStatus.OK)
-rk.json_path_equals(WorkspaceFile.SCORES_JSON, ScorePath.PAID_JSON, True)
-rk.json_path_equals(WorkspaceFile.SCORES_JSON, ScorePath.PAID_HAS_RECEIPT, True)
+rk.json_path_equals(WorkspaceFile.SCORES_JSON, "reward", 1)
+rk.json_path_equals(WorkspaceFile.SCORES_JSON, "paid.status", HttpStatus.OK)
+rk.json_path_equals(WorkspaceFile.SCORES_JSON, "paid.json", True)
+rk.json_path_equals(WorkspaceFile.SCORES_JSON, "paid.hasReceipt", True)
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_RECEIPT_METHOD_IS_TEMPO,
+    "paid.receipt.methodIsTempo",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_RECEIPT_STATUS_IS_SUCCESS,
+    "paid.receipt.statusIsSuccess",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_RECEIPT_HAS_TIMESTAMP,
+    "paid.receipt.hasTimestamp",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_RECEIPT_HAS_REFERENCE,
+    "paid.receipt.hasReference",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_RECEIPT_EXTERNAL_ID,
+    "paid.receipt.externalId",
     None,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_RECEIPT_EXTRA,
+    "paid.receipt.extra",
     None,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_RECEIPT_REFERENCE_MATCHES_TRANSACTION,
+    "paid.receipt.referenceMatchesTransaction",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_CHAIN_MATCHES,
+    "paid.transaction.chainMatches",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_CALL_TO_MATCHES_TOKEN,
+    "paid.transaction.callToMatchesToken",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_CONFIRMED,
+    "paid.transaction.confirmed",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_FEE_TOKEN_MATCHES,
+    "paid.transaction.feeTokenMatches",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_FROM_MATCHES_PAYER,
+    "paid.transaction.fromMatchesPayer",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_HAS_LOGS,
+    "paid.transaction.hasLogs",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_RECEIPT_FEE_TOKEN_MATCHES,
+    "paid.transaction.receiptFeeTokenMatches",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_RECEIPT_STATUS_IS_SUCCESS,
+    "paid.transaction.receiptStatusIsSuccess",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_RECEIPT_TO_MATCHES_TOKEN,
+    "paid.transaction.receiptToMatchesToken",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_RECEIPT_TRANSACTION_HASH_MATCHES_REFERENCE,
+    "paid.transaction.receiptTransactionHashMatchesReference",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_REFERENCE_MATCHES_HASH,
+    "paid.transaction.referenceMatchesHash",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_SUCCESSFUL,
+    "paid.transaction.successful",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_TRANSFER_AMOUNT_MATCHES_CHARGE,
+    "paid.transaction.transfer.amountMatchesCharge",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_TRANSFER_FOUND,
+    "paid.transaction.transfer.found",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_TRANSFER_FROM_MATCHES_PAYER,
+    "paid.transaction.transfer.fromMatchesPayer",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_TRANSFER_TO_MATCHES_RECIPIENT,
+    "paid.transaction.transfer.toMatchesRecipient",
     True,
 )
 rk.json_path_equals(
     WorkspaceFile.SCORES_JSON,
-    ScorePath.PAID_TRANSACTION_TRANSFER_TOKEN_MATCHES,
+    "paid.transaction.transfer.tokenMatches",
     True,
 )
