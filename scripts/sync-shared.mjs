@@ -388,10 +388,9 @@ function writeDatasetManifest() {
     .map(
       (name) => `[[tasks]]
 name = ${JSON.stringify(name)}
-digest = ${JSON.stringify(digests.get(name) ?? placeholderDigest)}
-`,
+digest = ${JSON.stringify(digests.get(name) ?? placeholderDigest)}`,
     )
-    .join("\n");
+    .join("\n\n");
 
   writeFile(
     path.join(tasksDir, "dataset.toml"),
@@ -405,7 +404,8 @@ keywords = ["stablecoins", "docs", "tempo"]
 [[dataset.authors]]
 name = "Tempo"
 
-${taskEntries}`,
+${taskEntries}
+`,
   );
 }
 

@@ -51,9 +51,8 @@ digest = "sha256:86c643796b7a336b86082d4ffd2931b3e778fce280d8898fca688317834525e
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-docs"
-digest = "sha256:44d58323ceb4e41da17558e947d5bcf8183c491f84cd74cdfd2d021b2b14a8f9"
+digest = "sha256:73c9450d7e2e9257b4624a75faa739a3383de1a44adc55321c4b51052abce2f7"
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-mcp"
-digest = "sha256:37a82d69aa9cdd1afcdbf0cfaa92009c5f215518ec25fbe49cdc7b43a80743d7"
-
+digest = "sha256:cb1006d07c0c3694df9f6b973bf4750b74ea9abdf03da92a0b642d6c8364c5c3"

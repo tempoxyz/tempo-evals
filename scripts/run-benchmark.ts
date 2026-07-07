@@ -283,9 +283,19 @@ function taskPath(options: Options): string {
   return options.tasks ?? "tasks";
 }
 
+function normalizeDatasetManifest(options: Options) {
+  const datasetPath = path.join(taskPath(options), "dataset.toml");
+  if (!fs.existsSync(datasetPath)) return;
+
+  const content = fs.readFileSync(datasetPath, "utf8");
+  const normalized = `${content.replace(/\s*$/, "")}\n`;
+  if (normalized !== content) fs.writeFileSync(datasetPath, normalized);
+}
+
 function syncDataset(options: Options) {
   run("node", ["scripts/sync-shared.mjs"]);
   run("uv", ["run", "harbor", "sync", taskPath(options)]);
+  normalizeDatasetManifest(options);
 }
 
 function applyTaskFilter(config: string, taskFilter?: string): string {
