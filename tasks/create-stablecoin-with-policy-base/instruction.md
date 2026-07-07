@@ -15,24 +15,6 @@ Use environment variables for all values:
 - `TEMPO_POLICY_TYPE`
 - `TEMPO_POLICY_ACCOUNT`
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## Tempo Access Profile
-
-No Tempo docs URL or Tempo MCP server is provided for this profile. Do not use WebSearch, WebFetch, or external documentation; solve from the prompt, local package APIs, and local files only.
-
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
