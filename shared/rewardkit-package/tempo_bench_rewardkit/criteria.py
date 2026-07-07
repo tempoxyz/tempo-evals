@@ -217,10 +217,10 @@ def tempo_trajectory_matches(_workspace: Path, pattern: str) -> bool:
         {
             "trajectory": None,
             "pattern": pattern,
-            "passed": True,
+            "passed": False,
         },
     )
-    return True
+    return False
 
 
 @criterion(shared=True)
