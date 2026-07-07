@@ -16,21 +16,6 @@ Use environment variables for all values:
 - `TEMPO_MEMO`
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Tempo Access Profile
 
 The official Tempo MCP server is configured as `tempo`. Use it if your agent runtime exposes MCP tools; do not use WebSearch, WebFetch, or public RPC endpoints.

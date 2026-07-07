@@ -14,7 +14,7 @@ environment:
   force_build: false
   delete: true
   kwargs:
-    dind_snapshot: tempo-bench-dind-28-3-3
+    dind_image: docker:28.3.3-dind
     connection_pool_maxsize: null
 verifier:
   env:
@@ -26,5 +26,6 @@ agents:
 datasets:
   - path: tasks
     task_names:
+      - "*-base"
       - "*-docs"
       - "*-mcp"

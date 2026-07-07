@@ -5,19 +5,19 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tasksDir = path.join(root, "tasks");
-const tempoDocsUrl = "https://docs.tempo.xyz/";
+const tempoDocsUrl = "http://tempo-docs:3000/developers";
 const tempoMcpUrl = "https://mcp.tempo.xyz";
 const defaultTurnCutoffs = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0";
 const defaultTokenCutoffs = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0";
-const sourceTaskSlugs = [
-  "transfer-with-memo",
-  "transfer-with-memo-fee-payer",
-  "set-fee-token",
-  "create-stablecoin-with-policy",
-  "faucet-funded-transfer",
-  "stablecoin-dex-swap",
+const baseTaskSlugs = [
+  "transfer-with-memo-base",
+  "transfer-with-memo-fee-payer-base",
+  "set-fee-token-base",
+  "create-stablecoin-with-policy-base",
+  "faucet-funded-transfer-base",
+  "stablecoin-dex-swap-base",
 ];
-const profiles = [
+const generatedProfiles = [
   {
     id: "docs",
     suffix: "-docs",
@@ -29,6 +29,7 @@ const profiles = [
     label: "MCP",
   },
 ];
+const baseSuffix = "-base";
 const executionConstraints = `## Execution Constraints
 
 - \`TEMPO_RPC_URL\` is already set to the Tempo localnet RPC endpoint (\`http://tempo-localnet:8545\`).
@@ -78,7 +79,8 @@ function copyGeneratedTask(source, destination) {
         "environment/Dockerfile",
         "environment/docker-compose.yaml",
         "environment/tempo-localnet",
-        "environment/tempo-docs-mcp",
+        "environment/tempo-docs",
+        "environment/tempo-docs-bundle",
         "environment/rewardkit-package",
         "tests/tempo-bench-verifier",
         "tests/e2e/verify-tempo.sh",
@@ -247,7 +249,7 @@ function appendProfileInstruction(taskDir, profile) {
   if (profile.id === "docs") {
     content = content.replace(
       "\nRequirements:",
-      `\n## Tempo Access Profile\n\nTempo docs are available at ${tempoDocsUrl} and through the \`TEMPO_DOCS_URL\` environment variable. You may use WebSearch/WebFetch for Tempo docs; prefer docs from docs.tempo.xyz and do not use public RPC endpoints.\n\nRequirements:`,
+      `\n## Tempo Access Profile\n\nTempo docs are available through the local docs service at \`TEMPO_DOCS_URL\` (${tempoDocsUrl}). Use those docs for Tempo-specific APIs and examples. Do not use WebSearch, WebFetch, public docs sites, or public RPC endpoints.\n\nRequirements:`,
     );
   } else if (profile.id === "mcp") {
     content = content.replace(
@@ -261,58 +263,50 @@ function appendProfileInstruction(taskDir, profile) {
   writeFile(instructionPath, `${content.replace(/\s*$/, "")}\n`);
 }
 
-function taskCriteriaPath(taskDir) {
-  for (const relativePath of [
-    "tests/correctness/criteria.py",
-    "tests/criteria/check.py",
-  ]) {
-    const absolutePath = path.join(taskDir, relativePath);
-    if (fs.existsSync(absolutePath)) return absolutePath;
+function profileQualityCheck(profileId) {
+  if (profileId === "docs") {
+    return `
+rk.tempo_trajectory_matches(
+    r"tempo-docs:3000/developers|/developers/llms\\.txt|/developers/llms-full\\.txt|/developers/docs/.*\\.md|TEMPO_DOCS_URL",
+)
+`;
   }
-  throw new Error(`Missing task-local criteria checks in ${taskDir}`);
+
+  if (profileId === "mcp") {
+    return `
+rk.tempo_mcp_tool_used("tempo")
+`;
+  }
+
+  return "";
 }
 
-function updateProfileCriteria(taskDir, profile) {
-  const criteriaPath = taskCriteriaPath(taskDir);
-  let content = fs.readFileSync(criteriaPath, "utf8");
-  content = content.replace(
-    /\nrk\.tempo_trajectory_matches\([\s\S]*?\n\)\n/g,
-    "\n",
-  );
+function updateProfileQuality(taskDir) {
+  const profileId = readStringValue(path.join(taskDir, "task.toml"), "metadata.profile");
+  const check = profileQualityCheck(profileId);
+  if (!check) return;
 
-  if (profile.id === "docs") {
-    content += `
-rk.tempo_trajectory_matches(
-    r"docs\\.tempo\\.xyz|TEMPO_DOCS_URL|Tempo docs|documentation",
-)
-`;
-  } else if (profile.id === "mcp") {
-    content += `
-rk.tempo_trajectory_matches(
-    r"tempo|mcp|docs|documentation|search",
-)
-`;
-  }
-
-  writeFile(criteriaPath, `${content.replace(/\s*$/, "")}\n`);
+  const checkPath = path.join(taskDir, "tests/quality/check.py");
+  const content = fs.readFileSync(checkPath, "utf8");
+  writeFile(checkPath, `${content.replace(/\s*$/, "")}\n${check}`);
 }
 
 function materializeTaskMatrix() {
   const generatedSlugs = new Set();
-  for (const sourceSlug of sourceTaskSlugs) {
-    const sourceDir = path.join(tasksDir, sourceSlug);
+  for (const baseSlug of baseTaskSlugs) {
+    const sourceDir = path.join(tasksDir, baseSlug);
     if (!fs.existsSync(path.join(sourceDir, "task.toml"))) {
       throw new Error(`Missing source task: ${sourceDir}`);
     }
 
-    for (const profile of profiles) {
+    const sourceSlug = baseSlug.slice(0, -baseSuffix.length);
+    for (const profile of generatedProfiles) {
       const slug = `${sourceSlug}${profile.suffix}`;
       const taskDir = path.join(tasksDir, slug);
       copyGeneratedTask(sourceDir, taskDir);
       generatedSlugs.add(slug);
       updateTaskToml(taskDir, sourceSlug, profile);
       appendProfileInstruction(taskDir, profile);
-      updateProfileCriteria(taskDir, profile);
     }
   }
 
@@ -354,8 +348,13 @@ function readDatasetDigests() {
 }
 
 function matrixTaskNames() {
-  return sourceTaskSlugs.flatMap((sourceSlug) =>
-    profiles.map((profile) => `tempo/${sourceSlug}${profile.suffix}`),
+  return baseTaskSlugs.flatMap((baseSlug) =>
+    [
+      `tempo/${baseSlug}`,
+      ...generatedProfiles.map(
+        (profile) => `tempo/${baseSlug.slice(0, -baseSuffix.length)}${profile.suffix}`,
+      ),
+    ],
   );
 }
 
@@ -455,6 +454,7 @@ function syncRewardKit(taskDir) {
     path.join(root, "shared/rewardkit/quality"),
     path.join(taskDir, "tests/quality"),
   );
+  updateProfileQuality(taskDir);
   copyFile(
     path.join(root, "shared/rewardkit/verify-tempo.sh"),
     path.join(taskDir, "tests/correctness/verify-tempo.sh"),
@@ -558,13 +558,17 @@ function readTaskCaseId(taskDir) {
   return readStringTable(taskConfigPath, "environment.env").TEMPO_BENCH_CASE;
 }
 
-function taskUsesLocalTempoDocsMcp(taskDir) {
+function taskUsesLocalTempoDocs(taskDir) {
   const taskConfigPath = path.join(taskDir, "task.toml");
   const composePath = path.join(taskDir, "environment/docker-compose.yaml");
   const taskConfig = fs.existsSync(taskConfigPath) ? fs.readFileSync(taskConfigPath, "utf8") : "";
   const compose = fs.existsSync(composePath) ? fs.readFileSync(composePath, "utf8") : "";
 
-  return taskConfig.includes("tempo-docs-mcp") || compose.includes("tempo-docs-mcp");
+  return (
+    taskConfig.includes('profile = "docs"') ||
+    taskConfig.includes("TEMPO_DOCS_URL") ||
+    compose.includes("tempo-docs:")
+  );
 }
 
 function assertComposeBuildContexts(taskDir) {
@@ -627,14 +631,14 @@ for (const taskDir of tasks) {
     path.join(taskDir, "environment/tempo-localnet"),
   );
 
-  if (taskUsesLocalTempoDocsMcp(taskDir)) {
+  if (taskUsesLocalTempoDocs(taskDir)) {
     linkFile(
-      path.join(root, "shared/docker/compose/tempo-localnet-docs-mcp.yaml"),
+      path.join(root, "shared/docker/compose/tempo-localnet-docs.yaml"),
       path.join(taskDir, "environment/docker-compose.yaml"),
     );
     linkDir(
-      path.join(root, "shared/mcp/tempo-docs"),
-      path.join(taskDir, "environment/tempo-docs-mcp"),
+      path.join(root, "shared/docs/tempo-docs"),
+      path.join(taskDir, "environment/tempo-docs"),
     );
   } else {
     linkFile(

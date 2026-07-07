@@ -22,6 +22,11 @@ DEFAULT_NAME = "tempo-bench-dind-28-3-3"
 DEFAULT_IMAGE = "docker:28.3.3-dind"
 
 
+def snapshot_state(snapshot) -> str:
+    state = getattr(snapshot, "state", "")
+    return str(getattr(state, "value", state)).upper()
+
+
 def load_env_file(path: Path) -> None:
     if not path.exists():
         return
@@ -57,7 +62,8 @@ def parse_args() -> argparse.Namespace:
 
 
 async def snapshot_by_name(daytona: AsyncDaytona, name: str):
-    snapshots = await daytona.snapshot.list()
+    response = await daytona.snapshot.list()
+    snapshots = getattr(response, "items", response)
     for snapshot in snapshots:
         if snapshot.name == name:
             return snapshot
@@ -76,7 +82,7 @@ async def wait_for_snapshot(
             await asyncio.sleep(5)
             continue
 
-        state = str(getattr(snapshot, "state", "")).upper()
+        state = snapshot_state(snapshot)
         print(f"{name}: {state or 'UNKNOWN'}")
         if state == "ACTIVE":
             return snapshot
@@ -95,33 +101,36 @@ async def main() -> None:
         raise SystemExit("DAYTONA_API_KEY is required")
 
     daytona = AsyncDaytona(DaytonaConfig(target=args.target))
-    existing = await snapshot_by_name(daytona, args.name)
-    if existing is not None:
-        state = str(getattr(existing, "state", "")).upper()
-        if state == "ACTIVE":
-            print(f"snapshot ready: {args.name}")
-            return
-        if args.recreate_error and ("ERROR" in state or "FAILED" in state):
-            await daytona.snapshot.delete(existing)
-        else:
-            print(f"snapshot exists: {args.name} ({state or 'UNKNOWN'})")
-            await wait_for_snapshot(daytona, args.name, args.timeout_seconds)
-            print(f"snapshot ready: {args.name}")
-            return
+    try:
+        existing = await snapshot_by_name(daytona, args.name)
+        if existing is not None:
+            state = snapshot_state(existing)
+            if state == "ACTIVE":
+                print(f"snapshot ready: {args.name}")
+                return
+            if args.recreate_error and ("ERROR" in state or "FAILED" in state):
+                await daytona.snapshot.delete(existing)
+            else:
+                print(f"snapshot exists: {args.name} ({state or 'UNKNOWN'})")
+                await wait_for_snapshot(daytona, args.name, args.timeout_seconds)
+                print(f"snapshot ready: {args.name}")
+                return
 
-    await daytona.snapshot.create(
-        CreateSnapshotParams(
-            name=args.name,
-            image=args.image,
-            resources=Resources(
-                cpu=args.cpu,
-                memory=args.memory,
-                disk=args.disk,
-            ),
+        await daytona.snapshot.create(
+            CreateSnapshotParams(
+                name=args.name,
+                image=args.image,
+                resources=Resources(
+                    cpu=args.cpu,
+                    memory=args.memory,
+                    disk=args.disk,
+                ),
+            )
         )
-    )
-    await wait_for_snapshot(daytona, args.name, args.timeout_seconds)
-    print(f"snapshot ready: {args.name}")
+        await wait_for_snapshot(daytona, args.name, args.timeout_seconds)
+        print(f"snapshot ready: {args.name}")
+    finally:
+        await daytona.close()
 
 
 if __name__ == "__main__":
