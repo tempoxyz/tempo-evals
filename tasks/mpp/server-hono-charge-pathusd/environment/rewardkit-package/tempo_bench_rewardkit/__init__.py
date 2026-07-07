@@ -2,7 +2,6 @@
 # BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 from .criteria import (
     agent_token_efficiency,
-    agent_turn_efficiency,
     tempo_mcp_tool_used,
     tempo_onchain_verifier,
     tempo_source_patterns,
@@ -12,7 +11,6 @@ from .criteria import (
 
 __all__ = [
     "agent_token_efficiency",
-    "agent_turn_efficiency",
     "tempo_mcp_tool_used",
     "tempo_onchain_verifier",
     "tempo_source_patterns",
