@@ -1,0 +1,12 @@
+{
+  "name": "@tempo-bench/verifier",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "bin": {
+    "tempo-bench-verify": "bin/tempo-bench-verify.js"
+  },
+  "dependencies": {
+    "viem": "^2.53.1"
+  }
+}

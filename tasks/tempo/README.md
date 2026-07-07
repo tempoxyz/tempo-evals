@@ -12,6 +12,7 @@ Current task intents:
 
 - `tempo/transfer-with-memo`
 - `tempo/transfer-with-memo-fee-payer`
+- `tempo/access-key-transfer`
 - `tempo/set-fee-token`
 - `tempo/create-stablecoin-with-policy`
 - `tempo/faucet-funded-transfer`

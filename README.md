@@ -148,6 +148,9 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 | `tempo/tempo-bench-v1` | `tasks/tempo/` | Tempo localnet integration tasks across base, docs, and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
 
+The Tempo dataset currently covers seven task intents; each is materialized as
+base, docs, and MCP profile variants.
+
 ## Profiles
 
 * **Base**: prompt-only Tempo task, no docs sidecar or MCP server.

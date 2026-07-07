@@ -1,0 +1,16 @@
+import rewardkit as rk
+from tempo_bench_rewardkit.common.checks import (
+    register_source_patterns,
+    register_tempo_typescript_project,
+)
+
+register_tempo_typescript_project()
+register_source_patterns(
+    [
+        {
+            "name": "source_authorizes_access_key",
+            "pattern": r"accessKey\.authorize|authorizeSync|authorizeKey",
+        },
+    ]
+)
+rk.tempo_onchain_verifier()

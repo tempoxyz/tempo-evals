@@ -34,7 +34,7 @@ function readConfig() {
     dexMakerPrivateKey: env("TEMPO_DEX_MAKER_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
     recipient: requiredEnv("TEMPO_RECIPIENT"),
     amount: requiredEnv("TEMPO_AMOUNT"),
-    memo: requiredEnv("TEMPO_MEMO"),
+    memo: env("TEMPO_MEMO"),
     decimals: numberEnv("TEMPO_DECIMALS"),
     stablecoinName: env("TEMPO_STABLECOIN_NAME", "Tempo Bench USD"),
     stablecoinSymbol: env("TEMPO_STABLECOIN_SYMBOL", "TBUSD"),
