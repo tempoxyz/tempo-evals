@@ -34,5 +34,6 @@ agents:
 datasets:
   - path: tasks
     task_names:
+      - "*-base"
       - "*-docs"
       - "*-mcp"
