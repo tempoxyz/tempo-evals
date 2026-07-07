@@ -98,6 +98,24 @@ def start_server() -> subprocess.Popen[str]:
     )
 
 
+def free_request(url: str) -> dict:
+    deadline = time.monotonic() + 30
+    last_error: Exception | None = None
+
+    while time.monotonic() < deadline:
+        try:
+            response = httpx.get(url, headers={"accept": "application/json"}, timeout=5)
+            if response.status_code != 200:
+                raise RuntimeError(f"free request returned {response.status_code}")
+            response.json()
+            return {"json": True, "status": response.status_code}
+        except Exception as exc:
+            last_error = exc
+            time.sleep(0.5)
+
+    raise RuntimeError(f"free endpoint did not return 200 JSON: {last_error}")
+
+
 def fund_account(address: str) -> None:
     tx_hashes = rpc("tempo_fundAddress", [address])
     write_json(LOG_DIR / "faucet.json", {"address": address, "hashes": tx_hashes})
@@ -258,12 +276,14 @@ async def main() -> None:
     try:
         process = start_server()
         out = read_out_json(process)
+        free = free_request(out["freeUrl"])
         paid = await paid_request(out["paidUrl"])
         write_scores(
             {
                 "reward": 1,
                 "out": out,
                 "server": {"pid": process.pid, "processGroupId": process.pid},
+                "free": free,
                 "paid": paid,
             }
         )
