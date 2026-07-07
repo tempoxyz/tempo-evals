@@ -1,0 +1,14 @@
+# Dataset manifest for tempo-mpp/v1
+
+[dataset]
+name = "tempo-mpp/v1"
+description = "MPP MVP benchmark"
+keywords = [ "mpp", "tempo", "stripe", "typescript",]
+[[dataset.authors]]
+name = "Tempo Labs"
+
+
+[[tasks]]
+name = "tempo-mpp/server-charge-pathusd"
+digest = "sha256:6ff372ae0138dcd7f726edc10be693a64c41506dfa381a3b6cd39d88110106d6"
+

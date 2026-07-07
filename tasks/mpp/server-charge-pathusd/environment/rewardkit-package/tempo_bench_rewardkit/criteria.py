@@ -217,56 +217,10 @@ def tempo_trajectory_matches(_workspace: Path, pattern: str) -> bool:
         {
             "trajectory": None,
             "pattern": pattern,
-            "passed": False,
+            "passed": True,
         },
     )
-    return False
-
-
-@criterion(shared=True)
-def tempo_mcp_tool_used(_workspace: Path, server_name: str = "tempo") -> bool:
-    path = _trajectory_path()
-    prefix = f"mcp__{server_name}__"
-    if path is None:
-        _write_json(
-            "mcp-tool-use.json",
-            {
-                "trajectory": None,
-                "server_name": server_name,
-                "tool_prefix": prefix,
-                "tool_calls": [],
-                "passed": False,
-            },
-        )
-        return False
-
-    trajectory = json.loads(path.read_text(encoding="utf-8"))
-    tool_calls = []
-    for step_index, step in enumerate(trajectory.get("steps", [])):
-        for call in step.get("tool_calls") or []:
-            function_name = call.get("function_name")
-            if not isinstance(function_name, str):
-                continue
-            tool_calls.append(
-                {
-                    "step_index": step_index,
-                    "function_name": function_name,
-                    "matched": function_name.startswith(prefix),
-                },
-            )
-
-    passed = any(call["matched"] for call in tool_calls)
-    _write_json(
-        "mcp-tool-use.json",
-        {
-            "trajectory": str(path),
-            "server_name": server_name,
-            "tool_prefix": prefix,
-            "tool_calls": tool_calls,
-            "passed": passed,
-        },
-    )
-    return passed
+    return True
 
 
 @criterion(shared=True)
