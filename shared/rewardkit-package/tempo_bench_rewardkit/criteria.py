@@ -8,7 +8,7 @@ from pathlib import Path
 
 from rewardkit import criterion
 
-LOG_DIR = Path("/logs/verifier")
+LOG_DIR = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
 _EFFICIENCY_LOCK = threading.Lock()
 
 
@@ -224,10 +224,14 @@ def tempo_trajectory_matches(_workspace: Path, pattern: str) -> bool:
 
 
 @criterion(shared=True)
-def agent_turn_efficiency(_workspace: Path) -> float:
+def agent_turn_efficiency(
+    _workspace: Path,
+    cutoffs_env: str = "TEMPO_BENCH_TURNS_SCORE_CUTOFFS",
+    default_cutoffs: str = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0",
+) -> float:
     raw_cutoffs = os.environ.get(
-        "TEMPO_BENCH_TURNS_SCORE_CUTOFFS",
-        "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0",
+        cutoffs_env,
+        default_cutoffs,
     )
     path = _trajectory_path()
     if path is None:
@@ -250,10 +254,14 @@ def agent_turn_efficiency(_workspace: Path) -> float:
 
 
 @criterion(shared=True)
-def agent_token_efficiency(_workspace: Path) -> float:
+def agent_token_efficiency(
+    _workspace: Path,
+    cutoffs_env: str = "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS",
+    default_cutoffs: str = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0",
+) -> float:
     raw_cutoffs = os.environ.get(
-        "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS",
-        "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0",
+        cutoffs_env,
+        default_cutoffs,
     )
     path = _trajectory_path()
     if path is None:
