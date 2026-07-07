@@ -36,6 +36,14 @@ const executionConstraints = `## Execution Constraints
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
 - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
 `;
+const genericCorrectnessCriteria = `import tempo_bench_rewardkit
+
+tempo_bench_rewardkit.register_correctness_from_config("/tests/tempo-bench.toml")
+`;
+const genericQualityCheck = `import tempo_bench_rewardkit
+
+tempo_bench_rewardkit.register_quality_from_config("/tests/tempo-bench.toml")
+`;
 
 function relativeSymlinkTarget(destination, source) {
   return path.relative(path.dirname(destination), source);
@@ -262,41 +270,6 @@ function appendProfileInstruction(taskDir, profile) {
   writeFile(instructionPath, `${content.replace(/\s*$/, "")}\n`);
 }
 
-function taskCriteriaPath(taskDir) {
-  for (const relativePath of [
-    "tests/correctness/criteria.py",
-    "tests/criteria/check.py",
-  ]) {
-    const absolutePath = path.join(taskDir, relativePath);
-    if (fs.existsSync(absolutePath)) return absolutePath;
-  }
-  throw new Error(`Missing task-local criteria checks in ${taskDir}`);
-}
-
-function updateProfileCriteria(taskDir, profile) {
-  const criteriaPath = taskCriteriaPath(taskDir);
-  let content = fs.readFileSync(criteriaPath, "utf8");
-  content = content.replace(
-    /\nrk\.tempo_trajectory_matches\([\s\S]*?\n\)\n/g,
-    "\n",
-  );
-  content = content.replace(/\nrk\.tempo_mcp_tool_used\([\s\S]*?\)\n/g, "\n");
-
-  if (profile.id === "docs") {
-    content += `
-rk.tempo_trajectory_matches(
-    r"tempo-docs:3000/developers|/developers/llms\\.txt|/developers/llms-full\\.txt|/developers/docs/.*\\.md|TEMPO_DOCS_URL",
-)
-`;
-  } else if (profile.id === "mcp") {
-    content += `
-rk.tempo_mcp_tool_used("tempo")
-`;
-  }
-
-  writeFile(criteriaPath, `${content.replace(/\s*$/, "")}\n`);
-}
-
 function materializeTaskMatrix() {
   const generatedSlugs = new Set();
   for (const sourceSlug of sourceTaskSlugs) {
@@ -312,7 +285,6 @@ function materializeTaskMatrix() {
       generatedSlugs.add(slug);
       updateTaskToml(taskDir, sourceSlug, profile);
       appendProfileInstruction(taskDir, profile);
-      updateProfileCriteria(taskDir, profile);
     }
   }
 
@@ -415,29 +387,35 @@ function assertTaskRewardKit(taskDir) {
   if (!fs.existsSync(path.join(taskDir, "tests/reward.toml"))) {
     throw new Error(`Missing task-local RewardKit file: ${path.join(taskDir, "tests/reward.toml")}`);
   }
-  const criteriaCandidates = ["tests/correctness/criteria.py", "tests/criteria/check.py"];
-  if (!criteriaCandidates.some((relativePath) => fs.existsSync(path.join(taskDir, relativePath)))) {
-    throw new Error(`Missing task-local RewardKit file: ${criteriaCandidates.join(" or ")} in ${taskDir}`);
-  }
 }
 
-function readFirstExisting(taskDir, relativePaths) {
-  for (const relativePath of relativePaths) {
-    const absolutePath = path.join(taskDir, relativePath);
-    if (fs.existsSync(absolutePath)) {
-      return fs.readFileSync(absolutePath, "utf8");
+function extractTempoBenchMetadata(taskDir) {
+  const taskConfigPath = path.join(taskDir, "task.toml");
+  const content = fs.readFileSync(taskConfigPath, "utf8");
+  const output = [];
+  let inTempoBenchSection = false;
+
+  for (const line of content.split(/\r?\n/)) {
+    const section = line.match(/^\s*\[\[?([^\]]+)\]\]?\s*$/);
+    if (section) {
+      inTempoBenchSection = section[1].startsWith("metadata.tempo_bench");
     }
+    if (inTempoBenchSection) output.push(line);
   }
-  throw new Error(`Missing required file in ${taskDir}: ${relativePaths.join(" or ")}`);
+
+  const metadata = output.join("\n").replace(/\s*$/, "");
+  if (!metadata) {
+    throw new Error(`Missing [metadata.tempo_bench] criteria config in ${taskConfigPath}`);
+  }
+  return `${metadata}\n`;
+}
+
+function materializeTempoBenchConfig(taskDir) {
+  writeFile(path.join(taskDir, "tests/tempo-bench.toml"), extractTempoBenchMetadata(taskDir));
 }
 
 function syncRewardKit(taskDir) {
   assertTaskRewardKit(taskDir);
-  const criteriaContent = readFirstExisting(taskDir, [
-    "tests/correctness/criteria.py",
-    "tests/criteria/check.py",
-  ]).replaceAll("/tests/e2e/verify-tempo.sh", "/tests/correctness/verify-tempo.sh");
-
   removePath(path.join(taskDir, "tests/turns"));
   removePath(path.join(taskDir, "tests/tokens"));
   removePath(path.join(taskDir, "tests/reward"));
@@ -450,11 +428,13 @@ function syncRewardKit(taskDir) {
     path.join(taskDir, "tests/reward.toml"),
     `[[reward]]\nname = "reward"\naggregation = "weighted_mean"\n`,
   );
-  writeFile(path.join(taskDir, "tests/correctness/criteria.py"), criteriaContent);
+  writeFile(path.join(taskDir, "tests/correctness/criteria.py"), genericCorrectnessCriteria);
   copyDir(
     path.join(root, "shared/rewardkit/quality"),
     path.join(taskDir, "tests/quality"),
   );
+  writeFile(path.join(taskDir, "tests/quality/check.py"), genericQualityCheck);
+  materializeTempoBenchConfig(taskDir);
   copyFile(
     path.join(root, "shared/rewardkit/verify-tempo.sh"),
     path.join(taskDir, "tests/correctness/verify-tempo.sh"),

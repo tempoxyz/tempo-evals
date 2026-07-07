@@ -4,12 +4,78 @@ import os
 import re
 import subprocess
 import threading
+import tomllib
 from pathlib import Path
 
+import rewardkit as rk
 from rewardkit import criterion
 
 LOG_DIR = Path("/logs/verifier")
 _EFFICIENCY_LOCK = threading.Lock()
+DEFAULT_CONFIG_PATH = "/tests/tempo-bench.toml"
+
+
+def _read_tempo_bench_config(config_path: str = DEFAULT_CONFIG_PATH) -> dict:
+    with open(config_path, "rb") as config_file:
+        data = tomllib.load(config_file)
+    return data.get("metadata", {}).get("tempo_bench", data.get("tempo_bench", {}))
+
+
+def _shared_criteria(config: dict, section: str) -> list[str]:
+    criteria = config.get(section, {}).get("shared", [])
+    if not isinstance(criteria, list):
+        raise TypeError(f"{section}.shared must be a list")
+    return [str(criterion_name) for criterion_name in criteria]
+
+
+def register_correctness_from_config(config_path: str = DEFAULT_CONFIG_PATH) -> None:
+    config = _read_tempo_bench_config(config_path)
+    correctness = config.get("correctness", {})
+    for criterion_name in _shared_criteria(config, "correctness"):
+        if criterion_name == "typescript_project":
+            rk.tempo_typescript_project()
+        elif criterion_name == "source_patterns":
+            patterns = correctness.get("source_patterns", [])
+            if not patterns:
+                raise ValueError("source_patterns criterion selected without patterns")
+            rk.tempo_source_patterns(patterns)
+        elif criterion_name in {"build_run_onchain", "onchain_verifier"}:
+            rk.tempo_build_run_onchain()
+        elif criterion_name == "mcp_tool_use":
+            rk.tempo_mcp_tool_used(str(correctness.get("mcp_server", "tempo")))
+        elif criterion_name == "trajectory_matches":
+            pattern = correctness.get("trajectory_pattern")
+            if not pattern:
+                raise ValueError(
+                    "trajectory_matches criterion selected without pattern"
+                )
+            rk.tempo_trajectory_matches(str(pattern))
+        else:
+            raise ValueError(f"Unknown shared correctness criterion: {criterion_name}")
+
+
+def register_quality_from_config(config_path: str = DEFAULT_CONFIG_PATH) -> None:
+    config = _read_tempo_bench_config(config_path)
+    quality = config.get("quality", {})
+    for criterion_name in _shared_criteria(config, "quality"):
+        if criterion_name == "agent_turn_efficiency":
+            rk.agent_turn_efficiency()
+        elif criterion_name == "agent_token_efficiency":
+            rk.agent_token_efficiency()
+        elif criterion_name == "mcp_tool_use":
+            rk.tempo_mcp_tool_used(str(quality.get("mcp_server", "tempo")))
+        elif criterion_name == "trajectory_matches":
+            pattern = quality.get("trajectory_pattern")
+            if not pattern:
+                raise ValueError(
+                    "trajectory_matches criterion selected without pattern"
+                )
+            rk.tempo_trajectory_matches(str(pattern))
+        elif criterion_name == "llm_judge":
+            # LLM judges are configured natively in tests/quality/reward.toml.
+            continue
+        else:
+            raise ValueError(f"Unknown shared quality criterion: {criterion_name}")
 
 
 def _write_json(name: str, payload: dict) -> None:
@@ -168,8 +234,7 @@ def tempo_source_patterns(workspace: Path, patterns: list[dict]) -> bool:
     return all(result["passed"] for result in results)
 
 
-@criterion(shared=True)
-def tempo_onchain_verifier(workspace: Path) -> bool:
+def _run_build_run_onchain(workspace: Path) -> bool:
     timeout = int(os.environ.get("TEMPO_BENCH_REWARDKIT_TIMEOUT_SECONDS", "900"))
     result = subprocess.run(
         ["bash", "/tests/correctness/verify-tempo.sh"],
@@ -189,6 +254,16 @@ def tempo_onchain_verifier(workspace: Path) -> bool:
         },
     )
     return result.returncode == 0
+
+
+@criterion(shared=True)
+def tempo_build_run_onchain(workspace: Path) -> bool:
+    return _run_build_run_onchain(workspace)
+
+
+@criterion(shared=True)
+def tempo_onchain_verifier(workspace: Path) -> bool:
+    return _run_build_run_onchain(workspace)
 
 
 @criterion(shared=True)

@@ -1,5 +1,3 @@
-import rewardkit as rk
-import tempo_bench_rewardkit  # noqa: F401
+import tempo_bench_rewardkit
 
-rk.agent_turn_efficiency()
-rk.agent_token_efficiency()
+tempo_bench_rewardkit.register_quality_from_config("/tests/tempo-bench.toml")

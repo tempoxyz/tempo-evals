@@ -12,6 +12,24 @@ keywords = ["tempo", "faucet", "tip20", "transfer", "localnet", "typescript", "d
 category = "integration"
 feature = "faucet-funded-transfer"
 profile = "docs"
+[metadata.tempo_bench.correctness]
+shared = ["typescript_project", "source_patterns", "build_run_onchain"]
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_calls_faucet_fund"
+pattern = "faucet\\.fundSync|fundSync"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_faucet_private_key"
+pattern = "TEMPO_FAUCET_PRIVATE_KEY"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_sends_transfer"
+pattern = "transferSync|transferWithMemo"
+
+[metadata.tempo_bench.quality]
+shared = ["agent_turn_efficiency", "agent_token_efficiency", "llm_judge"]
+
 [verifier]
 timeout_sec = 300.0
 environment_mode = "shared"

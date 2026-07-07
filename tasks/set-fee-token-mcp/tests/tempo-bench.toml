@@ -1,0 +1,13 @@
+[metadata.tempo_bench.correctness]
+shared = ["typescript_project", "source_patterns", "build_run_onchain"]
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_calls_set_user_token"
+pattern = "setUserToken"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_tempo_fee_token"
+pattern = "TEMPO_FEE_TOKEN"
+
+[metadata.tempo_bench.quality]
+shared = ["agent_turn_efficiency", "agent_token_efficiency", "llm_judge"]

@@ -12,6 +12,36 @@ keywords = ["tempo", "tip20", "memo", "fee-payer", "localnet", "typescript", "do
 category = "integration"
 feature = "transfer-with-memo-fee-payer"
 profile = "docs"
+[metadata.tempo_bench.correctness]
+shared = ["typescript_project", "source_patterns", "build_run_onchain"]
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_uses_transfer_with_memo_semantics"
+pattern = "transferWithMemo|transferSync"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_tempo_memo"
+pattern = "TEMPO_MEMO"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_parses_token_units"
+pattern = "parseUnits"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_fee_payer_private_key"
+pattern = "TEMPO_FEE_PAYER_PRIVATE_KEY"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_passes_fee_payer"
+pattern = "feePayer"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_fee_token"
+pattern = "TEMPO_FEE_TOKEN"
+
+[metadata.tempo_bench.quality]
+shared = ["agent_turn_efficiency", "agent_token_efficiency", "llm_judge"]
+
 [verifier]
 timeout_sec = 300.0
 environment_mode = "shared"

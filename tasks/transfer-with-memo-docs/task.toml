@@ -12,6 +12,24 @@ keywords = ["tempo", "tip20", "memo", "localnet", "typescript", "docs"]
 category = "integration"
 feature = "transfer-with-memo"
 profile = "docs"
+[metadata.tempo_bench.correctness]
+shared = ["typescript_project", "source_patterns", "build_run_onchain"]
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_uses_transfer_with_memo_semantics"
+pattern = "transferWithMemo|transferSync"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_tempo_memo"
+pattern = "TEMPO_MEMO"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_parses_token_units"
+pattern = "parseUnits"
+
+[metadata.tempo_bench.quality]
+shared = ["agent_turn_efficiency", "agent_token_efficiency", "llm_judge"]
+
 [verifier]
 timeout_sec = 300.0
 environment_mode = "shared"

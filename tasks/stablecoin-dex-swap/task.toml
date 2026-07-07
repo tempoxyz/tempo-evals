@@ -12,6 +12,32 @@ keywords = ["tempo", "stablecoin-dex", "swap", "tip20", "localnet", "typescript"
 category = "integration"
 feature = "stablecoin-dex-swap"
 
+[metadata.tempo_bench.correctness]
+shared = ["typescript_project", "source_patterns", "build_run_onchain"]
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_uses_dex_actions"
+pattern = "Actions\\.dex|\\.dex\\."
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_approves_dex_spending"
+pattern = "approveSync"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_provides_dex_liquidity"
+pattern = "placeSync|provideLiquidity|addLiquidity"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_executes_dex_swap"
+pattern = "sellSync|buySync|swapSync"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_swap_token_env"
+pattern = "TEMPO_SWAP_TOKEN_IN[\\s\\S]*TEMPO_SWAP_TOKEN_OUT|TEMPO_SWAP_TOKEN_OUT[\\s\\S]*TEMPO_SWAP_TOKEN_IN"
+
+[metadata.tempo_bench.quality]
+shared = ["agent_turn_efficiency", "agent_token_efficiency", "llm_judge"]
+
 [verifier]
 timeout_sec = 300.0
 environment_mode = "shared"

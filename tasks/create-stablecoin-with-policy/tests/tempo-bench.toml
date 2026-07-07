@@ -1,0 +1,25 @@
+[metadata.tempo_bench.correctness]
+shared = ["typescript_project", "source_patterns", "build_run_onchain"]
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_creates_stablecoin"
+pattern = "token\\.createSync|createSync\\(client,\\s*\\{[\\s\\S]*currency"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_creates_transfer_policy"
+pattern = "policy\\.createSync"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_links_transfer_policy"
+pattern = "changeTransferPolicySync|transferPolicy"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_stablecoin_currency"
+pattern = "TEMPO_STABLECOIN_CURRENCY"
+
+[[metadata.tempo_bench.correctness.source_patterns]]
+name = "source_reads_policy_account"
+pattern = "TEMPO_POLICY_ACCOUNT"
+
+[metadata.tempo_bench.quality]
+shared = ["agent_turn_efficiency", "agent_token_efficiency", "llm_judge"]
