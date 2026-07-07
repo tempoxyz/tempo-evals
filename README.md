@@ -56,7 +56,7 @@ rewriting the Harbor config to point at that staged tree.
 | Dataset | `tasks/dataset.toml` |
 | Task | `tasks/*/task.toml`, `instruction.md`, `environment/`, `tests/`, `solution/` |
 | Job | `config/job.*.yaml` |
-| Agent | `oracle` or `claude-code` in the job config |
+| Agent | `oracle` or `claude-code` model entries in the job config |
 | Environment | Local Docker or Daytona DinD |
 | Verifier | `tasks/*/tests/test.sh` plus shared verifier code copied from `shared/` |
 | Score | `/logs/verifier/reward.json` with `{"reward": 0|1}` |
@@ -71,14 +71,15 @@ the independent build/run/onchain verifier result.
 | Command | Config | Runtime | Attempts | Purpose |
 | --- | --- | --- | ---: | --- |
 | `npm run bench:local:oracle` | `config/job.local.oracle.yaml` | Docker | 1 | Validate all oracle solutions locally. |
-| `npm run bench:local:agent` | `config/job.local.agent.yaml` | Docker | 3 | Full local Claude Code suite. |
-| `npm run bench:local:agent:dev` | `config/job.local.agent.dev.yaml` | Docker | 1 | Local smoke run across the suite. |
+| `npm run bench:local:agent` | `config/job.local.agent.yaml` | Docker | 3 | Full local Claude Code model suite. |
+| `npm run bench:local:agent:dev` | `config/job.local.agent.dev.yaml` | Docker | 1 | Local model smoke run across the suite. |
 | `npm run bench:daytona:oracle` | `config/job.daytona.oracle.yaml` | Daytona | 1 | Validate all oracle solutions remotely. |
-| `npm run bench:daytona:agent` | `config/job.daytona.agent.yaml` | Daytona | 3 | Full remote Claude Code suite. |
-| `npm run bench:daytona:agent:dev` | `config/job.daytona.agent.dev.yaml` | Daytona | 1 | Remote smoke run across the suite. |
+| `npm run bench:daytona:agent` | `config/job.daytona.agent.yaml` | Daytona | 3 | Full remote Claude Code model suite. |
+| `npm run bench:daytona:agent:dev` | `config/job.daytona.agent.dev.yaml` | Daytona | 1 | Remote model smoke run across the suite. |
 
-The config-backed jobs include all 18 tasks by default: 6 base tasks, 6 docs
-tasks, and 6 MCP tasks.
+The config-backed agent jobs include all 18 tasks by default: 6 base tasks, 6
+docs tasks, and 6 MCP tasks. Harbor runs each task against each configured
+Claude Code model entry, currently `claude-haiku-4-5` and `claude-opus-4-8`.
 
 Use the generic model runner for one-off local runs:
 

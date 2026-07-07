@@ -1,4 +1,4 @@
-# Local Agent job: runs the full Claude Code benchmark matrix in local Docker.
+# Local Agent job: runs the full Claude Code model benchmark matrix in local Docker.
 job_name: tempo-bench-agents-local
 jobs_dir: jobs
 n_attempts: 3
@@ -17,11 +17,18 @@ verifier:
 agents:
   - name: claude-code
     model_name: claude-haiku-4-5
-    env:
+    concurrency_group: claude-code
+    n_concurrent: 4
+    env: &claude_code_env
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
       CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
       CLAUDE_FORCE_OAUTH: ${CLAUDE_FORCE_OAUTH:-false}
+  - name: claude-code
+    model_name: claude-opus-4-8
+    concurrency_group: claude-code
+    n_concurrent: 4
+    env: *claude_code_env
 datasets:
   - path: tasks
     task_names:

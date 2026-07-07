@@ -1,4 +1,4 @@
-# Daytona Agent dev job: one-attempt Claude Code smoke run on Daytona DinD for fast remote iteration.
+# Daytona Agent dev job: one-attempt Claude Code model smoke run on Daytona DinD for fast remote iteration.
 # Keep this config thin. scripts/run-benchmark.ts copies tasks into a temporary
 # dereferenced .cache/harbor-daytona/<job>/tasks tree before invoking Harbor.
 # Do not materialize task symlinks in tasks/ to fix Daytona upload issues; update
@@ -25,12 +25,18 @@ verifier:
 agents:
   - name: claude-code
     model_name: claude-haiku-4-5
+    concurrency_group: claude-code
     n_concurrent: 32
-    env:
+    env: &claude_code_env
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
       CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
       CLAUDE_FORCE_OAUTH: ${CLAUDE_FORCE_OAUTH:-false}
+  - name: claude-code
+    model_name: claude-opus-4-8
+    concurrency_group: claude-code
+    n_concurrent: 32
+    env: *claude_code_env
 datasets:
   - path: tasks
     task_names:
