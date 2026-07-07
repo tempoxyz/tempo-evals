@@ -19,5 +19,3 @@ rk.tempo_source_patterns(
     ]
 )
 rk.tempo_onchain_verifier()
-
-rk.tempo_mcp_tool_used("tempo")
