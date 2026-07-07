@@ -10,12 +10,20 @@ name = "Tempo"
 
 
 [[tasks]]
+name = "tempo/transfer-with-memo-base"
+digest = "sha256:213dee129e2f7ea1b26fe5524d0306289525ad80a2f0fd3ab9c1f327201f9d9c"
+
+[[tasks]]
 name = "tempo/transfer-with-memo-docs"
 digest = "sha256:b3703b260a2e0ab872162a869f699ce7fd39c22ab237d0efa95d63204996550c"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-mcp"
 digest = "sha256:d436868f7400a606dfb90a677e9c5df82cc51050746dc899000cc0918e363303"
+
+[[tasks]]
+name = "tempo/transfer-with-memo-fee-payer-base"
+digest = "sha256:46bfa85b92dc48f6a986282ad8f1f592eea12d76d9c9500030c8087b87307860"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-fee-payer-docs"
@@ -26,12 +34,20 @@ name = "tempo/transfer-with-memo-fee-payer-mcp"
 digest = "sha256:c86016e1317f90d45c7e558d6f098927a3604649f40567018d87da6d6bbe1ee8"
 
 [[tasks]]
+name = "tempo/set-fee-token-base"
+digest = "sha256:a6d23416070c2c4c8b72932ed94da02108161f357477d8d5ce01afb882b419ac"
+
+[[tasks]]
 name = "tempo/set-fee-token-docs"
 digest = "sha256:786ea2af47a94aa2e1a97bf72ad5a86520bb83e14ee7319b2e9e5e9170384cb3"
 
 [[tasks]]
 name = "tempo/set-fee-token-mcp"
 digest = "sha256:13c678916a60a576eae376d0b94e090134ce370c467a01419d8e2b4023cc0daf"
+
+[[tasks]]
+name = "tempo/create-stablecoin-with-policy-base"
+digest = "sha256:a56a75945e5703c65d3e0293b6fcbec4f9f922ec8565e6d8e849765a0426ef2d"
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-docs"
@@ -42,12 +58,20 @@ name = "tempo/create-stablecoin-with-policy-mcp"
 digest = "sha256:c509983c44829c33ef4d99cae6a707340253588f7a3b330d03aec0533c616fd9"
 
 [[tasks]]
+name = "tempo/faucet-funded-transfer-base"
+digest = "sha256:f794b6741bd2e5aecaef696f636c41df2f026276da9cc16a8c925f8f4a055dcc"
+
+[[tasks]]
 name = "tempo/faucet-funded-transfer-docs"
 digest = "sha256:f8b8d027f51291f2c93c472cf8b8873b5c91c34aa3a16942516db46c40c97bee"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-mcp"
 digest = "sha256:0d2cecbd1b74a43409147addac9ed4af674b0bf2a0dea2b430b734363c18a93c"
+
+[[tasks]]
+name = "tempo/stablecoin-dex-swap-base"
+digest = "sha256:7c5d32645bf323431434015f070d2bd55fda4444e28de64ebc9f36a4317f724e"
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-docs"

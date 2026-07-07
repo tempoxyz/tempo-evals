@@ -9,15 +9,15 @@ const tempoDocsUrl = "http://tempo-docs:3000/developers";
 const tempoMcpUrl = "https://mcp.tempo.xyz";
 const defaultTurnCutoffs = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0";
 const defaultTokenCutoffs = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0";
-const sourceTaskSlugs = [
-  "transfer-with-memo",
-  "transfer-with-memo-fee-payer",
-  "set-fee-token",
-  "create-stablecoin-with-policy",
-  "faucet-funded-transfer",
-  "stablecoin-dex-swap",
+const baseTaskSlugs = [
+  "transfer-with-memo-base",
+  "transfer-with-memo-fee-payer-base",
+  "set-fee-token-base",
+  "create-stablecoin-with-policy-base",
+  "faucet-funded-transfer-base",
+  "stablecoin-dex-swap-base",
 ];
-const profiles = [
+const generatedProfiles = [
   {
     id: "docs",
     suffix: "-docs",
@@ -29,6 +29,7 @@ const profiles = [
     label: "MCP",
   },
 ];
+const baseSuffix = "-base";
 const executionConstraints = `## Execution Constraints
 
 - \`TEMPO_RPC_URL\` is already set to the Tempo localnet RPC endpoint (\`http://tempo-localnet:8545\`).
@@ -292,13 +293,14 @@ function updateProfileQuality(taskDir) {
 
 function materializeTaskMatrix() {
   const generatedSlugs = new Set();
-  for (const sourceSlug of sourceTaskSlugs) {
-    const sourceDir = path.join(tasksDir, sourceSlug);
+  for (const baseSlug of baseTaskSlugs) {
+    const sourceDir = path.join(tasksDir, baseSlug);
     if (!fs.existsSync(path.join(sourceDir, "task.toml"))) {
       throw new Error(`Missing source task: ${sourceDir}`);
     }
 
-    for (const profile of profiles) {
+    const sourceSlug = baseSlug.slice(0, -baseSuffix.length);
+    for (const profile of generatedProfiles) {
       const slug = `${sourceSlug}${profile.suffix}`;
       const taskDir = path.join(tasksDir, slug);
       copyGeneratedTask(sourceDir, taskDir);
@@ -346,8 +348,13 @@ function readDatasetDigests() {
 }
 
 function matrixTaskNames() {
-  return sourceTaskSlugs.flatMap((sourceSlug) =>
-    profiles.map((profile) => `tempo/${sourceSlug}${profile.suffix}`),
+  return baseTaskSlugs.flatMap((baseSlug) =>
+    [
+      `tempo/${baseSlug}`,
+      ...generatedProfiles.map(
+        (profile) => `tempo/${baseSlug.slice(0, -baseSuffix.length)}${profile.suffix}`,
+      ),
+    ],
   );
 }
 
