@@ -262,39 +262,32 @@ function appendProfileInstruction(taskDir, profile) {
   writeFile(instructionPath, `${content.replace(/\s*$/, "")}\n`);
 }
 
-function taskCriteriaPath(taskDir) {
-  for (const relativePath of [
-    "tests/correctness/criteria.py",
-    "tests/criteria/check.py",
-  ]) {
-    const absolutePath = path.join(taskDir, relativePath);
-    if (fs.existsSync(absolutePath)) return absolutePath;
-  }
-  throw new Error(`Missing task-local criteria checks in ${taskDir}`);
-}
-
-function updateProfileCriteria(taskDir, profile) {
-  const criteriaPath = taskCriteriaPath(taskDir);
-  let content = fs.readFileSync(criteriaPath, "utf8");
-  content = content.replace(
-    /\nrk\.tempo_trajectory_matches\([\s\S]*?\n\)\n/g,
-    "\n",
-  );
-  content = content.replace(/\nrk\.tempo_mcp_tool_used\([\s\S]*?\)\n/g, "\n");
-
-  if (profile.id === "docs") {
-    content += `
+function profileQualityCheck(profileId) {
+  if (profileId === "docs") {
+    return `
 rk.tempo_trajectory_matches(
     r"tempo-docs:3000/developers|/developers/llms\\.txt|/developers/llms-full\\.txt|/developers/docs/.*\\.md|TEMPO_DOCS_URL",
 )
 `;
-  } else if (profile.id === "mcp") {
-    content += `
+  }
+
+  if (profileId === "mcp") {
+    return `
 rk.tempo_mcp_tool_used("tempo")
 `;
   }
 
-  writeFile(criteriaPath, `${content.replace(/\s*$/, "")}\n`);
+  return "";
+}
+
+function updateProfileQuality(taskDir) {
+  const profileId = readStringValue(path.join(taskDir, "task.toml"), "metadata.profile");
+  const check = profileQualityCheck(profileId);
+  if (!check) return;
+
+  const checkPath = path.join(taskDir, "tests/quality/check.py");
+  const content = fs.readFileSync(checkPath, "utf8");
+  writeFile(checkPath, `${content.replace(/\s*$/, "")}\n${check}`);
 }
 
 function materializeTaskMatrix() {
@@ -312,7 +305,6 @@ function materializeTaskMatrix() {
       generatedSlugs.add(slug);
       updateTaskToml(taskDir, sourceSlug, profile);
       appendProfileInstruction(taskDir, profile);
-      updateProfileCriteria(taskDir, profile);
     }
   }
 
@@ -455,6 +447,7 @@ function syncRewardKit(taskDir) {
     path.join(root, "shared/rewardkit/quality"),
     path.join(taskDir, "tests/quality"),
   );
+  updateProfileQuality(taskDir);
   copyFile(
     path.join(root, "shared/rewardkit/verify-tempo.sh"),
     path.join(taskDir, "tests/correctness/verify-tempo.sh"),
