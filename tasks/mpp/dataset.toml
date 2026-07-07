@@ -10,5 +10,5 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo-mpp/server-charge-pathusd"
-digest = "sha256:6ff372ae0138dcd7f726edc10be693a64c41506dfa381a3b6cd39d88110106d6"
+digest = "sha256:74fcd02ed8030e130f9c786599f2a4c1a095cb68c15d0c852cff04f40b6d97ad"
 
