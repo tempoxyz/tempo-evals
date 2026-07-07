@@ -1,4 +1,4 @@
-const { parseAbiItem } = require("viem");
+const { parseAbi, parseAbiItem } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const { defaultRuntimeEnv } = require("../submission");
 const { sameAddress, waitForEvidence } = require("../tempo");
@@ -7,6 +7,10 @@ const POLICY_TYPES = {
   whitelist: 0,
   blacklist: 1,
 };
+const tip403RegistryAbi = parseAbi([
+  "function policyData(uint64 policyId) view returns (uint8 policyType, address admin)",
+  "function isAuthorized(uint64 policyId, address user) view returns (bool)",
+]);
 
 function runtimeEnv(config) {
   return {
@@ -66,34 +70,57 @@ async function verify({ client, config, fromBlock }) {
       fromBlock,
       toBlock: latestBlock,
     });
-    const policyLog = policyLogs.find((log) => Number(log.args.policyType) === expectedPolicyType);
-    if (!policyLog) {
-      return null;
-    }
+    const matchingPolicyLogs = policyLogs.filter(
+      (log) => Number(log.args.policyType) === expectedPolicyType,
+    );
+    for (const policyLog of matchingPolicyLogs) {
+      const [policyType, policyAdmin] = await client.readContract({
+        address: config.tip403Registry,
+        abi: tip403RegistryAbi,
+        functionName: "policyData",
+        args: [policyLog.args.policyId],
+      });
+      if (Number(policyType) !== expectedPolicyType || !sameAddress(policyAdmin, admin)) {
+        continue;
+      }
 
-    const linkLogs = await client.getLogs({
-      address: tokenLog.args.token,
-      event: transferPolicyUpdate,
-      args: {
-        updater: admin,
-        newPolicyId: policyLog.args.policyId,
-      },
-      fromBlock,
-      toBlock: latestBlock,
-    });
-    const linkLog = linkLogs[0];
-    if (linkLog) {
-      return {
-        token: tokenLog.args.token,
-        policyId: policyLog.args.policyId.toString(),
-        tokenTransactionHash: tokenLog.transactionHash,
-        policyTransactionHash: policyLog.transactionHash,
-        linkTransactionHash: linkLog.transactionHash,
-      };
+      const policyAccountAuthorized = await client.readContract({
+        address: config.tip403Registry,
+        abi: tip403RegistryAbi,
+        functionName: "isAuthorized",
+        args: [policyLog.args.policyId, config.policyAccount],
+      });
+      const expectedAccountAuthorized = config.policyType === "whitelist";
+      if (policyAccountAuthorized !== expectedAccountAuthorized) {
+        continue;
+      }
+
+      const linkLogs = await client.getLogs({
+        address: tokenLog.args.token,
+        event: transferPolicyUpdate,
+        args: {
+          updater: admin,
+          newPolicyId: policyLog.args.policyId,
+        },
+        fromBlock,
+        toBlock: latestBlock,
+      });
+      const linkLog = linkLogs[0];
+      if (linkLog) {
+        return {
+          token: tokenLog.args.token,
+          policyId: policyLog.args.policyId.toString(),
+          policyAccount: config.policyAccount,
+          policyAccountAuthorized,
+          tokenTransactionHash: tokenLog.transactionHash,
+          policyTransactionHash: policyLog.transactionHash,
+          linkTransactionHash: linkLog.transactionHash,
+        };
+      }
     }
 
     return null;
-  }, "stablecoin creation, policy creation, and policy link were not observed");
+  }, "stablecoin creation, requested policy account, and policy link were not observed");
 }
 
 module.exports = {
