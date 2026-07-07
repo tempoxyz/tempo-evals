@@ -1,16 +1,13 @@
 // SYNCED FROM shared/verifier/src/cases/faucet-funded-transfer.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { parseAbiItem, parseUnits } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
+const { defaultRuntimeEnv } = require("../submission");
 const { blockEvidence, waitForEvidence } = require("../tempo");
 
 function runtimeEnv(config) {
   return {
-    TEMPO_RPC_URL: config.rpcUrl,
-    TEMPO_TOKEN: config.token,
+    ...defaultRuntimeEnv(config),
     TEMPO_FAUCET_PRIVATE_KEY: config.faucetPrivateKey,
-    TEMPO_RECIPIENT: config.recipient,
-    TEMPO_AMOUNT: config.amount,
-    TEMPO_DECIMALS: String(config.decimals),
   };
 }
 
