@@ -42,14 +42,14 @@ def score_of(value):
         return min((score_of(item) for item in value), default=0.0)
     return float(value or 0)
 
-if tempo_scores_path.exists():
-    with tempo_scores_path.open(encoding="utf-8") as scores_file:
-        scores = json.load(scores_file)
-    reward = 1 if int(scores.get("reward", 0)) == 1 else 0
-elif details_path.exists():
+if details_path.exists():
     with details_path.open(encoding="utf-8") as details_file:
         details = json.load(details_file)
     reward = 1 if score_of(details.get("correctness", 0)) == 1.0 else 0
+elif tempo_scores_path.exists():
+    with tempo_scores_path.open(encoding="utf-8") as scores_file:
+        scores = json.load(scores_file)
+    reward = 1 if int(scores.get("reward", 0)) == 1 else 0
 
 with reward_path.open("w", encoding="utf-8") as reward_file:
     json.dump({"reward": reward}, reward_file, separators=(",", ":"))

@@ -24,8 +24,9 @@ The docs profile exposes a local HTTP docs sidecar at
 `TEMPO_DOCS_URL=http://tempo-docs:3000/developers`. The sidecar is generated
 from the locked `tempoxyz/docs` commit in `config/tempo-docs.lock.json` and
 serves public-compatible agent docs routes such as `/developers/llms.txt`,
-`/developers/llms-full.txt`, and `/developers/docs/*.md`. The MCP profile
-configures the remote `tempo` MCP server at `https://mcp.tempo.xyz`.
+`/developers/llms-full.txt`, and `/developers/docs/*.md`. The MCP profile uses
+Harbor's native `[[environment.mcp_servers]]` task config to register the
+public `tempo` MCP server at `https://mcp.tempo.xyz`.
 
 ## Structure
 
