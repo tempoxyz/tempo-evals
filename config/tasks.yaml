@@ -1,4 +1,4 @@
-# Data for scripts/sync_shared.py: which base Tempo tasks get generated
+# Data for npm run sync: which base Tempo tasks get generated
 # docs/MCP profile variants, the per-profile task.toml/instruction/quality
 # edits, and the shared files synced into MPP tasks.
 

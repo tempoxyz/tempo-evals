@@ -1,3 +1,4 @@
+// AUTO-GENERATED FROM shared/verifier/src/cases/index.js BY npm run sync. DO NOT EDIT MANUALLY.
 module.exports = {
   "create-stablecoin-with-policy": require("./create-stablecoin-with-policy"),
   "faucet-funded-transfer": require("./faucet-funded-transfer"),

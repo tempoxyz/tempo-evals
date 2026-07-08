@@ -1,3 +1,4 @@
+# AUTO-GENERATED FROM shared/rewardkit-package/pyproject.toml BY npm run sync. DO NOT EDIT MANUALLY.
 [project]
 name = "tempo-bench-rewardkit"
 version = "0.1.0"

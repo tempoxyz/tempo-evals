@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
+# AUTO-GENERATED FROM shared/mpp/tests/test.sh BY npm run sync. DO NOT EDIT MANUALLY.
 set -u
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
-REWARDKIT_VENV="${TEMPO_BENCH_REWARDKIT_VENV:-/tmp/tempo-mpp-rewardkit}"
+REWARDKIT_VENV="${tempo_bench_rewardkit_VENV:-/tmp/tempo-mpp-rewardkit}"
 REWARDKIT_PYTHON="$REWARDKIT_VENV/bin/python"
 REWARD_FILE="$LOG_DIR/reward.json"
 DETAILS_FILE="$LOG_DIR/reward-details.json"
@@ -11,7 +12,7 @@ SCORES_FILE="$LOG_DIR/scores.json"
 WORKSPACE_SCORES_FILE="${TEMPO_BENCH_WORKSPACE:-/app}/scores.json"
 OUT_FILE="${TEMPO_BENCH_WORKSPACE:-/app}/out.json"
 REWARDKIT_TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
-REWARDKIT_PACKAGE_DIR="${TEMPO_BENCH_REWARDKIT_PACKAGE_DIR:-$REWARDKIT_TESTS_DIR/../../../../shared/rewardkit-package}"
+REWARDKIT_PACKAGE_DIR="${tempo_bench_rewardkit_PACKAGE_DIR:-$REWARDKIT_TESTS_DIR/../../../../shared/rewardkit-package}"
 VERIFIER_UTILS="$REWARDKIT_TESTS_DIR/support/verifier_utils.py"
 
 mkdir -p "$LOG_DIR"

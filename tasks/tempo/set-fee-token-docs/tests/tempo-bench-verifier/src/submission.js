@@ -1,3 +1,4 @@
+// AUTO-GENERATED FROM shared/verifier/src/submission.js BY npm run sync. DO NOT EDIT MANUALLY.
 const { spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");

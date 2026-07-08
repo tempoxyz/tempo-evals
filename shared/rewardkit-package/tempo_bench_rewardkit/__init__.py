@@ -1,3 +1,6 @@
+# AUTO-GENERATED FROM:
+# shared/rewardkit-package/tempo_bench_rewardkit/__init__.py
+# BY npm run sync. DO NOT EDIT MANUALLY.
 from .criteria import (
     agent_token_efficiency,
     agent_turn_efficiency,

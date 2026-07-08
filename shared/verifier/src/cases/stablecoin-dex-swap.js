@@ -1,3 +1,4 @@
+// AUTO-GENERATED FROM shared/verifier/src/cases/stablecoin-dex-swap.js BY npm run sync. DO NOT EDIT MANUALLY.
 const { parseAbiItem } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const { defaultRuntimeEnv } = require("../submission");

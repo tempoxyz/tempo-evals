@@ -1,3 +1,4 @@
+// AUTO-GENERATED FROM shared/verifier/src/cases/faucet-funded-transfer.js BY npm run sync. DO NOT EDIT MANUALLY.
 const { parseAbiItem, parseUnits } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const { defaultRuntimeEnv } = require("../submission");

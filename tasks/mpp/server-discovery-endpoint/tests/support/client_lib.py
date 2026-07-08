@@ -1,8 +1,8 @@
-"""Shared MPP verifier harness.
+"""SHARED MPP VERIFIER HARNESS.
 
-Source of truth: shared/mpp/tests/support/client_lib.py, synced into each
-tasks/mpp/<task>/tests/support/ by scripts/sync_shared.py. Task-specific
-checks live in the sibling client.py, which calls run(run_task).
+AUTO-GENERATED FROM shared/mpp/tests/support/client_lib.py BY npm run sync.
+DO NOT EDIT TASK COPIES MANUALLY. TASK-SPECIFIC CHECKS LIVE IN THE SIBLING
+CLIENT.PY, WHICH CALLS RUN(RUN_TASK).
 """
 
 import asyncio
