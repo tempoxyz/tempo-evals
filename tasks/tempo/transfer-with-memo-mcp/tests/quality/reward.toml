@@ -1,3 +1,4 @@
+# AUTO-GENERATED FROM shared/rewardkit/quality/reward.toml BY npm run sync. DO NOT EDIT MANUALLY.
 [judge]
 judge = "anthropic/claude-haiku-4-5"
 mode = "batched"

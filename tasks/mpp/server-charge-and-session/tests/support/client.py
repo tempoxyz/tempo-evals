@@ -1,8 +1,7 @@
 """Verifier scenario for tempo/mpp-server-charge-and-session.
 
-The shared MPP verifier harness lives in client_lib.py (synced from
-shared/mpp/ by scripts/sync_shared.py); this file holds only the
-task-specific checks.
+THE SHARED MPP VERIFIER HARNESS LIVES IN client_lib.py (AUTO-GENERATED FROM
+shared/mpp/ BY npm run sync); THIS FILE HOLDS ONLY THE TASK-SPECIFIC CHECKS.
 """
 
 import subprocess

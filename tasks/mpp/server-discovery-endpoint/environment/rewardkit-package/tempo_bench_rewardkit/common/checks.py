@@ -1,3 +1,6 @@
+# AUTO-GENERATED FROM:
+# shared/rewardkit-package/tempo_bench_rewardkit/common/CHECKS.PY
+# BY npm run sync. DO NOT EDIT MANUALLY.
 from dataclasses import dataclass
 
 import rewardkit as rk

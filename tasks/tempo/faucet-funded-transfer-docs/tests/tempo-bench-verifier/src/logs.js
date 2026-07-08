@@ -1,3 +1,4 @@
+// AUTO-GENERATED FROM shared/verifier/src/logs.js BY npm run sync. DO NOT EDIT MANUALLY.
 const fs = require("node:fs");
 const path = require("node:path");
 

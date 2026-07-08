@@ -1,4 +1,5 @@
 {
+  // AUTO-GENERATED FROM shared/mpp/solution/tsconfig.json BY npm run sync. DO NOT EDIT MANUALLY.
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",

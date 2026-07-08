@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# AUTO-GENERATED FROM shared/rewardkit/verify-tempo.sh BY npm run sync. DO NOT EDIT MANUALLY.
 set -u
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"

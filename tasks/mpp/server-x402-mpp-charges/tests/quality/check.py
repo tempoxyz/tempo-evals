@@ -1,3 +1,6 @@
+# AUTO-GENERATED FROM:
+# shared/mpp/tests/quality/check.py
+# BY npm run sync. DO NOT EDIT MANUALLY.
 import rewardkit as rk
 from tempo_bench_rewardkit.common.checks import (
     TokenEfficiencyConfig,

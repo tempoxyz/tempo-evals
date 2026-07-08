@@ -1,3 +1,6 @@
+# AUTO-GENERATED FROM:
+# shared/mpp/tests/support/verifier_utils.py
+# BY npm run sync. DO NOT EDIT MANUALLY.
 import json
 import os
 import re

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# AUTO-GENERATED FROM shared/rewardkit/test.sh BY npm run sync. DO NOT EDIT MANUALLY.
 set -u
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
@@ -6,7 +7,7 @@ WORKSPACE="${TEMPO_BENCH_WORKSPACE:-/app}"
 TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
 
 mkdir -p "$LOG_DIR"
-REWARDKIT_VENV="${TEMPO_BENCH_REWARDKIT_VENV:-/tmp/tempo-bench-rewardkit}"
+REWARDKIT_VENV="${tempo_bench_rewardkit_VENV:-/tmp/tempo-bench-rewardkit}"
 REWARDKIT_PYTHON="$REWARDKIT_VENV/bin/python"
 REWARD_FILE="$LOG_DIR/reward.json"
 DETAILS_FILE="$LOG_DIR/reward-details.json"

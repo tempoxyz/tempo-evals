@@ -1,3 +1,4 @@
+# AUTO-GENERATED FROM shared/mpp/environment/Dockerfile BY npm run sync. DO NOT EDIT MANUALLY.
 FROM node:22-trixie
 
 RUN apt-get update \
@@ -14,6 +15,6 @@ COPY rewardkit-package /opt/tempo-bench-rewardkit
 RUN python3 -m venv /opt/tempo-bench-rewardkit-venv \
   && /opt/tempo-bench-rewardkit-venv/bin/python -m pip install --no-cache-dir /opt/tempo-bench-rewardkit
 
-ENV TEMPO_BENCH_REWARDKIT_VENV=/opt/tempo-bench-rewardkit-venv
+ENV tempo_bench_rewardkit_VENV=/opt/tempo-bench-rewardkit-venv
 
 WORKDIR /app
