@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:1a818e95c8d86d2db5d098ceac87d4cf3bf2aae2dc19d3d80e24d5eeb47c8db2"
+digest = "sha256:e601e8da8ce7edca3536c9aeab679bdaa999660debfbf369d413000c6d9c89a9"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:ffa7e795dabe56b8b87252870490d6ec08a8f3c208f62defc3de771a798ac881"
+digest = "sha256:f9edab750422e6039894bbc2519c31940a3a2eef7bd99a78efbf224ed6079fa2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:da7bfb587d662c5cac5d1211ac32ab8ae44043ec4e4886a2d8e4a2db25b14a90"
+digest = "sha256:c593030224370b3ea25f159726e4e80f74d552d2a29d9ca7af1f308348a50661"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:b8b8ff472a4eb551c2ff3accac8a2fe48f7e9da3cf119fa1a0bf965753cf1847"
+digest = "sha256:ecc4a48f6b9f3a95f78b7a275aae5ba75cdd6fa73df3cd888943268195a0cb43"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:72efc235fb0c9a35335b86b39459dae0fe05d86d9b946ac8945fa0dd0f0276a4"
+digest = "sha256:ee4a70326ce09b7d27eddf0db27aa5c15de04bbb54637f25ee497093c1e57da9"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:367088fe5b2acb6ae3a2a4ce93974fbd729dd2db3dc9de4652d68f1a3965d16a"
+digest = "sha256:bcf3c0604c74c0ed1063babc160aaf86f36f99b11130651ed1c5438e609e7806"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:6f7ec871acda8df068c26beacfa358c58cbd1574691a4829f4f806c67aa2ba83"
+digest = "sha256:516171c29c165b4850de1dfb7194690bd7ea65fa8136378d9e2afd5479688df8"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:46217b71f38e3d90fbfd4491799687e655dc474c4798e681686d689412aeba11"
+digest = "sha256:5d8da76f722907a6845aff1d277b93fd5ec398f27ee28075d1c13690067dc4f9"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:479c6a6ae83117adfb9d5de1926ddd51fb364c88d110f6dacfa59f965a4d2bcf"
+digest = "sha256:a7c4471ae713a2544249978dfc1eaf5eeb76c65f9b038cd89140ff4b276620b8"
 

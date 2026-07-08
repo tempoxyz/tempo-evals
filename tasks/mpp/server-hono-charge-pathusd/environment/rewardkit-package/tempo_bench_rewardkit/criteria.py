@@ -142,32 +142,34 @@ def _pattern_check(workspace: Path, name: str, file: str, pattern: str) -> dict:
     }
 
 
-NON_TEMPO_BLOCKCHAIN_DEPENDENCIES = [
-    "@aptos-labs/ts-sdk",
-    "@cardano-sdk/core",
-    "@cosmjs/stargate",
-    "@hashgraph/sdk",
-    "@mysten/sui",
-    "@near-js/accounts",
-    "@near-js/providers",
-    "@polkadot/api",
-    "@solana/spl-token",
-    "@solana/web3.js",
-    "@stacks/transactions",
-    "@stellar/stellar-sdk",
-    "@ton/core",
-    "algosdk",
-    "aptos",
-    "bitcoinjs-lib",
-    "ethers",
-    "near-api-js",
-    "ripple-lib",
-    "sui",
-    "tronweb",
-    "web3",
-    "xrpl",
-]
-NON_TEMPO_BLOCKCHAIN_NAME_FRAGMENTS = [
+NON_TEMPO_BLOCKCHAIN_DEPENDENCIES: frozenset[str] = frozenset(
+    (
+        "@aptos-labs/ts-sdk",
+        "@cardano-sdk/core",
+        "@cosmjs/stargate",
+        "@hashgraph/sdk",
+        "@mysten/sui",
+        "@near-js/accounts",
+        "@near-js/providers",
+        "@polkadot/api",
+        "@solana/spl-token",
+        "@solana/web3.js",
+        "@stacks/transactions",
+        "@stellar/stellar-sdk",
+        "@ton/core",
+        "algosdk",
+        "aptos",
+        "bitcoinjs-lib",
+        "ethers",
+        "near-api-js",
+        "ripple-lib",
+        "sui",
+        "tronweb",
+        "web3",
+        "xrpl",
+    )
+)
+NON_TEMPO_BLOCKCHAIN_NAME_FRAGMENTS: tuple[str, ...] = (
     "algorand",
     "aptos",
     "bitcoin",
@@ -191,7 +193,20 @@ NON_TEMPO_BLOCKCHAIN_NAME_FRAGMENTS = [
     "tron",
     "web3",
     "xrpl",
-]
+)
+NON_TEMPO_BLOCKCHAIN_SCOPED_PACKAGE_PREFIXES: tuple[str, ...] = (
+    "@aptos-labs",
+    "@cardano-sdk",
+    "@cosmjs",
+    "@hashgraph",
+    "@mysten",
+    "@near-js",
+    "@polkadot",
+    "@solana",
+    "@stacks",
+    "@stellar",
+    "@ton",
+)
 NON_TEMPO_BLOCKCHAIN_IMPORT_PATTERN = (
     r"from\s+['\"](?:"
     r"@aptos-labs/|@cardano-sdk/|@cosmjs/|@hashgraph/|@mysten/|@near-js/|"
@@ -226,19 +241,7 @@ def tempo_rejects_other_blockchains(workspace: Path) -> bool:
             )
             or any(
                 name.startswith(f"{prefix}/")
-                for prefix in (
-                    "@aptos-labs",
-                    "@cardano-sdk",
-                    "@cosmjs",
-                    "@hashgraph",
-                    "@mysten",
-                    "@near-js",
-                    "@polkadot",
-                    "@solana",
-                    "@stacks",
-                    "@stellar",
-                    "@ton",
-                )
+                for prefix in NON_TEMPO_BLOCKCHAIN_SCOPED_PACKAGE_PREFIXES
             )
         )
         package_error = None
