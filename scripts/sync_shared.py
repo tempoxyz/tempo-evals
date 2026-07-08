@@ -425,10 +425,10 @@ def write_dataset_manifest() -> None:
         "[dataset]\n"
         'name = "tempo/tempo-bench-v1"\n'
         'description = "Tempo integration benchmark"\n'
-        'keywords = ["stablecoins", "docs", "tempo"]\n'
+        'keywords = [ "stablecoins", "docs", "tempo",]\n'
         "[[dataset.authors]]\n"
-        'name = "Tempo"\n\n'
-        f"{task_entries}",
+        'name = "Tempo"\n\n\n'
+        f"{task_entries}\n",
     )
 
 
