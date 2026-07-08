@@ -1,4 +1,4 @@
-// AUTO-GENERATED FROM shared/verifier/src/index.js BY npm run sync. DO NOT EDIT MANUALLY.
+// SYNCED FROM shared/verifier/src/index.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { readConfig, redactedConfig } = require("./config");
 const { writeJson, writeReward } = require("./logs");
 const { assertSubmissionShape, runStep } = require("./submission");

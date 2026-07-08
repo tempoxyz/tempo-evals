@@ -1,4 +1,4 @@
-// AUTO-GENERATED FROM shared/verifier/src/tempo.js BY npm run sync. DO NOT EDIT MANUALLY.
+// SYNCED FROM shared/verifier/src/tempo.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { createPublicClient, http, pad, stringToHex } = require("viem");
 
 function createTempoClient(config) {

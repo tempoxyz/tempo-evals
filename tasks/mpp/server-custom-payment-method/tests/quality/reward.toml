@@ -1,4 +1,4 @@
-# AUTO-GENERATED FROM shared/mpp/tests/quality/reward.toml BY npm run sync. DO NOT EDIT MANUALLY.
+# SYNCED FROM shared/mpp/tests/quality/reward.toml BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 [judge]
 judge = "anthropic/claude-haiku-4-5"
 mode = "batched"

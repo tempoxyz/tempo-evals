@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/create-stablecoin-with-policy/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Create Stablecoin With Transfer Policy
 
 Build a minimal TypeScript project in `/app` that creates a TIP-20 stablecoin,
@@ -15,7 +17,6 @@ Use environment variables for all values:
 - `TEMPO_POLICY_TYPE`
 - `TEMPO_POLICY_ACCOUNT`
 
-<!-- tempobench_sync:begin -->
 ## Tempo Access Profile
 
 Tempo docs are available through the local docs service at `TEMPO_DOCS_URL` (http://tempo-docs:3000/developers). Use those docs for Tempo-specific APIs and examples. Do not use WebSearch, WebFetch, public docs sites, or public RPC endpoints.
@@ -26,7 +27,6 @@ Tempo docs are available through the local docs service at `TEMPO_DOCS_URL` (htt
 - Use that localnet RPC endpoint for all build, run, and self-check commands.
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
 - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
-<!-- tempobench_sync:end -->
 
 Requirements:
 

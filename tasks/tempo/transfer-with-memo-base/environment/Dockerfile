@@ -1,4 +1,4 @@
-# AUTO-GENERATED FROM shared/docker/main-node/Dockerfile BY npm run sync. DO NOT EDIT MANUALLY.
+# SYNCED FROM shared/docker/main-node/Dockerfile BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 FROM node:22-trixie
 
 RUN apt-get update \

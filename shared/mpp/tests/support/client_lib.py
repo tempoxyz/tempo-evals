@@ -1,8 +1,8 @@
 """SHARED MPP VERIFIER HARNESS.
 
-AUTO-GENERATED FROM shared/mpp/tests/support/client_lib.py BY npm run sync.
-DO NOT EDIT TASK COPIES MANUALLY. TASK-SPECIFIC CHECKS LIVE IN THE SIBLING
-CLIENT.PY, WHICH CALLS RUN(RUN_TASK).
+SYNCED FROM shared/mpp/tests/support/client_lib.py BY npm run sync.
+Do not edit task copies. Task-specific checks live in the sibling
+client.py, which calls run(run_task).
 """
 
 import asyncio

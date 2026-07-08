@@ -1,0 +1,33 @@
+import rewardkit as rk
+import tempo_bench_rewardkit
+
+rk.tempo_typescript_project()
+rk.tempo_source_patterns(
+    [
+        {
+            "name": "source_uses_transfer_with_memo_semantics",
+            "pattern": r"transferWithMemo|transferSync",
+        },
+        {
+            "name": "source_reads_tempo_memo",
+            "pattern": r"TEMPO_MEMO",
+        },
+        {
+            "name": "source_parses_token_units",
+            "pattern": r"parseUnits",
+        },
+        {
+            "name": "source_reads_fee_payer_private_key",
+            "pattern": r"TEMPO_FEE_PAYER_PRIVATE_KEY",
+        },
+        {
+            "name": "source_passes_fee_payer",
+            "pattern": r"feePayer",
+        },
+        {
+            "name": "source_reads_fee_token",
+            "pattern": r"TEMPO_FEE_TOKEN",
+        },
+    ]
+)
+rk.tempo_onchain_verifier()

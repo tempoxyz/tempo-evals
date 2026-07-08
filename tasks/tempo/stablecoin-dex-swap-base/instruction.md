@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/stablecoin-dex-swap/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Stablecoin DEX Swap
 
 Build a minimal TypeScript project in `/app` that uses Tempo's Stablecoin DEX
@@ -15,14 +17,12 @@ Use environment variables for all values:
 - `TEMPO_SWAP_MIN_AMOUNT_OUT`
 - `TEMPO_DECIMALS`
 
-<!-- tempobench_sync:begin -->
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
 - Use that localnet RPC endpoint for all build, run, and self-check commands.
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
 - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
-<!-- tempobench_sync:end -->
 
 Requirements:
 

@@ -1,6 +1,5 @@
-# AUTO-GENERATED FROM:
-# shared/rewardkit-package/tempo_bench_rewardkit/common/CONSTANTS.PY
-# BY npm run sync. DO NOT EDIT MANUALLY.
+# SYNCED FROM shared/rewardkit-package/tempo_bench_rewardkit/common/constants.py
+# BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 import os
 from enum import IntEnum, StrEnum
 from pathlib import Path

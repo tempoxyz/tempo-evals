@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/transfer-with-memo-fee-payer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Transfer With Memo And Fee Payer
 
 Build a minimal TypeScript project in `/app` that sends a Tempo localnet
@@ -15,7 +17,6 @@ Use environment variables for all values:
 - `TEMPO_DECIMALS`
 - `TEMPO_MEMO`
 
-<!-- tempobench_sync:begin -->
 ## Tempo Access Profile
 
 The official Tempo MCP server is configured as `tempo`. Use it if your agent runtime exposes MCP tools; do not use WebSearch, WebFetch, or public RPC endpoints.
@@ -26,7 +27,6 @@ The official Tempo MCP server is configured as `tempo`. Use it if your agent run
 - Use that localnet RPC endpoint for all build, run, and self-check commands.
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
 - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
-<!-- tempobench_sync:end -->
 
 Requirements:
 

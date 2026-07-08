@@ -1,4 +1,4 @@
-# AUTO-GENERATED FROM shared/mpp/tests/reward.toml BY npm run sync. DO NOT EDIT MANUALLY.
+# SYNCED FROM shared/mpp/tests/reward.toml BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 [[reward]]
 name = "reward"
 aggregation = "weighted_mean"

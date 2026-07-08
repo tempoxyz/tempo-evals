@@ -1,5 +1,5 @@
 {
-  // AUTO-GENERATED FROM shared/mpp/solution/tsconfig.json BY npm run sync. DO NOT EDIT MANUALLY.
+  // SYNCED FROM shared/mpp/solution/tsconfig.json BY npm run sync. DO NOT EDIT COPIES IN tasks/.
   "compilerOptions": {
     "target": "ES2022",
     "module": "NodeNext",

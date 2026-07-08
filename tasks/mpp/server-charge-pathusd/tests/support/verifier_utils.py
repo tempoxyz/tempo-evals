@@ -1,6 +1,5 @@
-# AUTO-GENERATED FROM:
-# shared/mpp/tests/support/verifier_utils.py
-# BY npm run sync. DO NOT EDIT MANUALLY.
+# SYNCED FROM shared/mpp/tests/support/verifier_utils.py
+# BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 import json
 import os
 import re
