@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED FROM sources/tempo/create-stablecoin-with-policy/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+<!-- AUTO-GENERATED FROM tasks/tempo/_templates/create-stablecoin-with-policy/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
 
 # Tempo Create Stablecoin With Transfer Policy
 

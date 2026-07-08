@@ -1,11 +1,11 @@
-# Tempo task sources
+# Tempo task templates
 
-Authored sources for the Tempo Harbor tasks. Each `sources/tempo/<slug>/`
+Authored templates for the Tempo Harbor tasks. Each `tasks/tempo/_templates/<slug>/`
 directory generates three tasks under `tasks/tempo/`: `<slug>-base`,
 `<slug>-docs`, and `<slug>-mcp`. `npm run sync` regenerates that output from
-scratch; never edit `tasks/tempo/` by hand.
+scratch; never edit generated profile task directories by hand.
 
-A source task contains only the authored files:
+A template task contains only the authored files:
 
 - `instruction.md` — the agent-facing prompt. It must contain exactly one
   `<!-- tempobench_sync -->` placeholder, which sync replaces with the shared
@@ -26,7 +26,7 @@ checks, test harness) comes from `shared/` and `config/tasks.yaml`.
 
 To add a task:
 
-1. Create `sources/tempo/<slug>/` with the files above.
+1. Create `tasks/tempo/_templates/<slug>/` with the files above.
 2. Add the slug to `task_slugs` in `config/tasks.yaml`.
 3. Add a verifier case at `shared/tempo/verifier/src/cases/<case>.js` and set
    `TEMPO_BENCH_CASE` in the source `task.toml`.

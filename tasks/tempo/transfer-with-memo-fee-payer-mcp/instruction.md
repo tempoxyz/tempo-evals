@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED FROM sources/tempo/transfer-with-memo-fee-payer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+<!-- AUTO-GENERATED FROM tasks/tempo/_templates/transfer-with-memo-fee-payer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
 
 # Tempo Transfer With Memo And Fee Payer
 

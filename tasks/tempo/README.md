@@ -2,10 +2,11 @@
 
 Local Harbor dataset for Tempo integration evaluations.
 
-**Everything in this directory is generated.** Do not edit task directories
-here; edit the authored sources in `../../sources/tempo/<slug>/` and the
-shared assets in `../../shared/`, then run `npm run sync` from the repository
-root. See `sources/tempo/README.md` for the authoring guide.
+Generated task directories in this directory are build artifacts. Do not edit
+profile task directories here; edit the authored templates in
+`_templates/<slug>/` and the shared assets in `../../shared/`, then run
+`npm run sync` from the repository root. See `_templates/README.md` for the
+authoring guide.
 
 Current task intents:
 
