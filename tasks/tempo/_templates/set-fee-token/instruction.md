@@ -4,7 +4,11 @@ Build a minimal TypeScript project that sets the account's default Tempo fee tok
 
 ## Parameters
 
-* Use `TEMPO_FEE_TOKEN` as the fee token to set.
+| Value | Env variable | Default |
+| --- | --- | --- |
+| RPC URL | `TEMPO_RPC_URL` | `http://tempo-localnet:8545` |
+| Payer private key | `TEMPO_PAYER_PRIVATE_KEY` | provided |
+| Fee token to set | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 
 <!-- tempobench_sync -->
 
