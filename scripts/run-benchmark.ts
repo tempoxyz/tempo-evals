@@ -36,6 +36,11 @@ type Options = {
   taskFilter?: string;
   nTasks?: string;
   tasks?: string;
+  noForceBuild?: boolean;
+  noDelete?: boolean;
+  disableVerification?: boolean;
+  installOnly?: boolean;
+  debug?: boolean;
   sync: boolean;
 };
 
@@ -43,6 +48,10 @@ const variants: Record<string, Variant> = {
   "local-oracle": {
     config: "config/job.local.oracle.yaml",
     prefix: "tempo-bench-oracle-local",
+  },
+  "local-oracle-dev": {
+    config: "config/job.local.oracle.dev.yaml",
+    prefix: "tempo-bench-oracle-dev-local",
   },
   "local-agent": {
     config: "config/job.local.agent.yaml",
@@ -87,6 +96,7 @@ Direct: node scripts/run-benchmark.ts <variant> [options]
 
 Variants:
   local-oracle       Oracle validation on local Docker
+  local-oracle-dev   Fast oracle iteration on local Docker
   local-agent        Full Claude Code matrix on local Docker
   local-agent-dev    One-attempt Claude Code smoke run on local Docker
   model              One local harness/model run over tasks
@@ -108,9 +118,14 @@ Options:
   --max-retries N         Retry transient trial/setup failures (default: 2 for Daytona runs)
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
-  --task-filter GLOB      Include matching task names for model and Daytona config variants
+  --task-filter GLOB      Include matching task names for model and config variants
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants (default: tasks/tempo)
+  --no-force-build        Ask Harbor to reuse Docker environment builds
+  --no-delete             Keep Harbor environments after the run for debugging
+  --disable-verification  Skip verifier execution
+  --install-only          Run agent setup/install only and skip verification
+  --debug                 Enable Harbor debug logging
   --no-sync               Skip task asset and dataset sync before running Harbor
 `);
 }
@@ -177,6 +192,16 @@ function parseArgs(argv: string[]): { variant?: string; options: Options } {
     } else if (arg === "--tasks") {
       options.tasks = readOptionValue(rest, i, arg);
       i += 1;
+    } else if (arg === "--no-force-build") {
+      options.noForceBuild = true;
+    } else if (arg === "--no-delete") {
+      options.noDelete = true;
+    } else if (arg === "--disable-verification") {
+      options.disableVerification = true;
+    } else if (arg === "--install-only") {
+      options.installOnly = true;
+    } else if (arg === "--debug") {
+      options.debug = true;
     } else {
       throw new Error(`Unknown option: ${arg}`);
     }
@@ -425,6 +450,11 @@ try {
   if (options.agentConcurrency) {
     args.push("--n-concurrent-agents", options.agentConcurrency);
   }
+  if (options.noForceBuild) args.push("--no-force-build");
+  if (options.noDelete) args.push("--no-delete");
+  if (options.disableVerification) args.push("--disable-verification");
+  if (options.installOnly) args.push("--install-only");
+  if (options.debug) args.push("--debug");
   const maxRetries = options.maxRetries ?? (variant.needsDaytonaAuth ? "2" : undefined);
   if (maxRetries) args.push("--max-retries", maxRetries);
   process.env.TEMPO_DOCS_BUNDLE_PATH = variant.needsDaytonaAuth ? "" : docsBundle;

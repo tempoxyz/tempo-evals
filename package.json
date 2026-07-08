@@ -11,6 +11,8 @@
     "bench": "node scripts/run-benchmark.ts local-agent",
     "bench:model": "node scripts/run-benchmark.ts model",
     "bench:local:oracle": "node scripts/run-benchmark.ts local-oracle",
+    "bench:local:oracle:dev": "node scripts/run-benchmark.ts local-oracle-dev --no-sync",
+    "bench:local:one": "node scripts/run-benchmark.ts local-oracle-dev --no-sync --concurrency 1",
     "bench:local:agent": "node scripts/run-benchmark.ts local-agent",
     "bench:local:agent:dev": "node scripts/run-benchmark.ts local-agent-dev",
     "bench:daytona:oracle": "node scripts/run-benchmark.ts daytona-oracle",

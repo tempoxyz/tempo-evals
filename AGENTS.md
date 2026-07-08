@@ -37,6 +37,8 @@ npm run clean               # Remove job/cache output
 
 ```bash
 npm run bench:local:oracle       # Local Docker oracle validation
+npm run bench:local:oracle:dev   # Fast local Docker oracle iteration
+npm run bench:local:one          # Fast single-concurrency local oracle iteration
 npm run bench:local:agent:dev    # Local Docker agent smoke
 npm run bench:local:agent        # Full local Docker agent run
 npm run bench:daytona:oracle     # Daytona oracle validation
@@ -47,8 +49,12 @@ npm run bench:daytona:agent      # Full Daytona agent run
 Single task:
 
 ```bash
+npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
 npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
 ```
+
+Use `npm run sync` after changing shared/generated task assets. Use
+`npm run bench:local:oracle` for clean local oracle validation before PRs.
 
 MPP MVP:
 

@@ -26,6 +26,18 @@ Validate the Tempo oracle solutions locally:
 npm run bench:local:oracle
 ```
 
+Fast oracle loop for one task while editing:
+
+```bash
+npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
+```
+
+Fast oracle loop for multiple filtered tasks:
+
+```bash
+npm run bench:local:oracle:dev -- --task-filter "*-base"
+```
+
 Run a local agent smoke test:
 
 ```bash
@@ -87,12 +99,35 @@ npm run clean
 | Command | Runtime | Description |
 | ------- | ------- | ----------- |
 | `npm run bench:local:oracle` | Docker | Validate oracle solutions locally |
+| `npm run bench:local:oracle:dev` | Docker | Fast local oracle run; skips sync and reuses environment builds |
+| `npm run bench:local:one` | Docker | Fast one-concurrency local oracle run; pass `--task-filter` |
 | `npm run bench:local:agent:dev` | Docker | Local agent smoke run |
 | `npm run bench:local:agent` | Docker | Full local agent run |
 | `npm run bench:daytona:oracle` | Daytona | Validate oracle solutions remotely |
 | `npm run bench:daytona:agent:dev` | Daytona | Remote agent smoke run |
 | `npm run bench:daytona:agent` | Daytona | Full remote agent run |
 | `npm run bench:model` | Docker | Ad hoc local model run |
+
+## Dev Loop
+
+Use the dev oracle commands while iterating on one task:
+
+```bash
+npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
+```
+
+These commands use `local-oracle-dev`, skip generated asset sync, and avoid forced Docker rebuilds. Run `npm run sync` after changing shared/generated task assets. Run `npm run bench:local:oracle` before opening a PR for clean validation.
+
+Useful runner flags:
+
+```bash
+--no-sync               # skip sync-shared and harbor sync
+--no-force-build        # ask Harbor to reuse Docker builds
+--no-delete             # keep environments for debugging
+--disable-verification  # skip verifier execution
+--install-only          # run setup/install only
+--debug                 # enable Harbor debug logs
+```
 
 ## Environment
 
