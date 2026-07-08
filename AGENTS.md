@@ -120,6 +120,31 @@ When writing evals, you SHOULD follow the below principles:
 - Do not change weights of graders without explicit prompt -- in most cases the default is fine.
 - Write only the minimal set of graders/verifiers to ensure your implementation is accurate. Too many graders are hard to maintain and dilute signal.
 
+### Task README structure
+
+Each task directory should include a concise `README.md` for Harbor Hub display.
+Use this structure:
+
+```md
+# <Task Title>
+
+## Overview
+
+<One short paragraph describing what the agent must build.>
+
+## What the Task Tests
+
+- <Capability or integration being tested>
+- <Capability or integration being tested>
+```
+
+For MPP tasks, the README should summarize user-facing server behavior, payment
+method/currency expectations, and Tempo testnet behavior. Do not include
+implementation details such as environment variable names, `/app/out.json`
+schema, exact npm scripts, verifier internals, environment details,
+verification, or difficulty sections. Do not add extra requirements not present in
+`instruction.md` or `tests/`.
+
 ## Coding Style
 
 ### General guidelines
