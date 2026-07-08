@@ -49,7 +49,7 @@ class SourcePattern(StrEnum):
     """Regex patterns for lightweight source and contract checks."""
 
     BUILD_SCRIPT = r'"build"\s*:'
-    EXAMPLE_SCRIPT = r'"example"\s*:'
+    EVAL_SCRIPT = r'"eval"\s*:'
     RUN_SCRIPT = r'"run"\s*:'
     SERVE_SCRIPT = r'"serve"\s*:'
     MCP_SDK_DEPENDENCY = r'"@modelcontextprotocol/sdk"\s*:'

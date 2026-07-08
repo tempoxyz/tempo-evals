@@ -25,12 +25,12 @@ The official Tempo MCP server is configured as `tempo`. Use it if your agent run
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
-- Use that localnet RPC endpoint for all example and self-check commands.
+- Use that localnet RPC endpoint for all eval and self-check commands.
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
-- Do not run live testnet smoke tests; local example checks must use the provided environment variables.
+- Do not run live testnet smoke tests; local eval checks must use the provided environment variables.
 
 Requirements:
 
 * Put the submission directly in `/app`.
 * Put the runtime source in `src/index.ts`.
-* The script should be runnable by `npm run example`
+* The script should be runnable by `npm run eval`
