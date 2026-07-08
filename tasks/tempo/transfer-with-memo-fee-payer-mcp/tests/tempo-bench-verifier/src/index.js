@@ -1,6 +1,6 @@
 // SYNCED FROM shared/tempo/verifier/src/index.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { readConfig, redactedConfig } = require("./config");
-const { writeJson, writeReward } = require("./logs");
+const { writeException, writeJson, writeReward } = require("./logs");
 const { assertSubmissionShape, runStep } = require("./submission");
 const { createTempoClient, waitForRpc } = require("./tempo");
 const cases = require("./cases");
@@ -100,7 +100,9 @@ async function main() {
     });
     writeReward(config, { reward: 1, ...scores });
   } catch (error) {
-    writeJson(config, "details.json", failureDetails(config, error, context, scores));
+    const details = failureDetails(config, error, context, scores);
+    writeJson(config, "details.json", details);
+    writeException(config, details);
     writeReward(config, { reward: 0, ...scores });
   }
 }
