@@ -208,6 +208,7 @@ npm run dataset                  # Tempo tasks
 npm run dataset -- --tasks tasks/mpp
 ```
 
+Always sync the relevant dataset manifests before opening or updating a PR.
 Do not restore or omit generated dataset/artifact changes just because they look
 mechanical. CI expects generated artifacts and dataset digests to be fresh.
 

@@ -2,10 +2,13 @@
 # Source:
 #   tasks/tempo/_templates/set-fee-token/tests/correctness/criteria.py
 import rewardkit as rk
-import tempo_bench_rewardkit
+from tempo_bench_rewardkit.common.checks import (
+    register_source_patterns,
+    register_tempo_typescript_project,
+)
 
-rk.tempo_typescript_project()
-rk.tempo_source_patterns(
+register_tempo_typescript_project()
+register_source_patterns(
     [
         {
             "name": "source_calls_set_user_token",
