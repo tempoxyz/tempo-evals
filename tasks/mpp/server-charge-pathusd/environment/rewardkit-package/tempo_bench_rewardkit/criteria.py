@@ -272,36 +272,6 @@ def tempo_mcp_tool_used(_workspace: Path, server_name: str = "tempo") -> bool:
 
 
 @criterion(shared=True)
-def agent_turn_efficiency(
-    _workspace: Path,
-    cutoffs_env: str = "TEMPO_BENCH_TURNS_SCORE_CUTOFFS",
-    default_cutoffs: str = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0",
-) -> float:
-    raw_cutoffs = os.environ.get(
-        cutoffs_env,
-        default_cutoffs,
-    )
-    path = _trajectory_path()
-    if path is None:
-        _merge_efficiency(
-            "turns",
-            {"score": 0.0, "turn_count": None, "cutoffs": raw_cutoffs},
-        )
-        return 0.0
-
-    trajectory = json.loads(path.read_text(encoding="utf-8"))
-    turn_count = sum(
-        1 for step in trajectory.get("steps", []) if step.get("source") == "agent"
-    )
-    score = _score_by_cutoff(turn_count, raw_cutoffs)
-    _merge_efficiency(
-        "turns",
-        {"score": score, "turn_count": turn_count, "cutoffs": raw_cutoffs},
-    )
-    return score
-
-
-@criterion(shared=True)
 def agent_token_efficiency(
     _workspace: Path,
     cutoffs_env: str = "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS",

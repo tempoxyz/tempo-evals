@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:e4d8371af1159afd4003f301864b2bd75d14f3bfa80efc2da712d6529cc9a3d8"
+digest = "sha256:9736e2bfe68e54e5c6101e5b64a7e16ffd1ddb07617bb721ef5453917cc6cf99"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:103aa2ac815a821b8270ef92d27244725fb3024950a888ae0682069a01e3412d"
+digest = "sha256:33bb84841a02047e682eec7744db946c1fb383472297dfc3cb0398f7bf96ed48"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:f68745b66c8c8824e3163452f1f7efb6d8ad1eb35c42c087b44ff6df49280f41"
+digest = "sha256:68f19d232ca6b0b4aa8578af88fe9024a45219e6887e5c80d77cb6a71bb5d09c"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:7faf1ed06f59fd03ea7ad71ee0a104f2e7503034f47ccca20878a8f21c33e457"
+digest = "sha256:c825136baf15e53621e6fad013f5c98655314bd77950712d5e3ba6e5677d354c"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:a230ce6f9efdfdc9b896a0e3761a279202b9ceb5e622f53e369f16e6588bd8c7"
+digest = "sha256:7cbb10326973abd7c4178dbf07fbb686fef658f8b5ca1722042d13f45afdf734"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:04ac5ee1598fe615bd22d7bec65a0d13a0f3e6707f4ae9a0937158cd743f8779"
+digest = "sha256:4f52d1aa2143d6d0d844223f031bc0cdd5d5eb4f9e0a3571e412bfdf076fff7d"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:722ec8a45df7de6e91349be8e6ef5e54867b0d7953e1887e688e3d64fa2c8253"
+digest = "sha256:da08d142832d28a374b7be5b7c891ac715e95e339e73f0200733fea2c057af41"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:2ae7a6dd90642b384baff202fe0bfca200a44db5a95a0aa8e27840ad4ad98140"
+digest = "sha256:166faeb7621d600b32fecc22a50c331c8c886abaa1fef0cb43df54d436c58370"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:929e7d0cd547f0556be613615f0cff5e5feef3256b89bc5b6299064f1dc82681"
+digest = "sha256:b1e86ff1c02fbbaf1391ac74a457af16da21377eae8b14058b6478925e29ac7d"
 
