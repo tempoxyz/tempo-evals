@@ -91,6 +91,11 @@ npm run dataset
 npm run dataset -- --tasks tasks/mpp
 ```
 
+Before committing changes that affect generated task assets, shared verifier
+packages, or task digests, run the relevant sync/dataset command and commit the
+resulting artifacts. CI expects generated artifacts and dataset digests to be
+fresh.
+
 ## Eval structure
 
 When writing evals, you SHOULD follow the below principles:
