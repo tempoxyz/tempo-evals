@@ -2397,6 +2397,8 @@ source = { virtual = "." }
 dependencies = [
     { name = "harbor", extra = ["daytona"] },
     { name = "harbor-rewardkit" },
+    { name = "pandas" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -2409,6 +2411,8 @@ dev = [
 requires-dist = [
     { name = "harbor", extras = ["daytona"], specifier = ">=0.16.1,<0.17" },
     { name = "harbor-rewardkit", specifier = "==0.1.7" },
+    { name = "pandas", specifier = ">=3.0.0,<4" },
+    { name = "pyyaml", specifier = ">=6.0.0,<7" },
 ]
 
 [package.metadata.requires-dev]

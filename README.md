@@ -7,7 +7,6 @@ Powered by [Harbor](https://harborframework.com)
 ## Install
 
 ```bash
-npm install
 uv sync
 npm run docs:prepare
 ```
@@ -208,7 +207,7 @@ These commands use `local-oracle-dev`, skip generated asset sync, and avoid forc
 Useful runner flags:
 
 ```bash
---no-sync               # skip sync-shared and harbor sync
+--no-sync               # skip sync_shared.py and harbor sync
 --no-force-build        # ask Harbor to reuse Docker builds
 --no-delete             # keep environments for debugging
 --disable-verification  # skip verifier execution
