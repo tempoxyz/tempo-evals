@@ -1,7 +1,7 @@
 # Daytona Agent job: runs the full Claude Code benchmark matrix on Daytona DinD, three attempts per task.
 # Keep this config thin. scripts/run-benchmark.ts copies tasks into a temporary
 # dereferenced .cache/harbor-daytona/<job>/tasks tree before invoking Harbor.
-# Do not materialize task symlinks in tasks/ to fix Daytona upload issues; update
+# Do not materialize task symlinks in tasks/tempo to fix Daytona upload issues; update
 # the runner staging logic instead.
 job_name: tempo-bench-agents-daytona-local
 jobs_dir: jobs
@@ -29,7 +29,7 @@ agents:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
 datasets:
-  - path: tasks
+  - path: tasks/tempo
     task_names:
       - "*-base"
       - "*-docs"

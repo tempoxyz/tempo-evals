@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Benchmark entrypoint for local Docker and Daytona jobs. Keep tracked task
-// assets symlinked in tasks/. Daytona runs create a temporary dereferenced task
-// tree under .cache/harbor-daytona/<job>/tasks and rewrite the Harbor config to
-// use it. Do not commit that staged tree or copy its files back into tasks/.
+// assets symlinked in tasks/tempo. Daytona runs create a temporary dereferenced
+// task tree under .cache/harbor-daytona/<job>/tasks/tempo and rewrites the
+// Harbor config to use it. Do not commit that staged tree or copy its files
+// back into tasks/.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -54,7 +55,7 @@ const variants: Record<string, Variant> = {
     needsAgentAuth: true,
   },
   model: {
-    path: "tasks",
+    path: "tasks/tempo",
     prefix: "tempo-bench-model-local",
     defaultAgent: "claude-code",
     defaultModel: "haiku",
@@ -109,7 +110,7 @@ Options:
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and Daytona config variants
   --n-tasks N             Limit task count for the model variant
-  --tasks PATH            Task dataset path for dataset/model variants (default: tasks)
+  --tasks PATH            Task dataset path for dataset/model variants (default: tasks/tempo)
   --no-sync               Skip task asset and dataset sync before running Harbor
 `);
 }
@@ -277,7 +278,7 @@ function preflight(variant: Variant) {
 }
 
 function taskPath(options: Options): string {
-  return options.tasks ?? "tasks";
+  return options.tasks ?? "tasks/tempo";
 }
 
 function syncDataset(options: Options) {
@@ -307,12 +308,13 @@ function stageDaytonaConfig(
   taskFilter?: string,
 ): string {
   const stagingRoot = path.join(".cache", "harbor-daytona", runId);
-  const stagedTasks = path.join(stagingRoot, "tasks");
+  const sourceTasks = "tasks/tempo";
+  const stagedTasks = path.join(stagingRoot, "tasks", "tempo");
   const stagedConfig = path.join(stagingRoot, path.basename(configPath));
 
   fs.rmSync(stagingRoot, { recursive: true, force: true });
-  fs.mkdirSync(stagingRoot, { recursive: true });
-  fs.cpSync("tasks", stagedTasks, {
+  fs.mkdirSync(path.dirname(stagedTasks), { recursive: true });
+  fs.cpSync(sourceTasks, stagedTasks, {
     recursive: true,
     dereference: true,
     filter: (sourcePath) =>
@@ -333,7 +335,7 @@ function stageDaytonaConfig(
 
   const config = fs.readFileSync(configPath, "utf8");
   const redirected = applyTaskFilter(config, taskFilter).replace(
-    /(^\s*-\s*path:\s*)tasks\s*$/m,
+    /(^\s*-\s*path:\s*)tasks\/tempo\s*$/m,
     `$1${JSON.stringify(stagedTasks)}`,
   );
   if (redirected === config) {
@@ -410,7 +412,7 @@ try {
       : stageFilteredConfig(variant.config, runId, options.taskFilter);
     args.push("-c", config);
   } else {
-    args.push("--path", options.tasks ?? variant.path ?? "tasks");
+    args.push("--path", options.tasks ?? variant.path ?? "tasks/tempo");
     args.push("--agent", options.agent ?? variant.defaultAgent ?? "claude-code");
     const model = options.model ?? variant.defaultModel;
     if (model) args.push("--model", model);

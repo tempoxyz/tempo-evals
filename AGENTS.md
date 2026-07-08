@@ -70,15 +70,15 @@ output, or cache output.
 
 Do not hand-edit generated Tempo variants:
 
-- `tasks/*-docs/`
-- `tasks/*-mcp/`
+- `tasks/tempo/*-docs/`
+- `tasks/tempo/*-mcp/`
 
 Change the base task or generator, then run:
 
 ```bash
 npm run sync
 
-# if you want to sync all tasks
+# if you want to sync Tempo tasks
 npm run dataset
 
 # if you want to sync mpp tasks
