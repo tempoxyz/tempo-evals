@@ -27,7 +27,7 @@
     "check:generated": "uv run python scripts/run_benchmark.py check-generated",
     "check:format": "uv run ruff format --check .",
     "check:lint": "uv run ruff check .",
-    "check:shell": "find shared sources -name '*.sh' -print0 | xargs -0 uv run shellcheck --severity=warning",
+    "check:shell": "find shared -name '*.sh' -exec uv run shellcheck --severity=warning {} +",
     "check:scripts": "uv run python -m compileall -q scripts",
     "test:results": "uv run python -m unittest discover -s scripts -p '*_test.py'",
     "clean": "uv run python scripts/run_benchmark.py clean",
