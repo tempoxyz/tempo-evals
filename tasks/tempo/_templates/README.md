@@ -11,6 +11,8 @@ A template task contains only the authored files:
   `<!-- tempobench_sync -->` placeholder, which sync replaces with the shared
   execution constraints (and the per-profile access block for docs/MCP
   variants) from `config/tasks.yaml`.
+- `README.md` — the Harbor Hub display summary. It must include `## Overview`
+  and `## What the Task Tests`.
 - `task.toml` — profile-neutral task config. `[task].name` is the bare
   intent (`tempo/<slug>`); sync appends the profile suffix, description
   label, keywords, per-profile env, and MCP servers. Put Tempo fixture

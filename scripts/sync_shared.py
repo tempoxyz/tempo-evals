@@ -137,6 +137,25 @@ def render_instruction(task_dir: Path, slug: str, profile: dict[str, Any]) -> No
     )
 
 
+def render_readme(task_dir: Path, slug: str) -> None:
+    readme_path = task_dir / "README.md"
+    if not readme_path.exists():
+        msg = f"Missing {SOURCES_LABEL}/{slug}/README.md"
+        raise RuntimeError(msg)
+
+    content = readme_path.read_text()
+    for heading in ("## Overview", "## What the Task Tests"):
+        if heading not in content:
+            msg = f"Missing {heading!r} in {SOURCES_LABEL}/{slug}/README.md"
+            raise RuntimeError(msg)
+
+    header = (
+        f"<!-- AUTO-GENERATED FROM {SOURCES_LABEL}/{slug}/README.md "
+        "BY npm run sync. DO NOT EDIT MANUALLY. -->\n\n"
+    )
+    write_file(readme_path, header + content)
+
+
 def render_task_toml(task_dir: Path, slug: str, profile: dict[str, Any]) -> None:
     task_config_path = task_dir / "task.toml"
     doc = tomlkit.parse(task_config_path.read_text())
@@ -349,6 +368,7 @@ def generate_task(source_dir: Path, slug: str, profile: dict[str, Any]) -> str:
     task_dir = TASKS_DIR / task_slug
     copy_dir(source_dir, task_dir)
     render_instruction(task_dir, slug, profile)
+    render_readme(task_dir, slug)
     render_task_toml(task_dir, slug, profile)
     assert_verifier_env_allowed(task_dir)
 
