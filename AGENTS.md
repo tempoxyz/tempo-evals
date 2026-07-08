@@ -130,6 +130,20 @@ Prefer specific messages, e.g. `docs: scaffold benchmark runbook`.
 
 ## Pull Requests
 
+### Before opening or updating a PR
+
+If your changes affect generated task assets, shared verifier packages, task
+fixtures, or task digests, run the matching artifact sync before committing and
+include the resulting generated files in the PR:
+
+```bash
+npm run dataset                  # Tempo tasks
+npm run dataset -- --tasks tasks/mpp
+```
+
+Do not restore or omit generated dataset/artifact changes just because they look
+mechanical. CI expects generated artifacts and dataset digests to be fresh.
+
 ### Pull request body
 
 Pull requests should all follow the same format:

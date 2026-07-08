@@ -5,11 +5,13 @@ import { Mppx, tempo } from "mppx/server";
 const port = Number(process.env.PORT ?? "3000");
 const freePath = "/free";
 const paidPath = "/paid";
+const recipient = (process.env.RECIPIENT_ADDRESS ?? "0x1111111111111111111111111111111111111111") as `0x${string}`;
+const chargeAmount = process.env.MPP_CHARGE_AMOUNT ?? "0.01";
 
 const mppx = Mppx.create({
   methods: [
     tempo({
-      recipient: "0x1111111111111111111111111111111111111111",
+      recipient,
       testnet: true,
     }),
   ],
@@ -18,7 +20,7 @@ const mppx = Mppx.create({
 
 const paid = Mppx.toNodeListener(
   mppx.charge({
-    amount: "0.000001",
+    amount: chargeAmount,
     description: "Paid JSON",
   }),
 );

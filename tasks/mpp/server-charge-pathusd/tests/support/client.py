@@ -2,6 +2,7 @@ import asyncio
 import contextlib
 import json
 import os
+import secrets
 import signal
 import subprocess
 import time
@@ -25,9 +26,11 @@ CHAIN_ID_HEX = hex(CHAIN_ID)
 # Fixed Moderato fixture values used by the verifier-paid MPP request.
 TOKEN = "0x20c0000000000000000000000000000000000000"
 RECIPIENT = "0x1111111111111111111111111111111111111111"
-PAYER_PRIVATE_KEY = "0x59c6995e998f97a5a004497e5da46f94a879b621718eb9bde6e3db6c2b2b3b4d"
+PAYER_PRIVATE_KEY = os.environ.get(
+    "TEMPO_MPP_PAYER_PRIVATE_KEY", f"0x{secrets.token_hex(32)}"
+)
 MPP_SECRET_KEY = "tempo-bench-mpp-secret-key-000000001"
-CHARGE_AMOUNT = Decimal("0.000001")
+CHARGE_AMOUNT = Decimal("0.01")
 TOKEN_BASE_UNITS = Decimal("1000000")
 KEEP_SERVER = os.environ.get("TEMPO_MPP_KEEP_SERVER") == "1"
 
@@ -42,9 +45,48 @@ def write_scores(value: dict) -> None:
     write_json(LOG_SCORES_PATH, value)
 
 
+def log_event(event: str, **fields: object) -> None:
+    payload = {"event": event, "ts": time.time(), **fields}
+    line = json.dumps(payload, sort_keys=True)
+    print(line, flush=True)
+    with (LOG_DIR / "verifier-events.ndjson").open("a", encoding="utf-8") as log_file:
+        log_file.write(line + "\n")
+
+
+def read_json_log(name: str) -> object | None:
+    path = LOG_DIR / name
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
+
+
+def response_snapshot(response: httpx.Response) -> dict:
+    return {
+        "body": response.text[:4000],
+        "headers": dict(response.headers),
+        "status": response.status_code,
+    }
+
+
 def fail(reason: str) -> None:
-    write_scores({"reward": 0, "reason": reason})
-    write_json(LOG_DIR / "details.json", {"ok": False, "reason": reason})
+    log_event("fail", reason=reason)
+    diagnostics = {
+        name.removesuffix(".json"): value
+        for name in [
+            "free-failure.json",
+            "paid-failure.json",
+            "payment-failure.json",
+        ]
+        if (value := read_json_log(name)) is not None
+    }
+    score = {"reward": 0, "reason": reason}
+    if diagnostics:
+        score["diagnostics"] = diagnostics
+    write_scores(score)
+    write_json(LOG_DIR / "details.json", {"ok": False, "reason": reason, **score})
 
 
 def rpc(method: str, params: list) -> object:
@@ -76,10 +118,12 @@ def read_out_json(process: subprocess.Popen[str]) -> dict:
     while time.monotonic() < deadline:
         if OUT_PATH.exists():
             out = json.loads(OUT_PATH.read_text(encoding="utf-8"))
-            return {
+            urls = {
                 "freeUrl": validate_url("freeUrl", out.get("freeUrl")),
                 "paidUrl": validate_url("paidUrl", out.get("paidUrl")),
             }
+            log_event("out_json", **urls)
+            return urls
         if process.poll() is not None:
             raise RuntimeError("server exited before writing out.json")
         time.sleep(0.1)
@@ -87,12 +131,34 @@ def read_out_json(process: subprocess.Popen[str]) -> dict:
 
 
 def start_server() -> subprocess.Popen[str]:
+    log_event(
+        "start_server",
+        recipient=RECIPIENT,
+        chargeAmount=str(CHARGE_AMOUNT),
+        chargeAmountEnvKeys=["CHARGE_AMOUNT", "MPP_CHARGE_AMOUNT", "PAYMENT_AMOUNT"],
+        recipientEnvKeys=[
+            "MPP_RECIPIENT_ADDRESS",
+            "PAYMENT_RECIPIENT_ADDRESS",
+            "RECIPIENT_ADDRESS",
+        ],
+    )
+    stdout = (LOG_DIR / "server.stdout.txt").open("w", encoding="utf-8")
+    stderr = (LOG_DIR / "server.stderr.txt").open("w", encoding="utf-8")
     return subprocess.Popen(
         ["npm", "run", "--silent", "serve"],
         cwd=WORKSPACE,
-        env={**os.environ, "MPP_SECRET_KEY": MPP_SECRET_KEY},
-        stderr=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
+        env={
+            **os.environ,
+            "MPP_SECRET_KEY": MPP_SECRET_KEY,
+            "CHARGE_AMOUNT": str(CHARGE_AMOUNT),
+            "MPP_CHARGE_AMOUNT": str(CHARGE_AMOUNT),
+            "MPP_RECIPIENT_ADDRESS": RECIPIENT,
+            "PAYMENT_AMOUNT": str(CHARGE_AMOUNT),
+            "PAYMENT_RECIPIENT_ADDRESS": RECIPIENT,
+            "RECIPIENT_ADDRESS": RECIPIENT,
+        },
+        stderr=stderr,
+        stdout=stdout,
         start_new_session=True,
         text=True,
     )
@@ -105,7 +171,16 @@ def free_request(url: str) -> dict:
     while time.monotonic() < deadline:
         try:
             response = httpx.get(url, headers={"accept": "application/json"}, timeout=5)
+            log_event("free_response", status=response.status_code, url=url)
             if response.status_code != 200:
+                write_json(
+                    LOG_DIR / "free-failure.json",
+                    {
+                        "reason": "unexpected status",
+                        "url": url,
+                        **response_snapshot(response),
+                    },
+                )
                 raise RuntimeError(f"free request returned {response.status_code}")
             response.json()
             return {"json": True, "status": response.status_code}
@@ -117,12 +192,15 @@ def free_request(url: str) -> dict:
 
 
 def fund_account(address: str) -> None:
+    log_event("fund_account_start", address=address)
     tx_hashes = rpc("tempo_fundAddress", [address])
+    log_event("fund_account_txs", address=address, hashes=tx_hashes)
     write_json(LOG_DIR / "faucet.json", {"address": address, "hashes": tx_hashes})
     for tx_hash in tx_hashes:
         deadline = time.monotonic() + 60
         while time.monotonic() < deadline:
             if rpc("eth_getTransactionReceipt", [tx_hash]):
+                log_event("fund_account_confirmed", txHash=tx_hash)
                 break
             time.sleep(1)
         else:
@@ -142,11 +220,28 @@ def transfer_data(amount: Decimal) -> str:
 
 
 def payment_transaction(reference: str, payer: str) -> dict:
+    log_event("payment_transaction_fetch", reference=reference, payer=payer)
     transaction = rpc("eth_getTransactionByHash", [reference])
     receipt = rpc("eth_getTransactionReceipt", [reference])
     if not isinstance(transaction, dict):
+        write_json(
+            LOG_DIR / "payment-failure.json",
+            {
+                "reason": "payment receipt reference was not a transaction hash",
+                "reference": reference,
+                "transaction": transaction,
+            },
+        )
         raise RuntimeError("payment receipt reference was not a transaction hash")
     if not isinstance(receipt, dict):
+        write_json(
+            LOG_DIR / "payment-failure.json",
+            {
+                "reason": "payment transaction receipt was not found",
+                "reference": reference,
+                "transaction": transaction,
+            },
+        )
         raise RuntimeError("payment transaction receipt was not found")
 
     transfer_log = None
@@ -165,6 +260,17 @@ def payment_transaction(reference: str, payer: str) -> dict:
 
     call = (transaction.get("calls") or [{}])[0]
     expected_transfer_data = transfer_data(CHARGE_AMOUNT)
+    transfer_candidates = [
+        {
+            "amount": log.get("data"),
+            "from": topics[1].lower() if len(topics) >= 2 else None,
+            "to": topics[2].lower() if len(topics) >= 3 else None,
+            "token": normalize_address(log.get("address")),
+        }
+        for log in receipt.get("logs", [])
+        if normalize_address(log.get("address")) == TOKEN
+        for topics in [log.get("topics", [])]
+    ]
     proof = {
         "blockHash": receipt.get("blockHash"),
         "blockNumber": receipt.get("blockNumber"),
@@ -191,6 +297,14 @@ def payment_transaction(reference: str, payer: str) -> dict:
         == receipt.get("transactionHash"),
         "referenceMatchesHash": reference == transaction.get("hash"),
         "successful": receipt.get("status") == "0x1",
+        "expected": {
+            "amount": expected_transfer_data,
+            "payer": normalize_address(payer),
+            "recipient": normalize_address(RECIPIENT),
+            "recipientTopic": recipient_topic,
+            "token": TOKEN,
+        },
+        "transferCandidates": transfer_candidates,
         "transfer": {
             "amount": transfer_log.get("data") if transfer_log else None,
             "amountMatchesCharge": transfer_log is not None
@@ -211,20 +325,35 @@ def payment_transaction(reference: str, payer: str) -> dict:
             and normalize_address(transfer_log.get("address")) == TOKEN,
         },
     }
+
+    def raise_payment_error(reason: str) -> None:
+        failure = {"reason": reason, "proof": proof}
+        write_json(LOG_DIR / "payment-proof.json", proof)
+        write_json(LOG_DIR / "payment-failure.json", failure)
+        raise RuntimeError(reason)
+
+    write_json(LOG_DIR / "payment-proof.json", proof)
+    log_event(
+        "payment_transaction_proof",
+        reference=reference,
+        transferFound=proof["transfer"]["found"],
+        transferCandidates=len(transfer_candidates),
+    )
     if not proof["chainMatches"]:
-        raise RuntimeError(f"payment transaction used chain {proof['chainId']}")
+        raise_payment_error(f"payment transaction used chain {proof['chainId']}")
     if not proof["fromMatchesPayer"]:
-        raise RuntimeError("payment transaction payer mismatch")
+        raise_payment_error("payment transaction payer mismatch")
     if not proof["successful"]:
-        raise RuntimeError("payment transaction was not successful")
+        raise_payment_error("payment transaction was not successful")
     if not proof["transfer"]["found"]:
-        raise RuntimeError("payment transaction did not transfer to recipient")
+        raise_payment_error("payment transaction did not transfer to recipient")
     if not proof["transfer"]["amountMatchesCharge"]:
-        raise RuntimeError("payment transaction amount mismatch")
+        raise_payment_error("payment transaction amount mismatch")
     return proof
 
 
 async def paid_request(url: str) -> dict:
+    log_event("paid_request_start", url=url)
     account = TempoAccount.from_key(PAYER_PRIVATE_KEY)
     fund_account(account.address)
     response = await mpp_get(
@@ -240,12 +369,36 @@ async def paid_request(url: str) -> dict:
         headers={"accept": "application/json"},
     )
     receipt_header = response.headers.get("payment-receipt")
+    log_event(
+        "paid_response",
+        hasReceiptHeader=bool(receipt_header),
+        status=response.status_code,
+        url=url,
+    )
     if response.status_code < 200 or response.status_code >= 300:
+        write_json(
+            LOG_DIR / "paid-failure.json",
+            {"reason": "unexpected status", "url": url, **response_snapshot(response)},
+        )
         raise RuntimeError(f"paid request returned {response.status_code}")
     if not receipt_header:
+        write_json(
+            LOG_DIR / "paid-failure.json",
+            {
+                "reason": "missing payment receipt",
+                "url": url,
+                **response_snapshot(response),
+            },
+        )
         raise RuntimeError("paid response did not include Payment-Receipt")
     response.json()
     receipt = Receipt.from_payment_receipt(receipt_header)
+    log_event(
+        "paid_receipt",
+        method=receipt.method,
+        reference=receipt.reference,
+        status=receipt.status,
+    )
     transaction = payment_transaction(receipt.reference, account.address)
     return {
         "hasReceipt": True,
