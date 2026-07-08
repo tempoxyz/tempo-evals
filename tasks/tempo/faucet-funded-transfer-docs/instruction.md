@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED FROM sources/tempo/faucet-funded-transfer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+<!-- AUTO-GENERATED FROM tasks/tempo/_templates/faucet-funded-transfer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
 
 # Tempo Faucet Funded Transfer
 

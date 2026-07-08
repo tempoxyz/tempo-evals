@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED FROM sources/tempo/set-fee-token/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+<!-- AUTO-GENERATED FROM tasks/tempo/_templates/set-fee-token/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
 
 # Tempo Set Fee Token
 

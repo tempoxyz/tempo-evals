@@ -1,9 +1,9 @@
-# Data for npm run sync: which Tempo task sources get generated into
+# Data for npm run sync: which Tempo task templates get generated into
 # base/docs/MCP variants, the per-profile task.toml/instruction/quality
 # edits, and the shared files synced into MPP tasks.
 
-# Authored task sources under sources/tempo/<slug>/. Each one generates a
-# -base, -docs, and -mcp task under tasks/tempo/.
+# Authored task templates under tasks/tempo/_templates/<slug>/. Each one
+# generates a -base, -docs, and -mcp task under tasks/tempo/.
 task_slugs:
   - transfer-with-memo
   - transfer-with-memo-fee-payer

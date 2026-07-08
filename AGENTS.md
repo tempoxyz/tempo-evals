@@ -74,10 +74,11 @@ output, or cache output.
 
 ## Generated Files
 
-All of `tasks/tempo/` is generated output; do not hand-edit it. Authored
-Tempo task sources live in `sources/tempo/<slug>/` (see
-`sources/tempo/README.md`). Each source generates `-base`, `-docs`, and
-`-mcp` variants via `npm run sync`.
+Generated profile task directories in `tasks/tempo/` are generated output; do
+not hand-edit them. Authored Tempo task templates live in
+`tasks/tempo/_templates/<slug>/` (see `tasks/tempo/_templates/README.md`).
+Each template generates `-base`, `-docs`, and `-mcp` variants via
+`npm run sync`.
 
 Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:

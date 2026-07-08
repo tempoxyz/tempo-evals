@@ -1,4 +1,4 @@
-<!-- AUTO-GENERATED FROM sources/tempo/stablecoin-dex-swap/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+<!-- AUTO-GENERATED FROM tasks/tempo/_templates/stablecoin-dex-swap/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
 
 # Tempo Stablecoin DEX Swap
 
