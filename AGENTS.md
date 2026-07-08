@@ -83,20 +83,28 @@ Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:
 
 - `environment/Dockerfile`
+- `environment/rewardkit-package/` (from `shared/rewardkit-package/`)
+- `solution/package.json`
+- `solution/solve.sh`
 - `solution/tsconfig.json`
+- `tests/reward.toml`
 - `tests/test.sh`
 - `tests/correctness/verify.sh`
 - `tests/quality/check.py`
+- `tests/quality/reward.toml`
 - `tests/support/client_lib.py`
 - `tests/support/verifier_utils.py`
 
 Task-specific MPP files stay in the task directory: `task.toml`,
 `instruction.md`, `solution/` sources, `tests/support/client.py` (scenario),
-`tests/correctness/criteria.py`, and `tests/quality/reward.toml`.
+and `tests/correctness/criteria.py`. A task can keep a divergent copy of a
+synced file by listing it in `MPP_TASK_LOCAL_OVERRIDES` in
+`scripts/sync_shared.py`; sync then leaves the task-local copy alone.
 
-Job configs share the dataset matrix in `config/datasets.yaml`;
-`scripts/run_benchmark.py` injects it into any job config without its own
-`datasets:` block.
+Harbor job configs are generated: `scripts/run_benchmark.py` renders
+`config/job.yaml.j2` with per-variant values (see `VARIANTS`) and injects the
+dataset matrix from `config/datasets.yaml` unless the variant declares its own
+`datasets`.
 
 Change the base task or generator, then run:
 

@@ -9,6 +9,8 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import tomlkit
+
 ROOT = Path(__file__).resolve().parents[1]
 TASKS_DIR = ROOT / "tasks" / "tempo"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
@@ -16,13 +18,24 @@ MPP_SHARED_DIR = ROOT / "shared" / "mpp"
 
 MPP_SHARED_FILES = [
     ("environment/Dockerfile", False),
+    ("solution/package.json", False),
+    ("solution/solve.sh", True),
     ("solution/tsconfig.json", False),
+    ("tests/reward.toml", False),
     ("tests/test.sh", True),
     ("tests/correctness/verify.sh", True),
     ("tests/quality/check.py", False),
+    ("tests/quality/reward.toml", False),
     ("tests/support/client_lib.py", False),
     ("tests/support/verifier_utils.py", False),
 ]
+
+# Task-local files that intentionally diverge from the shared MPP defaults.
+# Sync leaves these alone; the tracked task-local copy is the source of truth.
+MPP_TASK_LOCAL_OVERRIDES = {
+    "server-hono-charge-pathusd": {"solution/package.json"},
+    "server-charge-pathusd": {"tests/quality/reward.toml"},
+}
 
 TEMPO_DOCS_URL = "http://tempo-docs:3000/developers"
 TEMPO_MCP_URL = "https://mcp.tempo.xyz"
@@ -131,163 +144,45 @@ def toml_string(value: str) -> str:
     return json.dumps(value)
 
 
-def replace_toml_string(content: str, key: str, value: str) -> str:
-    return re.sub(
-        rf'(^\s*{re.escape(key)}\s*=\s*)"[^"]*"',
-        rf"\g<1>{toml_string(value)}",
-        content,
-        count=1,
-        flags=re.MULTILINE,
-    )
-
-
-def table_bounds(content: str, table_name: str) -> tuple[int, int]:
-    start = content.find(f"[{table_name}]")
-    if start == -1:
-        msg = f"Missing [{table_name}] table"
-        raise RuntimeError(msg)
-    next_start = content.find("\n[", start + len(table_name) + 2)
-    end = len(content) if next_start == -1 else next_start + 1
-    return start, end
-
-
-def append_toml_string_to_table(
-    content: str,
-    table_name: str,
-    key: str,
-    value: str,
-) -> str:
-    _start, end = table_bounds(content, table_name)
-    table = content[_start:end]
-    if re.search(rf"^\s*{re.escape(key)}\s*=", table, re.MULTILINE):
-        return re.sub(
-            rf'(^\s*{re.escape(key)}\s*=\s*)"[^"]*"',
-            rf"\g<1>{toml_string(value)}",
-            content,
-            count=1,
-            flags=re.MULTILINE,
-        )
-    return f"{content[:end].rstrip()}\n{key} = {toml_string(value)}\n{content[end:]}"
-
-
-def ensure_toml_string_in_table(
-    content: str,
-    table_name: str,
-    key: str,
-    value: str,
-) -> str:
-    start, end = table_bounds(content, table_name)
-    table = content[start:end]
-    if re.search(rf"^\s*{re.escape(key)}\s*=", table, re.MULTILINE):
-        return content
-    return f"{content[:end].rstrip()}\n{key} = {toml_string(value)}\n{content[end:]}"
-
-
-def remove_toml_key_from_table(content: str, table_name: str, key: str) -> str:
-    start = content.find(f"[{table_name}]")
-    if start == -1:
-        return content
-    next_start = content.find("\n[", start + len(table_name) + 2)
-    end = len(content) if next_start == -1 else next_start + 1
-    table = "\n".join(
-        line
-        for line in re.split(r"\r?\n", content[start:end])
-        if not re.match(rf"^\s*{re.escape(key)}\s*=", line)
-    )
-    return f"{content[:start]}{table}{content[end:]}"
-
-
-def clear_environment_network_policy(content: str) -> str:
-    content = remove_toml_key_from_table(content, "environment", "network_mode")
-    return remove_toml_key_from_table(content, "environment", "allowed_hosts")
-
-
-def remove_environment_mcp_servers(content: str) -> str:
-    return re.sub(
-        r"\n\[\[environment\.mcp_servers\]\]\n(?:[^\n]*\n)*?(?=\n(?:\[|\[\[)|$)",
-        "\n",
-        content,
-    )
-
-
-def add_tempo_mcp_server(content: str) -> str:
-    block = (
-        f'\n[[environment.mcp_servers]]\nname = "tempo"\n'
-        f'transport = "streamable-http"\nurl = "{TEMPO_MCP_URL}"\n'
-    )
-    environment_env_start = content.find("\n[environment.env]")
-    if environment_env_start == -1:
-        return f"{content.rstrip()}{block}\n"
-    return (
-        f"{content[:environment_env_start].rstrip()}"
-        f"{block}{content[environment_env_start:]}"
-    )
-
-
-def replace_or_add_metadata_profile(content: str, profile_id: str) -> str:
-    start = content.find("[metadata]")
-    if start == -1:
-        return content
-    next_start = content.find("\n[", start + len("[metadata]"))
-    end = len(content) if next_start == -1 else next_start + 1
-    table = content[start:end]
-    if re.search(r"^\s*profile\s*=", table, re.MULTILINE):
-        return re.sub(
-            r'(^\s*profile\s*=\s*)"[^"]*"',
-            rf"\g<1>{toml_string(profile_id)}",
-            content,
-            count=1,
-            flags=re.MULTILINE,
-        )
-    return (
-        f"{content[:end].rstrip()}\nprofile = {toml_string(profile_id)}\n"
-        f"{content[end:]}"
-    )
-
-
-def add_keyword(content: str, keyword: str) -> str:
-    encoded = toml_string(keyword)
-
-    def replace(match: re.Match[str]) -> str:
-        values = match.group(1)
-        if encoded in values:
-            return match.group(0)
-        trimmed = values.strip()
-        return f"keywords = [{f'{trimmed}, ' if trimmed else ' '}{encoded}]"
-
-    return re.sub(r"keywords\s*=\s*\[([^\]]*)\]", replace, content, count=1)
+def remove_key(table: Any, key: str) -> None:
+    if key in table:
+        del table[key]
 
 
 def update_task_toml(task_dir: Path, source_slug: str, profile: dict[str, str]) -> None:
     task_config_path = task_dir / "task.toml"
     task_name = f"tempo/{source_slug}{profile['suffix']}"
-    content = task_config_path.read_text()
+    doc = tomlkit.parse(task_config_path.read_text())
 
-    content = replace_toml_string(content, "name", task_name)
-    description_match = re.search(r'description\s*=\s*"([^"]*)"', content)
-    description = description_match.group(1) if description_match else task_name
-    content = replace_toml_string(
-        content,
-        "description",
-        f"{description} ({profile['label']} profile).",
-    )
-    content = remove_environment_mcp_servers(content)
-    content = remove_toml_key_from_table(content, "environment.env", "TEMPO_DOCS_URL")
-    content = clear_environment_network_policy(content)
-    content = replace_or_add_metadata_profile(content, profile["id"])
-    content = add_keyword(content, profile["id"])
+    task = doc["task"]
+    task["name"] = task_name
+    description = str(task.get("description", task_name))
+    task["description"] = f"{description} ({profile['label']} profile)."
+    keywords = task.get("keywords")
+    if keywords is not None and profile["id"] not in keywords:
+        keywords.append(profile["id"])
+
+    if "metadata" in doc:
+        doc["metadata"]["profile"] = profile["id"]
+
+    environment = doc["environment"]
+    remove_key(environment, "mcp_servers")
+    remove_key(environment, "network_mode")
+    remove_key(environment, "allowed_hosts")
+    remove_key(environment["env"], "TEMPO_DOCS_URL")
 
     if profile["id"] == "docs":
-        content = append_toml_string_to_table(
-            content,
-            "environment.env",
-            "TEMPO_DOCS_URL",
-            TEMPO_DOCS_URL,
-        )
+        environment["env"]["TEMPO_DOCS_URL"] = TEMPO_DOCS_URL
     elif profile["id"] == "mcp":
-        content = add_tempo_mcp_server(content)
+        server = tomlkit.table()
+        server["name"] = "tempo"
+        server["transport"] = "streamable-http"
+        server["url"] = TEMPO_MCP_URL
+        servers = tomlkit.aot()
+        servers.append(server)
+        environment["mcp_servers"] = servers
 
-    write_file(task_config_path, f"{content.rstrip()}\n")
+    write_file(task_config_path, tomlkit.dumps(doc))
 
 
 def append_profile_instruction(task_dir: Path, profile: dict[str, str]) -> None:
@@ -513,20 +408,18 @@ def sync_rewardkit(task_dir: Path) -> None:
 
 def ensure_quality_env(task_dir: Path) -> None:
     task_config_path = task_dir / "task.toml"
-    content = task_config_path.read_text()
-    content = ensure_toml_string_in_table(
-        content,
-        "environment.env",
-        "TEMPO_BENCH_TURNS_SCORE_CUTOFFS",
-        DEFAULT_TURN_CUTOFFS,
-    )
-    content = ensure_toml_string_in_table(
-        content,
-        "environment.env",
-        "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS",
-        DEFAULT_TOKEN_CUTOFFS,
-    )
-    write_file(task_config_path, f"{content.rstrip()}\n")
+    doc = tomlkit.parse(task_config_path.read_text())
+    env = doc["environment"]["env"]
+    changed = False
+    for key, value in (
+        ("TEMPO_BENCH_TURNS_SCORE_CUTOFFS", DEFAULT_TURN_CUTOFFS),
+        ("TEMPO_BENCH_TOKENS_SCORE_CUTOFFS", DEFAULT_TOKEN_CUTOFFS),
+    ):
+        if key not in env:
+            env[key] = value
+            changed = True
+    if changed:
+        write_file(task_config_path, tomlkit.dumps(doc))
 
 
 def relative_symlink_target(destination: Path, source: Path) -> str:
@@ -634,11 +527,18 @@ def mpp_task_dirs() -> list[Path]:
 def sync_mpp_tasks() -> int:
     tasks = mpp_task_dirs()
     for task_dir in tasks:
+        overrides = MPP_TASK_LOCAL_OVERRIDES.get(task_dir.name, set())
         for source, executable in MPP_SHARED_FILES:
+            if source in overrides:
+                continue
             destination = task_dir / source
             copy_file(MPP_SHARED_DIR / source, destination)
             if executable:
                 destination.chmod(0o755)
+        copy_dir(
+            ROOT / "shared" / "rewardkit-package",
+            task_dir / "environment" / "rewardkit-package",
+        )
     return len(tasks)
 
 

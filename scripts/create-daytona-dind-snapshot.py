@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create the Daytona DinD snapshot used by the benchmark configs.
 
-This is a small operational helper for config/job.daytona.*.yaml. Keep snapshot
+This is a small operational helper for Daytona job runs. Keep snapshot
 name/resource changes aligned with those configs; do not use this script to
 change task packaging or the temporary task staging flow.
 """

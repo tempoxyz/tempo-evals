@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import shutil
@@ -11,24 +12,73 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import jinja2
 import yaml
 
+ORACLE_AGENT: dict[str, Any] = {"name": "oracle"}
+
+# Deliberate override of config/datasets.yaml for jobs that run Tempo tasks
+# only. Use --task-filter server-* to target MPP tasks.
+TEMPO_ONLY_DATASETS = [
+    {"path": "tasks/tempo", "task_names": ["*-base", "*-docs", "*-mcp"]},
+]
+
+
+def claude_agent(n_concurrent: int | None = None) -> dict[str, Any]:
+    agent: dict[str, Any] = {"name": "claude-code", "model_name": "claude-haiku-4-5"}
+    if n_concurrent is not None:
+        agent["n_concurrent"] = n_concurrent
+    return agent
+
+
+# Everything that differs between the generated Harbor job configs. The rest of
+# the config (verifier env, timeout multiplier, Daytona kwargs, ...) lives in
+# config/job.yaml.j2. Omit "datasets" to use the config/datasets.yaml matrix.
 VARIANTS: dict[str, dict[str, Any]] = {
     "local-oracle": {
-        "config": "config/job.local.oracle.yaml",
+        "job": {
+            "job_name": "tempo-bench-local",
+            "n_attempts": 1,
+            "n_concurrent_trials": 4,
+            "environment_type": "docker",
+            "force_build": True,
+            "agents": [ORACLE_AGENT],
+        },
         "prefix": "tempo-bench-oracle-local",
     },
     "local-oracle-dev": {
-        "config": "config/job.local.oracle.dev.yaml",
+        "job": {
+            "job_name": "tempo-bench-local-dev",
+            "n_attempts": 1,
+            "n_concurrent_trials": 1,
+            "environment_type": "docker",
+            "force_build": False,
+            "agents": [ORACLE_AGENT],
+            "datasets": TEMPO_ONLY_DATASETS,
+        },
         "prefix": "tempo-bench-oracle-dev-local",
     },
     "local-agent": {
-        "config": "config/job.local.agent.yaml",
+        "job": {
+            "job_name": "tempo-bench-agents-local",
+            "n_attempts": 3,
+            "n_concurrent_trials": 4,
+            "environment_type": "docker",
+            "force_build": True,
+            "agents": [claude_agent()],
+        },
         "prefix": "tempo-bench-agents-local",
         "needs_agent_auth": True,
     },
     "local-agent-dev": {
-        "config": "config/job.local.agent.dev.yaml",
+        "job": {
+            "job_name": "tempo-bench-agents-dev-local",
+            "n_attempts": 1,
+            "n_concurrent_trials": 4,
+            "environment_type": "docker",
+            "force_build": True,
+            "agents": [claude_agent()],
+        },
         "prefix": "tempo-bench-agents-dev-local",
         "needs_agent_auth": True,
     },
@@ -40,18 +90,39 @@ VARIANTS: dict[str, dict[str, Any]] = {
         "needs_agent_auth": True,
     },
     "daytona-oracle": {
-        "config": "config/job.daytona.oracle.yaml",
+        "job": {
+            "job_name": "tempo-bench-oracle-daytona",
+            "n_attempts": 1,
+            "n_concurrent_trials": 32,
+            "environment_type": "daytona",
+            "force_build": False,
+            "agents": [ORACLE_AGENT],
+        },
         "prefix": "tempo-bench-oracle-daytona",
         "needs_daytona_auth": True,
     },
     "daytona-agent": {
-        "config": "config/job.daytona.agent.yaml",
+        "job": {
+            "job_name": "tempo-bench-agents-daytona-local",
+            "n_attempts": 3,
+            "n_concurrent_trials": 32,
+            "environment_type": "daytona",
+            "force_build": False,
+            "agents": [claude_agent(n_concurrent=32)],
+        },
         "prefix": "tempo-bench-agents-daytona",
         "needs_agent_auth": True,
         "needs_daytona_auth": True,
     },
     "daytona-agent-dev": {
-        "config": "config/job.daytona.agent.dev.yaml",
+        "job": {
+            "job_name": "tempo-bench-agents-daytona-dev-local",
+            "n_attempts": 1,
+            "n_concurrent_trials": 32,
+            "environment_type": "daytona",
+            "force_build": False,
+            "agents": [claude_agent(n_concurrent=32)],
+        },
         "prefix": "tempo-bench-agents-daytona-dev",
         "needs_agent_auth": True,
         "needs_daytona_auth": True,
@@ -366,87 +437,58 @@ def read_yaml(file_path: str | Path) -> dict[str, Any]:
     return value
 
 
-def production_agent_config(model: dict[str, Any]) -> dict[str, Any]:
-    agent = {
+def render_job_config(job: dict[str, Any]) -> dict[str, Any]:
+    environment = jinja2.Environment(
+        loader=jinja2.FileSystemLoader("config"),
+        undefined=jinja2.StrictUndefined,
+        trim_blocks=True,
+        lstrip_blocks=True,
+        keep_trailing_newline=True,
+    )
+    rendered = environment.get_template("job.yaml.j2").render(
+        job_name=job["job_name"],
+        jobs_dir=job.get("jobs_dir", "jobs"),
+        n_attempts=job["n_attempts"],
+        n_concurrent_trials=job["n_concurrent_trials"],
+        environment_type=job["environment_type"],
+        force_build=job["force_build"],
+        agents=job["agents"],
+    )
+    config = yaml.safe_load(rendered)
+    datasets = job.get("datasets") or read_yaml("config/datasets.yaml").get(
+        "datasets", []
+    )
+    config["datasets"] = copy.deepcopy(datasets)
+    return config
+
+
+def production_agent(model: dict[str, Any]) -> dict[str, Any]:
+    agent: dict[str, Any] = {
         "name": model["agent"],
         "model_name": model["model_name"],
-        "env": {
-            "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}",
-            "ANTHROPIC_AUTH_TOKEN": "${ANTHROPIC_AUTH_TOKEN:-}",
-        },
     }
     if model.get("n_concurrent"):
         agent["n_concurrent"] = int(model["n_concurrent"])
     if model.get("concurrency_group"):
         agent["concurrency_group"] = model["concurrency_group"]
-    if model["agent"] == "codex":
-        agent["env"].update(
-            {
-                "OPENAI_API_KEY": "${OPENAI_API_KEY:-}",
-                "OPENAI_BASE_URL": "${OPENAI_BASE_URL:-}",
-                "CODEX_AUTH_JSON_PATH": "${CODEX_AUTH_JSON_PATH:-}",
-                "CODEX_FORCE_AUTH_JSON": "${CODEX_FORCE_AUTH_JSON:-}",
-            },
-        )
     return agent
 
 
-def render_production_config(
+def production_job(
     run_id: str,
     model_config: dict[str, Any],
     options: dict[str, Any],
-) -> str:
-    config = {
+) -> dict[str, Any]:
+    return {
         "job_name": "harbor-job",
         "jobs_dir": str(production_run_root(run_id)),
         "n_attempts": 3,
-        "timeout_multiplier": 1.0,
         "n_concurrent_trials": int(options.get("concurrency") or "32"),
-        "quiet": False,
-        "environment": {
-            "type": "daytona",
-            "force_build": False,
-            "delete": True,
-            "kwargs": {
-                "dind_image": "docker:28.3.3-dind",
-                "connection_pool_maxsize": None,
-            },
-        },
-        "verifier": {
-            "env": {
-                "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}",
-                "ANTHROPIC_AUTH_TOKEN": "${ANTHROPIC_AUTH_TOKEN:-}",
-                "REWARDKIT_JUDGE": "${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}",
-            },
-        },
-        "agents": [production_agent_config(model) for model in model_config["models"]],
-        "datasets": [
-            {
-                "path": "tasks/tempo",
-                "task_names": ["*-base", "*-docs", "*-mcp"],
-            },
-        ],
+        "environment_type": "daytona",
+        "force_build": False,
+        "agents": [production_agent(model) for model in model_config["models"]],
+        "datasets": TEMPO_ONLY_DATASETS,
     }
-    return (
-        "# Generated production Daytona job. Edit config/models.production.yaml "
-        "for the model matrix.\n"
-        f"{dump_yaml(config)}"
-    )
-
-
-def build_production_config(
-    run_id: str,
-    model_config: dict[str, Any],
-    options: dict[str, Any],
-) -> str:
-    staging_root = Path(".cache") / "harbor-production" / run_id
-    staged_config = staging_root / "job.daytona.production.yaml"
-    shutil.rmtree(staging_root, ignore_errors=True)
-    staging_root.mkdir(parents=True, exist_ok=True)
-    rendered = render_production_config(run_id, model_config, options)
-    yaml.safe_load(rendered)
-    staged_config.write_text(rendered)
-    return str(staged_config)
 
 
 def run_production_variant(
@@ -457,7 +499,7 @@ def run_production_variant(
         models_config_path, options.get("agent_concurrency")
     )
     preflight_production_agents(model_config)
-    production_config = build_production_config(run_id, model_config, options)
+    production_config = render_job_config(production_job(run_id, model_config, options))
     config = stage_daytona_config(production_config, run_id, docs_bundle, options)
     max_retries = options.get("max_retries") or "2"
     started_at = datetime.now().astimezone().isoformat()
@@ -509,13 +551,6 @@ def run_production_variant(
         },
     )
     raise SystemExit(status)
-
-
-def with_shared_datasets(config: dict[str, Any]) -> dict[str, Any]:
-    if "datasets" in config:
-        return config
-    shared = read_yaml("config/datasets.yaml")
-    return {**config, "datasets": shared.get("datasets", [])}
 
 
 def mpp_task_filter(task_filter: str) -> str | None:
@@ -596,8 +631,15 @@ def copy_tasks(source: Path, destination: Path) -> None:
     )
 
 
+def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
+    return apply_model_override(
+        apply_task_filter(config, options.get("task_filter")),
+        options.get("model"),
+    )
+
+
 def stage_daytona_config(
-    config_path: str,
+    config: dict[str, Any],
     run_id: str,
     docs_bundle: str,
     options: dict[str, Any],
@@ -607,7 +649,7 @@ def stage_daytona_config(
     staged_tasks = staging_root / "tasks" / "tempo"
     source_mpp_tasks = Path("tasks/mpp")
     staged_mpp_tasks = staging_root / "tasks" / "mpp"
-    staged_config = staging_root / Path(config_path).name
+    staged_config = staging_root / "job.yaml"
 
     shutil.rmtree(staging_root, ignore_errors=True)
     staged_tasks.parent.mkdir(parents=True, exist_ok=True)
@@ -629,31 +671,20 @@ def stage_daytona_config(
             dirs_exist_ok=True,
         )
 
-    config = apply_model_override(
-        apply_task_filter(
-            with_shared_datasets(read_yaml(config_path)), options.get("task_filter")
-        ),
-        options.get("model"),
-    )
+    config = finalize_config(config, options)
     redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
 
 
 def stage_filtered_config(
-    config_path: str, run_id: str, options: dict[str, Any]
+    config: dict[str, Any], run_id: str, options: dict[str, Any]
 ) -> str:
     staging_root = Path(".cache") / "harbor-config" / run_id
-    staged_config = staging_root / Path(config_path).name
+    staged_config = staging_root / "job.yaml"
     shutil.rmtree(staging_root, ignore_errors=True)
     staging_root.mkdir(parents=True, exist_ok=True)
-    config = apply_model_override(
-        apply_task_filter(
-            with_shared_datasets(read_yaml(config_path)), options.get("task_filter")
-        ),
-        options.get("model"),
-    )
-    staged_config.write_text(dump_yaml(config))
+    staged_config.write_text(dump_yaml(finalize_config(config, options)))
     return str(staged_config)
 
 
@@ -705,11 +736,12 @@ def main(argv: list[str]) -> None:
     if variant.get("production"):
         run_production_variant(run_id, options, docs_bundle)
 
-    if variant.get("config"):
+    if variant.get("job"):
+        job_config = render_job_config(variant["job"])
         config = (
-            stage_daytona_config(variant["config"], run_id, docs_bundle, options)
+            stage_daytona_config(job_config, run_id, docs_bundle, options)
             if variant.get("needs_daytona_auth")
-            else stage_filtered_config(variant["config"], run_id, options)
+            else stage_filtered_config(job_config, run_id, options)
         )
         args.extend(["-c", config])
     else:
