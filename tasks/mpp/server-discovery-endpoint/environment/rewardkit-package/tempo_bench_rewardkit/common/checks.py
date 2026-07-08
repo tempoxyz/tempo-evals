@@ -1,4 +1,4 @@
-# SYNCED FROM shared/rewardkit-package/tempo_bench_rewardkit/common/checks.py
+# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/common/checks.py
 # BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 from dataclasses import dataclass
 

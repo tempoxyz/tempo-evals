@@ -105,12 +105,30 @@ def fail(reason: str) -> None:
 
 
 def rpc(method: str, params: list) -> object:
-    response = httpx.post(
-        RPC_URL,
-        json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
-        timeout=30,
-    )
-    response.raise_for_status()
+    for attempt in range(5):
+        try:
+            response = httpx.post(
+                RPC_URL,
+                json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+                timeout=30,
+            )
+            response.raise_for_status()
+            break
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code < 500 or attempt == 4:
+                raise
+            log_event(
+                "rpc_retry",
+                attempt=attempt + 1,
+                method=method,
+                status=exc.response.status_code,
+            )
+            time.sleep(2**attempt)
+        except httpx.HTTPError as exc:
+            if attempt == 4:
+                raise
+            log_event("rpc_retry", attempt=attempt + 1, method=method, error=str(exc))
+            time.sleep(2**attempt)
     payload = response.json()
     if "error" in payload:
         raise RuntimeError(payload["error"])
@@ -132,10 +150,14 @@ def read_out_json(process: subprocess.Popen[str], keys: list[str]) -> dict:
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if OUT_PATH.exists():
-            out = json.loads(OUT_PATH.read_text(encoding="utf-8"))
-            urls = {key: validate_url(key, out.get(key)) for key in keys}
-            log_event("out_json", **urls)
-            return urls
+            try:
+                out = json.loads(OUT_PATH.read_text(encoding="utf-8"))
+                urls = {key: validate_url(key, out.get(key)) for key in keys}
+                log_event("out_json", **urls)
+                return urls
+            except ValueError:
+                if process.poll() is not None:
+                    raise
         if process.poll() is not None:
             raise RuntimeError("server exited before writing out.json")
         time.sleep(0.1)

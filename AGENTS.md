@@ -83,7 +83,7 @@ Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:
 
 - `environment/Dockerfile`
-- `environment/rewardkit-package/` (from `shared/rewardkit-package/`)
+- `environment/rewardkit-package/` (from `shared/global/rewardkit-package/`)
 - `solution/package.json`
 - `solution/solve.sh`
 - `solution/tsconfig.json`

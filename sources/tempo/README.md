@@ -28,6 +28,6 @@ To add a task:
 
 1. Create `sources/tempo/<slug>/` with the files above.
 2. Add the slug to `task_slugs` in `config/tasks.yaml`.
-3. Add a verifier case at `shared/verifier/src/cases/<case>.js` and set
+3. Add a verifier case at `shared/tempo/verifier/src/cases/<case>.js` and set
    `TEMPO_BENCH_CASE` in the source `task.toml`.
 4. Run `npm run sync`, then `npm run dataset` to refresh digests.

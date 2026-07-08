@@ -81,7 +81,11 @@ mpp:
   # Task-local files that intentionally diverge from the shared MPP defaults.
   # Sync leaves these alone; the tracked task-local copy is the source of truth.
   task_local_overrides:
+    client-access-keys:
+      - solution/package.json
     server-hono-charge-pathusd:
+      - solution/package.json
+    server-mcp-pathusd:
       - solution/package.json
     server-charge-pathusd:
       - tests/quality/reward.toml

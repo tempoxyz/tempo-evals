@@ -1,4 +1,4 @@
-# SYNCED FROM shared/rewardkit-package/tempo_bench_rewardkit/__init__.py
+# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/__init__.py
 # BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 from .criteria import (
     agent_token_efficiency,

@@ -1,4 +1,4 @@
-# SYNCED FROM shared/rewardkit-package/tempo_bench_rewardkit/common/__init__.py
+# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/common/__init__.py
 # BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 from .checks import TokenEfficiencyConfig, register_token_efficiency_check
 from .constants import (

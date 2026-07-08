@@ -12,7 +12,7 @@ SCORES_FILE="$LOG_DIR/scores.json"
 WORKSPACE_SCORES_FILE="${TEMPO_BENCH_WORKSPACE:-/app}/scores.json"
 OUT_FILE="${TEMPO_BENCH_WORKSPACE:-/app}/out.json"
 REWARDKIT_TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
-REWARDKIT_PACKAGE_DIR="${tempo_bench_rewardkit_PACKAGE_DIR:-$REWARDKIT_TESTS_DIR/../../../../shared/rewardkit-package}"
+REWARDKIT_PACKAGE_DIR="${tempo_bench_rewardkit_PACKAGE_DIR:-$REWARDKIT_TESTS_DIR/../../../../shared/global/rewardkit-package}"
 VERIFIER_UTILS="$REWARDKIT_TESTS_DIR/support/verifier_utils.py"
 
 mkdir -p "$LOG_DIR"

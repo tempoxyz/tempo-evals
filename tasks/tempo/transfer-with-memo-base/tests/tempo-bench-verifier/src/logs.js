@@ -1,4 +1,4 @@
-// SYNCED FROM shared/verifier/src/logs.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+// SYNCED FROM shared/tempo/verifier/src/logs.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const fs = require("node:fs");
 const path = require("node:path");
 

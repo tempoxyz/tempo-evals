@@ -1,4 +1,4 @@
-# SYNCED FROM shared/rewardkit-package/tempo_bench_rewardkit/common/constants.py
+# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/common/constants.py
 # BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 import os
 from enum import IntEnum, StrEnum
