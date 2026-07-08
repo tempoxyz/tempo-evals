@@ -26,6 +26,11 @@ A template task contains only the authored files:
 - `README.md` — the concise Harbor Hub summary copied into each generated
   profile task.
 
+Tempo correctness criteria should require `viem/tempo` `Actions.*` APIs and
+reject non-Tempo blockchain SDKs such as Solana, Sui, `ethers`, and `web3`.
+Use `Actions.faucet.fundSync` for localnet funding rather than raw faucet RPCs
+or hand-written contract calls.
+
 Everything else in a generated task (environment, verifier package, quality
 checks, test harness) comes from `shared/` and `config/tasks.yaml`.
 

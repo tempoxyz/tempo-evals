@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:a053169b91def03e4bd44032273c1725cc5f0f038b8925e8bc8ea2ae01a62fb2"
+digest = "sha256:1a818e95c8d86d2db5d098ceac87d4cf3bf2aae2dc19d3d80e24d5eeb47c8db2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:fa29436ce57cf40c6ad5522f76d813f2b2a256e9a21bac9dde665c9d5fcaa841"
+digest = "sha256:ffa7e795dabe56b8b87252870490d6ec08a8f3c208f62defc3de771a798ac881"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:c4cd855a67a7ef58781e9f40adf0f49c9b33b6bac8904b0d6cafc6417a024f4d"
+digest = "sha256:da7bfb587d662c5cac5d1211ac32ab8ae44043ec4e4886a2d8e4a2db25b14a90"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:fcb294f71ed0940a058318be335e7e0536cbe1836dfd88e12db7675715246147"
+digest = "sha256:b8b8ff472a4eb551c2ff3accac8a2fe48f7e9da3cf119fa1a0bf965753cf1847"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:1e0ef4a5251fc86694db3c94bef7a3f5c6a5b39e17a8ec9e4d2f2a394f0791f3"
+digest = "sha256:72efc235fb0c9a35335b86b39459dae0fe05d86d9b946ac8945fa0dd0f0276a4"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:c0a0ecaafa63b3a024b416f96c3f477979edd74ce90b4f13a3f46f3f112f8576"
+digest = "sha256:367088fe5b2acb6ae3a2a4ce93974fbd729dd2db3dc9de4652d68f1a3965d16a"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:248f8673512e89b206ac372b634e7621de0f2702986344cf8cd6688e250211a4"
+digest = "sha256:6f7ec871acda8df068c26beacfa358c58cbd1574691a4829f4f806c67aa2ba83"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b78f5b9a8dc7b3fd6a0eab0e5b54b78250411026a8c63d4ea3b577d6d635b806"
+digest = "sha256:46217b71f38e3d90fbfd4491799687e655dc474c4798e681686d689412aeba11"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:10fd9486bf26e4d645a8ef78c04daae455175bbf596dbcc1ca785a48331b7eb6"
+digest = "sha256:479c6a6ae83117adfb9d5de1926ddd51fb364c88d110f6dacfa59f965a4d2bcf"
 

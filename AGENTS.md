@@ -172,11 +172,12 @@ Use this structure:
 
 For Tempo tasks, the README should follow the Harbor Hub pattern above:
 overview, capabilities tested, and verification evidence. Keep the verification
-section as direct bullet points covering general file structure, proper Tempo
-library/API usage, and script correctness. Pull the correctness bullets from the
-task's RewardKit criteria and onchain verifier behavior. It can name high-level
-verifier checks or onchain events, but should not include exact log paths,
-internal score schemas, environment variable tables, or difficulty sections.
+section as direct bullet points covering general file structure, `viem/tempo`
+`Actions.*` usage, rejection of other blockchain SDKs such as Solana, Sui, and
+`ethers`, and script correctness. Pull the correctness bullets from the task's
+RewardKit criteria and onchain verifier behavior. It can name high-level verifier
+checks or onchain events, but should not include exact log paths, internal score
+schemas, environment variable tables, or difficulty sections.
 
 For MPP tasks, the README should summarize user-facing server behavior, payment
 method/currency expectations, and Tempo testnet behavior. Do not include

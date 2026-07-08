@@ -5,23 +5,32 @@ from tempo_bench_rewardkit.common.checks import (
 )
 
 register_tempo_typescript_project()
+rk.tempo_rejects_other_blockchains()
+rk.tempo_uses_viem_tempo_actions(
+    ["token.approveSync", "dex.placeSync"],
+    require_faucet_fund_sync=True,
+)
 register_source_patterns(
     [
         {
             "name": "source_uses_dex_actions",
-            "pattern": r"Actions\.dex|\.dex\.",
+            "pattern": r"Actions\.dex\.",
+        },
+        {
+            "name": "source_funds_localnet_accounts",
+            "pattern": r"Actions\.faucet\.fundSync",
         },
         {
             "name": "source_approves_dex_spending",
-            "pattern": r"approveSync",
+            "pattern": r"Actions\.token\.approveSync",
         },
         {
             "name": "source_provides_dex_liquidity",
-            "pattern": r"placeSync|provideLiquidity|addLiquidity",
+            "pattern": r"Actions\.dex\.placeSync",
         },
         {
             "name": "source_executes_dex_swap",
-            "pattern": r"sellSync|buySync|swapSync",
+            "pattern": r"Actions\.dex\.(sellSync|buySync|swapSync)",
         },
         {
             "name": "source_reads_swap_token_env",
