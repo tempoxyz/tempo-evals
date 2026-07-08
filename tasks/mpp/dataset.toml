@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:53bed50bd09d8246d4c1bc060196a9031dd2e13edd2d6ec33b96878167b9a01d"
+digest = "sha256:7c7d7c8ba263c242a4eaf884b78cf377247cacb67dda2be31c5f3ba8095f462b"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:3a46746e7af21aef67c61c3247011eb9e086f5eb542c2c771aefeea7b8442c29"
+digest = "sha256:36cad62b2ab4001902232cb5dca9539f860673cfffd526995d71cd54d7dc47ab"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:2b7419d4a63beb28b5e5bac9271f565278ee33e984c64e3323be03d48d1a009a"
+digest = "sha256:a774fda559da55035d278238d405b5896f5490cbf7c0a93d9ff5b520e2ce1770"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:6d1bec6057db0f7aa22ddb5a1412f6211f39386c420d50712dd511c150bbf2d3"
+digest = "sha256:ccee65846b1d32e2edd17ff1422741076992bf5fb8e04e56938c93c127a87168"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:45c98ace7a113f595bf92c0570c107db9b79be4decbae2faaf7ce93b9fb4733c"
+digest = "sha256:ee0f92fbed592ea962535dfdcf06c466ff92d52158bc4714a570a056ed36ef71"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:df2e3760175b06d6ecdbe802218d9a5baa088a97d31901528647664bd068bde8"
+digest = "sha256:ba6f228c4cf5dc27fd7696da3cc768ffbac1120024be66c2a1dcc06246089171"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:45a5a1c2fb826fb64ab5c495c44497b198612c1f593110788f4de458f9bef56f"
+digest = "sha256:5fc4c59589c77f1697d996fa4efd6c7b8a501edf006e70e5721fcec5660f2aa4"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b57f13b01c74395f2189485f18f1c9a66e053cce941a828e905619de7cde39b9"
+digest = "sha256:26cf63fd5dc4910dec2627bf80a511772e74b85f486ad5db3b3edd785991a77d"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:598894688d876e0520526e03912417d6405f646dd9ff85ea5b6a14facd40bcd7"
+digest = "sha256:8e66ccaf883cdf4483586781d39ba2e168f8f81b84de8b73d5b98ce8d9899728"
 

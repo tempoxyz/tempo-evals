@@ -17,14 +17,12 @@ verifier:
   - '*.txt'
   env:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
     REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
 agents:
 - name: claude-code
   model_name: claude-haiku-4-5
   env:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
 datasets:
 - path: tasks/tempo
   task_names:

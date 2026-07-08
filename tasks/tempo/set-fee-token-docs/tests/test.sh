@@ -78,8 +78,8 @@ skip_llm_quality() {
   printf '%s\n' "$reason" > "$LOG_DIR/quality-skipped.txt"
 }
 
-if [ -z "${ANTHROPIC_API_KEY:-}${ANTHROPIC_AUTH_TOKEN:-}" ] && [ -f "$TESTS_DIR/quality/reward.toml" ]; then
-  skip_llm_quality 'Skipping LLM quality reward because ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN is not set.'
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -f "$TESTS_DIR/quality/reward.toml" ]; then
+  skip_llm_quality 'Skipping LLM quality reward because ANTHROPIC_API_KEY is not set.'
 fi
 
 write_binary_reward() {

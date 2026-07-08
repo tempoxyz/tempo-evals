@@ -255,10 +255,8 @@ Useful runner flags:
 
 | Variable | Used for |
 | -------- | -------- |
-| `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` | Claude Code and RewardKit LLM judging |
+| `ANTHROPIC_API_KEY` | Claude Code and RewardKit LLM judging |
 | `OPENAI_API_KEY` | Codex production agent auth |
-| `CODEX_AUTH_JSON_PATH` or `CODEX_FORCE_AUTH_JSON` | Optional Codex auth.json auth instead of `OPENAI_API_KEY` |
-| `OPENAI_BASE_URL` | Optional Codex OpenAI-compatible endpoint override |
 | `DAYTONA_API_KEY` | Daytona runs |
 | `DAYTONA_TARGET` | Optional Daytona target |
 

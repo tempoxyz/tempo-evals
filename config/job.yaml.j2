@@ -24,7 +24,6 @@ verifier:
     - "*.txt"
   env:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
     REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
 agents:
 {% for agent in agents %}
@@ -41,12 +40,8 @@ agents:
 {% if agent.name != "oracle" %}
     env:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
 {% if agent.name == "codex" %}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
-      CODEX_AUTH_JSON_PATH: ${CODEX_AUTH_JSON_PATH:-}
-      CODEX_FORCE_AUTH_JSON: ${CODEX_FORCE_AUTH_JSON:-false}
 {% endif %}
 {% endif %}
 {% endfor %}
