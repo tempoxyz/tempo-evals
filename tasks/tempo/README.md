@@ -12,7 +12,7 @@ Current task intents:
 - `tempo/stablecoin-dex-swap`
 
 Each intent is materialized into `-docs` and `-mcp` profile variants
-by `../scripts/sync-shared.mjs`.
+by `../scripts/sync-shared.ts`.
 
 Each task should stay Harbor-native and self-contained:
 

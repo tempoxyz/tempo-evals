@@ -17,6 +17,8 @@ verifier:
     REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
 agents:
   - name: oracle
+# Deliberate override of config/datasets.yaml: dev oracle iteration runs Tempo
+# tasks only. Use --task-filter server-* to target MPP tasks.
 datasets:
   - path: tasks/tempo
     task_names:

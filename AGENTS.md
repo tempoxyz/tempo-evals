@@ -79,6 +79,25 @@ Do not hand-edit generated Tempo variants:
 - `tasks/tempo/*-docs/`
 - `tasks/tempo/*-mcp/`
 
+Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
+`tasks/mpp/<task>/`:
+
+- `environment/Dockerfile`
+- `solution/tsconfig.json`
+- `tests/test.sh`
+- `tests/correctness/verify.sh`
+- `tests/quality/check.py`
+- `tests/support/client_lib.py`
+- `tests/support/verifier_utils.py`
+
+Task-specific MPP files stay in the task directory: `task.toml`,
+`instruction.md`, `solution/` sources, `tests/support/client.py` (scenario),
+`tests/correctness/criteria.py`, and `tests/quality/reward.toml`.
+
+Job configs share the dataset matrix in `config/datasets.yaml`;
+`scripts/run-benchmark.ts` injects it into any job config without its own
+`datasets:` block.
+
 Change the base task or generator, then run:
 
 ```bash

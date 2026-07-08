@@ -370,7 +370,7 @@ function taskPath(options: Options): string {
 }
 
 function syncDataset(options: Options) {
-  run("node", ["scripts/sync-shared.mjs"]);
+  run("node", ["scripts/sync-shared.ts"]);
   run("uv", ["run", "harbor", "sync", taskPath(options)]);
 }
 
@@ -533,6 +533,17 @@ function runProductionVariant(
   process.exit(status);
 }
 
+// Job configs without a `datasets:` block get the shared dataset matrix from
+// config/datasets.yaml. Configs that declare `datasets:` keep their own.
+function withSharedDatasets(config: string): string {
+  if (/^datasets:/m.test(config)) return config;
+  const shared = fs.readFileSync(path.join("config", "datasets.yaml"), "utf8");
+  const merged = `${config.replace(/\s*$/, "\n")}\n${shared}`;
+  const YAML = require("yaml") as typeof import("yaml");
+  YAML.parse(merged);
+  return merged;
+}
+
 function applyTaskFilter(config: string, taskFilter?: string): string {
   if (!taskFilter) return config;
   const mppFilter = taskFilter
@@ -618,7 +629,7 @@ function stageDaytonaConfig(
     });
   }
 
-  const config = fs.readFileSync(configPath, "utf8");
+  const config = withSharedDatasets(fs.readFileSync(configPath, "utf8"));
   const redirected = applyModelOverride(
     applyTaskFilter(config, options.taskFilter),
     options.model,
@@ -634,7 +645,6 @@ function stageDaytonaConfig(
 }
 
 function stageFilteredConfig(configPath: string, runId: string, options: Options): string {
-  if (!options.taskFilter && !options.model) return configPath;
   const stagingRoot = path.join(".cache", "harbor-config", runId);
   const stagedConfig = path.join(stagingRoot, path.basename(configPath));
 
@@ -643,7 +653,10 @@ function stageFilteredConfig(configPath: string, runId: string, options: Options
   fs.writeFileSync(
     stagedConfig,
     applyModelOverride(
-      applyTaskFilter(fs.readFileSync(configPath, "utf8"), options.taskFilter),
+      applyTaskFilter(
+        withSharedDatasets(fs.readFileSync(configPath, "utf8")),
+        options.taskFilter,
+      ),
       options.model,
     ),
   );
@@ -657,7 +670,7 @@ try {
     process.exit(options.help ? 0 : 1);
   }
   if (variantName === "sync") {
-    run("node", ["scripts/sync-shared.mjs"]);
+    run("node", ["scripts/sync-shared.ts"]);
     process.exit(0);
   }
   if (variantName === "dataset") {
