@@ -72,6 +72,7 @@ mpp:
     - path: tests/quality/check.py
     - path: tests/quality/reward.toml
     - path: tests/support/client_lib.py
+    - path: tests/support/oracle_paid_server.ts
     - path: tests/support/verifier_utils.py
   # Task-local files that intentionally diverge from the shared MPP defaults.
   # Sync leaves these alone; the tracked task-local copy is the source of truth.

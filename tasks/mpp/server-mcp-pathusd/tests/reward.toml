@@ -1,0 +1,4 @@
+# AUTO-GENERATED FROM shared/mpp/tests/reward.toml BY npm run sync. DO NOT EDIT MANUALLY.
+[[reward]]
+name = "reward"
+aggregation = "weighted_mean"

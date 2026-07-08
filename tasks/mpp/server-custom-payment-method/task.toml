@@ -1,0 +1,27 @@
+schema_version = "1.3"
+
+artifacts = ["/app/package.json", "/app/src"]
+
+[task]
+name = "tempo/mpp-server-custom-payment-method"
+description = "Build a TypeScript MPP server with a custom access-key payment method."
+authors = []
+keywords = ["mpp", "custom-method", "access-key", "typescript", "server"]
+
+[metadata]
+category = "integration"
+feature = "server-custom-payment-method"
+dataset = "mpp"
+
+[verifier]
+timeout_sec = 300.0
+environment_mode = "shared"
+
+[agent]
+timeout_sec = 900.0
+
+[environment]
+build_timeout_sec = 600.0
+cpus = 2
+memory_mb = 4096
+storage_mb = 10240
