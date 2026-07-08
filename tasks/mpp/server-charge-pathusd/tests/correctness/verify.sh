@@ -14,7 +14,7 @@ VERIFIER_UTILS="$TESTS_DIR/support/verifier_utils.py"
 
 mkdir -p "$LOG_DIR"
 rm -f "$SCORES_FILE" "$WORKSPACE_SCORES_FILE" "$OUT_FILE"
-cd "$WORKSPACE"
+cd "$WORKSPACE" || exit
 rm -rf node_modules package-lock.json
 
 write_failure_score() {
