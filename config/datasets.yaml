@@ -1,0 +1,13 @@
+# Shared dataset matrix for job configs.
+# scripts/run-benchmark.ts appends this file to any job config that does not
+# declare its own `datasets:` block. Declare `datasets:` in a job config to
+# override it (see job.local.oracle.dev.yaml and job.daytona.production.yaml.njk).
+datasets:
+  - path: tasks/tempo
+    task_names:
+      - "*-base"
+      - "*-docs"
+      - "*-mcp"
+  - path: tasks/mpp
+    task_names:
+      - "server-*"
