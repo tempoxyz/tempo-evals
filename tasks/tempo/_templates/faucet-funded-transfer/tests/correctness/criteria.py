@@ -6,7 +6,7 @@ rk.tempo_source_patterns(
     [
         {
             "name": "source_calls_faucet_fund",
-            "pattern": r"faucet\.fundSync|fundSync",
+            "pattern": r"tempo_fundAddress|faucet\.fundSync|fundSync",
         },
         {
             "name": "source_reads_faucet_private_key",
@@ -14,7 +14,11 @@ rk.tempo_source_patterns(
         },
         {
             "name": "source_sends_transfer",
-            "pattern": r"transferSync|transferWithMemo",
+            "pattern": (
+                r"transferSync|transferWithMemo|"
+                r"functionName\s*:\s*[\"']transfer[\"']|"
+                r"name\s*:\s*[\"']transfer[\"']"
+            ),
         },
     ]
 )
