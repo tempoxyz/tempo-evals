@@ -11,6 +11,13 @@ function runtimeEnv(config) {
   };
 }
 
+function beforeLog(left, right) {
+  return (
+    left.blockNumber < right.blockNumber ||
+    (left.blockNumber === right.blockNumber && left.logIndex < right.logIndex)
+  );
+}
+
 async function verify({ client, config, fromBlock }) {
   const faucet = privateKeyToAccount(config.payerPrivateKey).address;
   const sender = privateKeyToAccount(config.faucetPrivateKey).address;
@@ -43,7 +50,9 @@ async function verify({ client, config, fromBlock }) {
       fromBlock,
       toBlock: match.blockNumber,
     });
-    const funding = fundingLogs.find((log) => log.args.value >= expectedValue);
+    const funding = fundingLogs.find(
+      (log) => log.args.value >= expectedValue && beforeLog(log, match),
+    );
 
     return (
       funding &&
