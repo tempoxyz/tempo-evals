@@ -25,16 +25,28 @@ Validate the Tempo oracle solutions locally:
 npm run bench:local:oracle
 ```
 
+Validate both task families explicitly:
+
+```bash
+npm run bench:local:oracle -- --task-suite all
+```
+
 Fast oracle loop for one task while editing:
 
 ```bash
 npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
 ```
 
-Fast oracle loop for multiple filtered tasks:
+Fast Tempo oracle loop:
 
 ```bash
-npm run bench:local:oracle:dev -- --task-filter "*-base"
+npm run bench:local:tempo -- --task-filter "*-base"
+```
+
+Fast MPP oracle loop:
+
+```bash
+npm run bench:local:mpp -- --task-filter server-charge-pathusd
 ```
 
 Run a local agent smoke test:
@@ -49,10 +61,10 @@ Run one task on Daytona:
 npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
 ```
 
-Run the MPP MVP task:
+Run the MPP task family with the generic runner:
 
 ```bash
-npm run bench:model -- --tasks tasks/mpp --task-filter tempo/mpp-server-charge-pathusd
+npm run bench:local:oracle -- --task-suite mpp
 ```
 
 ## Running Development Benchmarks
@@ -61,16 +73,28 @@ Development flows are for iteration and smoke testing. They keep attempts low an
 are intended to be filtered to one or a few tasks while changing task assets,
 verifiers, or agent setup.
 
-Local smoke run:
+Local Tempo smoke run:
 
 ```bash
 npm run bench:local:agent:dev -- --task-filter transfer-with-memo-mcp
 ```
 
-Daytona smoke run:
+Local MPP smoke run:
+
+```bash
+npm run bench:local:agent:dev -- --task-suite mpp --task-filter server-charge-pathusd
+```
+
+Daytona Tempo smoke run:
 
 ```bash
 npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
+```
+
+Daytona MPP smoke run:
+
+```bash
+npm run bench:daytona:agent:dev -- --task-suite mpp --task-filter server-charge-pathusd --concurrency 1 --agent-concurrency 1
 ```
 
 Useful development options:
@@ -78,6 +102,7 @@ Useful development options:
 | Option | Description |
 | ------ | ----------- |
 | `--task-filter GLOB` | Run only matching task names, e.g. `transfer-with-memo-mcp` |
+| `--task-suite SUITE` | Select `tempo`, `mpp`, or `all`; default is `tempo` |
 | `--concurrency N` | Override total concurrent trials |
 | `--agent-concurrency N` | Override concurrent agent executions |
 | `--max-retries N` | Retry transient trial/setup failures |
@@ -183,26 +208,37 @@ npm run clean
 
 | Command | Runtime | Description |
 | ------- | ------- | ----------- |
-| `npm run bench:local:oracle` | Docker | Validate oracle solutions locally |
-| `npm run bench:local:oracle:dev` | Docker | Fast local oracle run; skips sync and reuses environment builds |
+| `npm run bench:local:oracle` | Docker | Validate Tempo oracle solutions locally |
+| `npm run bench:local:oracle:dev` | Docker | Fast Tempo oracle run; skips sync and reuses environment builds |
+| `npm run bench:local:tempo` | Docker | Fast Tempo oracle run; skips sync and reuses environment builds |
+| `npm run bench:local:mpp` | Docker | Fast MPP oracle run; skips sync and reuses environment builds |
+| `npm run bench:local:all` | Docker | Fast all-task oracle run; skips sync and reuses environment builds |
 | `npm run bench:local:one` | Docker | Fast one-concurrency local oracle run; pass `--task-filter` |
-| `npm run bench:local:agent:dev` | Docker | Local agent smoke run |
-| `npm run bench:local:agent` | Docker | Full local agent run |
-| `npm run bench:daytona:oracle` | Daytona | Validate oracle solutions remotely |
-| `npm run bench:daytona:agent:dev` | Daytona | Remote agent smoke run |
-| `npm run bench:daytona:agent` | Daytona | Full remote agent run |
+| `npm run bench:local:agent:dev` | Docker | Local Tempo agent smoke run |
+| `npm run bench:local:agent` | Docker | Local Tempo agent run |
+| `npm run bench:daytona:oracle` | Daytona | Validate Tempo oracle solutions remotely |
+| `npm run bench:daytona:agent:dev` | Daytona | Remote Tempo agent smoke run |
+| `npm run bench:daytona:agent` | Daytona | Remote Tempo agent run |
 | `npm run bench:production` | Daytona | Production multi-model matrix run |
 | `npm run bench:model` | Docker | Ad hoc local model run |
 
 ## Dev Loop
 
-Use the dev oracle commands while iterating on one task:
+Use the dev oracle commands while iterating on one Tempo task:
 
 ```bash
 npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
 ```
 
-These commands use `local-oracle-dev`, skip generated asset sync, and avoid forced Docker rebuilds. Run `npm run sync` after changing shared/generated task assets. Run `npm run bench:local:oracle` before opening a PR for clean validation.
+Use `npm run bench:local:mpp` for the same fast loop over MPP tasks. Commands
+default to Tempo. Use `--task-suite all` or `npm run bench:local:all` when you
+intentionally want both Tempo and MPP tasks.
+
+These commands use `local-oracle-dev`, skip generated asset sync, and avoid
+forced Docker rebuilds. Run `npm run sync` after changing shared/generated task
+assets. Run
+`npm run bench:local:oracle -- --task-suite all` before opening a PR for clean
+validation across both task families.
 
 Useful runner flags:
 

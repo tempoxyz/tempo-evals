@@ -11,11 +11,14 @@ daytona:
   dind_image: docker:28.3.3-dind
   dind_snapshot_name: tempo-bench-dind-28-3-3
 
-# Deliberate override of config/datasets.yaml for jobs that run Tempo tasks
-# only. Use --task-filter server-* to target MPP tasks.
+# Dataset scopes for explicit benchmark entrypoints. Commands default to Tempo;
+# use --task-suite all to include every task family.
 tempo_only_datasets: &tempo_only_datasets
   - path: tasks/tempo
     task_names: ["*-base", "*-docs", "*-mcp"]
+mpp_only_datasets: &mpp_only_datasets
+  - path: tasks/mpp
+    task_names: ["server-*"]
 
 # Shared blocks referenced by the variants below.
 defaults:
@@ -41,6 +44,7 @@ variants:
     job:
       <<: *local_job
       job_name: tempo-bench-local
+      datasets: *tempo_only_datasets
       agents:
         - *oracle_agent
   local-oracle-dev:
@@ -60,6 +64,7 @@ variants:
       <<: *local_job
       job_name: tempo-bench-agents-local
       n_attempts: 3
+      datasets: *tempo_only_datasets
       agents:
         - *claude_agent
   local-agent-dev:
@@ -68,6 +73,7 @@ variants:
     job:
       <<: *local_job
       job_name: tempo-bench-agents-dev-local
+      datasets: *tempo_only_datasets
       agents:
         - *claude_agent
   model:
@@ -82,6 +88,7 @@ variants:
     job:
       <<: *daytona_job
       job_name: tempo-bench-oracle-daytona
+      datasets: *tempo_only_datasets
       agents:
         - *oracle_agent
   daytona-agent:
@@ -92,6 +99,7 @@ variants:
       <<: *daytona_job
       job_name: tempo-bench-agents-daytona-local
       n_attempts: 3
+      datasets: *tempo_only_datasets
       agents:
         - <<: *claude_agent
           n_concurrent: 32
@@ -102,6 +110,7 @@ variants:
     job:
       <<: *daytona_job
       job_name: tempo-bench-agents-daytona-dev-local
+      datasets: *tempo_only_datasets
       agents:
         - <<: *claude_agent
           n_concurrent: 32

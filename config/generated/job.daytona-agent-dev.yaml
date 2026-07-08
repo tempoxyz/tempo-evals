@@ -31,6 +31,3 @@ datasets:
   - '*-base'
   - '*-docs'
   - '*-mcp'
-- path: tasks/mpp
-  task_names:
-  - server-*

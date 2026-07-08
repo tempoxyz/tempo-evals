@@ -31,11 +31,11 @@ Direct: uv run python scripts/run_benchmark.py <variant> [options]
 Variants:
   local-oracle       Oracle validation on local Docker
   local-oracle-dev   Fast oracle iteration on local Docker
-  local-agent        Full Claude Code matrix on local Docker
+  local-agent        Claude Code matrix on local Docker
   local-agent-dev    One-attempt Claude Code smoke run on local Docker
   model              One local harness/model run over tasks
   daytona-oracle     Oracle validation on Daytona
-  daytona-agent      Full Claude Code matrix on Daytona
+  daytona-agent      Claude Code matrix on Daytona
   daytona-agent-dev  One-attempt Claude Code smoke run on Daytona
   production-daytona Production Daytona run over configured models
   sync               Sync generated task assets and compiled job configs
@@ -58,6 +58,8 @@ Options:
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and config variants
+  --task-suite SUITE      Task family for config variants: tempo, mpp, or all
+                          (default: tempo; use all explicitly for full matrix)
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
                           (default: tasks/tempo)
@@ -99,6 +101,7 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument("--agent")
     parser.add_argument("--model")
     parser.add_argument("--task-filter")
+    parser.add_argument("--task-suite", choices=["tempo", "mpp", "all"])
     parser.add_argument(
         "--n-tasks", type=lambda value: read_positive_integer(value, "--n-tasks")
     )
@@ -445,7 +448,7 @@ def run_production_variant(
             }
             for model in model_config["models"]
         ],
-        "task_dataset_path": "tasks/tempo",
+        "task_suite": options.get("task_suite") or "tempo",
         "task_filter": options.get("task_filter"),
         "n_attempts": job["n_attempts"],
         "n_concurrent_trials": str(job["n_concurrent_trials"]),
@@ -484,6 +487,22 @@ def mpp_task_filter(task_filter: str) -> str | None:
         if task_filter.startswith(prefix):
             return task_filter.removeprefix(prefix)
     return task_filter if task_filter.startswith("server-") else None
+
+
+def datasets_for_suite(task_suite: str) -> list[dict[str, Any]]:
+    if task_suite == "tempo":
+        return copy.deepcopy(RUN_CONFIG["tempo_only_datasets"])
+    if task_suite == "mpp":
+        return copy.deepcopy(RUN_CONFIG["mpp_only_datasets"])
+    return copy.deepcopy(read_yaml("config/datasets.yaml").get("datasets", []))
+
+
+def apply_task_suite(
+    config: dict[str, Any],
+    task_suite: str | None,
+) -> dict[str, Any]:
+    config["datasets"] = datasets_for_suite(task_suite or "tempo")
+    return config
 
 
 def apply_task_filter(
@@ -558,7 +577,10 @@ def copy_tasks(source: Path, destination: Path) -> None:
 
 def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
     return apply_model_override(
-        apply_task_filter(config, options.get("task_filter")),
+        apply_task_filter(
+            apply_task_suite(config, options.get("task_suite")),
+            options.get("task_filter"),
+        ),
         options.get("model"),
     )
 
