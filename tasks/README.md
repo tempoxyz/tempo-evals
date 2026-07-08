@@ -1,4 +1,4 @@
-# tempo/tempo-bench
+# tempo/tempo-bench-v1
 
 Local Harbor dataset for Tempo integration evaluations.
 

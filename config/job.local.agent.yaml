@@ -20,8 +20,6 @@ agents:
     env:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
-      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
-      CLAUDE_FORCE_OAUTH: ${CLAUDE_FORCE_OAUTH:-false}
 datasets:
   - path: tasks
     task_names:

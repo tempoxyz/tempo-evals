@@ -1,213 +1,110 @@
 # Tempo Bench
 
-Tempo Bench is a Harbor benchmark for testing whether agents can build real
-Tempo localnet integrations from the base prompt, pinned docs, or the Tempo MCP
-server.
+A evaluation harness for verifying the ability of coding agents to build real Tempo and MPP apps.
 
-Each task asks an agent to create a minimal TypeScript app in `/app`. Harbor
-starts the task environment, runs the agent, runs the verifier in the same
-localnet environment, and records a binary `reward`.
+Powered by [Harbor](https://harborframework.com)
 
-## Task Matrix
-
-Each intent has three task flavors:
-
-| Intent | Base task | Docs task | MCP task |
-| --- | --- | --- | --- |
-| Transfer with memo | `tempo/transfer-with-memo-base` | `tempo/transfer-with-memo-docs` | `tempo/transfer-with-memo-mcp` |
-| Transfer with fee payer | `tempo/transfer-with-memo-fee-payer-base` | `tempo/transfer-with-memo-fee-payer-docs` | `tempo/transfer-with-memo-fee-payer-mcp` |
-| Set fee token | `tempo/set-fee-token-base` | `tempo/set-fee-token-docs` | `tempo/set-fee-token-mcp` |
-| Create stablecoin with policy | `tempo/create-stablecoin-with-policy-base` | `tempo/create-stablecoin-with-policy-docs` | `tempo/create-stablecoin-with-policy-mcp` |
-| Faucet-funded transfer | `tempo/faucet-funded-transfer-base` | `tempo/faucet-funded-transfer-docs` | `tempo/faucet-funded-transfer-mcp` |
-| Stablecoin DEX swap | `tempo/stablecoin-dex-swap-base` | `tempo/stablecoin-dex-swap-docs` | `tempo/stablecoin-dex-swap-mcp` |
-
-The base task has no extra docs sidecar or MCP server. The docs profile exposes
-a local HTTP docs sidecar at
-`TEMPO_DOCS_URL=http://tempo-docs:3000/developers`. The sidecar is generated
-from the locked `tempoxyz/docs` commit in `config/tempo-docs.lock.json` and
-serves public-compatible agent docs routes such as `/developers/llms.txt`,
-`/developers/llms-full.txt`, and `/developers/docs/*.md`. The MCP profile uses
-Harbor's native `[[environment.mcp_servers]]` task config to register the
-public `tempo` MCP server at `https://mcp.tempo.xyz`.
-
-## Structure
-
-| Path | Purpose |
-| --- | --- |
-| `config/job.local.*.yaml` | Local Docker Harbor jobs. |
-| `config/job.daytona.*.yaml` | Daytona DinD Harbor jobs. |
-| `config/tempo-docs.lock.json` | Pinned `tempoxyz/docs` commit used by docs-profile tasks. |
-| `scripts/prepare-docs-bundle.mjs` | Builds the local static docs bundle under `.cache/tempo-docs/<sha>/public`. |
-| `scripts/run-benchmark.ts` | Single entrypoint for sync, dataset refresh, checks, local runs, Daytona runs, and cleanup. |
-| `scripts/create-daytona-dind-snapshot.py` | Optional helper for creating reusable Daytona DinD snapshots. |
-| `scripts/sync-shared.mjs` | Generates docs/MCP task variants from base tasks and syncs shared verifier/assets into task contexts. |
-| `shared/` | Source of truth for reusable Docker, verifier, RewardKit, MCP, and localnet code. |
-| `tasks/` | Harbor dataset and task directories. Some shared assets are intentionally symlinked. |
-
-Daytona runs need complete task upload contexts. Do not copy generated shared
-assets into `tasks/`. `scripts/run-benchmark.ts` handles this by staging a
-temporary dereferenced task tree under `.cache/harbor-daytona/<job>/tasks` and
-rewriting the Harbor config to point at that staged tree.
-
-## Harbor Mapping
-
-| Harbor concept | Where it lives here |
-| --- | --- |
-| Dataset | `tasks/dataset.toml` |
-| Task | `tasks/*/task.toml`, `instruction.md`, `environment/`, `tests/`, `solution/` |
-| Job | `config/job.*.yaml` |
-| Agent | `oracle` or `claude-code` in the job config |
-| Environment | Local Docker or Daytona DinD |
-| Verifier | `tasks/*/tests/test.sh` plus shared verifier code copied from `shared/` |
-| Score | `/logs/verifier/reward.json` with `{"reward": 0|1}` |
-
-The verifier runs in Harbor shared-environment mode so it can inspect the
-submitted app and the same Tempo localnet used by the agent. RewardKit
-correctness/quality outputs are diagnostic; the primary Harbor reward follows
-the independent build/run/onchain verifier result.
-
-## Jobs
-
-| Command | Config | Runtime | Attempts | Purpose |
-| --- | --- | --- | ---: | --- |
-| `npm run bench:local:oracle` | `config/job.local.oracle.yaml` | Docker | 1 | Validate all oracle solutions locally. |
-| `npm run bench:local:agent` | `config/job.local.agent.yaml` | Docker | 3 | Full local Claude Code suite. |
-| `npm run bench:local:agent:dev` | `config/job.local.agent.dev.yaml` | Docker | 1 | Local smoke run across the suite. |
-| `npm run bench:daytona:oracle` | `config/job.daytona.oracle.yaml` | Daytona | 1 | Validate all oracle solutions remotely. |
-| `npm run bench:daytona:agent` | `config/job.daytona.agent.yaml` | Daytona | 3 | Full remote Claude Code suite. |
-| `npm run bench:daytona:agent:dev` | `config/job.daytona.agent.dev.yaml` | Daytona | 1 | Remote smoke run across the suite. |
-
-The config-backed jobs include all 18 tasks by default: 6 base tasks, 6 docs
-tasks, and 6 MCP tasks.
-
-Use the generic model runner for one-off local runs:
-
-```bash
-npm run bench:model -- --model sonnet --task-filter 'tempo/transfer-*'
-```
-
-## Setup
-
-Install project tools:
+## Install
 
 ```bash
 npm install
 uv sync
-```
-
-Prepare the pinned docs bundle:
-
-```bash
 npm run docs:prepare
 ```
 
-Optional global Harbor install:
+Optional Harbor install:
 
 ```bash
 uv tool install 'harbor[daytona]'
 ```
 
-Create `.env` with the runtime credentials you need:
+## Quick Start
 
-| Key | Used for |
-| --- | --- |
-| `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` | Claude Code and RewardKit LLM judging. |
-| `CLAUDE_CODE_OAUTH_TOKEN` | Claude Code subscription auth. |
-| `CLAUDE_FORCE_OAUTH` | Optional Claude Code OAuth forcing; use `1`/`true`, not an empty value. |
-| `DAYTONA_API_KEY` | Daytona runs. |
-| `DAYTONA_TARGET` | Optional Daytona target. |
-
-The checked-in Daytona configs start from `docker:28.3.3-dind` directly. If you
-want to experiment with snapshot-backed startup later, create a snapshot with
-`uv run scripts/create-daytona-dind-snapshot.py --recreate-error` and set
-`environment.kwargs.dind_snapshot` in the Daytona config.
-
-## Run
-
-Refresh generated task files and Harbor digests:
-
-```bash
-npm run dataset
-```
-
-Run local jobs:
+Validate the Tempo oracle solutions locally:
 
 ```bash
 npm run bench:local:oracle
+```
+
+Run a local agent smoke test:
+
+```bash
 npm run bench:local:agent:dev
-npm run bench:local:agent
 ```
 
-Run Daytona jobs:
-
-```bash
-npm run bench:daytona:oracle
-npm run bench:daytona:agent:dev
-npm run bench:daytona:agent
-```
-
-Override concurrency:
-
-```bash
-npm run bench:daytona:agent -- --concurrency 4 --agent-concurrency 2
-```
-
-Daytona runs default to two retries for transient remote Docker startup
-failures in a fresh sandbox.
-
-Run a single task through a config-backed Daytona job:
+Run one task on Daytona:
 
 ```bash
 npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
 ```
 
-Use the `-base` task name to run the vanilla flavor:
+Run the MPP MVP task:
 
 ```bash
-npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-base --concurrency 1 --agent-concurrency 1
+npm run bench:model -- --tasks tasks/mpp --task-filter tempo/mpp-server-charge-pathusd
 ```
 
-Use a stable job name:
+## Datasets
+
+| Dataset | Path | Description |
+| ------- | ---- | ----------- |
+| `tempo/tempo-bench-v1` | `tasks/` | Tempo localnet integration tasks across base, docs, and MCP profiles |
+| `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
+
+## Profiles
+
+* **Base**: prompt-only Tempo task, no docs sidecar or MCP server.
+* **Docs**: local docs sidecar at `TEMPO_DOCS_URL=http://tempo-docs:3000/developers`.
+* **MCP**: Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
+
+## CLI
 
 ```bash
-npm run bench:local:agent -- --job-name tempo-bench-agents-local
-```
+# Sync generated Tempo task assets
+npm run sync
 
-Open Harbor's job viewer:
+# Refresh Tempo dataset digests
+npm run dataset
 
-```bash
-npm run harbor:view
-```
+# Refresh MPP MVP dataset digest
+npm run dataset -- --tasks tasks/mpp
 
-## Checks
-
-```bash
+# Check scripts, format, and lint
 npm run check
-npm run check:dataset
+
+# Check generated Tempo files
 npm run check:generated
-```
 
-Clean local outputs:
+# Open Harbor job viewer
+npm run harbor:view
 
-```bash
+# Clean job/cache output
 npm run clean
 ```
 
-## Editing
+## Jobs
 
-- Edit base task intents under `tasks/<intent>-base/`; generated docs/MCP
-  variants live at `tasks/<intent>-docs` and `tasks/<intent>-mcp`.
-- Edit shared verifier, RewardKit, localnet, or Docker code under `shared/`.
-- Run `npm run sync` after task/shared edits.
-- Run `npm run dataset` after changes that should update Harbor task digests.
-- Keep Daytona configs thin. If Daytona upload behavior needs to change, update
-  `scripts/run-benchmark.ts` staging logic instead of committing staged task
-  copies.
+| Command | Runtime | Description |
+| ------- | ------- | ----------- |
+| `npm run bench:local:oracle` | Docker | Validate oracle solutions locally |
+| `npm run bench:local:agent:dev` | Docker | Local agent smoke run |
+| `npm run bench:local:agent` | Docker | Full local agent run |
+| `npm run bench:daytona:oracle` | Daytona | Validate oracle solutions remotely |
+| `npm run bench:daytona:agent:dev` | Daytona | Remote agent smoke run |
+| `npm run bench:daytona:agent` | Daytona | Full remote agent run |
+| `npm run bench:model` | Docker | Ad hoc local model run |
+
+## Environment
+
+| Variable | Used for |
+| -------- | -------- |
+| `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` | Claude Code and RewardKit LLM judging |
+| `DAYTONA_API_KEY` | Daytona runs |
+| `DAYTONA_TARGET` | Optional Daytona target |
 
 ## References
 
-- [Harbor docs](https://www.harborframework.com/docs/core-concepts)
-- [Harbor GitHub](https://github.com/harbor-framework/harbor)
-- [Daytona snapshots](https://www.daytona.io/docs/en/snapshots/)
-- [Tempo docs](https://docs.tempo.xyz/)
-- [Tempo MCP server](https://mcp.tempo.xyz)
+* [Harbor](https://www.harborframework.com/docs/core-concepts)
+* [Tempo docs](https://docs.tempo.xyz/)
+* [Tempo MCP](https://mcp.tempo.xyz)
+* [MPP](https://mpp.dev/)
