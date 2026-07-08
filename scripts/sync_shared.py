@@ -10,59 +10,30 @@ from pathlib import Path
 from typing import Any
 
 import tomlkit
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 TASKS_DIR = ROOT / "tasks" / "tempo"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
 MPP_SHARED_DIR = ROOT / "shared" / "mpp"
 
-MPP_SHARED_FILES = [
-    ("environment/Dockerfile", False),
-    ("solution/package.json", False),
-    ("solution/solve.sh", True),
-    ("solution/tsconfig.json", False),
-    ("tests/reward.toml", False),
-    ("tests/test.sh", True),
-    ("tests/correctness/verify.sh", True),
-    ("tests/quality/check.py", False),
-    ("tests/quality/reward.toml", False),
-    ("tests/support/client_lib.py", False),
-    ("tests/support/verifier_utils.py", False),
-]
-
-# Task-local files that intentionally diverge from the shared MPP defaults.
-# Sync leaves these alone; the tracked task-local copy is the source of truth.
-MPP_TASK_LOCAL_OVERRIDES = {
-    "server-hono-charge-pathusd": {"solution/package.json"},
-    "server-charge-pathusd": {"tests/quality/reward.toml"},
+# All task matrix data (base task slugs, generated profiles, MPP shared file
+# lists, ...) lives in config/tasks.yaml.
+TASKS_CONFIG: dict[str, Any] = yaml.safe_load(
+    (ROOT / "config" / "tasks.yaml").read_text()
+)
+BASE_TASK_SLUGS: list[str] = TASKS_CONFIG["base_task_slugs"]
+GENERATED_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
+PROFILES_BY_ID: dict[str, dict[str, Any]] = {
+    profile["id"]: profile for profile in GENERATED_PROFILES
 }
-
-TEMPO_DOCS_URL = "http://tempo-docs:3000/developers"
-TEMPO_MCP_URL = "https://mcp.tempo.xyz"
-DEFAULT_TURN_CUTOFFS = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
-DEFAULT_TOKEN_CUTOFFS = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"
-BASE_TASK_SLUGS = [
-    "transfer-with-memo-base",
-    "transfer-with-memo-fee-payer-base",
-    "set-fee-token-base",
-    "create-stablecoin-with-policy-base",
-    "faucet-funded-transfer-base",
-    "stablecoin-dex-swap-base",
-]
-GENERATED_PROFILES = [
-    {"id": "docs", "suffix": "-docs", "label": "docs"},
-    {"id": "mcp", "suffix": "-mcp", "label": "MCP"},
+QUALITY_ENV: dict[str, str] = TASKS_CONFIG["quality_env"]
+EXECUTION_CONSTRAINTS: str = TASKS_CONFIG["execution_constraints"]
+MPP_SHARED_FILES: list[dict[str, Any]] = TASKS_CONFIG["mpp"]["shared_files"]
+MPP_TASK_LOCAL_OVERRIDES: dict[str, list[str]] = TASKS_CONFIG["mpp"][
+    "task_local_overrides"
 ]
 BASE_SUFFIX = "-base"
-EXECUTION_CONSTRAINTS = (
-    "## Execution Constraints\n\n"
-    "- `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint "
-    "(`http://tempo-localnet:8545`).\n"
-    "- Use that localnet RPC endpoint for all build, run, and self-check commands.\n"
-    "- Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.\n"
-    "- Do not run live testnet smoke tests; local build/run checks must use the "
-    "provided environment variables.\n"
-)
 
 
 def remove_path(target: Path) -> None:
@@ -140,7 +111,7 @@ def toml_string(value: str) -> str:
     return json.dumps(value)
 
 
-def update_task_toml(task_dir: Path, source_slug: str, profile: dict[str, str]) -> None:
+def update_task_toml(task_dir: Path, source_slug: str, profile: dict[str, Any]) -> None:
     task_config_path = task_dir / "task.toml"
     task_name = f"tempo/{source_slug}{profile['suffix']}"
     doc = tomlkit.parse(task_config_path.read_text())
@@ -160,23 +131,25 @@ def update_task_toml(task_dir: Path, source_slug: str, profile: dict[str, str]) 
     environment.pop("mcp_servers", None)
     environment.pop("network_mode", None)
     environment.pop("allowed_hosts", None)
-    environment["env"].pop("TEMPO_DOCS_URL", None)
+    for other_profile in GENERATED_PROFILES:
+        for key in other_profile.get("env", {}):
+            environment["env"].pop(key, None)
 
-    if profile["id"] == "docs":
-        environment["env"]["TEMPO_DOCS_URL"] = TEMPO_DOCS_URL
-    elif profile["id"] == "mcp":
-        server = tomlkit.table()
-        server["name"] = "tempo"
-        server["transport"] = "streamable-http"
-        server["url"] = TEMPO_MCP_URL
+    for key, value in profile.get("env", {}).items():
+        environment["env"][key] = value
+    if server_configs := profile.get("mcp_servers"):
         servers = tomlkit.aot()
-        servers.append(server)
+        for server_config in server_configs:
+            server = tomlkit.table()
+            for key, value in server_config.items():
+                server[key] = value
+            servers.append(server)
         environment["mcp_servers"] = servers
 
     write_file(task_config_path, tomlkit.dumps(doc))
 
 
-def append_profile_instruction(task_dir: Path, profile: dict[str, str]) -> None:
+def append_profile_instruction(task_dir: Path, profile: dict[str, Any]) -> None:
     instruction_path = task_dir / "instruction.md"
     content = re.sub(
         r"\nTempo integration docs are available through the configured MCP "
@@ -191,52 +164,23 @@ def append_profile_instruction(task_dir: Path, profile: dict[str, str]) -> None:
         r"\n## Execution Constraints[\s\S]*?(?=\n## |\nRequirements:|$)", "\n", content
     )
 
-    if profile["id"] == "docs":
-        content = content.replace(
-            "\nRequirements:",
-            "\n## Tempo Access Profile\n\n"
-            "Tempo docs are available through the local docs service at "
-            f"`TEMPO_DOCS_URL` ({TEMPO_DOCS_URL}). Use those docs for "
-            "Tempo-specific APIs and examples. Do not use WebSearch, WebFetch, "
-            "public docs sites, or public RPC endpoints.\n\nRequirements:",
-        )
-    elif profile["id"] == "mcp":
-        content = content.replace(
-            "\nRequirements:",
-            "\n## Tempo Access Profile\n\nThe official Tempo MCP server is "
-            "configured as `tempo`. Use it if your agent runtime exposes MCP "
-            "tools; do not use WebSearch, WebFetch, or public RPC endpoints.\n\n"
-            "Requirements:",
-        )
-
+    if instruction := profile.get("instruction"):
+        content = content.replace("\nRequirements:", f"\n{instruction}\nRequirements:")
     content = content.replace(
         "\nRequirements:", f"\n{EXECUTION_CONSTRAINTS}\nRequirements:"
     )
     write_file(instruction_path, f"{content.rstrip()}\n")
 
 
-def profile_quality_check(profile_id: str | None) -> str:
-    if profile_id == "docs":
-        return r"""
-rk.tempo_trajectory_matches(
-    r"tempo-docs:3000/developers|/developers/llms\.txt|/developers/llms-full\.txt|/developers/docs/.*\.md|TEMPO_DOCS_URL",
-)
-"""
-    if profile_id == "mcp":
-        return """
-rk.tempo_mcp_tool_used("tempo")
-"""
-    return ""
-
-
 def update_profile_quality(task_dir: Path) -> None:
     profile_id = read_string_value(task_dir / "task.toml", "metadata.profile")
-    check = profile_quality_check(profile_id)
+    profile = PROFILES_BY_ID.get(profile_id or "", {})
+    check = profile.get("quality_check")
     if not check:
         return
     check_path = task_dir / "tests" / "quality" / "check.py"
     content = check_path.read_text()
-    write_file(check_path, f"{content.rstrip()}\n{check}")
+    write_file(check_path, f"{content.rstrip()}\n\n{check}")
 
 
 def materialize_task_matrix() -> None:
@@ -256,16 +200,16 @@ def materialize_task_matrix() -> None:
             append_profile_instruction(task_dir, profile)
 
     remove_path(TASKS_DIR / "transfer-with-memo-docs-mcp")
+    legacy_suffixes = ["-docs-url", "-tempo-mcp", "-docs-mcp"]
+    generated_suffixes = [
+        profile["suffix"] for profile in GENERATED_PROFILES
+    ] + legacy_suffixes
     for entry in TASKS_DIR.iterdir():
         if not entry.is_dir():
             continue
         slug = entry.name
-        is_generated_profile = (
-            slug.endswith("-docs")
-            or slug.endswith("-mcp")
-            or slug.endswith("-docs-url")
-            or slug.endswith("-tempo-mcp")
-            or slug.endswith("-docs-mcp")
+        is_generated_profile = any(
+            slug.endswith(suffix) for suffix in generated_suffixes
         )
         if is_generated_profile and slug not in generated_slugs:
             remove_path(entry)
@@ -402,10 +346,7 @@ def ensure_quality_env(task_dir: Path) -> None:
     doc = tomlkit.parse(task_config_path.read_text())
     env = doc["environment"]["env"]
     changed = False
-    for key, value in (
-        ("TEMPO_BENCH_TURNS_SCORE_CUTOFFS", DEFAULT_TURN_CUTOFFS),
-        ("TEMPO_BENCH_TOKENS_SCORE_CUTOFFS", DEFAULT_TOKEN_CUTOFFS),
-    ):
+    for key, value in QUALITY_ENV.items():
         if key not in env:
             env[key] = value
             changed = True
@@ -518,13 +459,14 @@ def mpp_task_dirs() -> list[Path]:
 def sync_mpp_tasks() -> int:
     tasks = mpp_task_dirs()
     for task_dir in tasks:
-        overrides = MPP_TASK_LOCAL_OVERRIDES.get(task_dir.name, set())
-        for source, executable in MPP_SHARED_FILES:
+        overrides = set(MPP_TASK_LOCAL_OVERRIDES.get(task_dir.name, []))
+        for shared_file in MPP_SHARED_FILES:
+            source = shared_file["path"]
             if source in overrides:
                 continue
             destination = task_dir / source
             copy_file(MPP_SHARED_DIR / source, destination)
-            if executable:
+            if shared_file.get("executable"):
                 destination.chmod(0o755)
         copy_dir(
             ROOT / "shared" / "rewardkit-package",

@@ -1,0 +1,112 @@
+# Data for scripts/run_benchmark.py: everything that differs between the
+# generated Harbor job configs, plus shared Daytona runner settings. The rest
+# of each job config (verifier env, timeout multiplier, Daytona kwargs, ...)
+# lives in config/job.yaml.j2. Omit `datasets` to use the config/datasets.yaml
+# matrix. `npm run sync` compiles each `job` spec into config/generated/, and
+# runs use those checked-in files.
+
+daytona:
+  # Image and snapshot used by Daytona job environments. After changing the
+  # image, run scripts/create-daytona-dind-snapshot.py to create the snapshot.
+  dind_image: docker:28.3.3-dind
+  dind_snapshot_name: tempo-bench-dind-28-3-3
+
+# Deliberate override of config/datasets.yaml for jobs that run Tempo tasks
+# only. Use --task-filter server-* to target MPP tasks.
+tempo_only_datasets: &tempo_only_datasets
+  - path: tasks/tempo
+    task_names: ["*-base", "*-docs", "*-mcp"]
+
+# Shared blocks referenced by the variants below.
+defaults:
+  oracle_agent: &oracle_agent
+    name: oracle
+  claude_agent: &claude_agent
+    name: claude-code
+    model_name: claude-haiku-4-5
+  local_job: &local_job
+    n_attempts: 1
+    n_concurrent_trials: 4
+    environment_type: docker
+    force_build: true
+  daytona_job: &daytona_job
+    n_attempts: 1
+    n_concurrent_trials: 32
+    environment_type: daytona
+    force_build: false
+
+variants:
+  local-oracle:
+    prefix: tempo-bench-oracle-local
+    job:
+      <<: *local_job
+      job_name: tempo-bench-local
+      agents:
+        - *oracle_agent
+  local-oracle-dev:
+    prefix: tempo-bench-oracle-dev-local
+    job:
+      <<: *local_job
+      job_name: tempo-bench-local-dev
+      n_concurrent_trials: 1
+      force_build: false
+      datasets: *tempo_only_datasets
+      agents:
+        - *oracle_agent
+  local-agent:
+    prefix: tempo-bench-agents-local
+    needs_agent_auth: true
+    job:
+      <<: *local_job
+      job_name: tempo-bench-agents-local
+      n_attempts: 3
+      agents:
+        - *claude_agent
+  local-agent-dev:
+    prefix: tempo-bench-agents-dev-local
+    needs_agent_auth: true
+    job:
+      <<: *local_job
+      job_name: tempo-bench-agents-dev-local
+      agents:
+        - *claude_agent
+  model:
+    prefix: tempo-bench-model-local
+    path: tasks/tempo
+    default_agent: claude-code
+    default_model: haiku
+    needs_agent_auth: true
+  daytona-oracle:
+    prefix: tempo-bench-oracle-daytona
+    needs_daytona_auth: true
+    job:
+      <<: *daytona_job
+      job_name: tempo-bench-oracle-daytona
+      agents:
+        - *oracle_agent
+  daytona-agent:
+    prefix: tempo-bench-agents-daytona
+    needs_agent_auth: true
+    needs_daytona_auth: true
+    job:
+      <<: *daytona_job
+      job_name: tempo-bench-agents-daytona-local
+      n_attempts: 3
+      agents:
+        - <<: *claude_agent
+          n_concurrent: 32
+  daytona-agent-dev:
+    prefix: tempo-bench-agents-daytona-dev
+    needs_agent_auth: true
+    needs_daytona_auth: true
+    job:
+      <<: *daytona_job
+      job_name: tempo-bench-agents-daytona-dev-local
+      agents:
+        - <<: *claude_agent
+          n_concurrent: 32
+  production-daytona:
+    prefix: tempo-bench-production
+    needs_agent_auth: true
+    needs_daytona_auth: true
+    production: true

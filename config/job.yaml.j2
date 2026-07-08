@@ -1,6 +1,6 @@
 # Shared Harbor job template. `npm run sync` compiles this into
-# config/generated/job.<variant>.yaml for every job variant (see VARIANTS in
-# scripts/run_benchmark.py), injecting `datasets:` from config/datasets.yaml
+# config/generated/job.<variant>.yaml for every job variant in
+# config/variants.yaml, injecting `datasets:` from config/datasets.yaml
 # unless the variant declares its own. Production runs render it at run time.
 job_name: {{ job_name | tojson }}
 jobs_dir: {{ jobs_dir | tojson }}
@@ -14,7 +14,7 @@ environment:
   delete: true
 {% if environment_type == "daytona" %}
   kwargs:
-    dind_image: docker:28.3.3-dind
+    dind_image: {{ dind_image | tojson }}
     connection_pool_maxsize: null
 {% endif %}
 verifier:

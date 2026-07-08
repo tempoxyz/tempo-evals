@@ -1,7 +1,7 @@
 # Shared dataset matrix for job configs.
 # scripts/run_benchmark.py injects this file into any generated job config
-# whose variant does not declare its own `datasets` (see VARIANTS in
-# scripts/run_benchmark.py).
+# whose variant does not declare its own `datasets` (see
+# config/variants.yaml).
 datasets:
   - path: tasks/tempo
     task_names:
