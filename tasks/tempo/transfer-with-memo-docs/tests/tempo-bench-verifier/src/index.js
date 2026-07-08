@@ -66,19 +66,19 @@ async function main() {
     };
     runStep(config, "submission-npm-install", "npm", ["install", "--silent"]);
     context = {
-      phase: "submission-example",
-      expected: "npm run example exits 0",
+      phase: "submission-eval",
+      expected: "npm run eval exits 0",
       logs: [
-        "submission-example.stdout.txt",
-        "submission-example.stderr.txt",
-        "submission-example.status.json",
+        "submission-eval.stdout.txt",
+        "submission-eval.stderr.txt",
+        "submission-eval.status.json",
       ],
     };
     runStep(
       config,
-      "submission-example",
+      "submission-eval",
       "npm",
-      ["run", "example"],
+      ["run", "eval"],
       verifier.runtimeEnv(config),
     );
     scores.build = 1;

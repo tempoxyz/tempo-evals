@@ -23,8 +23,8 @@ def register_tempo_typescript_project() -> None:
     rk.file_exists(WorkspaceFile.SOURCE_INDEX, name="src_index_ts_exists")
     rk.file_contains_regex(
         WorkspaceFile.PACKAGE_JSON,
-        SourcePattern.EXAMPLE_SCRIPT,
-        name="package_has_example_script",
+        SourcePattern.EVAL_SCRIPT,
+        name="package_has_eval_script",
     )
     rk.file_contains_regex(
         WorkspaceFile.SOURCE_INDEX,

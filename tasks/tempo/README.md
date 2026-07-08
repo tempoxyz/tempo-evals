@@ -33,9 +33,11 @@ Each generated task is Harbor-native and self-contained:
 - `tests/correctness/` contains the task's RewardKit criteria plus the e2e
   command criterion. `tests/quality/` contains non-binary turn/token
   efficiency checks and the Claude Haiku LLM judge. `tests/test.sh` writes
-  Harbor's primary `/logs/verifier/reward.json` as a single binary `reward`
-  key from the independent Tempo verifier's build/run/onchain result;
-  RewardKit correctness and quality dimensions are diagnostic.
+  Harbor's primary `/logs/verifier/reward.json` from the RewardKit
+  correctness score, gated by the independent Tempo onchain verifier. A task
+  receives zero reward unless `tempo_onchain_verifier` passes; after that,
+  static correctness criteria contribute weighted partial credit instead of
+  requiring every criterion to pass. Quality dimensions remain diagnostic.
   `tests/tempo-bench-verifier/` is a minimal copied verifier package for the
   selected `TEMPO_BENCH_CASE`.
 - `solution/` contains the oracle solution used for sanity checks.

@@ -23,4 +23,4 @@ Requirements:
 
 * Put the submission directly in `/app`.
 * Put the runtime source in `src/index.ts`.
-* The script should be runnable by `npm run example`
+* The script should be runnable by `npm run eval`

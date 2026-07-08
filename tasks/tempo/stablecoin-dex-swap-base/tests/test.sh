@@ -103,6 +103,18 @@ def score_of(value):
         return min((score_of(item) for item in value), default=0.0)
     return float(value or 0)
 
+def criterion_passed(value, name):
+    if isinstance(value, dict):
+        if value.get("name") == name:
+            raw = value.get("raw", value.get("value", 0))
+            if isinstance(raw, bool):
+                return raw
+            return float(value.get("value", raw or 0)) > 0
+        return any(criterion_passed(item, name) for item in value.get("criteria", []))
+    if isinstance(value, list):
+        return any(criterion_passed(item, name) for item in value)
+    return False
+
 def write_exception(reason):
     exception_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -131,9 +143,11 @@ if tempo_scores_path.exists():
 if details_path.exists():
     with details_path.open(encoding="utf-8") as details_file:
         details = json.load(details_file)
-    reward = 1 if score_of(details.get("correctness", 0)) == 1.0 else 0
+    correctness = details.get("correctness", 0)
+    if criterion_passed(correctness, "tempo_onchain_verifier"):
+        reward = score_of(correctness)
 elif scores is not None:
-    reward = 1 if int(scores.get("reward", 0)) == 1 else 0
+    reward = float(scores.get("reward", 0))
 
 with reward_path.open("w", encoding="utf-8") as reward_file:
     json.dump({"reward": reward}, reward_file, separators=(",", ":"))
@@ -141,7 +155,7 @@ with reward_path.open("w", encoding="utf-8") as reward_file:
 
 if reward == 0:
     if details_path.exists():
-        write_exception("RewardKit correctness score was below 1.")
+        write_exception("Tempo onchain verifier criterion did not pass.")
     elif tempo_scores_path.exists():
         write_exception("Tempo onchain verifier reward was below 1.")
     else:
