@@ -91,11 +91,6 @@ npm run dataset
 npm run dataset -- --tasks tasks/mpp
 ```
 
-Before committing changes that affect generated task assets, shared verifier
-packages, or task digests, run the relevant sync/dataset command and commit the
-resulting artifacts. CI expects generated artifacts and dataset digests to be
-fresh.
-
 ## Eval structure
 
 When writing evals, you SHOULD follow the below principles:
@@ -134,6 +129,20 @@ perf:
 Prefer specific messages, e.g. `docs: scaffold benchmark runbook`.
 
 ## Pull Requests
+
+### Before opening or updating a PR
+
+If your changes affect generated task assets, shared verifier packages, task
+fixtures, or task digests, run the matching artifact sync before committing and
+include the resulting generated files in the PR:
+
+```bash
+npm run dataset                  # Tempo tasks
+npm run dataset -- --tasks tasks/mpp
+```
+
+Do not restore or omit generated dataset/artifact changes just because they look
+mechanical. CI expects generated artifacts and dataset digests to be fresh.
 
 ### Pull request body
 
