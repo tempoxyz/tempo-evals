@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM tasks/tempo/_templates/stablecoin-dex-swap/README.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Stablecoin DEX Swap
 
 ## Overview

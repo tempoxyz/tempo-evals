@@ -8,11 +8,16 @@ from tempo_bench_rewardkit.common.checks import (
 )
 
 register_tempo_typescript_project()
+rk.tempo_rejects_other_blockchains()
+rk.tempo_uses_viem_tempo_actions(
+    ["token.transferSync"],
+    require_faucet_fund_sync=True,
+)
 register_source_patterns(
     [
         {
             "name": "source_uses_transfer_with_memo_semantics",
-            "pattern": r"transferWithMemo|transferSync",
+            "pattern": r"Actions\.token\.transferSync",
         },
         {
             "name": "source_reads_tempo_memo",
@@ -29,6 +34,13 @@ register_source_patterns(
         {
             "name": "source_passes_fee_payer",
             "pattern": r"feePayer",
+        },
+        {
+            "name": "source_funds_fee_payer",
+            "pattern": (
+                r"Actions\.faucet\.fundSync[\s\S]*feePayer|"
+                r"feePayer[\s\S]*Actions\.faucet\.fundSync"
+            ),
         },
         {
             "name": "source_reads_fee_token",

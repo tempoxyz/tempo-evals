@@ -7,8 +7,24 @@ const { writeJson, writeText } = require("./logs");
 function assertSubmissionShape(config) {
   const packageJson = path.join(config.workspace, "package.json");
   if (!fs.existsSync(packageJson)) {
-    throw new Error("submission did not create /app/package.json");
+    const error = new Error("submission did not create /app/package.json");
+    error.phase = "submission-shape";
+    error.expected = "submission creates /app/package.json";
+    error.observed = "/app/package.json was missing";
+    throw error;
   }
+}
+
+function stepLogFiles(name) {
+  return [
+    `${name}.stdout.txt`,
+    `${name}.stderr.txt`,
+    `${name}.status.json`,
+  ];
+}
+
+function formatCommand(command, args) {
+  return [command, ...args].join(" ");
 }
 
 function runStep(config, name, command, args, env = {}) {
@@ -30,9 +46,22 @@ function runStep(config, name, command, args, env = {}) {
     error: result.error?.message || null,
   });
 
-  if (result.error) throw result.error;
+  if (result.error) {
+    result.error.phase = name;
+    result.error.expected = `${formatCommand(command, args)} exits 0`;
+    result.error.observed = result.error.message;
+    result.error.logs = stepLogFiles(name);
+    throw result.error;
+  }
   if (result.status !== 0) {
-    throw new Error(`${name} failed with exit ${result.status}`);
+    const error = new Error(`${name} failed with exit ${result.status}`);
+    error.phase = name;
+    error.expected = `${formatCommand(command, args)} exits 0`;
+    error.observed = result.signal
+      ? `terminated by signal ${result.signal}`
+      : `exit ${result.status}`;
+    error.logs = stepLogFiles(name);
+    throw error;
   }
 }
 

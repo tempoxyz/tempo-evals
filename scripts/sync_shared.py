@@ -39,6 +39,8 @@ BASE_PROFILE: dict[str, Any] = {"id": "base", "suffix": "-base", "label": "base"
 GENERATED_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
 ALL_PROFILES: list[dict[str, Any]] = [BASE_PROFILE, *GENERATED_PROFILES]
 QUALITY_ENV: dict[str, str] = TASKS_CONFIG["quality_env"]
+FIXTURE_ENV: dict[str, str] = TASKS_CONFIG["fixture_env"]
+CASE_FIXTURES: dict[str, dict[str, str]] = TASKS_CONFIG["case_fixtures"]
 EXECUTION_CONSTRAINTS: str = TASKS_CONFIG["execution_constraints"]
 MPP_SHARED_FILES: list[dict[str, Any]] = TASKS_CONFIG["mpp"]["shared_files"]
 MPP_TASK_LOCAL_OVERRIDES: dict[str, list[str]] = TASKS_CONFIG["mpp"][
@@ -137,6 +139,36 @@ def render_instruction(task_dir: Path, slug: str, profile: dict[str, Any]) -> No
     )
 
 
+def render_readme(task_dir: Path, slug: str) -> None:
+    readme_path = task_dir / "README.md"
+    if not readme_path.exists():
+        msg = f"Missing {SOURCES_LABEL}/{slug}/README.md"
+        raise RuntimeError(msg)
+
+    content = readme_path.read_text()
+    for heading in ("## Overview", "## What the Task Tests"):
+        if heading not in content:
+            msg = f"Missing {heading!r} in {SOURCES_LABEL}/{slug}/README.md"
+            raise RuntimeError(msg)
+
+    header = (
+        f"<!-- AUTO-GENERATED FROM {SOURCES_LABEL}/{slug}/README.md "
+        "BY npm run sync. DO NOT EDIT MANUALLY. -->\n\n"
+    )
+    write_file(readme_path, header + content)
+
+
+def render_task_env(slug: str, template_env: dict[str, str]) -> dict[str, str]:
+    if slug not in CASE_FIXTURES:
+        msg = f"Missing case_fixtures entry for {slug!r} in config/tasks.yaml"
+        raise RuntimeError(msg)
+
+    merged = dict(FIXTURE_ENV)
+    merged.update(CASE_FIXTURES[slug])
+    merged.update(template_env)
+    return merged
+
+
 def render_task_toml(task_dir: Path, slug: str, profile: dict[str, Any]) -> None:
     task_config_path = task_dir / "task.toml"
     doc = tomlkit.parse(task_config_path.read_text())
@@ -154,11 +186,17 @@ def render_task_toml(task_dir: Path, slug: str, profile: dict[str, Any]) -> None
         doc["metadata"]["profile"] = profile["id"]
 
     environment = doc["environment"]
+    template_env = read_string_table(task_config_path, "environment.env")
+    rendered_env = render_task_env(slug, template_env)
+    env_table = tomlkit.table()
+    for key, value in rendered_env.items():
+        env_table[key] = value
     for key, value in profile.get("env", {}).items():
-        environment["env"][key] = value
+        env_table[key] = value
     for key, value in QUALITY_ENV.items():
-        if key not in environment["env"]:
-            environment["env"][key] = value
+        if key not in env_table:
+            env_table[key] = value
+    environment["env"] = env_table
     if server_configs := profile.get("mcp_servers"):
         servers = tomlkit.aot()
         for server_config in server_configs:
@@ -327,10 +365,8 @@ def assert_verifier_env_allowed(task_dir: Path) -> None:
         raise RuntimeError(msg)
 
 
-def read_task_case_id(task_dir: Path) -> str | None:
-    return read_string_table(task_dir / "task.toml", "environment.env").get(
-        "TEMPO_BENCH_CASE"
-    )
+def read_task_case_id(slug: str) -> str | None:
+    return CASE_FIXTURES.get(slug, {}).get("TEMPO_BENCH_CASE")
 
 
 def assert_compose_build_contexts(task_dir: Path) -> None:
@@ -349,12 +385,16 @@ def generate_task(source_dir: Path, slug: str, profile: dict[str, Any]) -> str:
     task_dir = TASKS_DIR / task_slug
     copy_dir(source_dir, task_dir)
     render_instruction(task_dir, slug, profile)
+    render_readme(task_dir, slug)
     render_task_toml(task_dir, slug, profile)
     assert_verifier_env_allowed(task_dir)
 
-    case_id = read_task_case_id(task_dir)
+    case_id = read_task_case_id(slug)
     if not case_id:
-        msg = f"TEMPO_BENCH_CASE is missing in {SOURCES_LABEL}/{slug}/task.toml"
+        msg = (
+            f"TEMPO_BENCH_CASE is missing for {slug!r} in config/tasks.yaml "
+            "case_fixtures"
+        )
         raise RuntimeError(msg)
 
     sync_tests(task_dir, slug, profile, case_id)

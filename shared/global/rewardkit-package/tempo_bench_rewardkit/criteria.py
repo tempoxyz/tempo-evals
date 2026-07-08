@@ -7,11 +7,21 @@ import re
 import subprocess
 import threading
 from pathlib import Path
+from typing import Any
 
 from rewardkit import criterion
 
 LOG_DIR = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
 _EFFICIENCY_LOCK = threading.Lock()
+
+type Cutoff = tuple[int | str, float]
+DEFAULT_TOKEN_CUTOFFS: list[Cutoff] = [
+    (250000, 1.0),
+    (500000, 0.8),
+    (1000000, 0.5),
+    (1500000, 0.2),
+    ("*", 0.0),
+]
 
 
 def _write_json(name: str, payload: dict) -> None:
@@ -29,9 +39,17 @@ def _trajectory_path() -> Path | None:
     return None
 
 
-def _parse_cutoffs(raw: str) -> tuple[list[tuple[int, float]], float]:
+def _parse_cutoffs(raw: str | list[Cutoff]) -> tuple[list[tuple[int, float]], float]:
     cutoffs: list[tuple[int, float]] = []
     fallback = 0.0
+    if not isinstance(raw, str):
+        for limit, score in raw:
+            if limit == "*":
+                fallback = float(score)
+            else:
+                cutoffs.append((int(limit), float(score)))
+        return sorted(cutoffs), fallback
+
     for part in raw.split(","):
         item = part.strip()
         if not item:
@@ -46,7 +64,7 @@ def _parse_cutoffs(raw: str) -> tuple[list[tuple[int, float]], float]:
     return sorted(cutoffs), fallback
 
 
-def _score_by_cutoff(value: int, raw_cutoffs: str) -> float:
+def _score_by_cutoff(value: int, raw_cutoffs: str | list[Cutoff]) -> float:
     cutoffs, fallback = _parse_cutoffs(raw_cutoffs)
     for limit, score in cutoffs:
         if value <= limit:
@@ -96,6 +114,214 @@ def _token_metrics(trajectory: dict) -> dict[str, int]:
         + metrics["completion_tokens"]
     )
     return metrics
+
+
+def _read_workspace_file(workspace: Path, relative_path: str) -> str:
+    return (workspace / relative_path).read_text(encoding="utf-8")
+
+
+def _read_workspace_json(workspace: Path, relative_path: str) -> dict[str, Any]:
+    return json.loads(_read_workspace_file(workspace, relative_path))
+
+
+def _pattern_check(workspace: Path, name: str, file: str, pattern: str) -> dict:
+    try:
+        content = _read_workspace_file(workspace, file)
+        matched = re.search(pattern, content, re.MULTILINE) is not None
+        error = None
+    except Exception as exc:
+        matched = False
+        error = str(exc)
+
+    return {
+        "name": name,
+        "file": file,
+        "pattern": pattern,
+        "passed": matched,
+        "error": error,
+    }
+
+
+NON_TEMPO_BLOCKCHAIN_DEPENDENCIES: frozenset[str] = frozenset(
+    (
+        "@aptos-labs/ts-sdk",
+        "@cardano-sdk/core",
+        "@cosmjs/stargate",
+        "@hashgraph/sdk",
+        "@mysten/sui",
+        "@near-js/accounts",
+        "@near-js/providers",
+        "@polkadot/api",
+        "@solana/spl-token",
+        "@solana/web3.js",
+        "@stacks/transactions",
+        "@stellar/stellar-sdk",
+        "@ton/core",
+        "algosdk",
+        "aptos",
+        "bitcoinjs-lib",
+        "ethers",
+        "near-api-js",
+        "ripple-lib",
+        "sui",
+        "tronweb",
+        "web3",
+        "xrpl",
+    )
+)
+NON_TEMPO_BLOCKCHAIN_NAME_FRAGMENTS: tuple[str, ...] = (
+    "algorand",
+    "aptos",
+    "bitcoin",
+    "cardano",
+    "cosmos",
+    "cosmjs",
+    "ethereumjs",
+    "ethers",
+    "flow",
+    "fuel",
+    "hashgraph",
+    "hedera",
+    "metaplex",
+    "near",
+    "polkadot",
+    "solana",
+    "starknet",
+    "sui",
+    "tezos",
+    "ton",
+    "tron",
+    "web3",
+    "xrpl",
+)
+NON_TEMPO_BLOCKCHAIN_SCOPED_PACKAGE_PREFIXES: tuple[str, ...] = (
+    "@aptos-labs",
+    "@cardano-sdk",
+    "@cosmjs",
+    "@hashgraph",
+    "@mysten",
+    "@near-js",
+    "@polkadot",
+    "@solana",
+    "@stacks",
+    "@stellar",
+    "@ton",
+)
+NON_TEMPO_BLOCKCHAIN_IMPORT_PATTERN = (
+    r"from\s+['\"](?:"
+    r"@aptos-labs/|@cardano-sdk/|@cosmjs/|@hashgraph/|@mysten/|@near-js/|"
+    r"@polkadot/|@solana/|@stacks/|@stellar/|@ton/|algosdk|aptos|"
+    r"bitcoinjs-lib|ethers|fuels|near-api-js|ripple-lib|starknet|sui|"
+    r"tronweb|web3|xrpl"
+    r")"
+    r"|require\(\s*['\"](?:"
+    r"@aptos-labs/|@cardano-sdk/|@cosmjs/|@hashgraph/|@mysten/|@near-js/|"
+    r"@polkadot/|@solana/|@stacks/|@stellar/|@ton/|algosdk|aptos|"
+    r"bitcoinjs-lib|ethers|fuels|near-api-js|ripple-lib|starknet|sui|"
+    r"tronweb|web3|xrpl"
+    r")"
+)
+
+
+@criterion(shared=True)
+def tempo_rejects_other_blockchains(workspace: Path) -> bool:
+    try:
+        package = _read_workspace_json(workspace, "package.json")
+        dependencies = {
+            **dict(package.get("dependencies") or {}),
+            **dict(package.get("devDependencies") or {}),
+        }
+        denied_dependencies = sorted(
+            name
+            for name in dependencies
+            if name in NON_TEMPO_BLOCKCHAIN_DEPENDENCIES
+            or any(
+                fragment in name.lower()
+                for fragment in NON_TEMPO_BLOCKCHAIN_NAME_FRAGMENTS
+            )
+            or any(
+                name.startswith(f"{prefix}/")
+                for prefix in NON_TEMPO_BLOCKCHAIN_SCOPED_PACKAGE_PREFIXES
+            )
+        )
+        package_error = None
+    except Exception as exc:
+        denied_dependencies = []
+        package_error = str(exc)
+
+    source_check = _pattern_check(
+        workspace,
+        "source_imports_only_tempo_blockchain_stack",
+        "src/index.ts",
+        NON_TEMPO_BLOCKCHAIN_IMPORT_PATTERN,
+    )
+    source_has_denied_import = source_check["passed"]
+    results = [
+        {
+            "name": "dependencies_exclude_other_blockchains",
+            "file": "package.json",
+            "passed": not denied_dependencies and package_error is None,
+            "denied_dependencies": denied_dependencies,
+            "error": package_error,
+        },
+        {
+            "name": "source_excludes_other_blockchain_imports",
+            "file": "src/index.ts",
+            "passed": not source_has_denied_import and source_check["error"] is None,
+            "pattern": NON_TEMPO_BLOCKCHAIN_IMPORT_PATTERN,
+            "error": source_check["error"],
+        },
+    ]
+    _write_json("tempo-dependency-policy.json", {"checks": results})
+    return all(result["passed"] for result in results)
+
+
+@criterion(shared=True)
+def tempo_uses_viem_tempo_actions(
+    workspace: Path,
+    actions: list[str],
+    require_faucet_fund_sync: bool = False,
+) -> bool:
+    patterns = [
+        {
+            "name": "package_depends_on_viem",
+            "file": "package.json",
+            "pattern": r'"viem"\s*:',
+        },
+        {
+            "name": "source_imports_viem_tempo",
+            "pattern": (
+                r"from\s+['\"]viem/tempo(?:/chains)?['\"]|"
+                r"require\(\s*['\"]viem/tempo"
+            ),
+        },
+        {
+            "name": "source_imports_actions",
+            "pattern": r"\bActions\b",
+        },
+    ]
+    action_names = list(actions)
+    if require_faucet_fund_sync and "faucet.fundSync" not in action_names:
+        action_names.append("faucet.fundSync")
+
+    patterns.extend(
+        {
+            "name": f"source_uses_actions_{action.replace('.', '_')}",
+            "pattern": rf"Actions\.{re.escape(action)}\b",
+        }
+        for action in action_names
+    )
+    results = [
+        _pattern_check(
+            workspace,
+            str(pattern["name"]),
+            str(pattern.get("file", "src/index.ts")),
+            str(pattern["pattern"]),
+        )
+        for pattern in patterns
+    ]
+    _write_json("tempo-actions.json", {"checks": results})
+    return all(result["passed"] for result in results)
 
 
 @criterion(shared=True)
@@ -203,21 +429,19 @@ def tempo_mcp_tool_used(_workspace: Path, server_name: str = "tempo") -> bool:
 def agent_token_efficiency(
     _workspace: Path,
     cutoffs_env: str = "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS",
-    default_cutoffs: str = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0",
+    default_cutoffs: list[Cutoff] | None = None,
 ) -> float:
-    raw_cutoffs = os.environ.get(
-        cutoffs_env,
-        default_cutoffs,
-    )
+    """Score agent token usage from trajectory metrics against cutoff thresholds."""
+    cutoffs = os.environ.get(cutoffs_env) or default_cutoffs or DEFAULT_TOKEN_CUTOFFS
     path = _trajectory_path()
     if path is None:
         _merge_efficiency(
             "tokens",
-            {"score": 0.0, "cutoffs": raw_cutoffs},
+            {"score": 0.0, "cutoffs": cutoffs},
         )
         return 0.0
 
     metrics = _token_metrics(json.loads(path.read_text(encoding="utf-8")))
-    score = _score_by_cutoff(metrics["total_tokens"], raw_cutoffs)
-    _merge_efficiency("tokens", {"score": score, "cutoffs": raw_cutoffs, **metrics})
+    score = _score_by_cutoff(metrics["total_tokens"], cutoffs)
+    _merge_efficiency("tokens", {"score": score, "cutoffs": cutoffs, **metrics})
     return score

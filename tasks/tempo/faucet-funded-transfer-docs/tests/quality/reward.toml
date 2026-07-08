@@ -10,22 +10,18 @@ weight = 2.0
 [[criterion]]
 name = "uses_tempo_localnet_safely"
 description = "The submission uses the provided Tempo localnet environment variables, does not hard-code public Tempo RPC endpoints, secrets, recipients, amounts, or token addresses, and avoids live testnet side effects."
-weight = 1.0
 
 [[criterion]]
 name = "uses_tempo_primitives_correctly"
 description = "The code uses appropriate Tempo or TIP-20 transaction primitives for the requested task, constructs addresses and units carefully, and waits for the submitted transaction to be accepted or confirmed."
-weight = 1.0
 
 [[criterion]]
 name = "is_reliable_and_observable"
 description = "The implementation has clear validation and error handling, surfaces useful failure messages, and avoids timing assumptions that would make localnet runs flaky."
-weight = 1.0
 
 [[criterion]]
 name = "is_minimal_and_maintainable"
 description = "The solution is a focused TypeScript implementation with simple dependencies, readable structure, and no unrelated scaffolding or dead code."
-weight = 1.0
 
 [scoring]
 aggregation = "weighted_mean"

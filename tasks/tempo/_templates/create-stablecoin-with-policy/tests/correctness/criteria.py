@@ -5,19 +5,32 @@ from tempo_bench_rewardkit.common.checks import (
 )
 
 register_tempo_typescript_project()
+rk.tempo_rejects_other_blockchains()
+rk.tempo_uses_viem_tempo_actions(
+    [
+        "token.createSync",
+        "policy.createSync",
+        "token.changeTransferPolicySync",
+    ],
+    require_faucet_fund_sync=True,
+)
 register_source_patterns(
     [
         {
             "name": "source_creates_stablecoin",
-            "pattern": r"token\.createSync|createSync\(client,\s*\{[\s\S]*currency",
+            "pattern": r"Actions\.token\.createSync",
         },
         {
             "name": "source_creates_transfer_policy",
-            "pattern": r"policy\.createSync",
+            "pattern": r"Actions\.policy\.createSync",
         },
         {
             "name": "source_links_transfer_policy",
-            "pattern": r"changeTransferPolicySync|transferPolicy",
+            "pattern": r"Actions\.token\.changeTransferPolicySync",
+        },
+        {
+            "name": "source_funds_localnet_account",
+            "pattern": r"Actions\.faucet\.fundSync",
         },
         {
             "name": "source_reads_stablecoin_currency",
