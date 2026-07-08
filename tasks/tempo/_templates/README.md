@@ -20,6 +20,8 @@ A template task contains only the authored files:
 - `tests/correctness/criteria.py` — task-specific RewardKit criteria.
 - `solution/` — the oracle solution used for sanity checks. A normal minimal
   TypeScript app; `solve.sh` only copies the files into `/app`.
+- `README.md` — the concise Harbor Hub summary copied into each generated
+  profile task.
 
 Everything else in a generated task (environment, verifier package, quality
 checks, test harness) comes from `shared/` and `config/tasks.yaml`.
