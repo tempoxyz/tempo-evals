@@ -19,7 +19,7 @@ function beforeLog(left, right) {
 }
 
 async function verify({ client, config, fromBlock }) {
-  const faucet = privateKeyToAccount(config.payerPrivateKey).address;
+  const localnetFaucet = privateKeyToAccount(config.payerPrivateKey).address;
   const sender = privateKeyToAccount(config.faucetPrivateKey).address;
   const expectedValue = parseUnits(config.amount, config.decimals);
   const event = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
@@ -44,7 +44,7 @@ async function verify({ client, config, fromBlock }) {
       address: config.token,
       event,
       args: {
-        from: faucet,
+        from: localnetFaucet,
         to: sender,
       },
       fromBlock,
@@ -57,7 +57,7 @@ async function verify({ client, config, fromBlock }) {
     return (
       funding &&
       blockEvidence(match, {
-        faucet,
+        localnetFaucet,
         fundedSender: sender,
         fundingTransactionHash: funding.transactionHash,
       })

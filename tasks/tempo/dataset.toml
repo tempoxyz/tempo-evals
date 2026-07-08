@@ -59,15 +59,15 @@ digest = "sha256:10a0ed06cc9574bc70ad3a3124290208cce0bf010eedfd5aadd4d8123dc6c11
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-base"
-digest = "sha256:7ae3a5483ca8ba741c13f2aefbb1a6b6868922b9efb05d765d07fa7fcdcc40be"
+digest = "sha256:23a1855449ca6b2e8e87ed5ab2d47f78906db02acca87f17f6d8b263db8546a8"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-docs"
-digest = "sha256:d10b572ed7c7e8b789125380c384873c7e5fc04b7341a5e77b809374a94d4dd1"
+digest = "sha256:3218c04c7d72d5c6f3e903d19057954efafc31a73d8315da7946b74ed4a0f961"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-mcp"
-digest = "sha256:18e32d7bef830914120a0a5f702fa43f3e8fb4f464e17e367b85f2c427dc9b48"
+digest = "sha256:8b3daf5c9a20a85ea672417b29f2f53614ebbc8b48a4b08208c15ecf3c2debe4"
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-base"
