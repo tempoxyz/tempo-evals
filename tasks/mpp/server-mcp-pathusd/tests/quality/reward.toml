@@ -1,0 +1,31 @@
+# AUTO-GENERATED FROM shared/mpp/tests/quality/reward.toml BY npm run sync. DO NOT EDIT MANUALLY.
+[judge]
+judge = "anthropic/claude-haiku-4-5"
+mode = "batched"
+files = ["package.json", "tsconfig.json", "src/index.ts"]
+atif-trajectory = "/logs/trajectory.json"
+timeout = 300
+
+[[criterion]]
+name = "implements_mpp_payment_boundary"
+description = "The submission clearly exposes the requested JSON endpoint URLs and gates only the intended paid endpoint or endpoints with the requested MPP-compatible payment method."
+
+[[criterion]]
+name = "uses_tempo_testnet_safely"
+description = "The implementation uses Tempo testnet semantics for payable MPP pathUSD flows, avoids hard-coded private secrets, and does not introduce unrelated live-network side effects beyond the required payment flow."
+
+[[criterion]]
+name = "has_clear_server_lifecycle"
+description = "The server startup is reliable, writes the /app/out.json endpoint URL contract, and keeps running for verifier requests."
+
+[[criterion]]
+name = "is_minimal_and_maintainable"
+description = "The solution is focused, readable TypeScript with simple dependencies and no unrelated scaffolding or dead code."
+
+[[criterion]]
+description = "Did the agent take an efficient approach?"
+type = "likert"
+points = 5
+
+[scoring]
+aggregation = "weighted_mean"

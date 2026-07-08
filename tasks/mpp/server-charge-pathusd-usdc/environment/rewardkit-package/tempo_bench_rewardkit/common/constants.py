@@ -27,6 +27,9 @@ class OutKey(StrEnum):
     SESSION_URL = "sessionUrl"
     OPENAPI_URL = "openapiUrl"
     MPP_PAID_URL = "mppPaidUrl"
+    MCP_URL = "mcpUrl"
+    FREE_TOOL = "freeTool"
+    PAID_TOOL = "paidTool"
     X402_PAID_URL = "x402PaidUrl"
 
 
@@ -47,11 +50,18 @@ class SourcePattern(StrEnum):
     """Regex patterns for lightweight source and contract checks."""
 
     BUILD_SCRIPT = r'"build"\s*:'
+    RUN_SCRIPT = r'"run"\s*:'
     SERVE_SCRIPT = r'"serve"\s*:'
+    MCP_SDK_DEPENDENCY = r'"@modelcontextprotocol/sdk"\s*:'
     HONO_DEPENDENCY = r'"hono"\s*:'
     MPPX_DEPENDENCY = r'"mppx"\s*:'
     MPPX_IMPORT = r'from\s+["\']mppx'
+    MPPX_CLIENT_IMPORT = r'from\s+["\']mppx/client["\']'
+    MPPX_MCP_IMPORT = r'from\s+["\']mppx/mcp/server["\']'
     MPPX_HONO_IMPORT = r'from\s+["\']mppx/hono["\']'
+    METHOD_FROM = r"Method\.from\s*\("
+    METHOD_TO_CLIENT = r"Method\.toClient\s*\("
+    METHOD_TO_SERVER = r"Method\.toServer\s*\("
     MPPX_CREATE = r"Mppx\.create\s*\("
     MPPX_CHARGE = r"mppx\.charge\s*\("
     MPPX_SESSION = r"mppx\.session\s*\("
@@ -64,8 +74,13 @@ class SourcePattern(StrEnum):
     PAID = r"paid"
     FREE_URL_KEY = r'"freeUrl"\s*:'
     PAID_URL_KEY = r'"paidUrl"\s*:'
+    STATUS_KEY = r'"status"\s*:'
+    HAS_RECEIPT_KEY = r'"hasReceipt"\s*:'
     CHARGE_URL_KEY = r'"chargeUrl"\s*:'
     SESSION_URL_KEY = r'"sessionUrl"\s*:'
     OPENAPI_URL_KEY = r'"openapiUrl"\s*:'
     MPP_PAID_URL_KEY = r'"mppPaidUrl"\s*:'
+    MCP_URL_KEY = r'"mcpUrl"\s*:'
+    FREE_TOOL_KEY = r'"freeTool"\s*:'
+    PAID_TOOL_KEY = r'"paidTool"\s*:'
     X402_PAID_URL_KEY = r'"x402PaidUrl"\s*:'

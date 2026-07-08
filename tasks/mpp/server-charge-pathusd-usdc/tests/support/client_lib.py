@@ -27,6 +27,7 @@ from mpp.methods.tempo import ChargeIntent, TempoAccount, tempo
 
 WORKSPACE = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
 LOG_DIR = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
+SUPPORT_DIR = Path(__file__).resolve().parent
 OUT_PATH = WORKSPACE / "out.json"
 SCORES_PATH = WORKSPACE / "scores.json"
 LOG_SCORES_PATH = LOG_DIR / "scores.json"
@@ -570,6 +571,93 @@ def session_request(url: str) -> dict:
     return json.loads(result.stdout)
 
 
+def run_node_script(
+    name: str,
+    script_name: str,
+    env: dict[str, str] | None = None,
+    timeout: int = 120,
+) -> dict:
+    script = SUPPORT_DIR / script_name
+    if not script.exists():
+        raise RuntimeError(f"missing verifier node script: {script}")
+    result = subprocess.run(
+        ["npx", "--no-install", "tsx", str(script)],
+        cwd=WORKSPACE,
+        env={**os.environ, **(env or {})},
+        text=True,
+        capture_output=True,
+        timeout=timeout,
+        check=False,
+    )
+    write_json(
+        LOG_DIR / f"{name}.json",
+        {
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+        },
+    )
+    log_event(
+        f"{name}_exit",
+        returncode=result.returncode,
+        stderrTail=result.stderr[-1000:],
+        stdoutTail=result.stdout[-1000:],
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"{name} failed: {result.stderr.strip()}")
+    try:
+        return json.loads(result.stdout)
+    except ValueError as exc:
+        raise RuntimeError(f"{name} did not emit JSON") from exc
+
+
+def start_oracle_paid_server() -> tuple[subprocess.Popen[str], dict]:
+    oracle_dir = Path(tempfile.mkdtemp(prefix="tempo-mpp-oracle-"))
+    script = SUPPORT_DIR / "oracle_paid_server.ts"
+    if not script.exists():
+        raise RuntimeError(f"missing oracle server script: {script}")
+    out_path = oracle_dir / "out.json"
+    stdout = (LOG_DIR / "oracle-server.stdout.txt").open("w", encoding="utf-8")
+    stderr = (LOG_DIR / "oracle-server.stderr.txt").open("w", encoding="utf-8")
+    process = subprocess.Popen(
+        ["npx", "--no-install", "tsx", str(script)],
+        cwd=WORKSPACE,
+        env={
+            **os.environ,
+            "MPP_SECRET_KEY": MPP_SECRET_KEY,
+            "MPP_CHARGE_AMOUNT": str(CHARGE_AMOUNT),
+            "MPPX_RPC_URL": os.environ.get("MPPX_RPC_URL", RPC_URL),
+            "RECIPIENT_ADDRESS": RECIPIENT,
+            "TEMPO_MPP_ORACLE_OUT": str(out_path),
+        },
+        stderr=stderr,
+        stdout=stdout,
+        start_new_session=True,
+        text=True,
+    )
+    deadline = time.monotonic() + 30
+    while time.monotonic() < deadline:
+        if out_path.exists():
+            out = json.loads(out_path.read_text(encoding="utf-8"))
+            log_event("oracle_out_json", **out)
+            return process, out
+        if process.poll() is not None:
+            raise RuntimeError("oracle server exited before writing out.json")
+        time.sleep(0.1)
+    raise RuntimeError("oracle server did not write out.json within 30s")
+
+
+def stop_process_group(process: subprocess.Popen[str]) -> None:
+    if process.poll() is not None:
+        return
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(process.pid, signal.SIGTERM)
+    time.sleep(1)
+    if process.poll() is None:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(process.pid, signal.SIGKILL)
+
+
 async def main(run_task: Callable[[subprocess.Popen[str]], Awaitable[dict]]) -> None:
     process = None
     keep_process = False
@@ -589,12 +677,7 @@ async def main(run_task: Callable[[subprocess.Popen[str]], Awaitable[dict]]) -> 
         fail(str(exc))
     finally:
         if process and process.poll() is None and not keep_process:
-            with contextlib.suppress(ProcessLookupError):
-                os.killpg(process.pid, signal.SIGTERM)
-            time.sleep(1)
-            if process.poll() is None:
-                with contextlib.suppress(ProcessLookupError):
-                    os.killpg(process.pid, signal.SIGKILL)
+            stop_process_group(process)
 
 
 def run(run_task: Callable[[subprocess.Popen[str]], Awaitable[dict]]) -> None:

@@ -93,13 +93,19 @@ Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 - `tests/quality/check.py`
 - `tests/quality/reward.toml`
 - `tests/support/client_lib.py`
+- `tests/support/oracle_paid_server.ts`
 - `tests/support/verifier_utils.py`
 
 Task-specific MPP files stay in the task directory: `task.toml`,
 `instruction.md`, `solution/` sources, `tests/support/client.py` (scenario),
-and `tests/correctness/criteria.py`. A task can keep a divergent copy of a
-synced file by listing it under `mpp.task_local_overrides` in
-`config/tasks.yaml`; sync then leaves the task-local copy alone.
+task-specific `tests/support/*.ts` verifier probes,
+`tests/correctness/criteria.py`, and `tests/quality/reward.toml`.
+A task can keep a divergent copy of a synced file by listing it under
+`mpp.task_local_overrides` in `config/tasks.yaml`; sync then leaves the
+task-local copy alone.
+When MPP verifier helpers need Node-side logic, write checked-in TypeScript
+`.ts` files and run them with `tsx`; do not add `.mjs` verifier helpers or
+large inline JavaScript strings in Python.
 
 Task matrix data (base task slugs, generated docs/MCP profiles, MPP shared
 file lists) lives in `config/tasks.yaml`; `scripts/sync_shared.py` only

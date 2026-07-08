@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "serve": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@types/node": "^22.15.30",
+    "mppx": "^0.8.6",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "viem": "^2.54.0"
+  }
+}
