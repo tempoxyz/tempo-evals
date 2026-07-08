@@ -83,20 +83,36 @@ Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:
 
 - `environment/Dockerfile`
+- `environment/rewardkit-package/` (from `shared/rewardkit-package/`)
+- `solution/package.json`
+- `solution/solve.sh`
 - `solution/tsconfig.json`
+- `tests/reward.toml`
 - `tests/test.sh`
 - `tests/correctness/verify.sh`
 - `tests/quality/check.py`
+- `tests/quality/reward.toml`
 - `tests/support/client_lib.py`
 - `tests/support/verifier_utils.py`
 
 Task-specific MPP files stay in the task directory: `task.toml`,
 `instruction.md`, `solution/` sources, `tests/support/client.py` (scenario),
-`tests/correctness/criteria.py`, and `tests/quality/reward.toml`.
+and `tests/correctness/criteria.py`. A task can keep a divergent copy of a
+synced file by listing it under `mpp.task_local_overrides` in
+`config/tasks.yaml`; sync then leaves the task-local copy alone.
 
-Job configs share the dataset matrix in `config/datasets.yaml`;
-`scripts/run_benchmark.py` injects it into any job config without its own
-`datasets:` block.
+Task matrix data (base task slugs, generated docs/MCP profiles, MPP shared
+file lists) lives in `config/tasks.yaml`; `scripts/sync_shared.py` only
+executes it.
+
+Harbor job configs are compiled artifacts: `npm run sync` renders
+`config/job.yaml.j2` with per-variant values from `config/variants.yaml`,
+injects the dataset matrix from
+`config/datasets.yaml` unless the variant declares its own `datasets`, and
+writes the results to `config/generated/job.<variant>.yaml`. Runs use those
+checked-in files; do not hand-edit them. Production runs render the same
+template at run time because they depend on the run ID and
+`config/models.production.yaml`.
 
 Change the base task or generator, then run:
 

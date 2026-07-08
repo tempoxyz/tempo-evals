@@ -19,7 +19,7 @@ digest = "sha256:e996f5f126b5560eb5acc9fc974810bccb8010c9de9526ba1d932961f40f2a9
 
 [[tasks]]
 name = "tempo/transfer-with-memo-mcp"
-digest = "sha256:f3ed6fa442741828f0d3ab61edd30b694e1fb3a4f8ff8e7bcbbe6b0d520c1609"
+digest = "sha256:7b6e239a7d5306092c7874d5c5253d11aec2c6b6ae3af139908f248d801f74df"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-fee-payer-base"
@@ -31,7 +31,7 @@ digest = "sha256:f7808f95043757ebc28e91fa5cb7b351f93c4dc56dd0c6a73b964a7e49d0b1b
 
 [[tasks]]
 name = "tempo/transfer-with-memo-fee-payer-mcp"
-digest = "sha256:a43c451897efc5aff6ccaf8636d17322dee26e534d30e9b334ab350a2ffb6aa7"
+digest = "sha256:49c42c28704f6cbe4e2a8b0a3f378b0e7f0173d314c8e8f8426f70cb89e4d317"
 
 [[tasks]]
 name = "tempo/set-fee-token-base"
@@ -43,7 +43,7 @@ digest = "sha256:d28116a0a82efea582ff545d0132a440439abb435e756a7226553a25ff64dc6
 
 [[tasks]]
 name = "tempo/set-fee-token-mcp"
-digest = "sha256:deab42673bb56239e804a3e0ecb2cfa2c1fd17e79f53293dd3bdd958dcf7b98e"
+digest = "sha256:5115b4cbef933cf587995795150f2d16ee52f5d2d2c73b69d48cbb8be9e735ba"
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-base"
@@ -55,7 +55,7 @@ digest = "sha256:3d3a85ed18530cbdfdc205f8007a220a02f08fa82729d92a105a2cf3a8ebeb7
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-mcp"
-digest = "sha256:22f8adf97e868237310d508e09916ff7a01b5bc2ba18c15f8d287b8c2ba128c8"
+digest = "sha256:294ca25b7daec9fa9d1dec9413457c020432255f4897e908157faf3cf5e285a0"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-base"
@@ -67,7 +67,7 @@ digest = "sha256:17cbb19fa41d8f752656a4fbb0c1632098b46467c606ef66fc3a938a63ee750
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-mcp"
-digest = "sha256:54be5ec9655675fb4e00761c289a6b911507af04adc08bda19dfb240a562dcf7"
+digest = "sha256:fde69e274eef159d8cc779b3fb6f6d27b37a7864daf3d21bdde34f68fad7193d"
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-base"
@@ -79,5 +79,5 @@ digest = "sha256:d613f64bf7ddecffbc4e38859db56b7b09058e37bdb801bfb95467cc7be60e2
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-mcp"
-digest = "sha256:e6f92d4adf764a37b0d60b2753f5f8aaee35cae939a795b251ca61aa5c636f1c"
+digest = "sha256:b8c3f00e8b935383c34e7d431fad34c4c3ecad42ce50accc45c10a663828fcfb"
 

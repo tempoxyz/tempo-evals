@@ -1,7 +1,7 @@
 # Shared dataset matrix for job configs.
-# scripts/run_benchmark.py appends this file to any job config that does not
-# declare its own `datasets:` block. Declare `datasets:` in a job config to
-# override it (see job.local.oracle.dev.yaml and job.daytona.production.yaml.njk).
+# scripts/run_benchmark.py injects this file into any generated job config
+# whose variant does not declare its own `datasets` (see
+# config/variants.yaml).
 datasets:
   - path: tasks/tempo
     task_names:

@@ -25,10 +25,6 @@ build_timeout_sec = 600.0
 cpus = 2
 memory_mb = 4096
 storage_mb = 10240
-[[environment.mcp_servers]]
-name = "tempo"
-transport = "streamable-http"
-url = "https://mcp.tempo.xyz"
 
 [environment.env]
 TEMPO_BENCH_CASE = "transfer-with-memo"
@@ -46,3 +42,8 @@ TEMPO_MEMO = "TEMPO-FEEPAYER-001"
 TEMPO_DECIMALS = "6"
 TEMPO_BENCH_TURNS_SCORE_CUTOFFS = "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
 TEMPO_BENCH_TOKENS_SCORE_CUTOFFS = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"
+
+[[environment.mcp_servers]]
+name = "tempo"
+transport = "streamable-http"
+url = "https://mcp.tempo.xyz"

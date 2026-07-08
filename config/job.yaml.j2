@@ -1,0 +1,48 @@
+# Shared Harbor job template. `npm run sync` compiles this into
+# config/generated/job.<variant>.yaml for every job variant in
+# config/variants.yaml, injecting `datasets:` from config/datasets.yaml
+# unless the variant declares its own. Production runs render it at run time.
+job_name: {{ job_name | tojson }}
+jobs_dir: {{ jobs_dir | tojson }}
+n_attempts: {{ n_attempts }}
+timeout_multiplier: 1.0
+n_concurrent_trials: {{ n_concurrent_trials }}
+quiet: false
+environment:
+  type: {{ environment_type | tojson }}
+  force_build: {{ force_build | tojson }}
+  delete: true
+{% if environment_type == "daytona" %}
+  kwargs:
+    dind_image: {{ dind_image | tojson }}
+    connection_pool_maxsize: null
+{% endif %}
+verifier:
+  env:
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+    REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
+agents:
+{% for agent in agents %}
+  - name: {{ agent.name | tojson }}
+{% if agent.get("model_name") %}
+    model_name: {{ agent.model_name | tojson }}
+{% endif %}
+{% if agent.get("n_concurrent") %}
+    n_concurrent: {{ agent.n_concurrent }}
+{% endif %}
+{% if agent.get("concurrency_group") %}
+    concurrency_group: {{ agent.concurrency_group | tojson }}
+{% endif %}
+{% if agent.name != "oracle" %}
+    env:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+{% if agent.name == "codex" %}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      CODEX_AUTH_JSON_PATH: ${CODEX_AUTH_JSON_PATH:-}
+      CODEX_FORCE_AUTH_JSON: ${CODEX_FORCE_AUTH_JSON:-}
+{% endif %}
+{% endif %}
+{% endfor %}

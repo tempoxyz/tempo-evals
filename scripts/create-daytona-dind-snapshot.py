@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create the Daytona DinD snapshot used by the benchmark configs.
 
-This is a small operational helper for config/job.daytona.*.yaml. Keep snapshot
+This is a small operational helper for Daytona job runs. Keep snapshot
 name/resource changes aligned with those configs; do not use this script to
 change task packaging or the temporary task staging flow.
 """
@@ -14,12 +14,17 @@ import os
 import time
 from pathlib import Path
 
+import yaml
 from daytona import AsyncDaytona, DaytonaConfig
 from daytona.common.sandbox import Resources
 from daytona.common.snapshot import CreateSnapshotParams
 
-DEFAULT_NAME = "tempo-bench-dind-28-3-3"
-DEFAULT_IMAGE = "docker:28.3.3-dind"
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def daytona_defaults() -> dict[str, str]:
+    """Snapshot name and image shared with the Daytona job configs."""
+    return yaml.safe_load((ROOT / "config" / "variants.yaml").read_text())["daytona"]
 
 
 def snapshot_state(snapshot) -> str:
@@ -45,8 +50,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Create and wait for the Daytona DinD snapshot used by Harbor.",
     )
-    parser.add_argument("--name", default=DEFAULT_NAME)
-    parser.add_argument("--image", default=DEFAULT_IMAGE)
+    defaults = daytona_defaults()
+    parser.add_argument("--name", default=defaults["dind_snapshot_name"])
+    parser.add_argument("--image", default=defaults["dind_image"])
     parser.add_argument("--target", default=os.environ.get("DAYTONA_TARGET", "us"))
     parser.add_argument("--env-file", default=".env")
     parser.add_argument("--cpu", type=int, default=2)
