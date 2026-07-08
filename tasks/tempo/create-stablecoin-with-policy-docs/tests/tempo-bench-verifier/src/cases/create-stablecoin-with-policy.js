@@ -23,6 +23,17 @@ function runtimeEnv(config) {
   };
 }
 
+function beforeLog(left, right) {
+  return (
+    left.blockNumber < right.blockNumber ||
+    (left.blockNumber === right.blockNumber && left.logIndex < right.logIndex)
+  );
+}
+
+function sameHex(left, right) {
+  return left?.toLowerCase() === right?.toLowerCase();
+}
+
 async function verify({ client, config, fromBlock }) {
   const admin = privateKeyToAccount(config.payerPrivateKey).address;
   const expectedPolicyType = POLICY_TYPES[config.policyType];
@@ -39,6 +50,11 @@ async function verify({ client, config, fromBlock }) {
   const transferPolicyUpdate = parseAbiItem(
     "event TransferPolicyUpdate(address indexed updater, uint64 indexed newPolicyId)",
   );
+  const policyAccountUpdated = parseAbiItem(
+    config.policyType === "whitelist"
+      ? "event WhitelistUpdated(uint64 indexed policyId, address indexed updater, address indexed account, bool allowed)"
+      : "event BlacklistUpdated(uint64 indexed policyId, address indexed updater, address indexed account, bool restricted)",
+  );
 
   return waitForEvidence(config, async () => {
     const latestBlock = await client.getBlockNumber();
@@ -53,7 +69,8 @@ async function verify({ client, config, fromBlock }) {
         log.args.name === config.stablecoinName &&
         log.args.symbol === config.stablecoinSymbol &&
         log.args.currency === config.stablecoinCurrency &&
-        sameAddress(log.args.admin, admin),
+        sameAddress(log.args.admin, admin) &&
+        sameHex(log.args.salt, config.stablecoinSalt),
     );
 
     if (!tokenLog) {
@@ -72,6 +89,24 @@ async function verify({ client, config, fromBlock }) {
       return null;
     }
 
+    const policyAccountLogs = await client.getLogs({
+      address: config.tip403Registry,
+      event: policyAccountUpdated,
+      args: {
+        policyId: policyLog.args.policyId,
+        updater: admin,
+        account: config.policyAccount,
+      },
+      fromBlock,
+      toBlock: latestBlock,
+    });
+    const policyAccountLog = policyAccountLogs.find((log) =>
+      config.policyType === "whitelist" ? log.args.allowed : log.args.restricted,
+    );
+    if (!policyAccountLog) {
+      return null;
+    }
+
     const linkLogs = await client.getLogs({
       address: tokenLog.args.token,
       event: transferPolicyUpdate,
@@ -82,13 +117,20 @@ async function verify({ client, config, fromBlock }) {
       fromBlock,
       toBlock: latestBlock,
     });
-    const linkLog = linkLogs[0];
+    const linkLog = linkLogs.find(
+      (log) =>
+        beforeLog(tokenLog, log) &&
+        beforeLog(policyLog, log) &&
+        beforeLog(policyAccountLog, log),
+    );
     if (linkLog) {
       return {
         token: tokenLog.args.token,
         policyId: policyLog.args.policyId.toString(),
+        policyAccount: config.policyAccount,
         tokenTransactionHash: tokenLog.transactionHash,
         policyTransactionHash: policyLog.transactionHash,
+        policyAccountTransactionHash: policyAccountLog.transactionHash,
         linkTransactionHash: linkLog.transactionHash,
       };
     }
