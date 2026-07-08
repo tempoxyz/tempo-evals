@@ -11,7 +11,15 @@ function runtimeEnv(config) {
   };
 }
 
+function beforeLog(left, right) {
+  return (
+    left.blockNumber < right.blockNumber ||
+    (left.blockNumber === right.blockNumber && left.logIndex < right.logIndex)
+  );
+}
+
 async function verify({ client, config, fromBlock }) {
+  const localnetFaucet = privateKeyToAccount(config.payerPrivateKey).address;
   const sender = privateKeyToAccount(config.faucetPrivateKey).address;
   const expectedValue = parseUnits(config.amount, config.decimals);
   const event = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
@@ -30,7 +38,30 @@ async function verify({ client, config, fromBlock }) {
     });
 
     const match = logs.find((log) => log.args.value === expectedValue);
-    return match && blockEvidence(match, { fundedSender: sender });
+    if (!match) return null;
+
+    const fundingLogs = await client.getLogs({
+      address: config.token,
+      event,
+      args: {
+        from: localnetFaucet,
+        to: sender,
+      },
+      fromBlock,
+      toBlock: match.blockNumber,
+    });
+    const funding = fundingLogs.find(
+      (log) => log.args.value >= expectedValue && beforeLog(log, match),
+    );
+
+    return (
+      funding &&
+      blockEvidence(match, {
+        localnetFaucet,
+        fundedSender: sender,
+        fundingTransactionHash: funding.transactionHash,
+      })
+    );
   }, "no matching faucet-funded transfer event observed");
 }
 
