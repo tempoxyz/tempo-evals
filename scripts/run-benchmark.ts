@@ -5,8 +5,11 @@
 // Harbor config to use it. Do not commit that staged tree or copy its files
 // back into tasks/.
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
+
+const require = createRequire(import.meta.url);
 
 type DocsLock = {
   schemaVersion: number;
@@ -22,12 +25,14 @@ type Variant = {
   defaultModel?: string;
   needsAgentAuth?: boolean;
   needsDaytonaAuth?: boolean;
+  production?: boolean;
 };
 
 type Options = {
   envFile?: string;
   help?: boolean;
   jobName?: string;
+  modelsConfig?: string;
   concurrency?: string;
   agentConcurrency?: string;
   maxRetries?: string;
@@ -37,6 +42,21 @@ type Options = {
   nTasks?: string;
   tasks?: string;
   sync: boolean;
+};
+
+type ProductionModel = {
+  agent: string;
+  modelName: string;
+  nConcurrent?: string;
+  concurrencyGroup?: string;
+};
+
+type ProductionModelConfig = {
+  models: ProductionModel[];
+};
+
+type ProductionModelsFile = {
+  models?: unknown[];
 };
 
 const variants: Record<string, Variant> = {
@@ -78,6 +98,12 @@ const variants: Record<string, Variant> = {
     needsAgentAuth: true,
     needsDaytonaAuth: true,
   },
+  "production-daytona": {
+    prefix: "tempo-bench-production",
+    needsAgentAuth: true,
+    needsDaytonaAuth: true,
+    production: true,
+  },
 };
 
 function usage() {
@@ -93,6 +119,7 @@ Variants:
   daytona-oracle     Oracle validation on Daytona
   daytona-agent      Full Claude Code matrix on Daytona
   daytona-agent-dev  One-attempt Claude Code smoke run on Daytona
+  production-daytona Production Daytona run over configured models
   sync               Sync generated task assets only
   dataset            Sync generated task assets and Harbor dataset digests
   check-dataset      Verify dataset digests are fresh
@@ -103,6 +130,7 @@ Variants:
 Options:
   --env-file PATH          Load env file for Harbor and preflight checks (default: .env when present)
   --job-name NAME          Override generated job name
+  --models-config PATH     Production model matrix config (default: config/models.production.yaml)
   --concurrency N         Override n_concurrent_trials
   --agent-concurrency N   Override per-agent n_concurrent
   --max-retries N         Retry transient trial/setup failures (default: 2 for Daytona runs)
@@ -152,6 +180,9 @@ function parseArgs(argv: string[]): { variant?: string; options: Options } {
       i += 1;
     } else if (arg === "--job-name") {
       options.jobName = readOptionValue(rest, i, arg);
+      i += 1;
+    } else if (arg === "--models-config") {
+      options.modelsConfig = readOptionValue(rest, i, arg);
       i += 1;
     } else if (arg === "--concurrency") {
       options.concurrency = readPositiveInteger(readOptionValue(rest, i, arg), arg);
@@ -226,6 +257,24 @@ function run(command: string, args: string[]) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
+function runStatus(command: string, args: string[]): number {
+  const result = spawnSync(command, args, {
+    env: process.env,
+    stdio: "inherit",
+  });
+  if (result.error) throw result.error;
+  return result.status ?? 1;
+}
+
+function runOutput(command: string, args: string[]): string | undefined {
+  const result = spawnSync(command, args, {
+    env: process.env,
+    encoding: "utf8",
+  });
+  if (result.status !== 0) return undefined;
+  return result.stdout.trim() || undefined;
+}
+
 function readDocsLock(): DocsLock {
   const lockPath = path.join("config", "tempo-docs.lock.json");
   const lock = JSON.parse(fs.readFileSync(lockPath, "utf8")) as DocsLock;
@@ -277,6 +326,15 @@ function preflight(variant: Variant) {
   }
 }
 
+function preflightProductionAgents(modelConfig: ProductionModelConfig) {
+  if (modelConfig.models.some((model) => model.agent === "codex")) {
+    requireAny(
+      ["OPENAI_API_KEY", "CODEX_AUTH_JSON_PATH", "CODEX_FORCE_AUTH_JSON"],
+      "Missing Codex auth: set OPENAI_API_KEY, CODEX_AUTH_JSON_PATH, or CODEX_FORCE_AUTH_JSON.",
+    );
+  }
+}
+
 function taskPath(options: Options): string {
   return options.tasks ?? "tasks/tempo";
 }
@@ -284,6 +342,165 @@ function taskPath(options: Options): string {
 function syncDataset(options: Options) {
   run("node", ["scripts/sync-shared.mjs"]);
   run("uv", ["run", "harbor", "sync", taskPath(options)]);
+}
+
+function parseModelConfig(filePath: string, agentConcurrency?: string): ProductionModelConfig {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Production model config not found: ${filePath}`);
+  }
+
+  const YAML = require("yaml") as typeof import("yaml");
+  const parsed = YAML.parse(fs.readFileSync(filePath, "utf8")) as ProductionModelsFile;
+  const rawModels = Array.isArray(parsed?.models) ? parsed.models : [];
+  const models = rawModels.map((model, index) =>
+    normalizeProductionModel(model, index, filePath, agentConcurrency),
+  );
+  if (models.length === 0) {
+    throw new Error(`No production models configured in ${filePath}`);
+  }
+  return { models };
+}
+
+function normalizeProductionModel(
+  value: unknown,
+  index: number,
+  filePath: string,
+  agentConcurrency?: string,
+): ProductionModel {
+  if (typeof value === "string") {
+    return {
+      agent: "claude-code",
+      modelName: value,
+      nConcurrent: agentConcurrency,
+    };
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`Invalid model entry ${index + 1} in ${filePath}`);
+  }
+
+  const entry = value as Record<string, unknown>;
+  const modelName = stringField(entry, "model_name") ?? stringField(entry, "model");
+  if (!modelName) {
+    throw new Error(`Missing model_name for model entry ${index + 1} in ${filePath}`);
+  }
+  const nConcurrent = stringField(entry, "n_concurrent");
+  return {
+    agent: stringField(entry, "agent") ?? stringField(entry, "agent_name") ?? "claude-code",
+    modelName,
+    nConcurrent: agentConcurrency ?? validateOptionalPositiveInteger(nConcurrent, "n_concurrent"),
+    concurrencyGroup: stringField(entry, "concurrency_group"),
+  };
+}
+
+function stringField(object: Record<string, unknown>, key: string): string | undefined {
+  const value = object[key];
+  if (value === undefined || value === null) return undefined;
+  return String(value);
+}
+
+function validateOptionalPositiveInteger(value: string | undefined, option: string) {
+  return value === undefined ? undefined : readPositiveInteger(value, option);
+}
+
+function productionRunRoot(runId: string): string {
+  return path.join("runs", runId);
+}
+
+function productionJobDir(runId: string): string {
+  return path.join(productionRunRoot(runId), "harbor-job");
+}
+
+function writeProductionMetadata(runId: string, metadata: Record<string, unknown>) {
+  const runRoot = productionRunRoot(runId);
+  fs.mkdirSync(runRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(runRoot, "metadata.json"),
+    `${JSON.stringify(metadata, null, 2)}\n`,
+  );
+}
+
+function buildProductionConfig(
+  runId: string,
+  modelConfig: ProductionModelConfig,
+  options: Options,
+): string {
+  const stagingRoot = path.join(".cache", "harbor-production", runId);
+  const stagedConfig = path.join(stagingRoot, "job.daytona.production.yaml");
+  const templatePath = path.join("config", "job.daytona.production.yaml.njk");
+  fs.rmSync(stagingRoot, { recursive: true, force: true });
+  fs.mkdirSync(stagingRoot, { recursive: true });
+
+  const nunjucks = require("nunjucks") as typeof import("nunjucks");
+  const YAML = require("yaml") as typeof import("yaml");
+  const environment = new nunjucks.Environment(undefined, {
+    autoescape: false,
+    trimBlocks: true,
+    lstripBlocks: true,
+  });
+  environment.addFilter("dump", (value: unknown) => JSON.stringify(value));
+  const rendered = environment.renderString(fs.readFileSync(templatePath, "utf8"), {
+    jobsDir: productionRunRoot(runId),
+    models: modelConfig.models,
+    nConcurrentTrials: options.concurrency ?? "32",
+  });
+  YAML.parse(rendered);
+  fs.writeFileSync(stagedConfig, rendered);
+  return stagedConfig;
+}
+
+function runProductionVariant(
+  runId: string,
+  options: Options,
+  docsBundle: string,
+): never {
+  const modelsConfigPath = options.modelsConfig ?? "config/models.production.yaml";
+  const modelConfig = parseModelConfig(modelsConfigPath, options.agentConcurrency);
+  preflightProductionAgents(modelConfig);
+  const productionConfig = buildProductionConfig(runId, modelConfig, options);
+  const config = stageDaytonaConfig(productionConfig, runId, docsBundle, options.taskFilter);
+  const maxRetries = options.maxRetries ?? "2";
+  const startedAt = new Date().toISOString();
+  const metadata = {
+    schema_version: 1,
+    run_id: runId,
+    started_at: startedAt,
+    finished_at: null,
+    status: "running",
+    harbor_job_dir: productionJobDir(runId),
+    models_config: modelsConfigPath,
+    models: modelConfig.models.map((model) => ({
+      agent: model.agent,
+      model_name: model.modelName,
+      n_concurrent: model.nConcurrent ?? null,
+      concurrency_group: model.concurrencyGroup ?? null,
+    })),
+    task_dataset_path: "tasks/tempo",
+    task_filter: options.taskFilter ?? null,
+    n_attempts: 3,
+    n_concurrent_trials: options.concurrency ?? "32",
+    max_retries: maxRetries,
+    docs_lock: readDocsLock(),
+    docs_bundle: docsBundle,
+    git_sha: runOutput("git", ["rev-parse", "HEAD"]) ?? null,
+    git_branch: runOutput("git", ["branch", "--show-current"]) ?? null,
+    harbor_version: runOutput("uv", ["run", "harbor", "--version"]) ?? null,
+  };
+
+  writeProductionMetadata(runId, metadata);
+  const args = ["run", "harbor", "run", "-c", config];
+  if (options.envFile) args.push("--env-file", options.envFile);
+  args.push("--max-retries", maxRetries);
+  process.env.TEMPO_DOCS_BUNDLE_PATH = "";
+  args.push("-y");
+
+  const status = runStatus("uv", args);
+  writeProductionMetadata(runId, {
+    ...metadata,
+    finished_at: new Date().toISOString(),
+    status: status === 0 ? "completed" : "failed",
+    exit_status: status,
+  });
+  process.exit(status);
 }
 
 function applyTaskFilter(config: string, taskFilter?: string): string {
@@ -389,6 +606,7 @@ try {
     fs.rmSync("jobs", { recursive: true, force: true });
     fs.rmSync(path.join(".cache", "harbor-daytona"), { recursive: true, force: true });
     fs.rmSync(path.join(".cache", "harbor-config"), { recursive: true, force: true });
+    fs.rmSync(path.join(".cache", "harbor-production"), { recursive: true, force: true });
     fs.mkdirSync("jobs", { recursive: true });
     process.exit(0);
   }
@@ -406,6 +624,10 @@ try {
 
   const runId = options.jobName ?? `${variant.prefix}-${timestamp()}`;
   const args = ["run", "harbor", "run"];
+  if (variant.production) {
+    runProductionVariant(runId, options, docsBundle);
+  }
+
   if (variant.config) {
     const config = variant.needsDaytonaAuth
       ? stageDaytonaConfig(variant.config, runId, docsBundle, options.taskFilter)
