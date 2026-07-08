@@ -1,4 +1,4 @@
-// SYNCED FROM shared/verifier/src/cases/set-fee-token.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+// SYNCED FROM shared/tempo/verifier/src/cases/set-fee-token.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { parseAbi } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const { defaultRuntimeEnv } = require("../submission");

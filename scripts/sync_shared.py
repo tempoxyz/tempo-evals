@@ -24,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCES_DIR = ROOT / "sources" / "tempo"
 TASKS_DIR = ROOT / "tasks" / "tempo"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
+GLOBAL_SHARED_DIR = ROOT / "shared" / "global"
+TEMPO_SHARED_DIR = ROOT / "shared" / "tempo"
 MPP_SHARED_DIR = ROOT / "shared" / "mpp"
 
 # All task matrix data (task slugs, generated profiles, MPP shared file
@@ -179,7 +181,7 @@ def copy_verifier(source: Path, destination: Path, case_id: str) -> None:
     write_file(
         destination_src / "cases" / "index.js",
         "// AUTO-GENERATED FROM "
-        f"shared/verifier/src/cases/{case_id}.js BY npm run sync. "
+        f"shared/tempo/verifier/src/cases/{case_id}.js BY npm run sync. "
         "DO NOT EDIT MANUALLY.\n"
         f"module.exports = {{\n"
         f'  {toml_string(case_id)}: require("./{case_id}"),\n'
@@ -206,23 +208,25 @@ def sync_tests(
         '[[reward]]\nname = "reward"\naggregation = "weighted_mean"\n',
     )
 
-    copy_dir(ROOT / "shared" / "rewardkit" / "quality", task_dir / "tests" / "quality")
+    copy_dir(
+        GLOBAL_SHARED_DIR / "rewardkit" / "quality", task_dir / "tests" / "quality"
+    )
     if check := profile.get("quality_check"):
         check_path = task_dir / "tests" / "quality" / "check.py"
         content = check_path.read_text().rstrip()
         write_file(check_path, f"{content}\n\n{check.rstrip()}\n")
 
     verify_path = task_dir / "tests" / "correctness" / "verify-tempo.sh"
-    copy_file(ROOT / "shared" / "rewardkit" / "verify-tempo.sh", verify_path)
+    copy_file(GLOBAL_SHARED_DIR / "rewardkit" / "verify-tempo.sh", verify_path)
     verify_path.chmod(0o755)
 
     test_path = task_dir / "tests" / "test.sh"
-    copy_file(ROOT / "shared" / "rewardkit" / "test.sh", test_path)
+    copy_file(GLOBAL_SHARED_DIR / "rewardkit" / "test.sh", test_path)
     test_path.chmod(0o755)
 
     write_file(task_dir / "tests" / "package.json", TESTS_PACKAGE_JSON)
     copy_verifier(
-        ROOT / "shared" / "verifier",
+        TEMPO_SHARED_DIR / "verifier",
         task_dir / "tests" / "tempo-bench-verifier",
         case_id,
     )
@@ -248,30 +252,30 @@ def link_file(source: Path, destination: Path) -> None:
 
 def sync_environment(task_dir: Path, profile: dict[str, Any]) -> None:
     copy_file(
-        ROOT / "shared" / "docker" / "main-node" / "Dockerfile",
+        TEMPO_SHARED_DIR / "docker" / "main-node" / "Dockerfile",
         task_dir / "environment" / "Dockerfile",
     )
     copy_dir(
-        ROOT / "shared" / "rewardkit-package",
+        GLOBAL_SHARED_DIR / "rewardkit-package",
         task_dir / "environment" / "rewardkit-package",
     )
     link_dir(
-        ROOT / "shared" / "docker" / "tempo-localnet",
+        TEMPO_SHARED_DIR / "docker" / "tempo-localnet",
         task_dir / "environment" / "tempo-localnet",
     )
 
     if profile["id"] == "docs":
         link_file(
-            ROOT / "shared" / "docker" / "compose" / "tempo-localnet-docs.yaml",
+            TEMPO_SHARED_DIR / "docker" / "compose" / "tempo-localnet-docs.yaml",
             task_dir / "environment" / "docker-compose.yaml",
         )
         link_dir(
-            ROOT / "shared" / "docs" / "tempo-docs",
+            TEMPO_SHARED_DIR / "docs" / "tempo-docs",
             task_dir / "environment" / "tempo-docs",
         )
     else:
         link_file(
-            ROOT / "shared" / "docker" / "compose" / "tempo-localnet.yaml",
+            TEMPO_SHARED_DIR / "docker" / "compose" / "tempo-localnet.yaml",
             task_dir / "environment" / "docker-compose.yaml",
         )
 
@@ -432,7 +436,7 @@ def sync_mpp_tasks() -> int:
             if shared_file.get("executable"):
                 destination.chmod(0o755)
         copy_dir(
-            ROOT / "shared" / "rewardkit-package",
+            GLOBAL_SHARED_DIR / "rewardkit-package",
             task_dir / "environment" / "rewardkit-package",
         )
     return len(tasks)

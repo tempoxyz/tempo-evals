@@ -1,4 +1,4 @@
-# SYNCED FROM shared/rewardkit/quality/check.py
+# SYNCED FROM shared/global/rewardkit/quality/check.py
 # BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 import rewardkit as rk
 from tempo_bench_rewardkit.common.checks import (

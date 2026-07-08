@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:9736e2bfe68e54e5c6101e5b64a7e16ffd1ddb07617bb721ef5453917cc6cf99"
+digest = "sha256:d0fc49a26c9b3a3e319496f743a1269dc64a9d12f1237bd6adae65a76b81f186"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:33bb84841a02047e682eec7744db946c1fb383472297dfc3cb0398f7bf96ed48"
+digest = "sha256:886dd59b07083915ea79b0d20d09a2dd921d373b8f4da026c060bbcf8cf6b68a"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:68f19d232ca6b0b4aa8578af88fe9024a45219e6887e5c80d77cb6a71bb5d09c"
+digest = "sha256:0a1bbd63f8514b169a3406f9fc3557a45edc7f13e8b01d87e9f7b1225079c773"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:c825136baf15e53621e6fad013f5c98655314bd77950712d5e3ba6e5677d354c"
+digest = "sha256:eee90f6a72035e1cd88b34bf5c1b15a0f8fe55ca4c0142cde1268b787cab76f7"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:7cbb10326973abd7c4178dbf07fbb686fef658f8b5ca1722042d13f45afdf734"
+digest = "sha256:8bb7ee8bceee35f492d8cfd658020168f33c16bd6acbc4285994c889029c99c9"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:4f52d1aa2143d6d0d844223f031bc0cdd5d5eb4f9e0a3571e412bfdf076fff7d"
+digest = "sha256:a832cf9ff4393a8ccb01857455b001ffe21f9e43a788835e31d1b7df2b71f5ab"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:da08d142832d28a374b7be5b7c891ac715e95e339e73f0200733fea2c057af41"
+digest = "sha256:bb5d12fa5fd3dabdf0dda98c8dd5a417b9dee300c9a6bc8e81c9f8043aba4885"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:166faeb7621d600b32fecc22a50c331c8c886abaa1fef0cb43df54d436c58370"
+digest = "sha256:8a5de3f0831965ae38521b450c95027d9f1c1bce34f1231960e5b4e69f4e6108"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:b1e86ff1c02fbbaf1391ac74a457af16da21377eae8b14058b6478925e29ac7d"
+digest = "sha256:124af20b043e6e71a788d2be8c6fa4eec83ef53af9345e21c11c5fe3e86ac24f"
 

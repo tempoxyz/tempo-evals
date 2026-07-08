@@ -1,4 +1,4 @@
-// SYNCED FROM shared/verifier/src/cases/transfer-with-memo.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+// SYNCED FROM shared/tempo/verifier/src/cases/transfer-with-memo.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { parseAbiItem, parseUnits } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const { defaultRuntimeEnv } = require("../submission");

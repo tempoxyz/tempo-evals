@@ -1,4 +1,4 @@
-# SYNCED FROM shared/rewardkit-package/tempo_bench_rewardkit/criteria.py
+# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/criteria.py
 # BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 import fcntl
 import json
