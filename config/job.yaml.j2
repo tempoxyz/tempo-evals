@@ -1,6 +1,7 @@
-# Shared Harbor job template. scripts/run_benchmark.py renders this for every
-# job variant (see VARIANTS) and for production runs, then injects `datasets:`
-# from config/datasets.yaml unless the variant declares its own.
+# Shared Harbor job template. `npm run sync` compiles this into
+# config/generated/job.<variant>.yaml for every job variant (see VARIANTS in
+# scripts/run_benchmark.py), injecting `datasets:` from config/datasets.yaml
+# unless the variant declares its own. Production runs render it at run time.
 job_name: {{ job_name | tojson }}
 jobs_dir: {{ jobs_dir | tojson }}
 n_attempts: {{ n_attempts }}

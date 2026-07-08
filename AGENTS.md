@@ -101,10 +101,14 @@ and `tests/correctness/criteria.py`. A task can keep a divergent copy of a
 synced file by listing it in `MPP_TASK_LOCAL_OVERRIDES` in
 `scripts/sync_shared.py`; sync then leaves the task-local copy alone.
 
-Harbor job configs are generated: `scripts/run_benchmark.py` renders
-`config/job.yaml.j2` with per-variant values (see `VARIANTS`) and injects the
-dataset matrix from `config/datasets.yaml` unless the variant declares its own
-`datasets`.
+Harbor job configs are compiled artifacts: `npm run sync` renders
+`config/job.yaml.j2` with per-variant values (see `VARIANTS` in
+`scripts/run_benchmark.py`), injects the dataset matrix from
+`config/datasets.yaml` unless the variant declares its own `datasets`, and
+writes the results to `config/generated/job.<variant>.yaml`. Runs use those
+checked-in files; do not hand-edit them. Production runs render the same
+template at run time because they depend on the run ID and
+`config/models.production.yaml`.
 
 Change the base task or generator, then run:
 
