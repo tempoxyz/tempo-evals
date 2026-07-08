@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:d0fc49a26c9b3a3e319496f743a1269dc64a9d12f1237bd6adae65a76b81f186"
+digest = "sha256:d3481b4332ebaa11c737fadeeb46323f8fd607fa3f06b0ffd3d9a2bed544573a"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:886dd59b07083915ea79b0d20d09a2dd921d373b8f4da026c060bbcf8cf6b68a"
+digest = "sha256:43ebab5e6a6ead70c822d197620575d413b8e500e053c9a3574370e417745322"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:0a1bbd63f8514b169a3406f9fc3557a45edc7f13e8b01d87e9f7b1225079c773"
+digest = "sha256:74052e0ce4c97c9a5314b89d8c505840c38a280866b430346e5db79cc9985dbb"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:eee90f6a72035e1cd88b34bf5c1b15a0f8fe55ca4c0142cde1268b787cab76f7"
+digest = "sha256:cf5e0ffc1e38d4b0ffac03919c8def192bf1f969e1ed1fb89f42dcec53840edf"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:8bb7ee8bceee35f492d8cfd658020168f33c16bd6acbc4285994c889029c99c9"
+digest = "sha256:1a95f942e46f27bc3bf74504a367f10a7a0da4b6b01028a54f26a36556168d4a"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:a832cf9ff4393a8ccb01857455b001ffe21f9e43a788835e31d1b7df2b71f5ab"
+digest = "sha256:90251b74d94760d8286cd61c500fc53ba4a436764f587ee1a29615bfd27248a6"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:bb5d12fa5fd3dabdf0dda98c8dd5a417b9dee300c9a6bc8e81c9f8043aba4885"
+digest = "sha256:e7b5d1ed37819120992c3a89bc7cd5e1f512ebbab59d4edc3459038ef30fef59"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:8a5de3f0831965ae38521b450c95027d9f1c1bce34f1231960e5b4e69f4e6108"
+digest = "sha256:d33c69123aab4cb966adb4c647ef974dbe41f60c0f4cdc51d0c26508fa8a9c45"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:124af20b043e6e71a788d2be8c6fa4eec83ef53af9345e21c11c5fe3e86ac24f"
+digest = "sha256:7ef4020b53c995ae9fd6187fa566682218cfd945b57af8219c4edabb80f89d4c"
 
