@@ -74,10 +74,10 @@ output, or cache output.
 
 ## Generated Files
 
-Do not hand-edit generated Tempo variants:
-
-- `tasks/tempo/*-docs/`
-- `tasks/tempo/*-mcp/`
+All of `tasks/tempo/` is generated output; do not hand-edit it. Authored
+Tempo task sources live in `sources/tempo/<slug>/` (see
+`sources/tempo/README.md`). Each source generates `-base`, `-docs`, and
+`-mcp` variants via `npm run sync`.
 
 Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:
@@ -107,7 +107,7 @@ When MPP verifier helpers need Node-side logic, write checked-in TypeScript
 `.ts` files and run them with `tsx`; do not add `.mjs` verifier helpers or
 large inline JavaScript strings in Python.
 
-Task matrix data (base task slugs, generated docs/MCP profiles, MPP shared
+Task matrix data (task slugs, generated docs/MCP profiles, MPP shared
 file lists) lives in `config/tasks.yaml`; `scripts/sync_shared.py` only
 executes it.
 
@@ -120,7 +120,7 @@ checked-in files; do not hand-edit them. Production runs render the same
 template at run time because they depend on the run ID and
 `config/models.production.yaml`.
 
-Change the base task or generator, then run:
+Change the task source or generator, then run:
 
 ```bash
 npm run sync

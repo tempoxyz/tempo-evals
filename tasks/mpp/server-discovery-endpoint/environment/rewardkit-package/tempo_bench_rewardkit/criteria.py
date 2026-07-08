@@ -1,6 +1,5 @@
-# AUTO-GENERATED FROM:
-# shared/rewardkit-package/tempo_bench_rewardkit/criteria.py
-# BY npm run sync. DO NOT EDIT MANUALLY.
+# SYNCED FROM shared/rewardkit-package/tempo_bench_rewardkit/criteria.py
+# BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 import fcntl
 import json
 import os

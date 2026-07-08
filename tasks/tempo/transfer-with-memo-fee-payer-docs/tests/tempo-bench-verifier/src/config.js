@@ -1,4 +1,4 @@
-// AUTO-GENERATED FROM shared/verifier/src/config.js BY npm run sync. DO NOT EDIT MANUALLY.
+// SYNCED FROM shared/verifier/src/config.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 function env(name, fallback = "") {
   const value = process.env[name];
   return value && value.length > 0 ? value : fallback;

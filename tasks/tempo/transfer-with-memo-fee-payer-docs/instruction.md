@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/transfer-with-memo-fee-payer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Transfer With Memo And Fee Payer
 
 Build a minimal TypeScript project in `/app` that sends a Tempo localnet
@@ -14,7 +16,6 @@ Use environment variables for all values:
 - `TEMPO_AMOUNT`
 - `TEMPO_DECIMALS`
 - `TEMPO_MEMO`
-
 
 ## Tempo Access Profile
 

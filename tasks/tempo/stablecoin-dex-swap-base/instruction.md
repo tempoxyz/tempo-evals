@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/stablecoin-dex-swap/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Stablecoin DEX Swap
 
 Build a minimal TypeScript project in `/app` that uses Tempo's Stablecoin DEX

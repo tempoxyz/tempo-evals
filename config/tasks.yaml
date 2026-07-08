@@ -1,22 +1,24 @@
-# Data for npm run sync: which base Tempo tasks get generated
-# docs/MCP profile variants, the per-profile task.toml/instruction/quality
+# Data for npm run sync: which Tempo task sources get generated into
+# base/docs/MCP variants, the per-profile task.toml/instruction/quality
 # edits, and the shared files synced into MPP tasks.
 
-# Base tasks that are copied into one generated task per profile below.
-base_task_slugs:
-  - transfer-with-memo-base
-  - transfer-with-memo-fee-payer-base
-  - set-fee-token-base
-  - create-stablecoin-with-policy-base
-  - faucet-funded-transfer-base
-  - stablecoin-dex-swap-base
+# Authored task sources under sources/tempo/<slug>/. Each one generates a
+# -base, -docs, and -mcp task under tasks/tempo/.
+task_slugs:
+  - transfer-with-memo
+  - transfer-with-memo-fee-payer
+  - set-fee-token
+  - create-stablecoin-with-policy
+  - faucet-funded-transfer
+  - stablecoin-dex-swap
 
 # Added to every task's [environment.env] when the keys are missing.
 quality_env:
   TEMPO_BENCH_TURNS_SCORE_CUTOFFS: "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
   TEMPO_BENCH_TOKENS_SCORE_CUTOFFS: "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"
 
-# Inserted before "Requirements:" in every generated task's instruction.md.
+# Rendered at the <!-- tempobench_sync --> placeholder in every source
+# instruction.md when generating tasks.
 execution_constraints: |
   ## Execution Constraints
 
@@ -25,9 +27,11 @@ execution_constraints: |
   - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
   - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
 
-# Generated task profiles. For each generated task, `env` and `mcp_servers`
-# are applied to task.toml, `instruction` is inserted before "Requirements:"
-# in instruction.md, and `quality_check` is appended to tests/quality/check.py.
+# Generated task profiles (in addition to the implicit base profile). For
+# each generated task, `env` and `mcp_servers` are applied to task.toml,
+# `instruction` is rendered above the execution constraints at the
+# instruction placeholder, and `quality_check` is appended to
+# tests/quality/check.py.
 profiles:
   - id: docs
     suffix: -docs

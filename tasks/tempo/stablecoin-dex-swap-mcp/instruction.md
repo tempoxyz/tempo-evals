@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/stablecoin-dex-swap/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Stablecoin DEX Swap
 
 Build a minimal TypeScript project in `/app` that uses Tempo's Stablecoin DEX
@@ -14,7 +16,6 @@ Use environment variables for all values:
 - `TEMPO_SWAP_AMOUNT_IN`
 - `TEMPO_SWAP_MIN_AMOUNT_OUT`
 - `TEMPO_DECIMALS`
-
 
 ## Tempo Access Profile
 

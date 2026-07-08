@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/create-stablecoin-with-policy/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Create Stablecoin With Transfer Policy
 
 Build a minimal TypeScript project in `/app` that creates a TIP-20 stablecoin,
@@ -14,7 +16,6 @@ Use environment variables for all values:
 - `TEMPO_STABLECOIN_SALT`
 - `TEMPO_POLICY_TYPE`
 - `TEMPO_POLICY_ACCOUNT`
-
 
 ## Tempo Access Profile
 

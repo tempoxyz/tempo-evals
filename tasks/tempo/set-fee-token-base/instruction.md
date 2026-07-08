@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/set-fee-token/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Set Fee Token
 
 Build a minimal TypeScript project in `/app` that sets the account's default

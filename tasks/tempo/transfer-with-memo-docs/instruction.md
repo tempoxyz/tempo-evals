@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/transfer-with-memo/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Transfer With Memo
 
 Build a minimal TypeScript project in `/app` that sends a Tempo localnet
@@ -12,7 +14,6 @@ Use the following values:
 - Amount: read from `TEMPO_AMOUNT`
 - Decimals: read from `TEMPO_DECIMALS`
 - Memo: read from `TEMPO_MEMO`
-
 
 ## Tempo Access Profile
 

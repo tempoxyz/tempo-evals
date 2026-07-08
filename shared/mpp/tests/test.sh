@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AUTO-GENERATED FROM shared/mpp/tests/test.sh BY npm run sync. DO NOT EDIT MANUALLY.
+# SYNCED FROM shared/mpp/tests/test.sh BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 set -u
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"

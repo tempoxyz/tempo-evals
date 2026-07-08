@@ -1,3 +1,5 @@
+<!-- AUTO-GENERATED FROM sources/tempo/faucet-funded-transfer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+
 # Tempo Faucet Funded Transfer
 
 Build a minimal TypeScript project in `/app` that funds a wallet with Tempo's
@@ -11,7 +13,6 @@ Use environment variables for all values:
 - `TEMPO_RECIPIENT`
 - `TEMPO_AMOUNT`
 - `TEMPO_DECIMALS`
-
 
 ## Tempo Access Profile
 

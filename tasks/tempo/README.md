@@ -2,6 +2,11 @@
 
 Local Harbor dataset for Tempo integration evaluations.
 
+**Everything in this directory is generated.** Do not edit task directories
+here; edit the authored sources in `../../sources/tempo/<slug>/` and the
+shared assets in `../../shared/`, then run `npm run sync` from the repository
+root. See `sources/tempo/README.md` for the authoring guide.
+
 Current task intents:
 
 - `tempo/transfer-with-memo`
@@ -11,30 +16,28 @@ Current task intents:
 - `tempo/faucet-funded-transfer`
 - `tempo/stablecoin-dex-swap`
 
-Each intent is materialized into `-docs` and `-mcp` profile variants
-by `npm run sync`.
+Each intent is materialized into `-base`, `-docs`, and `-mcp` profile
+variants by `npm run sync`.
 
-Each task should stay Harbor-native and self-contained:
+Each generated task is Harbor-native and self-contained:
 
-- `instruction.md` contains only the agent-facing prompt.
-- `task.toml` owns fixture values, verifier selection, resources, and sidecars.
-  Put Tempo fixture values in `[environment.env]`; shared compose injects those
-  keys into `main` so shared-mode verifier commands inherit the same env. The
-  sync script rejects duplicated `[verifier.env]` blocks.
-- `environment/` contains the task runtime and Docker Compose additions. Common
-  sidecars are symlinked from `../../shared/` where Harbor and Docker can consume
-  them.
-- `tests/correctness/` contains the task's explicit built-in RewardKit
-  file/regex/docs criteria plus the e2e command criterion.
-  `tests/quality/` contains non-binary turn/token efficiency checks and the
-  Claude Haiku LLM judge. `tests/test.sh` writes Harbor's primary
-  `/logs/verifier/reward.json` as a single binary `reward` key from the
-  independent Tempo verifier's build/run/onchain result; RewardKit correctness
-  and quality dimensions are diagnostic. `tests/tempo-bench-verifier/` is a
-  minimal copied verifier package for the selected `TEMPO_BENCH_CASE`.
-- `solution/` contains the oracle solution used for sanity checks. It is a
-  normal minimal TypeScript app; `solve.sh` only copies the files into `/app`.
+- `instruction.md` is the agent-facing prompt rendered from the source
+  instruction plus the shared execution constraints and profile block.
+- `task.toml` owns fixture values, verifier selection, resources, and
+  sidecars, rendered from the source `task.toml` plus per-profile env and
+  MCP server config.
+- `environment/` contains the task runtime and Docker Compose additions.
+  Common sidecars are symlinked from `../../shared/` where Harbor and Docker
+  can consume them.
+- `tests/correctness/` contains the task's RewardKit criteria plus the e2e
+  command criterion. `tests/quality/` contains non-binary turn/token
+  efficiency checks and the Claude Haiku LLM judge. `tests/test.sh` writes
+  Harbor's primary `/logs/verifier/reward.json` as a single binary `reward`
+  key from the independent Tempo verifier's build/run/onchain result;
+  RewardKit correctness and quality dimensions are diagnostic.
+  `tests/tempo-bench-verifier/` is a minimal copied verifier package for the
+  selected `TEMPO_BENCH_CASE`.
+- `solution/` contains the oracle solution used for sanity checks.
 
-Edit shared verifier or localnet code under `../../shared/`, then run
-`npm run sync` from the repository root before running Harbor or refreshing
-`dataset.toml`.
+After changing sources or shared code, run `npm run sync`, then
+`npm run dataset` to refresh `dataset.toml` digests.
