@@ -31,54 +31,69 @@ def claude_agent(n_concurrent: int | None = None) -> dict[str, Any]:
     return agent
 
 
+def local_job(
+    job_name: str,
+    agents: list[dict[str, Any]],
+    *,
+    n_attempts: int = 1,
+    n_concurrent_trials: int = 4,
+    force_build: bool = True,
+    datasets: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    job: dict[str, Any] = {
+        "job_name": job_name,
+        "n_attempts": n_attempts,
+        "n_concurrent_trials": n_concurrent_trials,
+        "environment_type": "docker",
+        "force_build": force_build,
+        "agents": agents,
+    }
+    if datasets is not None:
+        job["datasets"] = datasets
+    return job
+
+
+def daytona_job(
+    job_name: str,
+    agents: list[dict[str, Any]],
+    *,
+    n_attempts: int = 1,
+) -> dict[str, Any]:
+    return {
+        "job_name": job_name,
+        "n_attempts": n_attempts,
+        "n_concurrent_trials": 32,
+        "environment_type": "daytona",
+        "force_build": False,
+        "agents": agents,
+    }
+
+
 # Everything that differs between the generated Harbor job configs. The rest of
 # the config (verifier env, timeout multiplier, Daytona kwargs, ...) lives in
 # config/job.yaml.j2. Omit "datasets" to use the config/datasets.yaml matrix.
 VARIANTS: dict[str, dict[str, Any]] = {
     "local-oracle": {
-        "job": {
-            "job_name": "tempo-bench-local",
-            "n_attempts": 1,
-            "n_concurrent_trials": 4,
-            "environment_type": "docker",
-            "force_build": True,
-            "agents": [ORACLE_AGENT],
-        },
+        "job": local_job("tempo-bench-local", [ORACLE_AGENT]),
         "prefix": "tempo-bench-oracle-local",
     },
     "local-oracle-dev": {
-        "job": {
-            "job_name": "tempo-bench-local-dev",
-            "n_attempts": 1,
-            "n_concurrent_trials": 1,
-            "environment_type": "docker",
-            "force_build": False,
-            "agents": [ORACLE_AGENT],
-            "datasets": TEMPO_ONLY_DATASETS,
-        },
+        "job": local_job(
+            "tempo-bench-local-dev",
+            [ORACLE_AGENT],
+            n_concurrent_trials=1,
+            force_build=False,
+            datasets=TEMPO_ONLY_DATASETS,
+        ),
         "prefix": "tempo-bench-oracle-dev-local",
     },
     "local-agent": {
-        "job": {
-            "job_name": "tempo-bench-agents-local",
-            "n_attempts": 3,
-            "n_concurrent_trials": 4,
-            "environment_type": "docker",
-            "force_build": True,
-            "agents": [claude_agent()],
-        },
+        "job": local_job("tempo-bench-agents-local", [claude_agent()], n_attempts=3),
         "prefix": "tempo-bench-agents-local",
         "needs_agent_auth": True,
     },
     "local-agent-dev": {
-        "job": {
-            "job_name": "tempo-bench-agents-dev-local",
-            "n_attempts": 1,
-            "n_concurrent_trials": 4,
-            "environment_type": "docker",
-            "force_build": True,
-            "agents": [claude_agent()],
-        },
+        "job": local_job("tempo-bench-agents-dev-local", [claude_agent()]),
         "prefix": "tempo-bench-agents-dev-local",
         "needs_agent_auth": True,
     },
@@ -90,39 +105,25 @@ VARIANTS: dict[str, dict[str, Any]] = {
         "needs_agent_auth": True,
     },
     "daytona-oracle": {
-        "job": {
-            "job_name": "tempo-bench-oracle-daytona",
-            "n_attempts": 1,
-            "n_concurrent_trials": 32,
-            "environment_type": "daytona",
-            "force_build": False,
-            "agents": [ORACLE_AGENT],
-        },
+        "job": daytona_job("tempo-bench-oracle-daytona", [ORACLE_AGENT]),
         "prefix": "tempo-bench-oracle-daytona",
         "needs_daytona_auth": True,
     },
     "daytona-agent": {
-        "job": {
-            "job_name": "tempo-bench-agents-daytona-local",
-            "n_attempts": 3,
-            "n_concurrent_trials": 32,
-            "environment_type": "daytona",
-            "force_build": False,
-            "agents": [claude_agent(n_concurrent=32)],
-        },
+        "job": daytona_job(
+            "tempo-bench-agents-daytona-local",
+            [claude_agent(n_concurrent=32)],
+            n_attempts=3,
+        ),
         "prefix": "tempo-bench-agents-daytona",
         "needs_agent_auth": True,
         "needs_daytona_auth": True,
     },
     "daytona-agent-dev": {
-        "job": {
-            "job_name": "tempo-bench-agents-daytona-dev-local",
-            "n_attempts": 1,
-            "n_concurrent_trials": 32,
-            "environment_type": "daytona",
-            "force_build": False,
-            "agents": [claude_agent(n_concurrent=32)],
-        },
+        "job": daytona_job(
+            "tempo-bench-agents-daytona-dev-local",
+            [claude_agent(n_concurrent=32)],
+        ),
         "prefix": "tempo-bench-agents-daytona-dev",
         "needs_agent_auth": True,
         "needs_daytona_auth": True,
@@ -312,12 +313,8 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
     if needs_agent_auth:
         require_any(
             ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
-            "Missing Claude Code auth: set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN.",
-        )
-        require_any(
-            ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
-            "Missing verifier judge auth: set ANTHROPIC_API_KEY or "
-            "ANTHROPIC_AUTH_TOKEN.",
+            "Missing Claude Code and verifier judge auth: set ANTHROPIC_API_KEY "
+            "or ANTHROPIC_AUTH_TOKEN.",
         )
     if (
         variant.get("needs_daytona_auth")
@@ -455,8 +452,10 @@ def render_job_config(job: dict[str, Any]) -> dict[str, Any]:
         agents=job["agents"],
     )
     config = yaml.safe_load(rendered)
-    datasets = job.get("datasets") or read_yaml("config/datasets.yaml").get(
-        "datasets", []
+    datasets = (
+        job["datasets"]
+        if "datasets" in job
+        else read_yaml("config/datasets.yaml").get("datasets", [])
     )
     config["datasets"] = copy.deepcopy(datasets)
     return config
@@ -499,8 +498,8 @@ def run_production_variant(
         models_config_path, options.get("agent_concurrency")
     )
     preflight_production_agents(model_config)
-    production_config = render_job_config(production_job(run_id, model_config, options))
-    config = stage_daytona_config(production_config, run_id, docs_bundle, options)
+    job = production_job(run_id, model_config, options)
+    config = stage_daytona_config(render_job_config(job), run_id, docs_bundle, options)
     max_retries = options.get("max_retries") or "2"
     started_at = datetime.now().astimezone().isoformat()
     metadata = {
@@ -522,8 +521,8 @@ def run_production_variant(
         ],
         "task_dataset_path": "tasks/tempo",
         "task_filter": options.get("task_filter"),
-        "n_attempts": 3,
-        "n_concurrent_trials": options.get("concurrency") or "32",
+        "n_attempts": job["n_attempts"],
+        "n_concurrent_trials": str(job["n_concurrent_trials"]),
         "max_retries": max_retries,
         "docs_lock": read_docs_lock(),
         "docs_bundle": docs_bundle,

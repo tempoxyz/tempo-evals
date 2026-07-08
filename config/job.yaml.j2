@@ -8,7 +8,7 @@ timeout_multiplier: 1.0
 n_concurrent_trials: {{ n_concurrent_trials }}
 quiet: false
 environment:
-  type: {{ environment_type }}
+  type: {{ environment_type | tojson }}
   force_build: {{ force_build | tojson }}
   delete: true
 {% if environment_type == "daytona" %}

@@ -84,11 +84,7 @@ def copy_dir(source: Path, destination: Path) -> None:
         source,
         destination,
         ignore=lambda directory, names: [
-            name
-            for name in names
-            if name == "node_modules"
-            or name == "package-lock.json"
-            or skip_node_artifacts(Path(directory) / name)
+            name for name in names if skip_node_artifacts(Path(directory) / name)
         ],
     )
 
@@ -144,11 +140,6 @@ def toml_string(value: str) -> str:
     return json.dumps(value)
 
 
-def remove_key(table: Any, key: str) -> None:
-    if key in table:
-        del table[key]
-
-
 def update_task_toml(task_dir: Path, source_slug: str, profile: dict[str, str]) -> None:
     task_config_path = task_dir / "task.toml"
     task_name = f"tempo/{source_slug}{profile['suffix']}"
@@ -166,10 +157,10 @@ def update_task_toml(task_dir: Path, source_slug: str, profile: dict[str, str]) 
         doc["metadata"]["profile"] = profile["id"]
 
     environment = doc["environment"]
-    remove_key(environment, "mcp_servers")
-    remove_key(environment, "network_mode")
-    remove_key(environment, "allowed_hosts")
-    remove_key(environment["env"], "TEMPO_DOCS_URL")
+    environment.pop("mcp_servers", None)
+    environment.pop("network_mode", None)
+    environment.pop("allowed_hosts", None)
+    environment["env"].pop("TEMPO_DOCS_URL", None)
 
     if profile["id"] == "docs":
         environment["env"]["TEMPO_DOCS_URL"] = TEMPO_DOCS_URL
