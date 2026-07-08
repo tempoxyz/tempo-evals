@@ -329,8 +329,13 @@ function requireAny(names: string[], message: string) {
   }
 }
 
-function preflight(variant: Variant) {
-  if (variant.needsAgentAuth) {
+function preflight(variant: Variant, options: Options) {
+  if (process.env.CLAUDE_FORCE_OAUTH === "") {
+    throw new Error("CLAUDE_FORCE_OAUTH is set but empty. Set it to 1/true or unset it.");
+  }
+  const effectiveAgent = options.agent ?? variant.defaultAgent;
+  const needsAgentAuth = variant.needsAgentAuth && effectiveAgent !== "oracle";
+  if (needsAgentAuth) {
     requireAny(
       ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
       "Missing Claude Code auth: set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN.",
@@ -482,7 +487,7 @@ function runProductionVariant(
   const modelConfig = parseModelConfig(modelsConfigPath, options.agentConcurrency);
   preflightProductionAgents(modelConfig);
   const productionConfig = buildProductionConfig(runId, modelConfig, options);
-  const config = stageDaytonaConfig(productionConfig, runId, docsBundle, options.taskFilter);
+  const config = stageDaytonaConfig(productionConfig, runId, docsBundle, options);
   const maxRetries = options.maxRetries ?? "2";
   const startedAt = new Date().toISOString();
   const metadata = {
@@ -530,6 +535,19 @@ function runProductionVariant(
 
 function applyTaskFilter(config: string, taskFilter?: string): string {
   if (!taskFilter) return config;
+  const mppFilter = taskFilter
+    .replace(/^tempo-mpp\//, "")
+    .replace(/^mpp\//, "");
+  if (mppFilter !== taskFilter || mppFilter.startsWith("server-")) {
+    const filtered = config.replace(
+      /(^datasets:\n)[\s\S]*$/m,
+      `$1  - path: tasks/mpp\n    task_names:\n      - ${JSON.stringify(mppFilter)}\n`,
+    );
+    if (filtered === config) {
+      throw new Error("Could not apply MPP task filter to config");
+    }
+    return filtered;
+  }
   const filters = taskFilter.startsWith("tempo/")
     ? [taskFilter, taskFilter.slice("tempo/".length)]
     : [taskFilter];
@@ -543,15 +561,29 @@ function applyTaskFilter(config: string, taskFilter?: string): string {
   return filtered;
 }
 
+function applyModelOverride(config: string, model?: string): string {
+  if (!model) return config;
+  const overridden = config.replace(
+    /(^\s+model_name:\s*)[^\n]+/gm,
+    `$1${JSON.stringify(model)}`,
+  );
+  if (overridden === config) {
+    throw new Error("Could not apply model override to config");
+  }
+  return overridden;
+}
+
 function stageDaytonaConfig(
   configPath: string,
   runId: string,
   docsBundle: string,
-  taskFilter?: string,
+  options: Options,
 ): string {
   const stagingRoot = path.join(".cache", "harbor-daytona", runId);
   const sourceTasks = "tasks/tempo";
   const stagedTasks = path.join(stagingRoot, "tasks", "tempo");
+  const sourceMppTasks = "tasks/mpp";
+  const stagedMppTasks = path.join(stagingRoot, "tasks", "mpp");
   const stagedConfig = path.join(stagingRoot, path.basename(configPath));
 
   fs.rmSync(stagingRoot, { recursive: true, force: true });
@@ -563,6 +595,15 @@ function stageDaytonaConfig(
       !sourcePath.includes(`${path.sep}node_modules${path.sep}`) &&
       !sourcePath.endsWith(`${path.sep}package-lock.json`),
   });
+  if (fs.existsSync(sourceMppTasks)) {
+    fs.cpSync(sourceMppTasks, stagedMppTasks, {
+      recursive: true,
+      dereference: true,
+      filter: (sourcePath) =>
+        !sourcePath.includes(`${path.sep}node_modules${path.sep}`) &&
+        !sourcePath.endsWith(`${path.sep}package-lock.json`),
+    });
+  }
   for (const entry of fs.readdirSync(stagedTasks, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     const taskDir = path.join(stagedTasks, entry.name);
@@ -576,10 +617,13 @@ function stageDaytonaConfig(
   }
 
   const config = fs.readFileSync(configPath, "utf8");
-  const redirected = applyTaskFilter(config, taskFilter).replace(
-    /(^\s*-\s*path:\s*)tasks\/tempo\s*$/m,
-    `$1${JSON.stringify(stagedTasks)}`,
-  );
+  const redirected = applyModelOverride(
+    applyTaskFilter(config, options.taskFilter),
+    options.model,
+  )
+    .replace(/(^\s*-\s*path:\s*)tasks\/mpp\s*$/m, `$1${JSON.stringify(stagedMppTasks)}`)
+    .replace(/(^\s*-\s*path:\s*)tasks\/tempo\s*$/m, `$1${JSON.stringify(stagedTasks)}`)
+    .replace(/(^\s*-\s*path:\s*)tasks\s*$/m, `$1${JSON.stringify(stagedTasks)}`);
   if (redirected === config) {
     throw new Error(`Could not redirect dataset path in ${configPath}`);
   }
@@ -587,14 +631,20 @@ function stageDaytonaConfig(
   return stagedConfig;
 }
 
-function stageFilteredConfig(configPath: string, runId: string, taskFilter?: string): string {
-  if (!taskFilter) return configPath;
+function stageFilteredConfig(configPath: string, runId: string, options: Options): string {
+  if (!options.taskFilter && !options.model) return configPath;
   const stagingRoot = path.join(".cache", "harbor-config", runId);
   const stagedConfig = path.join(stagingRoot, path.basename(configPath));
 
   fs.rmSync(stagingRoot, { recursive: true, force: true });
   fs.mkdirSync(stagingRoot, { recursive: true });
-  fs.writeFileSync(stagedConfig, applyTaskFilter(fs.readFileSync(configPath, "utf8"), taskFilter));
+  fs.writeFileSync(
+    stagedConfig,
+    applyModelOverride(
+      applyTaskFilter(fs.readFileSync(configPath, "utf8"), options.taskFilter),
+      options.model,
+    ),
+  );
   return stagedConfig;
 }
 
@@ -643,7 +693,7 @@ try {
   }
 
   loadEnvFile(options.envFile);
-  preflight(variant);
+  preflight(variant, options);
   if (options.sync) syncDataset(options);
   const docsBundle = ensureDocsBundle();
 
@@ -655,8 +705,8 @@ try {
 
   if (variant.config) {
     const config = variant.needsDaytonaAuth
-      ? stageDaytonaConfig(variant.config, runId, docsBundle, options.taskFilter)
-      : stageFilteredConfig(variant.config, runId, options.taskFilter);
+      ? stageDaytonaConfig(variant.config, runId, docsBundle, options)
+      : stageFilteredConfig(variant.config, runId, options);
     args.push("-c", config);
   } else {
     args.push("--path", options.tasks ?? variant.path ?? "tasks/tempo");
