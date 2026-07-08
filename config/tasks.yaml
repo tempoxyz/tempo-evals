@@ -16,7 +16,8 @@ quality_env:
   TEMPO_BENCH_TURNS_SCORE_CUTOFFS: "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
   TEMPO_BENCH_TOKENS_SCORE_CUTOFFS: "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"
 
-# Inserted before "Requirements:" in every generated task's instruction.md.
+# Written between the <!-- sync:begin --> / <!-- sync:end --> markers in every
+# task's instruction.md.
 execution_constraints: |
   ## Execution Constraints
 
@@ -26,8 +27,9 @@ execution_constraints: |
   - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
 
 # Generated task profiles. For each generated task, `env` and `mcp_servers`
-# are applied to task.toml, `instruction` is inserted before "Requirements:"
-# in instruction.md, and `quality_check` is appended to tests/quality/check.py.
+# are applied to task.toml, `instruction` is written into the sync marker
+# block in instruction.md, and `quality_check` is appended to
+# tests/quality/check.py.
 profiles:
   - id: docs
     suffix: -docs

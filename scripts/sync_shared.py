@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import shutil
 import tomllib
@@ -34,6 +33,8 @@ MPP_TASK_LOCAL_OVERRIDES: dict[str, list[str]] = TASKS_CONFIG["mpp"][
     "task_local_overrides"
 ]
 BASE_SUFFIX = "-base"
+INSTRUCTION_BLOCK_BEGIN = "<!-- sync:begin -->"
+INSTRUCTION_BLOCK_END = "<!-- sync:end -->"
 
 
 def remove_path(target: Path) -> None:
@@ -92,7 +93,7 @@ def copy_generated_task(source: Path, destination: Path) -> None:
 
     remove_path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source, destination, ignore=ignore, symlinks=True)
+    shutil.copytree(source, destination, ignore=ignore)
 
 
 def copy_file(source: Path, destination: Path) -> None:
@@ -149,27 +150,29 @@ def update_task_toml(task_dir: Path, source_slug: str, profile: dict[str, Any]) 
     write_file(task_config_path, tomlkit.dumps(doc))
 
 
-def append_profile_instruction(task_dir: Path, profile: dict[str, Any]) -> None:
+def write_instruction_block(task_dir: Path, profile: dict[str, Any] | None) -> None:
     instruction_path = task_dir / "instruction.md"
-    content = re.sub(
-        r"\nTempo integration docs are available through the configured MCP "
-        r"server named[\s\S]*?Use it if your agent runtime exposes MCP tools\.\n",
-        "\n",
-        instruction_path.read_text(),
-    )
-    content = re.sub(
-        r"\n## Tempo Access Profile[\s\S]*?(?=\n## |\nRequirements:|$)", "\n", content
-    )
-    content = re.sub(
-        r"\n## Execution Constraints[\s\S]*?(?=\n## |\nRequirements:|$)", "\n", content
-    )
+    content = instruction_path.read_text()
+    begin = content.find(INSTRUCTION_BLOCK_BEGIN)
+    end = content.find(INSTRUCTION_BLOCK_END)
+    if begin < 0 or end <= begin:
+        msg = (
+            f"Missing {INSTRUCTION_BLOCK_BEGIN} / {INSTRUCTION_BLOCK_END} "
+            f"markers in {instruction_path}"
+        )
+        raise RuntimeError(msg)
 
-    if instruction := profile.get("instruction"):
-        content = content.replace("\nRequirements:", f"\n{instruction}\nRequirements:")
-    content = content.replace(
-        "\nRequirements:", f"\n{EXECUTION_CONSTRAINTS}\nRequirements:"
+    parts = []
+    if profile and (instruction := profile.get("instruction")):
+        parts.append(instruction.strip())
+    parts.append(EXECUTION_CONSTRAINTS.strip())
+    block = "\n\n".join(parts)
+    write_file(
+        instruction_path,
+        content[: begin + len(INSTRUCTION_BLOCK_BEGIN)]
+        + f"\n{block}\n"
+        + content[end:],
     )
-    write_file(instruction_path, f"{content.rstrip()}\n")
 
 
 def update_profile_quality(task_dir: Path) -> None:
@@ -190,6 +193,7 @@ def materialize_task_matrix() -> None:
         if not (source_dir / "task.toml").exists():
             msg = f"Missing source task: {source_dir}"
             raise RuntimeError(msg)
+        write_instruction_block(source_dir, profile=None)
         source_slug = base_slug[: -len(BASE_SUFFIX)]
         for profile in GENERATED_PROFILES:
             slug = f"{source_slug}{profile['suffix']}"
@@ -197,7 +201,7 @@ def materialize_task_matrix() -> None:
             copy_generated_task(source_dir, task_dir)
             generated_slugs.add(slug)
             update_task_toml(task_dir, source_slug, profile)
-            append_profile_instruction(task_dir, profile)
+            write_instruction_block(task_dir, profile)
 
     remove_path(TASKS_DIR / "transfer-with-memo-docs-mcp")
     legacy_suffixes = ["-docs-url", "-tempo-mcp", "-docs-mcp"]
@@ -356,24 +360,6 @@ def ensure_quality_env(task_dir: Path) -> None:
         write_file(task_config_path, tomlkit.dumps(doc))
 
 
-def relative_symlink_target(destination: Path, source: Path) -> str:
-    return os.path.relpath(source, destination.parent)
-
-
-def link_dir(source: Path, destination: Path) -> None:
-    remove_path(destination)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.symlink_to(
-        relative_symlink_target(destination, source), target_is_directory=True
-    )
-
-
-def link_file(source: Path, destination: Path) -> None:
-    remove_path(destination)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.symlink_to(relative_symlink_target(destination, source))
-
-
 def read_toml(file_path: Path) -> dict[str, Any]:
     return tomllib.loads(file_path.read_text())
 
@@ -509,22 +495,23 @@ def main() -> None:
             ROOT / "shared" / "rewardkit-package",
             task_dir / "environment" / "rewardkit-package",
         )
-        link_dir(
+        copy_dir(
             ROOT / "shared" / "docker" / "tempo-localnet",
             task_dir / "environment" / "tempo-localnet",
         )
 
         if task_uses_local_tempo_docs(task_dir):
-            link_file(
+            copy_file(
                 ROOT / "shared" / "docker" / "compose" / "tempo-localnet-docs.yaml",
                 task_dir / "environment" / "docker-compose.yaml",
             )
-            link_dir(
+            copy_dir(
                 ROOT / "shared" / "docs" / "tempo-docs",
                 task_dir / "environment" / "tempo-docs",
             )
         else:
-            link_file(
+            remove_path(task_dir / "environment" / "tempo-docs")
+            copy_file(
                 ROOT / "shared" / "docker" / "compose" / "tempo-localnet.yaml",
                 task_dir / "environment" / "docker-compose.yaml",
             )
@@ -533,7 +520,7 @@ def main() -> None:
 
     mpp_task_count = sync_mpp_tasks()
     print(
-        "Synced verifier and linked localnet assets into "
+        "Synced verifier and copied localnet assets into "
         f"{len(tasks)} task(s); synced MPP harness into {mpp_task_count} task(s).",
     )
 

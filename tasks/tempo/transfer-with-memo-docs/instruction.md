@@ -13,7 +13,7 @@ Use the following values:
 - Decimals: read from `TEMPO_DECIMALS`
 - Memo: read from `TEMPO_MEMO`
 
-
+<!-- sync:begin -->
 ## Tempo Access Profile
 
 Tempo docs are available through the local docs service at `TEMPO_DOCS_URL` (http://tempo-docs:3000/developers). Use those docs for Tempo-specific APIs and examples. Do not use WebSearch, WebFetch, public docs sites, or public RPC endpoints.
@@ -24,6 +24,7 @@ Tempo docs are available through the local docs service at `TEMPO_DOCS_URL` (htt
 - Use that localnet RPC endpoint for all build, run, and self-check commands.
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
 - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
+<!-- sync:end -->
 
 Requirements:
 
