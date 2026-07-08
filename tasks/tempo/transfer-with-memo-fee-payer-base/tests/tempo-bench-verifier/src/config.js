@@ -21,6 +21,7 @@ function readConfig() {
     caseId: env("TEMPO_BENCH_CASE", "transfer-with-memo"),
     workspace: env("TEMPO_BENCH_WORKSPACE", "/app"),
     logDir: env("TEMPO_BENCH_LOG_DIR", "/logs/verifier"),
+    artifactDir: env("TEMPO_BENCH_ARTIFACT_DIR", "/logs/artifacts"),
     rpcUrl: requiredEnv("TEMPO_RPC_URL"),
     token: requiredEnv("TEMPO_TOKEN"),
     feeToken: env("TEMPO_FEE_TOKEN", env("TEMPO_TOKEN")),
