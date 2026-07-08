@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:e601e8da8ce7edca3536c9aeab679bdaa999660debfbf369d413000c6d9c89a9"
+digest = "sha256:aab5003aeb949172a7ea252e6499a77f413f2b30c3e55862acdffa1a8efdf035"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:f9edab750422e6039894bbc2519c31940a3a2eef7bd99a78efbf224ed6079fa2"
+digest = "sha256:371db75aa2fc70b16222c8035574ca34b5e7ee6911faee32cfed82de8aa9a73c"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:c593030224370b3ea25f159726e4e80f74d552d2a29d9ca7af1f308348a50661"
+digest = "sha256:7dd58c6a35cd01d4f820af06aee1a9e1be7d6b25c5cc141e3d80cb8c9e01657b"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:ecc4a48f6b9f3a95f78b7a275aae5ba75cdd6fa73df3cd888943268195a0cb43"
+digest = "sha256:665080cb1701270c49f5068505c4058355189c3764db3266d3c7294b68ef7a53"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:ee4a70326ce09b7d27eddf0db27aa5c15de04bbb54637f25ee497093c1e57da9"
+digest = "sha256:22a8ccf2ed30950c94a344e306c1b5ba94cf606cb9c68db6c97a4dc6141e23cb"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:bcf3c0604c74c0ed1063babc160aaf86f36f99b11130651ed1c5438e609e7806"
+digest = "sha256:b50dee4ad3a8b4ffeed1709689fbe61963d53f61829b0826406bb2677a312b0d"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:516171c29c165b4850de1dfb7194690bd7ea65fa8136378d9e2afd5479688df8"
+digest = "sha256:d1bd02a62436d34a531497f7ce07dcef81215b30b2142c44c816b86a2d9c3876"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:5d8da76f722907a6845aff1d277b93fd5ec398f27ee28075d1c13690067dc4f9"
+digest = "sha256:2c22ba18347cc2d34bfc6a857dccb0429e06261b2cea448f7428bf16c9e58125"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:a7c4471ae713a2544249978dfc1eaf5eeb76c65f9b038cd89140ff4b276620b8"
+digest = "sha256:70870ae82c5ccd12caaff678aaf025d2be7095f137db7e194adb2731273a4f50"
 
