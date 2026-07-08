@@ -1,7 +1,7 @@
 """Shared MPP verifier harness.
 
 Source of truth: shared/mpp/tests/support/client_lib.py, synced into each
-tasks/mpp/<task>/tests/support/ by scripts/sync-shared.ts. Task-specific
+tasks/mpp/<task>/tests/support/ by scripts/sync_shared.py. Task-specific
 checks live in the sibling client.py, which calls run(run_task).
 """
 

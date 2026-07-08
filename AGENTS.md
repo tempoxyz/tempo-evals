@@ -26,8 +26,8 @@ reproducible environment, independent verifier, oracle solution, and gradable ha
 npm run docs:prepare        # Build pinned Tempo docs bundle
 npm run sync                # Sync generated Tempo variants and shared assets
 npm run dataset             # Sync Tempo assets and refresh digests
-npm run check               # Type-check scripts, format check, lint
-npm run check:scripts       # TypeScript type check
+npm run check               # Compile scripts, run tests, format check, lint
+npm run check:scripts       # Python script compile check
 npm run check:dataset       # Verify Tempo dataset digest freshness
 npm run check:generated     # Verify generated Tempo output freshness
 npm run clean               # Remove job/cache output
@@ -95,7 +95,7 @@ Task-specific MPP files stay in the task directory: `task.toml`,
 `tests/correctness/criteria.py`, and `tests/quality/reward.toml`.
 
 Job configs share the dataset matrix in `config/datasets.yaml`;
-`scripts/run-benchmark.ts` injects it into any job config without its own
+`scripts/run_benchmark.py` injects it into any job config without its own
 `datasets:` block.
 
 Change the base task or generator, then run:
