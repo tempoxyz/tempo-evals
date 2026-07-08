@@ -1,3 +1,4 @@
+// AUTO-GENERATED FROM shared/docker/tempo-localnet/tempo-localnet-proxy.mjs BY npm run sync. DO NOT EDIT MANUALLY.
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import {

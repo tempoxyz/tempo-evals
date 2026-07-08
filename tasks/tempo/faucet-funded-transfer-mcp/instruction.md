@@ -12,7 +12,7 @@ Use environment variables for all values:
 - `TEMPO_AMOUNT`
 - `TEMPO_DECIMALS`
 
-<!-- sync:begin -->
+<!-- tempobench_sync:begin -->
 ## Tempo Access Profile
 
 The official Tempo MCP server is configured as `tempo`. Use it if your agent runtime exposes MCP tools; do not use WebSearch, WebFetch, or public RPC endpoints.
@@ -23,7 +23,7 @@ The official Tempo MCP server is configured as `tempo`. Use it if your agent run
 - Use that localnet RPC endpoint for all build, run, and self-check commands.
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
 - Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
-<!-- sync:end -->
+<!-- tempobench_sync:end -->
 
 Requirements:
 

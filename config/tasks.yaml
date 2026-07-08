@@ -16,8 +16,8 @@ quality_env:
   TEMPO_BENCH_TURNS_SCORE_CUTOFFS: "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
   TEMPO_BENCH_TOKENS_SCORE_CUTOFFS: "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"
 
-# Written between the <!-- sync:begin --> / <!-- sync:end --> markers in every
-# task's instruction.md.
+# Written between the <!-- tempobench_sync:begin --> / <!-- tempobench_sync:end -->
+# markers in every task's instruction.md.
 execution_constraints: |
   ## Execution Constraints
 

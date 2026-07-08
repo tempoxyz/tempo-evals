@@ -1,3 +1,4 @@
+# AUTO-GENERATED FROM shared/docker/compose/tempo-localnet-docs.yaml BY npm run sync. DO NOT EDIT MANUALLY.
 # The runner configures the `main` service. This file adds the Tempo localnet
 # and pinned docs sidecars and makes the agent container wait for both.
 services:

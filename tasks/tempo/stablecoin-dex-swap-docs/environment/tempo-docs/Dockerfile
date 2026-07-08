@@ -1,3 +1,4 @@
+# AUTO-GENERATED FROM shared/docs/tempo-docs/Dockerfile BY npm run sync. DO NOT EDIT MANUALLY.
 FROM node:22-bookworm
 
 WORKDIR /server
