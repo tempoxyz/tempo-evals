@@ -255,13 +255,10 @@ function requireAny(names: string[], message: string) {
 }
 
 function preflight(variant: Variant) {
-  if (process.env.CLAUDE_FORCE_OAUTH === "") {
-    throw new Error("CLAUDE_FORCE_OAUTH is set but empty. Set it to 1/true or unset it.");
-  }
   if (variant.needsAgentAuth) {
     requireAny(
-      ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"],
-      "Missing Claude Code auth: set ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, or CLAUDE_CODE_OAUTH_TOKEN.",
+      ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
+      "Missing Claude Code auth: set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN.",
     );
     requireAny(
       ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
