@@ -1,4 +1,3 @@
-# AUTO-GENERATED FROM shared/docker/tempo-localnet/Dockerfile BY npm run sync. DO NOT EDIT MANUALLY.
 FROM ghcr.io/tempoxyz/tempo:latest AS tempo
 
 FROM node:22-bookworm

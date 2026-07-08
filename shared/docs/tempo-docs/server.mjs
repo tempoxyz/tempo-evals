@@ -1,4 +1,3 @@
-// AUTO-GENERATED FROM shared/docs/tempo-docs/server.mjs BY npm run sync. DO NOT EDIT MANUALLY.
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import path from "node:path";

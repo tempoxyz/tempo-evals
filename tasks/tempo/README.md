@@ -22,8 +22,8 @@ Each task should stay Harbor-native and self-contained:
   keys into `main` so shared-mode verifier commands inherit the same env. The
   sync script rejects duplicated `[verifier.env]` blocks.
 - `environment/` contains the task runtime and Docker Compose additions. Common
-  sidecars are copied from `../../shared/` by `npm run sync`, so each task is
-  self-contained for Harbor packaging.
+  sidecars are symlinked from `../../shared/` by `npm run sync` where Harbor
+  and Docker can consume them.
 - `tests/correctness/` contains the task's explicit built-in RewardKit
   file/regex/docs criteria plus the e2e command criterion.
   `tests/quality/` contains non-binary turn/token efficiency checks and the

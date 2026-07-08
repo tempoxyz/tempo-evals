@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import tomllib
@@ -93,7 +94,7 @@ def copy_generated_task(source: Path, destination: Path) -> None:
 
     remove_path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source, destination, ignore=ignore)
+    shutil.copytree(source, destination, ignore=ignore, symlinks=True)
 
 
 def copy_file(source: Path, destination: Path) -> None:
@@ -365,6 +366,24 @@ def ensure_quality_env(task_dir: Path) -> None:
         write_file(task_config_path, tomlkit.dumps(doc))
 
 
+def relative_symlink_target(destination: Path, source: Path) -> str:
+    return os.path.relpath(source, destination.parent)
+
+
+def link_dir(source: Path, destination: Path) -> None:
+    remove_path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.symlink_to(
+        relative_symlink_target(destination, source), target_is_directory=True
+    )
+
+
+def link_file(source: Path, destination: Path) -> None:
+    remove_path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.symlink_to(relative_symlink_target(destination, source))
+
+
 def read_toml(file_path: Path) -> dict[str, Any]:
     return tomllib.loads(file_path.read_text())
 
@@ -500,23 +519,23 @@ def main() -> None:
             ROOT / "shared" / "rewardkit-package",
             task_dir / "environment" / "rewardkit-package",
         )
-        copy_dir(
+        link_dir(
             ROOT / "shared" / "docker" / "tempo-localnet",
             task_dir / "environment" / "tempo-localnet",
         )
 
         if task_uses_local_tempo_docs(task_dir):
-            copy_file(
+            link_file(
                 ROOT / "shared" / "docker" / "compose" / "tempo-localnet-docs.yaml",
                 task_dir / "environment" / "docker-compose.yaml",
             )
-            copy_dir(
+            link_dir(
                 ROOT / "shared" / "docs" / "tempo-docs",
                 task_dir / "environment" / "tempo-docs",
             )
         else:
             remove_path(task_dir / "environment" / "tempo-docs")
-            copy_file(
+            link_file(
                 ROOT / "shared" / "docker" / "compose" / "tempo-localnet.yaml",
                 task_dir / "environment" / "docker-compose.yaml",
             )
@@ -525,7 +544,7 @@ def main() -> None:
 
     mpp_task_count = sync_mpp_tasks()
     print(
-        "Synced verifier and copied localnet assets into "
+        "Synced verifier and linked localnet assets into "
         f"{len(tasks)} task(s); synced MPP harness into {mpp_task_count} task(s).",
     )
 
