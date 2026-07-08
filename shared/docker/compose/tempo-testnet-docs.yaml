@@ -1,0 +1,28 @@
+# The runner configures the `main` service. This file adds the pinned docs
+# sidecar for testnet-backed tasks.
+services:
+  main:
+    environment:
+      - TEMPO_BENCH_LOG_WAIT_MS
+      - TEMPO_BENCH_RPC_WAIT_MS
+      - TEMPO_BENCH_SUBMISSION_TIMEOUT_MS
+      - TEMPO_BENCH_TOKENS_SCORE_CUTOFFS
+      - TEMPO_BENCH_TURNS_SCORE_CUTOFFS
+      - TEMPO_DOCS_URL
+    depends_on:
+      tempo-docs:
+        condition: service_healthy
+
+  tempo-docs:
+    build:
+      context: ./tempo-docs
+    volumes:
+      - ${TEMPO_DOCS_BUNDLE_PATH:-./tempo-docs-bundle}:/tempo-docs:ro
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

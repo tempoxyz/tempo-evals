@@ -25,6 +25,8 @@ SOURCES_DIR = ROOT / "sources" / "tempo"
 TASKS_DIR = ROOT / "tasks" / "tempo"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
 MPP_SHARED_DIR = ROOT / "shared" / "mpp"
+TEMPO_TESTNET_SHARED_DIR = ROOT / "shared" / "tempo-testnet"
+TEMPO_TESTNET_SLUGS = {"transfer-with-memo"}
 
 # All task matrix data (task slugs, generated profiles, MPP shared file
 # lists, ...) lives in config/tasks.yaml.
@@ -103,6 +105,20 @@ def generated_header(source: str) -> str:
     )
 
 
+def is_tempo_testnet_task(slug: str) -> bool:
+    return slug in TEMPO_TESTNET_SLUGS
+
+
+def profile_instruction(slug: str, profile: dict[str, Any]) -> str | None:
+    instruction = profile.get("instruction")
+    if not isinstance(instruction, str):
+        return None
+    if is_tempo_testnet_task(slug):
+        instruction = instruction.replace(", or public RPC endpoints", "")
+        instruction = instruction.replace(" or public RPC endpoints", "")
+    return instruction
+
+
 def render_instruction(task_dir: Path, slug: str, profile: dict[str, Any]) -> None:
     instruction_path = task_dir / "instruction.md"
     content = instruction_path.read_text()
@@ -114,16 +130,17 @@ def render_instruction(task_dir: Path, slug: str, profile: dict[str, Any]) -> No
         raise RuntimeError(msg)
 
     parts = []
-    if instruction := profile.get("instruction"):
+    if instruction := profile_instruction(slug, profile):
         parts.append(instruction.strip())
-    parts.append(EXECUTION_CONSTRAINTS.strip())
+    if not is_tempo_testnet_task(slug):
+        parts.append(EXECUTION_CONSTRAINTS.strip())
     header = (
         f"<!-- AUTO-GENERATED FROM sources/tempo/{slug}/instruction.md "
         "BY npm run sync. DO NOT EDIT MANUALLY. -->\n\n"
     )
     write_file(
         instruction_path,
-        header + content.replace(INSTRUCTION_PLACEHOLDER, "\n\n".join(parts)),
+        header + content.replace(INSTRUCTION_PLACEHOLDER, "\n\n".join(parts).strip()),
     )
 
 
@@ -228,6 +245,54 @@ def sync_tests(
     )
 
 
+def sync_tempo_testnet_tests(
+    task_dir: Path, slug: str, profile: dict[str, Any]
+) -> None:
+    criteria_path = task_dir / "tests" / "correctness" / "criteria.py"
+    if not criteria_path.exists():
+        msg = f"Missing sources/tempo/{slug}/tests/correctness/criteria.py"
+        raise RuntimeError(msg)
+    write_file(
+        criteria_path,
+        generated_header(f"sources/tempo/{slug}/tests/correctness/criteria.py")
+        + criteria_path.read_text(),
+    )
+
+    copy_file(
+        TEMPO_TESTNET_SHARED_DIR / "tests" / "reward.toml",
+        task_dir / "tests" / "reward.toml",
+    )
+
+    copy_dir(
+        TEMPO_TESTNET_SHARED_DIR / "tests" / "quality",
+        task_dir / "tests" / "quality",
+    )
+    if check := profile.get("quality_check"):
+        check_path = task_dir / "tests" / "quality" / "check.py"
+        content = check_path.read_text().rstrip()
+        write_file(check_path, f"{content}\n\n{check.rstrip()}\n")
+
+    verify_path = task_dir / "tests" / "correctness" / "verify.sh"
+    copy_file(
+        TEMPO_TESTNET_SHARED_DIR / "tests" / "correctness" / "verify.sh", verify_path
+    )
+    verify_path.chmod(0o755)
+
+    test_path = task_dir / "tests" / "test.sh"
+    copy_file(TEMPO_TESTNET_SHARED_DIR / "tests" / "test.sh", test_path)
+    test_path.chmod(0o755)
+
+    support_dir = task_dir / "tests" / "support"
+    copy_file(
+        TEMPO_TESTNET_SHARED_DIR / "tests" / "support" / "client_lib.py",
+        support_dir / "client_lib.py",
+    )
+    copy_file(
+        TEMPO_TESTNET_SHARED_DIR / "tests" / "support" / "verifier_utils.py",
+        support_dir / "verifier_utils.py",
+    )
+
+
 def relative_symlink_target(destination: Path, source: Path) -> str:
     return os.path.relpath(source, destination.parent)
 
@@ -246,7 +311,7 @@ def link_file(source: Path, destination: Path) -> None:
     destination.symlink_to(relative_symlink_target(destination, source))
 
 
-def sync_environment(task_dir: Path, profile: dict[str, Any]) -> None:
+def sync_environment(task_dir: Path, slug: str, profile: dict[str, Any]) -> None:
     copy_file(
         ROOT / "shared" / "docker" / "main-node" / "Dockerfile",
         task_dir / "environment" / "Dockerfile",
@@ -255,6 +320,25 @@ def sync_environment(task_dir: Path, profile: dict[str, Any]) -> None:
         ROOT / "shared" / "rewardkit-package",
         task_dir / "environment" / "rewardkit-package",
     )
+    if is_tempo_testnet_task(slug):
+        if profile["id"] == "docs":
+            link_file(
+                ROOT / "shared" / "docker" / "compose" / "tempo-testnet-docs.yaml",
+                task_dir / "environment" / "docker-compose.yaml",
+            )
+            link_dir(
+                ROOT / "shared" / "docs" / "tempo-docs",
+                task_dir / "environment" / "tempo-docs",
+            )
+        else:
+            link_file(
+                ROOT / "shared" / "docker" / "compose" / "tempo-testnet.yaml",
+                task_dir / "environment" / "docker-compose.yaml",
+            )
+
+        assert_compose_build_contexts(task_dir)
+        return
+
     link_dir(
         ROOT / "shared" / "docker" / "tempo-localnet",
         task_dir / "environment" / "tempo-localnet",
@@ -340,13 +424,16 @@ def generate_task(source_dir: Path, slug: str, profile: dict[str, Any]) -> str:
     render_task_toml(task_dir, slug, profile)
     assert_verifier_env_allowed(task_dir)
 
-    case_id = read_task_case_id(task_dir)
-    if not case_id:
-        msg = f"TEMPO_BENCH_CASE is missing in sources/tempo/{slug}/task.toml"
-        raise RuntimeError(msg)
+    if is_tempo_testnet_task(slug):
+        sync_tempo_testnet_tests(task_dir, slug, profile)
+    else:
+        case_id = read_task_case_id(task_dir)
+        if not case_id:
+            msg = f"TEMPO_BENCH_CASE is missing in sources/tempo/{slug}/task.toml"
+            raise RuntimeError(msg)
 
-    sync_tests(task_dir, slug, profile, case_id)
-    sync_environment(task_dir, profile)
+        sync_tests(task_dir, slug, profile, case_id)
+    sync_environment(task_dir, slug, profile)
     return task_slug
 
 

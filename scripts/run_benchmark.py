@@ -505,6 +505,7 @@ def apply_task_filter(
     for dataset in config.get("datasets", []):
         if dataset.get("path") in {"tasks", "tasks/tempo"}:
             dataset["task_names"] = filters
+            config["datasets"] = [dataset]
             return config
 
     msg = "Could not apply task filter to config"

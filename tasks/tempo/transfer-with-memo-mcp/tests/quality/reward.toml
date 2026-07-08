@@ -1,31 +1,27 @@
-# SYNCED FROM shared/rewardkit/quality/reward.toml BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+# SYNCED FROM shared/tempo-testnet/tests/quality/reward.toml BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 [judge]
 judge = "anthropic/claude-haiku-4-5"
 mode = "batched"
 files = ["package.json", "tsconfig.json", "src/index.ts"]
 atif-trajectory = "/logs/trajectory.json"
 timeout = 300
-weight = 2.0
 
 [[criterion]]
-name = "uses_tempo_localnet_safely"
-description = "The submission uses the provided Tempo localnet environment variables, does not hard-code public Tempo RPC endpoints, secrets, recipients, amounts, or token addresses, and avoids live testnet side effects."
-weight = 1.0
+name = "uses_tempo_testnet_safely"
+description = "The implementation uses provided Tempo testnet environment variables, avoids hard-coded private secrets or fixture values, and submits only the requested transfer with memo transaction."
 
 [[criterion]]
-name = "uses_tempo_primitives_correctly"
-description = "The code uses appropriate Tempo or TIP-20 transaction primitives for the requested task, constructs addresses and units carefully, and waits for the submitted transaction to be accepted or confirmed."
-weight = 1.0
-
-[[criterion]]
-name = "is_reliable_and_observable"
-description = "The implementation has clear validation and error handling, surfaces useful failure messages, and avoids timing assumptions that would make localnet runs flaky."
-weight = 1.0
+name = "implements_transaction_artifact_boundary"
+description = "The submission writes the requested /app/out.json transactionHash contract so the verifier can load and check the transaction."
 
 [[criterion]]
 name = "is_minimal_and_maintainable"
-description = "The solution is a focused TypeScript implementation with simple dependencies, readable structure, and no unrelated scaffolding or dead code."
-weight = 1.0
+description = "The solution is focused, readable TypeScript with simple dependencies and no unrelated scaffolding or dead code."
+
+[[criterion]]
+description = "Did the agent take an efficient approach?"
+type = "likert"
+points = 5
 
 [scoring]
 aggregation = "weighted_mean"

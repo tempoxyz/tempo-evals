@@ -11,15 +11,15 @@ name = "Tempo"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-base"
-digest = "sha256:aeebb175c621fba375f88ec7ec3be454a0f989a7f20d7ae0d9a9eade41793b8d"
+digest = "sha256:7524a6e3622f616bfb6e054ba23722dc1e030ea7e5f79bd1c6c3934f98d9061a"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-docs"
-digest = "sha256:6a6922df71c0335c1755f1307061518b95a874de29656aa0405407d4e3cd9d8f"
+digest = "sha256:553f389316cea3b3d40090f60d9d3d4b6ccb143b99b2dc0d673fd04885b445db"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-mcp"
-digest = "sha256:a260d56f0bed3acc32f54b24597b79059c27befc3541cfba9d390f8dfed627e6"
+digest = "sha256:42ef4b7d55b47b3e854dac4ba0efe944a1f3b43648c006b965d7d112a96cc4ec"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-fee-payer-base"

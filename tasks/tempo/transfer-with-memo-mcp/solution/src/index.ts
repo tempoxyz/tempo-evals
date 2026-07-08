@@ -11,18 +11,21 @@ import {
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { writeFile } from "node:fs/promises";
 
-const rpcUrl = process.env.TEMPO_RPC_URL ?? "http://tempo-localnet:8545";
-const token = (process.env.TEMPO_TOKEN ?? "0x20c0000000000000000000000000000000000001") as Address;
-const payerPrivateKey = process.env.TEMPO_PAYER_PRIVATE_KEY as Hex;
-const recipient = (process.env.TEMPO_RECIPIENT ?? "0x1111111111111111111111111111111111111111") as Address;
-const amount = process.env.TEMPO_AMOUNT ?? "0.17";
-const memo = process.env.TEMPO_MEMO ?? "TEMPO-EVAL-001";
-const decimals = Number(process.env.TEMPO_DECIMALS ?? "6");
-
-if (!payerPrivateKey) {
-  throw new Error("TEMPO_PAYER_PRIVATE_KEY is required");
+function required(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required`);
+  return value;
 }
+
+const rpcUrl = required("TEMPO_RPC_URL");
+const token = required("TEMPO_TOKEN") as Address;
+const payerPrivateKey = required("TEMPO_PAYER_PRIVATE_KEY") as Hex;
+const recipient = required("TEMPO_RECIPIENT") as Address;
+const amount = required("TEMPO_AMOUNT");
+const memo = required("TEMPO_MEMO");
+const decimals = Number(required("TEMPO_DECIMALS"));
 
 const abi = parseAbi([
   "function transferWithMemo(address to,uint256 amount,bytes32 memo) returns (bool)",
@@ -32,7 +35,7 @@ const publicClient = createPublicClient({ transport: http(rpcUrl) });
 const chainIdHex = await publicClient.request({ method: "eth_chainId" });
 const chain = defineChain({
   id: Number(BigInt(chainIdHex as Hex)),
-  name: "Tempo Localnet",
+  name: "Tempo Testnet",
   nativeCurrency: { name: "Tempo", symbol: "TEMPO", decimals: 18 },
   rpcUrls: { default: { http: [rpcUrl] } },
 });
@@ -55,5 +58,8 @@ const hash = await walletClient.writeContract({
   ],
 });
 
-const receipt = await publicClient.waitForTransactionReceipt({ hash });
-console.log(JSON.stringify({ hash, status: receipt.status }, null, 2));
+await writeFile(
+  "/app/out.json",
+  `${JSON.stringify({ transactionHash: hash }, null, 2)}\n`,
+);
+console.log(JSON.stringify({ transactionHash: hash }, null, 2));

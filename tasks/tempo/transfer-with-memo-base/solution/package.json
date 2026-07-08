@@ -2,12 +2,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit",
-    "run": "tsx src/index.ts"
+    "build": "tsc -p tsconfig.json",
+    "run": "node dist/index.js"
   },
   "dependencies": {
     "@types/node": "^22.15.30",
-    "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "viem": "^2.53.1"
   }

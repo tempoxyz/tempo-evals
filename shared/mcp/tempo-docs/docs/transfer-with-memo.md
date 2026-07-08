@@ -7,7 +7,7 @@ an onchain memo that another system can reconcile later.
 
 Read task-provided values from environment variables:
 
-- `TEMPO_RPC_URL`: Tempo localnet JSON-RPC URL.
+- `TEMPO_RPC_URL`: Tempo testnet JSON-RPC URL.
 - `TEMPO_PAYER_PRIVATE_KEY`: private key for the funded payer account.
 - `TEMPO_TOKEN`: TIP-20 token contract address.
 - `TEMPO_RECIPIENT`: recipient account address.
@@ -31,6 +31,7 @@ import {
   type Hex,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { writeFile } from "node:fs/promises";
 
 const rpcUrl = process.env.TEMPO_RPC_URL!;
 const token = process.env.TEMPO_TOKEN! as Address;
@@ -48,7 +49,7 @@ const publicClient = createPublicClient({ transport: http(rpcUrl) });
 const chainIdHex = await publicClient.request({ method: "eth_chainId" });
 const chain = defineChain({
   id: Number(BigInt(chainIdHex as Hex)),
-  name: "Tempo Localnet",
+  name: "Tempo Testnet",
   nativeCurrency: { name: "Tempo", symbol: "TEMPO", decimals: 18 },
   rpcUrls: { default: { http: [rpcUrl] } },
 });
@@ -71,14 +72,14 @@ const hash = await walletClient.writeContract({
   ],
 });
 
-await publicClient.waitForTransactionReceipt({ hash });
+await writeFile("/app/out.json", JSON.stringify({ transactionHash: hash }, null, 2));
 ```
 
 ## Common Mistakes
 
-- Do not call plain `transfer`; the verifier expects the memo event.
+- Do not call plain `transfer`; the transaction must include the memo event.
 - Convert the amount with `parseUnits(amount, decimals)`.
 - Encode the memo as `bytes32`, for example with
   `pad(stringToHex(memo), { size: 32 })`.
-- Wait for the transaction receipt before exiting so the grader can observe the
-  onchain event.
+- Write `/app/out.json` with the submitted `transactionHash` so the transaction
+  can be checked onchain.

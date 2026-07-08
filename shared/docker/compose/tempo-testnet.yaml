@@ -1,0 +1,10 @@
+# The runner configures the `main` service. This file forwards the Tempo
+# benchmark env needed by testnet-backed tasks.
+services:
+  main:
+    environment:
+      - TEMPO_BENCH_LOG_WAIT_MS
+      - TEMPO_BENCH_RPC_WAIT_MS
+      - TEMPO_BENCH_SUBMISSION_TIMEOUT_MS
+      - TEMPO_BENCH_TOKENS_SCORE_CUTOFFS
+      - TEMPO_BENCH_TURNS_SCORE_CUTOFFS
