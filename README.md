@@ -48,7 +48,7 @@ npm run bench:model -- --tasks tasks/mpp --task-filter tempo/mpp-server-charge-p
 
 | Dataset | Path | Description |
 | ------- | ---- | ----------- |
-| `tempo/tempo-bench-v1` | `tasks/` | Tempo localnet integration tasks across base, docs, and MCP profiles |
+| `tempo/tempo-bench-v1` | `tasks/tempo/` | Tempo localnet integration tasks across base, docs, and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
 
 ## Profiles

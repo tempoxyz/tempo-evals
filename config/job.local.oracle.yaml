@@ -17,7 +17,7 @@ verifier:
 agents:
   - name: oracle
 datasets:
-  - path: tasks
+  - path: tasks/tempo
     task_names:
       - "*-base"
       - "*-docs"
