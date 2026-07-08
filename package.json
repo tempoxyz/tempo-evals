@@ -18,18 +18,30 @@
     "bench:daytona:oracle": "node scripts/run-benchmark.ts daytona-oracle",
     "bench:daytona:agent": "node scripts/run-benchmark.ts daytona-agent",
     "bench:daytona:agent:dev": "node scripts/run-benchmark.ts daytona-agent-dev",
+    "bench:production": "node scripts/run-benchmark.ts production-daytona",
+    "results:export": "node scripts/export-results.ts",
     "harbor:view": "uv run harbor view jobs",
-    "check": "npm run check:scripts && npm run check:format && npm run check:lint",
+    "check": "npm run check:scripts && npm run test:results && npm run check:format && npm run check:lint",
     "check:dataset": "node scripts/run-benchmark.ts check-dataset",
     "check:generated": "node scripts/run-benchmark.ts check-generated",
     "check:format": "uv run ruff format --check .",
     "check:lint": "uv run ruff check .",
     "check:scripts": "tsc --noEmit",
+    "test:results": "node --test scripts/export-results.test.ts",
     "clean": "node scripts/run-benchmark.ts clean",
     "clean:jobs": "node scripts/run-benchmark.ts clean-jobs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/nunjucks": "^3.2.6",
+    "csv-parse": "^7.0.1",
     "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "csv-stringify": "^6.8.1",
+    "fast-glob": "^3.3.3",
+    "nunjucks": "^3.2.4",
+    "yaml": "^2.9.0"
   }
 }

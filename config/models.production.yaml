@@ -1,0 +1,19 @@
+# Production model matrix for `npm run bench:production`.
+#
+# Supported forms:
+#   - claude-haiku-4-5
+#     Shorthand for:
+#       agent: claude-code
+#       model_name: claude-haiku-4-5
+#
+#   - agent: codex
+#     model_name: gpt-5
+#     Explicit agent/model entry. Optional fields:
+#       n_concurrent: 8
+#       concurrency_group: openai
+#
+# `--agent-concurrency N` overrides per-entry n_concurrent for the run.
+models:
+  - claude-haiku-4-5
+  - agent: codex
+    model_name: gpt-5
