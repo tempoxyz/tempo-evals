@@ -14,6 +14,10 @@ environment:
     dind_image: docker:28.3.3-dind
     connection_pool_maxsize: null
 verifier:
+  include_logs:
+  - '*.json'
+  - '*.ndjson'
+  - '*.txt'
   env:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
