@@ -13,6 +13,15 @@ from rewardkit import criterion
 LOG_DIR = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
 _EFFICIENCY_LOCK = threading.Lock()
 
+type Cutoff = tuple[int | str, float]
+DEFAULT_TOKEN_CUTOFFS: list[Cutoff] = [
+    (250000, 1.0),
+    (500000, 0.8),
+    (1000000, 0.5),
+    (1500000, 0.2),
+    ("*", 0.0),
+]
+
 
 def _write_json(name: str, payload: dict) -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -29,9 +38,17 @@ def _trajectory_path() -> Path | None:
     return None
 
 
-def _parse_cutoffs(raw: str) -> tuple[list[tuple[int, float]], float]:
+def _parse_cutoffs(raw: str | list[Cutoff]) -> tuple[list[tuple[int, float]], float]:
     cutoffs: list[tuple[int, float]] = []
     fallback = 0.0
+    if not isinstance(raw, str):
+        for limit, score in raw:
+            if limit == "*":
+                fallback = float(score)
+            else:
+                cutoffs.append((int(limit), float(score)))
+        return sorted(cutoffs), fallback
+
     for part in raw.split(","):
         item = part.strip()
         if not item:
@@ -46,7 +63,7 @@ def _parse_cutoffs(raw: str) -> tuple[list[tuple[int, float]], float]:
     return sorted(cutoffs), fallback
 
 
-def _score_by_cutoff(value: int, raw_cutoffs: str) -> float:
+def _score_by_cutoff(value: int, raw_cutoffs: str | list[Cutoff]) -> float:
     cutoffs, fallback = _parse_cutoffs(raw_cutoffs)
     for limit, score in cutoffs:
         if value <= limit:
@@ -203,21 +220,19 @@ def tempo_mcp_tool_used(_workspace: Path, server_name: str = "tempo") -> bool:
 def agent_token_efficiency(
     _workspace: Path,
     cutoffs_env: str = "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS",
-    default_cutoffs: str = "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0",
+    default_cutoffs: list[Cutoff] | None = None,
 ) -> float:
-    raw_cutoffs = os.environ.get(
-        cutoffs_env,
-        default_cutoffs,
-    )
+    """Score agent token usage from trajectory metrics against cutoff thresholds."""
+    cutoffs = os.environ.get(cutoffs_env) or default_cutoffs or DEFAULT_TOKEN_CUTOFFS
     path = _trajectory_path()
     if path is None:
         _merge_efficiency(
             "tokens",
-            {"score": 0.0, "cutoffs": raw_cutoffs},
+            {"score": 0.0, "cutoffs": cutoffs},
         )
         return 0.0
 
     metrics = _token_metrics(json.loads(path.read_text(encoding="utf-8")))
-    score = _score_by_cutoff(metrics["total_tokens"], raw_cutoffs)
-    _merge_efficiency("tokens", {"score": score, "cutoffs": raw_cutoffs, **metrics})
+    score = _score_by_cutoff(metrics["total_tokens"], cutoffs)
+    _merge_efficiency("tokens", {"score": score, "cutoffs": cutoffs, **metrics})
     return score

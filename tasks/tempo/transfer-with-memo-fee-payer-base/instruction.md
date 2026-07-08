@@ -2,37 +2,23 @@
 
 # Tempo Transfer With Memo And Fee Payer
 
-Build a minimal TypeScript project in `/app` that sends a Tempo localnet
-stablecoin payment with a 32-byte memo and a separate fee payer.
+Build a minimal TypeScript project that sends a Tempo stablecoin payment with a 32-byte memo and a separate fee payer.
 
-Use environment variables for all values:
+## Parameters
 
-- `TEMPO_RPC_URL`
-- `TEMPO_PAYER_PRIVATE_KEY`
-- `TEMPO_FEE_PAYER_PRIVATE_KEY`
-- `TEMPO_FEE_TOKEN`
-- `TEMPO_TOKEN`
-- `TEMPO_RECIPIENT`
-- `TEMPO_AMOUNT`
-- `TEMPO_DECIMALS`
-- `TEMPO_MEMO`
+* Read the transfer memo from `TEMPO_MEMO`.
+* Use `TEMPO_FEE_PAYER_PRIVATE_KEY` as the transaction fee payer.
+* Use `TEMPO_FEE_TOKEN` as the fee token.
 
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
-- Use that localnet RPC endpoint for all build, run, and self-check commands.
+- Use that localnet RPC endpoint for all example and self-check commands.
 - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
-- Do not run live testnet smoke tests; local build/run checks must use the provided environment variables.
+- Do not run live testnet smoke tests; local example checks must use the provided environment variables.
 
 Requirements:
 
-- Put the submission directly in `/app`.
-- Include `package.json`.
-- Include `tsconfig.json`.
-- Put the runtime source in `src/index.ts`.
-- Include scripts named exactly `build` and `run`.
-- `npm run build` must typecheck or compile.
-- `npm run run` must execute the transfer on Tempo localnet.
-- Use `transferWithMemo` semantics and include the memo.
-- Use the fee payer private key as the Tempo transaction fee payer.
-- Do not edit `/tests`, `/logs`, or `/solution`.
+* Put the submission directly in `/app`.
+* Put the runtime source in `src/index.ts`.
+* The script should be runnable by `npm run example`

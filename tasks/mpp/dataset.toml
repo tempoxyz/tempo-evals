@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:1f03a252ae7ccbec4206d12a67fccdae7cf287e1b2b74216a146bd0747e42a71"
+digest = "sha256:a053169b91def03e4bd44032273c1725cc5f0f038b8925e8bc8ea2ae01a62fb2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:11049bc2d92fe1435de34e29e20bdfae01aba896db87ca6f71b5eb4d5b4e4c1b"
+digest = "sha256:fa29436ce57cf40c6ad5522f76d813f2b2a256e9a21bac9dde665c9d5fcaa841"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:73a0c94fdeb800c673a0b465ca16d26e9fbea011a8f141ac0218f60bc9de0e91"
+digest = "sha256:c4cd855a67a7ef58781e9f40adf0f49c9b33b6bac8904b0d6cafc6417a024f4d"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:739de75f2d6861b7faea5e624e916587024e080ebdce6fff5f65b95602218df7"
+digest = "sha256:fcb294f71ed0940a058318be335e7e0536cbe1836dfd88e12db7675715246147"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:32c8dbce2badad6e1863e0b9b79279f65f111c975b92ba6bf142de9cf0e8bda5"
+digest = "sha256:1e0ef4a5251fc86694db3c94bef7a3f5c6a5b39e17a8ec9e4d2f2a394f0791f3"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:8952d42c4caf51275e614d389609ebd0086513cd01384163e5c2d564c27ee1ff"
+digest = "sha256:c0a0ecaafa63b3a024b416f96c3f477979edd74ce90b4f13a3f46f3f112f8576"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:ffcf773ca952a98a9d8388ba31d14a5e4a0cf472b9548fda90c69399962625b9"
+digest = "sha256:248f8673512e89b206ac372b634e7621de0f2702986344cf8cd6688e250211a4"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:060f68d919e7e582e60d88f4b2b9b59cb644de2e9f77a7587130b4bc2485eded"
+digest = "sha256:b78f5b9a8dc7b3fd6a0eab0e5b54b78250411026a8c63d4ea3b577d6d635b806"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:e0add2de90ab74a3d9c49f85e0bd4714f39cb93ba4051cb05d475c571907130e"
+digest = "sha256:10fd9486bf26e4d645a8ef78c04daae455175bbf596dbcc1ca785a48331b7eb6"
 

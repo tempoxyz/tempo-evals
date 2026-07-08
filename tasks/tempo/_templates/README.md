@@ -11,14 +11,15 @@ A template task contains only the authored files:
   `<!-- tempobench_sync -->` placeholder, which sync replaces with the shared
   execution constraints (and the per-profile access block for docs/MCP
   variants) from `config/tasks.yaml`.
-- `README.md` — the Harbor Hub display summary. It must include `## Overview`
-  and `## What the Task Tests`.
+- `README.md` — the Harbor Hub display summary. It must include `## Overview`,
+  `## What the Task Tests`, and `## Verification`.
 - `task.toml` — profile-neutral task config. `[task].name` is the bare
   intent (`tempo/<slug>`); sync appends the profile suffix, description
-  label, keywords, per-profile env, and MCP servers. Put Tempo fixture
-  values in `[environment.env]`; shared compose injects those keys into
-  `main` so shared-mode verifier commands inherit the same env. Sync rejects
-  duplicated `[verifier.env]` blocks.
+  label, keywords, per-profile env, and MCP servers. Tempo fixture values
+  live in `config/tasks.yaml` under `fixture_env` and `case_fixtures`;
+  sync renders them into each generated task's `[environment.env]`. Shared
+  compose injects those keys into `main` so shared-mode verifier commands
+  inherit the same env. Sync rejects duplicated `[verifier.env]` blocks.
 - `tests/correctness/criteria.py` — task-specific RewardKit criteria.
 - `solution/` — the oracle solution used for sanity checks. A normal minimal
   TypeScript app; `solve.sh` only copies the files into `/app`.
@@ -33,5 +34,5 @@ To add a task:
 1. Create `tasks/tempo/_templates/<slug>/` with the files above.
 2. Add the slug to `task_slugs` in `config/tasks.yaml`.
 3. Add a verifier case at `shared/tempo/verifier/src/cases/<case>.js` and set
-   `TEMPO_BENCH_CASE` in the source `task.toml`.
+   `TEMPO_BENCH_CASE` for the slug in `config/tasks.yaml` `case_fixtures`.
 4. Run `npm run sync`, then `npm run dataset` to refresh digests.
