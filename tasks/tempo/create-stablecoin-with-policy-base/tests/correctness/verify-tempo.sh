@@ -3,12 +3,30 @@
 set -u
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
+ARTIFACT_DIR="${TEMPO_BENCH_ARTIFACT_DIR:-/logs/artifacts}"
 INTERNAL_REWARD="$LOG_DIR/tempo-bench-reward.json"
 SCORES_FILE="$LOG_DIR/tempo-bench-scores.json"
 VERIFIER="/tests/node_modules/@tempo-bench/verifier/bin/tempo-bench-verify.js"
 
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" "$ARTIFACT_DIR"
 rm -f "$INTERNAL_REWARD" "$SCORES_FILE"
+rm -f "$ARTIFACT_DIR/exception.txt"
+
+write_exception_artifact() {
+  phase="$1"
+  reason="$2"
+  shift 2
+
+  {
+    printf 'Tempo verifier failed before producing a passing correctness score.\n'
+    printf 'phase: %s\n' "$phase"
+    printf 'reason: %s\n' "$reason"
+    printf '\nlogs:\n'
+    for log_file in "$@"; do
+      printf -- '- %s\n' "$log_file"
+    done
+  } > "$ARTIFACT_DIR/exception.txt"
+}
 
 cd /tests || exit 1
 npm install --silent \
@@ -18,6 +36,12 @@ INSTALL_STATUS=$?
 printf '{"command":"npm","args":["install","--silent"],"status":%d}\n' \
   "$INSTALL_STATUS" > "$LOG_DIR/verifier-npm-install.status.json"
 if [ "$INSTALL_STATUS" -ne 0 ]; then
+  write_exception_artifact \
+    "verifier-npm-install" \
+    "npm install --silent exited $INSTALL_STATUS" \
+    "$LOG_DIR/verifier-npm-install.stdout.txt" \
+    "$LOG_DIR/verifier-npm-install.stderr.txt" \
+    "$LOG_DIR/verifier-npm-install.status.json"
   exit "$INSTALL_STATUS"
 fi
 
@@ -29,10 +53,22 @@ GRADER_STATUS=$?
 printf '{"command":"node","args":["%s"],"status":%d}\n' \
   "$VERIFIER" "$GRADER_STATUS" > "$LOG_DIR/grader.status.json"
 if [ "$GRADER_STATUS" -ne 0 ]; then
+  write_exception_artifact \
+    "grader" \
+    "node verifier exited $GRADER_STATUS" \
+    "$LOG_DIR/grader.stdout.txt" \
+    "$LOG_DIR/grader.stderr.txt" \
+    "$LOG_DIR/grader.status.json"
   exit "$GRADER_STATUS"
 fi
 if [ ! -f "$INTERNAL_REWARD" ]; then
   printf 'missing internal reward file: %s\n' "$INTERNAL_REWARD" >&2
+  write_exception_artifact \
+    "grader" \
+    "missing internal reward file: $INTERNAL_REWARD" \
+    "$LOG_DIR/grader.stdout.txt" \
+    "$LOG_DIR/grader.stderr.txt" \
+    "$LOG_DIR/grader.status.json"
   exit 1
 fi
 

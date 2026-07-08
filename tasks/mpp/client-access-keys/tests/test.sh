@@ -89,7 +89,8 @@ if ! "$REWARDKIT_PYTHON" -m pip install --quiet --no-cache-dir 'pympp[tempo]==0.
 fi
 
 run_rewardkit() {
-  "$REWARDKIT_PYTHON" -m rewardkit "$REWARDKIT_TESTS_DIR" \
+  PYTHONPATH="$REWARDKIT_TESTS_DIR/support${PYTHONPATH:+:$PYTHONPATH}" \
+    "$REWARDKIT_PYTHON" -m rewardkit "$REWARDKIT_TESTS_DIR" \
     --workspace "${TEMPO_BENCH_WORKSPACE:-/app}" \
     --output "$REWARDKIT_OUTPUT_FILE" \
     > "$LOG_DIR/rewardkit.stdout.txt" \
