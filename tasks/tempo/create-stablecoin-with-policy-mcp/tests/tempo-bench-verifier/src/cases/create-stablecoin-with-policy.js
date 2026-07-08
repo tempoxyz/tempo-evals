@@ -23,6 +23,17 @@ function runtimeEnv(config) {
   };
 }
 
+function beforeLog(left, right) {
+  return (
+    left.blockNumber < right.blockNumber ||
+    (left.blockNumber === right.blockNumber && left.logIndex < right.logIndex)
+  );
+}
+
+function sameHex(left, right) {
+  return left?.toLowerCase() === right?.toLowerCase();
+}
+
 async function verify({ client, config, fromBlock }) {
   const admin = privateKeyToAccount(config.payerPrivateKey).address;
   const expectedPolicyType = POLICY_TYPES[config.policyType];
@@ -58,7 +69,8 @@ async function verify({ client, config, fromBlock }) {
         log.args.name === config.stablecoinName &&
         log.args.symbol === config.stablecoinSymbol &&
         log.args.currency === config.stablecoinCurrency &&
-        sameAddress(log.args.admin, admin),
+        sameAddress(log.args.admin, admin) &&
+        sameHex(log.args.salt, config.stablecoinSalt),
     );
 
     if (!tokenLog) {
@@ -105,7 +117,12 @@ async function verify({ client, config, fromBlock }) {
       fromBlock,
       toBlock: latestBlock,
     });
-    const linkLog = linkLogs[0];
+    const linkLog = linkLogs.find(
+      (log) =>
+        beforeLog(tokenLog, log) &&
+        beforeLog(policyLog, log) &&
+        beforeLog(policyAccountLog, log),
+    );
     if (linkLog) {
       return {
         token: tokenLog.args.token,

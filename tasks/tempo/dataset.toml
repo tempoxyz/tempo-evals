@@ -47,15 +47,15 @@ digest = "sha256:b9aa1925e5f77007574cff60c52aaa2b903097870dda5d81c8efce94b4680d8
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-base"
-digest = "sha256:550e38d1791283e3375ee6f60327533c7a1df10b2b3f2201ea8d514a83f1e747"
+digest = "sha256:e4c339b6723dc38e1c05cff0119b26e7c7c05db64a75574fa3c1cd628e9dc511"
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-docs"
-digest = "sha256:3f7804ee13da4a50b48425669dcec4ab2ee3fb86ed4dee4941f359ab1d4f864a"
+digest = "sha256:1eadf6d7ae3cdfd38f4f47bcbb23a98f99ea03b7832ca60a52f2da7177d56db6"
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-mcp"
-digest = "sha256:10a0ed06cc9574bc70ad3a3124290208cce0bf010eedfd5aadd4d8123dc6c11f"
+digest = "sha256:a03d26d9f6f06a75cb49005deb6c1a5cd86f7304c4a8af02d45ffa2349174c5f"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-base"
