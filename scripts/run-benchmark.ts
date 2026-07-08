@@ -536,8 +536,10 @@ function runProductionVariant(
 function applyTaskFilter(config: string, taskFilter?: string): string {
   if (!taskFilter) return config;
   const mppFilter = taskFilter
+    .replace(/^tempo\/mpp-/, "")
     .replace(/^tempo-mpp\//, "")
-    .replace(/^mpp\//, "");
+    .replace(/^mpp\//, "")
+    .replace(/^mpp-/, "");
   if (mppFilter !== taskFilter || mppFilter.startsWith("server-")) {
     const filtered = config.replace(
       /(^datasets:\n)[\s\S]*$/m,
