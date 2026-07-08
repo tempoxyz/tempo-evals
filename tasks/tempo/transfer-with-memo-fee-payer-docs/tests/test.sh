@@ -34,6 +34,41 @@ write_exception_artifact() {
   } > "$ARTIFACT_DIR/exception.txt"
 }
 
+emit_log_file() {
+  file_name="$1"
+  file_path="$LOG_DIR/$file_name"
+  if [ ! -f "$file_path" ]; then
+    return
+  fi
+  printf '\n===== %s =====\n' "$file_name"
+  cat "$file_path"
+}
+
+emit_harbor_summary() {
+  for file_name in \
+    verifier-npm-install.stdout.txt \
+    verifier-npm-install.status.json \
+    grader.stdout.txt \
+    grader.status.json \
+    tempo-bench-reward.json \
+    tempo-bench-scores.json; do
+    emit_log_file "$file_name"
+  done
+  for file_name in \
+    verifier-npm-install.stderr.txt \
+    grader.stderr.txt; do
+    emit_log_file "$file_name" >&2
+  done
+}
+
+finish() {
+  status=$?
+  trap - EXIT
+  emit_harbor_summary
+  exit "$status"
+}
+trap finish EXIT
+
 skip_llm_quality() {
   reason="$1"
   REWARDKIT_TESTS_DIR="/tmp/tempo-bench-rewardkit-tests"

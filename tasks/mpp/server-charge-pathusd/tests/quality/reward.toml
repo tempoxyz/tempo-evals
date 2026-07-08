@@ -2,7 +2,7 @@
 judge = "anthropic/claude-haiku-4-5"
 mode = "batched"
 files = ["package.json", "tsconfig.json", "src/index.ts"]
-atif-trajectory = "/logs/trajectory.json"
+atif-trajectory = "/logs/agent/trajectory.json"
 timeout = 300
 
 [[criterion]]

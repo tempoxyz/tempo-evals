@@ -18,6 +18,10 @@ environment:
     connection_pool_maxsize: null
 {% endif %}
 verifier:
+  include_logs:
+    - "*.json"
+    - "*.ndjson"
+    - "*.txt"
   env:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}

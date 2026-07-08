@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:aab5003aeb949172a7ea252e6499a77f413f2b30c3e55862acdffa1a8efdf035"
+digest = "sha256:6b595c2c9eceaac1d29e7ec2c8d5bcec41c2a4e888436fcc45bd5b43f0e453f5"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:371db75aa2fc70b16222c8035574ca34b5e7ee6911faee32cfed82de8aa9a73c"
+digest = "sha256:d6399b208a6a7d9ec900ddfc12e2e457e4c2e2c1b77c38847274fc9f212b740e"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:7dd58c6a35cd01d4f820af06aee1a9e1be7d6b25c5cc141e3d80cb8c9e01657b"
+digest = "sha256:76be8f572296559cdb362a425d03501731a5ca38ec117764940858484fd9367e"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:665080cb1701270c49f5068505c4058355189c3764db3266d3c7294b68ef7a53"
+digest = "sha256:295cabfaf7e056eafa96d58468aa888bc261a2ed4caee5876111ab3c1c24c004"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:22a8ccf2ed30950c94a344e306c1b5ba94cf606cb9c68db6c97a4dc6141e23cb"
+digest = "sha256:78537d19bf1d1257d4174e8605e3cb64b95edbe41a662011fff4a26b6dca4ee8"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:b50dee4ad3a8b4ffeed1709689fbe61963d53f61829b0826406bb2677a312b0d"
+digest = "sha256:163835b7c88a6419a5d12e1e4c6ea661a42a704a8eb7f9b5e44ee8f3a1566d2e"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:d1bd02a62436d34a531497f7ce07dcef81215b30b2142c44c816b86a2d9c3876"
+digest = "sha256:5b4781d5efc1e91e4f3f1cca7f9e991d704136926495c7815dd1bc72300796ab"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:2c22ba18347cc2d34bfc6a857dccb0429e06261b2cea448f7428bf16c9e58125"
+digest = "sha256:2ecee66c3d6946a2b4af6ce67511914eba313f8521124875aa9113ce096a3e9d"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:70870ae82c5ccd12caaff678aaf025d2be7095f137db7e194adb2731273a4f50"
+digest = "sha256:943358b5af3058d5aff1e7f04ccce8d10f4f475594ead7f60ed6a3e03e2a42b6"
 
