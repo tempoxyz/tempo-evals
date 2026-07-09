@@ -8,7 +8,9 @@ WORKSPACE="${TEMPO_BENCH_WORKSPACE:-/app}"
 TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
 
 mkdir -p "$LOG_DIR" "$ARTIFACT_DIR"
-REWARDKIT_VENV="${tempo_bench_rewardkit_VENV:-/tmp/tempo-bench-rewardkit}"
+# The venv is baked into the tempo-bench base image; see
+# shared/global/docker/base/Dockerfile.
+REWARDKIT_VENV="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}"
 REWARDKIT_PYTHON="$REWARDKIT_VENV/bin/python"
 REWARD_FILE="$LOG_DIR/reward.json"
 DETAILS_FILE="$LOG_DIR/reward-details.json"
@@ -46,19 +48,13 @@ emit_log_file() {
 
 emit_harbor_summary() {
   for file_name in \
-    verifier-npm-install.stdout.txt \
-    verifier-npm-install.status.json \
     grader.stdout.txt \
     grader.status.json \
     tempo-bench-reward.json \
     tempo-bench-scores.json; do
     emit_log_file "$file_name"
   done
-  for file_name in \
-    verifier-npm-install.stderr.txt \
-    grader.stderr.txt; do
-    emit_log_file "$file_name" >&2
-  done
+  emit_log_file grader.stderr.txt >&2
 }
 
 finish() {
@@ -168,29 +164,11 @@ write_zero_reward() {
 }
 
 if [ ! -x "$REWARDKIT_PYTHON" ]; then
-  if ! python3 -m venv "$REWARDKIT_VENV" \
-    > "$LOG_DIR/rewardkit-venv.stdout.txt" \
-    2> "$LOG_DIR/rewardkit-venv.stderr.txt"; then
-    write_exception_artifact \
-      "rewardkit-venv" \
-      "python3 -m venv failed" \
-      "$LOG_DIR/rewardkit-venv.stdout.txt" \
-      "$LOG_DIR/rewardkit-venv.stderr.txt"
-    write_zero_reward
-    exit 0
-  fi
-
-  if ! "$REWARDKIT_PYTHON" -m pip install --quiet --no-cache-dir 'harbor-rewardkit==0.1.7' \
-    > "$LOG_DIR/rewardkit-install.stdout.txt" \
-    2> "$LOG_DIR/rewardkit-install.stderr.txt"; then
-    write_exception_artifact \
-      "rewardkit-install" \
-      "harbor-rewardkit install failed" \
-      "$LOG_DIR/rewardkit-install.stdout.txt" \
-      "$LOG_DIR/rewardkit-install.stderr.txt"
-    write_zero_reward
-    exit 0
-  fi
+  write_exception_artifact \
+    "rewardkit-venv" \
+    "missing baked RewardKit venv: $REWARDKIT_VENV (rebuild the tempo-bench base image)"
+  write_zero_reward
+  exit 0
 fi
 
 run_rewardkit() {

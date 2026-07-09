@@ -5,22 +5,33 @@ set -u
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
 TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
 WORKSPACE="${TEMPO_BENCH_WORKSPACE:-/app}"
-VERIFIER_VENV="${TEMPO_MPP_VERIFIER_VENV:-/tmp/tempo-mpp-verifier-venv}"
+# The venv (pympp + tempo-bench-rewardkit) is baked into the tempo-bench base
+# image; see shared/global/docker/base/Dockerfile.
+VERIFIER_VENV="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}"
 VERIFIER_PYTHON="$VERIFIER_VENV/bin/python"
 SCORES_FILE="$LOG_DIR/scores.json"
 WORKSPACE_SCORES_FILE="$WORKSPACE/scores.json"
 OUT_FILE="$WORKSPACE/out.json"
-VERIFIER_UTILS="$TESTS_DIR/support/verifier_utils.py"
 
 mkdir -p "$LOG_DIR"
 rm -f "$SCORES_FILE" "$WORKSPACE_SCORES_FILE" "$OUT_FILE"
 cd "$WORKSPACE" || exit
 rm -rf node_modules package-lock.json
 
+verifier_utils() {
+  "$VERIFIER_PYTHON" -m tempo_bench_rewardkit.mpp.verifier_utils "$@"
+}
+
 write_failure_score() {
-  python3 "$VERIFIER_UTILS" write-failure-score \
+  verifier_utils write-failure-score \
     "$SCORES_FILE" "$WORKSPACE_SCORES_FILE" "$LOG_DIR/details.json" "$1"
 }
+
+if [ ! -x "$VERIFIER_PYTHON" ]; then
+  printf 'missing baked verifier venv: %s (rebuild the tempo-bench base image)\n' \
+    "$VERIFIER_VENV" >&2
+  exit 1
+fi
 
 npm install --silent \
   > "$LOG_DIR/submission-npm-install.stdout.txt" \
@@ -44,30 +55,6 @@ if [ "$BUILD_STATUS" -ne 0 ]; then
   exit "$BUILD_STATUS"
 fi
 
-if [ ! -x "$VERIFIER_PYTHON" ]; then
-  python3 -m venv "$VERIFIER_VENV" \
-    > "$LOG_DIR/verifier-venv.stdout.txt" \
-    2> "$LOG_DIR/verifier-venv.stderr.txt"
-  VENV_STATUS=$?
-  printf '{"command":"python3","args":["-m","venv","%s"],"status":%d}\n' \
-    "$VERIFIER_VENV" "$VENV_STATUS" > "$LOG_DIR/verifier-venv.status.json"
-  if [ "$VENV_STATUS" -ne 0 ]; then
-    write_failure_score "verifier venv setup failed"
-    exit "$VENV_STATUS"
-  fi
-fi
-
-"$VERIFIER_PYTHON" -m pip install --quiet --no-cache-dir 'pympp[tempo]==0.9.1' \
-  > "$LOG_DIR/verifier-pip-install.stdout.txt" \
-  2> "$LOG_DIR/verifier-pip-install.stderr.txt"
-INSTALL_STATUS=$?
-printf '{"command":"python","args":["-m","pip","install","pympp[tempo]==0.9.1"],"status":%d}\n' \
-  "$INSTALL_STATUS" > "$LOG_DIR/verifier-pip-install.status.json"
-if [ "$INSTALL_STATUS" -ne 0 ]; then
-  write_failure_score "verifier pympp install failed"
-  exit "$INSTALL_STATUS"
-fi
-
 "$VERIFIER_PYTHON" "$TESTS_DIR/support/client.py" \
   > "$LOG_DIR/mpp-client.stdout.txt" \
   2> "$LOG_DIR/mpp-client.stderr.txt"
@@ -83,4 +70,4 @@ if [ ! -f "$SCORES_FILE" ]; then
   exit 1
 fi
 
-python3 "$VERIFIER_UTILS" check-reward "$SCORES_FILE"
+verifier_utils check-reward "$SCORES_FILE"

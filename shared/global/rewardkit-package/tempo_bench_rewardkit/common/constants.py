@@ -1,5 +1,5 @@
-# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/common/constants.py
-# BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+# Baked into the tempo-bench base image as part of the tempo-bench-rewardkit
+# package.
 import os
 from enum import IntEnum, StrEnum
 from pathlib import Path

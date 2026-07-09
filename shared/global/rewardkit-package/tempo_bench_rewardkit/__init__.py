@@ -1,5 +1,5 @@
-# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/__init__.py
-# BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+# Baked into the tempo-bench base image as part of the tempo-bench-rewardkit
+# package.
 from .criteria import (
     agent_token_efficiency,
     tempo_mcp_tool_used,

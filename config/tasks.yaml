@@ -2,6 +2,12 @@
 # base/docs/MCP variants, the per-profile task.toml/instruction/quality
 # edits, and the shared files synced into MPP tasks.
 
+# Shared base image for every task environment. It bakes in the RewardKit
+# venv (harbor-rewardkit, pympp[tempo], tempo-bench-rewardkit) and the Tempo
+# JS verifier; see shared/global/docker/base/Dockerfile. CI publishes it via
+# .github/workflows/build-base-image.yml; local runs build it automatically.
+base_image: ghcr.io/tempoxyz/tempo-bench-base:v1
+
 # Authored task templates under tasks/tempo/_templates/<slug>/. Each one
 # generates a -base, -docs, and -mcp task under tasks/tempo/.
 task_slugs:
@@ -118,7 +124,6 @@ profiles:
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.
   shared_files:
-    - path: environment/Dockerfile
     - path: solution/package.json
     - path: solution/solve.sh
       executable: true
@@ -130,9 +135,6 @@ mpp:
       executable: true
     - path: tests/quality/check.py
     - path: tests/quality/reward.toml
-    - path: tests/support/client_lib.py
-    - path: tests/support/oracle_paid_server.ts
-    - path: tests/support/verifier_utils.py
   # Task-local files that intentionally diverge from the shared MPP defaults.
   # Sync leaves these alone; the tracked task-local copy is the source of truth.
   task_local_overrides:

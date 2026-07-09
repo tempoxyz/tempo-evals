@@ -1,7 +1,0 @@
-{
-  "private": true,
-  "type": "commonjs",
-  "dependencies": {
-    "@tempo-bench/verifier": "file:./tempo-bench-verifier"
-  }
-}
