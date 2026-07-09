@@ -18,5 +18,3 @@ register_token_efficiency_check(
         ],
     )
 )
-
-rk.tempo_mcp_tool_used("tempo")

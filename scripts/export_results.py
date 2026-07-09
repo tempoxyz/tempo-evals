@@ -13,7 +13,7 @@ import pandas as pd
 JsonObject = dict[str, Any]
 Numeric = float | int | str
 
-PROFILES = ("base", "docs", "mcp")
+MCP_PROFILE_SUFFIX = "-mcp"
 
 TRIAL_COLUMNS = [
     "run_id",
@@ -42,7 +42,7 @@ TRIAL_COLUMNS = [
     "cost_usd",
     "task_checksum",
     "git_sha",
-    "docs_lock_sha",
+    "docs_source",
     "result_path",
 ]
 
@@ -87,8 +87,9 @@ def command_output(command: str, args: list[str]) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def docs_lock_sha() -> str:
-    return str((read_json(Path("config/tempo-docs.lock.json")) or {}).get("sha", ""))
+def default_docs_source() -> str:
+    sha = (read_json(Path("config/tempo-docs.lock.json")) or {}).get("sha")
+    return str(sha) if sha else "public"
 
 
 def default_run_id(job_dir: Path, metadata: JsonObject) -> str:
@@ -106,13 +107,15 @@ def default_out_dir(job_dir: Path) -> Path:
 
 
 def build_context(job_dir: Path, run_id: str, metadata: JsonObject) -> JsonObject:
-    docs_lock = as_object(metadata.get("docs_lock"))
+    source = metadata.get("docs_source")
     return {
         "run_id": run_id,
         "job_name": job_dir.name,
         "git_sha": metadata.get("git_sha")
         or command_output("git", ["rev-parse", "HEAD"]),
-        "docs_lock_sha": docs_lock.get("sha") or docs_lock_sha(),
+        "docs_source": source
+        if isinstance(source, str) and source
+        else default_docs_source(),
     }
 
 
@@ -125,10 +128,10 @@ def result_files(root: Path) -> list[Path]:
 
 
 def parse_task_name(task_name: str) -> dict[str, str]:
-    for profile in PROFILES:
-        suffix = f"-{profile}"
-        if task_name.endswith(suffix):
-            return {"task_family": task_name[: -len(suffix)], "profile": profile}
+    if task_name.endswith(MCP_PROFILE_SUFFIX):
+        return {"task_family": task_name[: -len(MCP_PROFILE_SUFFIX)], "profile": "mcp"}
+    if task_name.startswith("tempo/"):
+        return {"task_family": task_name, "profile": "docs"}
     return {"task_family": task_name, "profile": "unknown"}
 
 
@@ -267,7 +270,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "cost_usd": tokens["cost"],
         "task_checksum": as_string(result.get("task_checksum")),
         "git_sha": context["git_sha"],
-        "docs_lock_sha": context["docs_lock_sha"],
+        "docs_source": context["docs_source"],
         "result_path": str(file_path),
         "rewards": rewards,
     }

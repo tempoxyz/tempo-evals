@@ -22,7 +22,3 @@ agents:
 - name: oracle
 datasets:
 - path: tasks/tempo-v1
-  task_names:
-  - '*-base'
-  - '*-docs'
-  - '*-mcp'

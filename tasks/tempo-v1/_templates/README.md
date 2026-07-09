@@ -1,8 +1,8 @@
 # Tempo task templates
 
 Authored templates for the Tempo Harbor tasks. Each `tasks/tempo-v1/_templates/<slug>/`
-directory generates three tasks under `tasks/tempo-v1/`: `<slug>-base`,
-`<slug>-docs`, and `<slug>-mcp`. `npm run sync` regenerates that output from
+directory generates two tasks under `tasks/tempo-v1/`: `<slug>` and
+`<slug>-mcp`. `npm run sync` regenerates that output from
 scratch; never edit generated profile task directories by hand.
 
 A template task contains only the authored files:

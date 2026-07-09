@@ -16,9 +16,13 @@ Build a minimal TypeScript project that sends a Tempo stablecoin payment with a 
 | Token decimals | `TEMPO_DECIMALS` | `6` |
 | Transfer memo | `TEMPO_MEMO` | `TEMPO-EVAL-001` |
 
-## Tempo Access Profile
+## Tempo Documentation
 
-The official Tempo MCP server is configured as `tempo`. Use it if your agent runtime exposes MCP tools; do not use WebSearch, WebFetch, or public RPC endpoints.
+Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
+
+## Tempo MCP
+
+The official Tempo MCP server is configured as `tempo` and is available in addition to the documentation.
 
 ## Execution Constraints
 

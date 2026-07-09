@@ -70,7 +70,7 @@ class ExportResultsTest(unittest.TestCase):
                 {
                     "run_id": "run-1",
                     "git_sha": "abc123",
-                    "docs_lock": {"sha": "docs123"},
+                    "docs_source": "docs123",
                 },
             )
             write_json(
@@ -91,7 +91,7 @@ class ExportResultsTest(unittest.TestCase):
                 trial(
                     {
                         "trial_name": "trial-c",
-                        "task_name": "set-fee-token-base",
+                        "task_name": "tempo/set-fee-token",
                         "agent_info": {
                             "name": "claude-code",
                             "model_info": {"name": "other-model"},
@@ -112,7 +112,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(result["trials"][0]["attempt_index"], 1)
             self.assertEqual(result["trials"][1]["attempt_index"], 2)
             self.assertEqual(result["trials"][0]["git_sha"], "abc123")
-            self.assertEqual(result["trials"][0]["docs_lock_sha"], "docs123")
+            self.assertEqual(result["trials"][0]["docs_source"], "docs123")
             self.assertEqual(result["trials"][0]["duration_sec"], 60)
             self.assertEqual(result["trials"][0]["agent_execution_duration_sec"], 30)
 
