@@ -9,11 +9,18 @@ import shutil
 import subprocess
 import sys
 from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 import jinja2
 import yaml
+
+
+class BenchmarkKey(StrEnum):
+    TEMPO = "tempo"
+    MPP = "mpp"
+
 
 # All run variant data (job specs, prefixes, auth flags, Daytona runner
 # settings) lives in config/variants.yaml. `npm run sync` compiles each
@@ -21,6 +28,12 @@ import yaml
 # files.
 RUN_CONFIG: dict[str, Any] = yaml.safe_load(Path("config/variants.yaml").read_text())
 VARIANTS: dict[str, dict[str, Any]] = RUN_CONFIG["variants"]
+RAW_BENCHMARKS: dict[str, dict[str, Any]] = yaml.safe_load(
+    Path("config/benchmarks.yaml").read_text()
+)["benchmarks"]
+BENCHMARKS: dict[BenchmarkKey, dict[str, Any]] = {
+    key: RAW_BENCHMARKS[key.value] for key in BenchmarkKey
+}
 
 
 def usage() -> None:
@@ -63,7 +76,7 @@ Options:
                           (default: tempo; use all explicitly for full matrix)
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
-                          (default: tasks/tempo)
+                          (default: tasks/tempo-v1)
   --no-force-build        Ask Harbor to reuse Docker environment builds
   --no-delete             Keep Harbor environments after the run for debugging
   --disable-verification  Skip verifier execution
@@ -219,7 +232,7 @@ def preflight_production_agents(model_config: dict[str, Any]) -> None:
 
 
 def task_path(options: dict[str, Any]) -> str:
-    return options.get("tasks") or "tasks/tempo"
+    return options.get("tasks") or "tasks/tempo-v1"
 
 
 def sync_generated() -> None:
@@ -326,6 +339,26 @@ def write_production_metadata(run_id: str, metadata: dict[str, Any]) -> None:
     (run_root / "metadata.json").write_text(f"{json.dumps(metadata, indent=2)}\n")
 
 
+def benchmark_key(value: str | BenchmarkKey | None) -> BenchmarkKey:
+    return BenchmarkKey(value or BenchmarkKey.TEMPO)
+
+
+def benchmark_provenance(task_suite: str | None) -> list[dict[str, str]]:
+    keys = (
+        (BenchmarkKey.TEMPO, BenchmarkKey.MPP)
+        if task_suite == "all"
+        else (benchmark_key(task_suite),)
+    )
+    return [
+        {"id": BENCHMARKS[key]["id"], "dataset": BENCHMARKS[key]["dataset"]}
+        for key in keys
+    ]
+
+
+def run_benchmark_key(variant: dict[str, Any], task_suite: str | None) -> BenchmarkKey:
+    return benchmark_key(task_suite or variant.get("benchmark"))
+
+
 def dump_yaml(value: dict[str, Any]) -> str:
     return yaml.safe_dump(value, sort_keys=False, default_flow_style=False)
 
@@ -357,7 +390,9 @@ def compile_job_configs() -> None:
             continue
         path = compiled_config_path(variant_name)
         expected.add(path.name)
-        config = render_job_config(variant["job"])
+        config = render_job_config(
+            variant["job"], benchmark=benchmark_key(variant.get("benchmark"))
+        )
         path.write_text(f"{GENERATED_CONFIG_HEADER}{dump_yaml(config)}")
     for entry in GENERATED_CONFIG_DIR.glob("job.*.yaml"):
         if entry.name not in expected:
@@ -372,7 +407,13 @@ def load_compiled_config(variant_name: str) -> dict[str, Any]:
     return read_yaml(path)
 
 
-def render_job_config(job: dict[str, Any]) -> dict[str, Any]:
+def versioned_name(benchmark: BenchmarkKey, suffix: str) -> str:
+    return f"{BENCHMARKS[benchmark]['id']}-{suffix}"
+
+
+def render_job_config(
+    job: dict[str, Any], benchmark: BenchmarkKey = BenchmarkKey.TEMPO
+) -> dict[str, Any]:
     environment = jinja2.Environment(
         loader=jinja2.FileSystemLoader("config"),
         undefined=jinja2.StrictUndefined,
@@ -381,7 +422,7 @@ def render_job_config(job: dict[str, Any]) -> dict[str, Any]:
         keep_trailing_newline=True,
     )
     rendered = environment.get_template("job.yaml.j2").render(
-        job_name=job["job_name"],
+        job_name=versioned_name(benchmark, job["job_name"]),
         jobs_dir=job.get("jobs_dir", "jobs"),
         n_attempts=job["n_attempts"],
         n_concurrent_trials=job["n_concurrent_trials"],
@@ -458,6 +499,7 @@ def run_production_variant(
             }
             for model in model_config["models"]
         ],
+        "benchmarks": benchmark_provenance(options.get("task_suite")),
         "task_suite": options.get("task_suite") or "tempo",
         "task_filter": options.get("task_filter"),
         "n_attempts": job["n_attempts"],
@@ -532,7 +574,7 @@ def apply_task_filter(
         else [task_filter]
     )
     for dataset in config.get("datasets", []):
-        if dataset.get("path") in {"tasks", "tasks/tempo"}:
+        if dataset.get("path") in {"tasks", "tasks/tempo-v1"}:
             dataset["task_names"] = filters
             config["datasets"] = [dataset]
             return config
@@ -562,8 +604,8 @@ def apply_model_override(
 def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
     path_map = {
         "tasks/mpp": str(staging_root / "tasks" / "mpp"),
-        "tasks/tempo": str(staging_root / "tasks" / "tempo"),
-        "tasks": str(staging_root / "tasks" / "tempo"),
+        "tasks/tempo-v1": str(staging_root / "tasks" / "tempo-v1"),
+        "tasks": str(staging_root / "tasks" / "tempo-v1"),
     }
     changed = False
     for dataset in config.get("datasets", []):
@@ -603,8 +645,8 @@ def stage_daytona_config(
     options: dict[str, Any],
 ) -> str:
     staging_root = Path(".cache") / "harbor-daytona" / run_id
-    source_tasks = Path("tasks/tempo")
-    staged_tasks = staging_root / "tasks" / "tempo"
+    source_tasks = Path("tasks/tempo-v1")
+    staged_tasks = staging_root / "tasks" / "tempo-v1"
     source_mpp_tasks = Path("tasks/mpp")
     staged_mpp_tasks = staging_root / "tasks" / "mpp"
     staged_config = staging_root / "job.yaml"
@@ -694,7 +736,10 @@ def main(argv: list[str]) -> None:
         build_base_image()
     docs_bundle = ensure_docs_bundle()
 
-    run_id = options.get("job_name") or f"{variant['prefix']}-{timestamp()}"
+    benchmark = run_benchmark_key(variant, options.get("task_suite"))
+    run_id = options.get("job_name") or (
+        f"{versioned_name(benchmark, variant['prefix'])}-{timestamp()}"
+    )
     args = ["run", "harbor", "run"]
     if variant.get("production"):
         run_production_variant(run_id, options, docs_bundle)
@@ -709,7 +754,10 @@ def main(argv: list[str]) -> None:
         args.extend(["-c", config])
     else:
         args.extend(
-            ["--path", options.get("tasks") or variant.get("path") or "tasks/tempo"]
+            [
+                "--path",
+                options.get("tasks") or variant.get("path") or "tasks/tempo-v1",
+            ]
         )
         args.extend(
             [

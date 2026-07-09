@@ -14,7 +14,7 @@ daytona:
 # Dataset scopes for explicit benchmark entrypoints. Commands default to Tempo;
 # use --task-suite all to include every task family.
 tempo_only_datasets: &tempo_only_datasets
-  - path: tasks/tempo
+  - path: tasks/tempo-v1
     task_names: ["*-base", "*-docs", "*-mcp"]
 mpp_only_datasets: &mpp_only_datasets
   - path: tasks/mpp
@@ -40,82 +40,91 @@ defaults:
 
 variants:
   local-oracle:
-    prefix: tempo-bench-oracle-local
+    benchmark: tempo
+    prefix: oracle-local
     job:
       <<: *local_job
-      job_name: tempo-bench-local
+      job_name: local
       datasets: *tempo_only_datasets
       agents:
         - *oracle_agent
   local-oracle-dev:
-    prefix: tempo-bench-oracle-dev-local
+    benchmark: tempo
+    prefix: oracle-dev-local
     job:
       <<: *local_job
-      job_name: tempo-bench-local-dev
+      job_name: local-dev
       n_concurrent_trials: 1
       force_build: false
       datasets: *tempo_only_datasets
       agents:
         - *oracle_agent
   local-agent:
-    prefix: tempo-bench-agents-local
+    benchmark: tempo
+    prefix: agents-local
     needs_agent_auth: true
     job:
       <<: *local_job
-      job_name: tempo-bench-agents-local
+      job_name: agents-local
       n_attempts: 3
       datasets: *tempo_only_datasets
       agents:
         - *claude_agent
   local-agent-dev:
-    prefix: tempo-bench-agents-dev-local
+    benchmark: tempo
+    prefix: agents-dev-local
     needs_agent_auth: true
     job:
       <<: *local_job
-      job_name: tempo-bench-agents-dev-local
+      job_name: agents-dev-local
       datasets: *tempo_only_datasets
       agents:
         - *claude_agent
   model:
-    prefix: tempo-bench-model-local
-    path: tasks/tempo
+    benchmark: tempo
+    prefix: model-local
+    path: tasks/tempo-v1
     default_agent: claude-code
     default_model: haiku
     needs_agent_auth: true
   daytona-oracle:
-    prefix: tempo-bench-oracle-daytona
+    benchmark: tempo
+    prefix: oracle-daytona
     needs_daytona_auth: true
     job:
       <<: *daytona_job
-      job_name: tempo-bench-oracle-daytona
+      job_name: oracle-daytona
       datasets: *tempo_only_datasets
       agents:
         - *oracle_agent
   daytona-agent:
-    prefix: tempo-bench-agents-daytona
+    benchmark: tempo
+    prefix: agents-daytona
     needs_agent_auth: true
     needs_daytona_auth: true
     job:
       <<: *daytona_job
-      job_name: tempo-bench-agents-daytona-local
+      job_name: agents-daytona-local
       n_attempts: 3
       datasets: *tempo_only_datasets
       agents:
         - <<: *claude_agent
           n_concurrent: 32
   daytona-agent-dev:
-    prefix: tempo-bench-agents-daytona-dev
+    benchmark: tempo
+    prefix: agents-daytona-dev
     needs_agent_auth: true
     needs_daytona_auth: true
     job:
       <<: *daytona_job
-      job_name: tempo-bench-agents-daytona-dev-local
+      job_name: agents-daytona-dev-local
       datasets: *tempo_only_datasets
       agents:
         - <<: *claude_agent
           n_concurrent: 32
   production-daytona:
-    prefix: tempo-bench-production
+    benchmark: tempo
+    prefix: production
     needs_agent_auth: true
     needs_daytona_auth: true
     production: true

@@ -3,7 +3,13 @@ from __future__ import annotations
 import unittest
 from typing import Any
 
-from scripts.run_benchmark import finalize_config
+from scripts.run_benchmark import (
+    BenchmarkKey,
+    benchmark_provenance,
+    finalize_config,
+    run_benchmark_key,
+    versioned_name,
+)
 
 
 def base_config() -> dict[str, Any]:
@@ -18,7 +24,7 @@ class RunBenchmarkTest(unittest.TestCase):
             config["datasets"],
             [
                 {
-                    "path": "tasks/tempo",
+                    "path": "tasks/tempo-v1",
                     "task_names": ["*-base", "*-docs", "*-mcp"],
                 }
             ],
@@ -39,11 +45,26 @@ class RunBenchmarkTest(unittest.TestCase):
             config["datasets"],
             [
                 {
-                    "path": "tasks/tempo",
+                    "path": "tasks/tempo-v1",
                     "task_names": ["*-base", "*-docs", "*-mcp"],
                 },
                 {"path": "tasks/mpp", "task_names": ["server-*"]},
             ],
+        )
+
+    def test_benchmark_provenance_uses_versioned_dataset_identity(self) -> None:
+        self.assertEqual(
+            benchmark_provenance("tempo"),
+            [{"id": "tempo-bench-v1", "dataset": "tempo/tempo-bench-v1"}],
+        )
+
+    def test_run_names_resolve_from_catalog(self) -> None:
+        self.assertEqual(
+            versioned_name(BenchmarkKey.TEMPO, "oracle-local"),
+            "tempo-bench-v1-oracle-local",
+        )
+        self.assertEqual(
+            run_benchmark_key({"benchmark": "tempo"}, "mpp"), BenchmarkKey.MPP
         )
 
 
