@@ -1,6 +1,6 @@
 # Tempo Faucet Funded Transfer
 
-Build a minimal TypeScript project that funds a wallet with Tempo's faucet, then sends an AlphaUSD transfer from that funded wallet.
+Build a minimal TypeScript project that funds a sender wallet with Tempo's faucet, then sends an AlphaUSD transfer from that funded wallet.
 
 ## Parameters
 
@@ -11,7 +11,7 @@ Build a minimal TypeScript project that funds a wallet with Tempo's faucet, then
 | Recipient address | `TEMPO_RECIPIENT` | `0x1111111111111111111111111111111111111111` |
 | Transfer amount | `TEMPO_AMOUNT` | `0.23` |
 | Token decimals | `TEMPO_DECIMALS` | `6` |
-| Faucet wallet private key | `TEMPO_FAUCET_PRIVATE_KEY` | provided |
+| Sender wallet private key (fund this wallet via the faucet) | `TEMPO_FAUCET_PRIVATE_KEY` | provided |
 
 <!-- tempobench_sync -->
 

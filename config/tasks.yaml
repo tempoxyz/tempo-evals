@@ -2,6 +2,12 @@
 # base/docs/MCP variants, the per-profile task.toml/instruction/quality
 # edits, and the shared files synced into MPP tasks.
 
+# Shared base image for every task environment. It bakes in the RewardKit
+# venv (harbor-rewardkit, pympp[tempo], tempo-bench-rewardkit) and the Tempo
+# JS verifier; see shared/global/docker/base/Dockerfile. CI publishes it via
+# .github/workflows/build-base-image.yml; local runs build it automatically.
+base_image: ghcr.io/tempoxyz/tempo-bench-base:v1
+
 # Authored task templates under tasks/tempo/_templates/<slug>/. Each one
 # generates a -base, -docs, and -mcp task under tasks/tempo/.
 task_slugs:
@@ -45,7 +51,9 @@ case_fixtures:
     TEMPO_BENCH_CASE: "set-fee-token"
     TEMPO_AMOUNT: "0.01"
     TEMPO_MEMO: "TEMPO-FEE-TOKEN"
-    TEMPO_FEE_TOKEN: "0x20c0000000000000000000000000000000000001"
+    # Dev genesis pre-sets the payer's fee token to AlphaUSD (0x...0001), so the
+    # task must target a different token for setUserToken to emit UserTokenSet.
+    TEMPO_FEE_TOKEN: "0x20c0000000000000000000000000000000000002"
   create-stablecoin-with-policy:
     TEMPO_BENCH_CASE: "create-stablecoin-with-policy"
     TEMPO_AMOUNT: "0.01"
@@ -53,7 +61,6 @@ case_fixtures:
     TEMPO_STABLECOIN_NAME: "Tempo Bench Policy USD"
     TEMPO_STABLECOIN_SYMBOL: "TBPUSD"
     TEMPO_STABLECOIN_CURRENCY: "USD"
-    TEMPO_STABLECOIN_SALT: "0x0000000000000000000000000000000000000000000000000000000000000b01"
     TEMPO_POLICY_TYPE: "blacklist"
     TEMPO_POLICY_ACCOUNT: "0x1111111111111111111111111111111111111111"
   faucet-funded-transfer:
@@ -118,7 +125,6 @@ profiles:
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.
   shared_files:
-    - path: environment/Dockerfile
     - path: solution/package.json
     - path: solution/solve.sh
       executable: true
@@ -130,9 +136,6 @@ mpp:
       executable: true
     - path: tests/quality/check.py
     - path: tests/quality/reward.toml
-    - path: tests/support/client_lib.py
-    - path: tests/support/oracle_paid_server.ts
-    - path: tests/support/verifier_utils.py
   # Task-local files that intentionally diverge from the shared MPP defaults.
   # Sync leaves these alone; the tracked task-local copy is the source of truth.
   task_local_overrides:

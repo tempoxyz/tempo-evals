@@ -2,7 +2,7 @@
 
 # Tempo Transfer With Memo And Fee Payer
 
-Build a minimal TypeScript project that sends a Tempo stablecoin payment with a 32-byte memo and a separate fee payer.
+Build a minimal TypeScript project that sends a Tempo stablecoin payment with a memo and a separate fee payer.
 
 ## Parameters
 

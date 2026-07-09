@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:7c7d7c8ba263c242a4eaf884b78cf377247cacb67dda2be31c5f3ba8095f462b"
+digest = "sha256:d1a598e5470b472a2d49e92f415fe3a8993bb27c82646c7c28ca797274224983"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:36cad62b2ab4001902232cb5dca9539f860673cfffd526995d71cd54d7dc47ab"
+digest = "sha256:64896bbeb193548c908889093c27e91a4fc1a5505d0f22919824ba82e886e86b"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:a774fda559da55035d278238d405b5896f5490cbf7c0a93d9ff5b520e2ce1770"
+digest = "sha256:f9f1a112a07d7fc8ab3ef3e392626816b795083394ad53e52ea4bbcc7f6402aa"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:ccee65846b1d32e2edd17ff1422741076992bf5fb8e04e56938c93c127a87168"
+digest = "sha256:c2cd47878a7c0eb28411857fb19bd4e73f9f679082de381af1edf008dbd7406b"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:ee0f92fbed592ea962535dfdcf06c466ff92d52158bc4714a570a056ed36ef71"
+digest = "sha256:aab28af933d06b052b862f0a72149697fc2457d9cf2a785c983919426786fc5b"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:ba6f228c4cf5dc27fd7696da3cc768ffbac1120024be66c2a1dcc06246089171"
+digest = "sha256:0ddeb1cfc96e810661c12916c0ca9751bf52cd1df53050fe47922bf703ddedc2"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:5fc4c59589c77f1697d996fa4efd6c7b8a501edf006e70e5721fcec5660f2aa4"
+digest = "sha256:473e1f816e4efb8cb35db756d9f7046f066b187dfa49408f3f2297e48513a3bf"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:26cf63fd5dc4910dec2627bf80a511772e74b85f486ad5db3b3edd785991a77d"
+digest = "sha256:5527deb3a39e627a3433ef4857c26233550b17538c099b381b42f1bc57de813d"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:8e66ccaf883cdf4483586781d39ba2e168f8f81b84de8b73d5b98ce8d9899728"
+digest = "sha256:2cddc6ff69b88a493b4472b5e77dd5f2b840cd10af0b53e927a4063e6c75616e"
 

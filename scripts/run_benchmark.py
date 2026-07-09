@@ -40,6 +40,7 @@ Variants:
   production-daytona Production Daytona run over configured models
   sync               Sync generated task assets and compiled job configs
   dataset            Sync generated task assets and Harbor dataset digests
+  build-base         Build the shared task base image locally
   check-dataset      Verify dataset digests are fresh
   check-generated    Verify sync leaves no generated diff
   clean-jobs         Remove local Harbor job outputs
@@ -224,6 +225,27 @@ def task_path(options: dict[str, Any]) -> str:
 def sync_generated() -> None:
     run_python("scripts/sync_shared.py")
     compile_job_configs()
+
+
+def base_image_ref() -> str:
+    return str(read_yaml("config/tasks.yaml")["base_image"])
+
+
+def build_base_image() -> None:
+    """Build the shared task base image locally so task Dockerfiles can
+    resolve their FROM without pulling. Docker layer caching makes repeat
+    builds cheap. Daytona runs pull the published image instead."""
+    run(
+        "docker",
+        [
+            "build",
+            "-t",
+            base_image_ref(),
+            "-f",
+            "shared/global/docker/base/Dockerfile",
+            ".",
+        ],
+    )
 
 
 def sync_dataset(options: dict[str, Any]) -> None:
@@ -635,6 +657,9 @@ def main(argv: list[str]) -> None:
     if variant_name == "dataset":
         sync_dataset(options)
         return
+    if variant_name == "build-base":
+        build_base_image()
+        return
     if variant_name == "check-dataset":
         sync_dataset(options)
         run("git", ["diff", "--exit-code", f"{task_path(options)}/dataset.toml"])
@@ -665,6 +690,8 @@ def main(argv: list[str]) -> None:
     preflight(variant, options)
     if options.get("sync"):
         sync_dataset(options)
+    if not variant.get("needs_daytona_auth"):
+        build_base_image()
     docs_bundle = ensure_docs_bundle()
 
     run_id = options.get("job_name") or f"{variant['prefix']}-{timestamp()}"

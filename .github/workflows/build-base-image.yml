@@ -1,0 +1,41 @@
+name: Build base image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - shared/global/docker/base/**
+      - shared/global/rewardkit-package/**
+      - shared/tempo/verifier/**
+      - config/tasks.yaml
+      - .github/workflows/build-base-image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read pinned base image ref
+        id: image
+        run: |
+          ref=$(sed -nE 's/^[[:space:]]*base_image:[[:space:]]*([^[:space:]#]+).*/\1/p' config/tasks.yaml)
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        run: |
+          docker build -t "${{ steps.image.outputs.ref }}" \
+            -f shared/global/docker/base/Dockerfile .
+          docker push "${{ steps.image.outputs.ref }}"

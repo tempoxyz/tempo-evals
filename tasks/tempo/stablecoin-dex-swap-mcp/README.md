@@ -4,11 +4,10 @@
 
 ## Overview
 
-This task challenges agents to prepare liquidity and execute a swap through
-Tempo's Stablecoin DEX.
+This task challenges agents to execute a swap through Tempo's Stablecoin DEX
+against liquidity that is already seeded on the localnet.
 
 ## What the Task Tests
 
-- DEX liquidity preparation
 - Token approval flow
 - Stablecoin DEX swap execution
