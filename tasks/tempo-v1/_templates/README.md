@@ -23,8 +23,6 @@ A template task contains only the authored files:
 - `tests/correctness/criteria.py` — task-specific RewardKit criteria.
 - `solution/` — the oracle solution used for sanity checks. A normal minimal
   TypeScript app; `solve.sh` only copies the files into `/app`.
-- `README.md` — the concise Harbor Hub summary copied into each generated
-  profile task.
 
 Tempo correctness criteria should require `viem/tempo` `Actions.*` APIs and
 reject non-Tempo blockchain SDKs such as Solana, Sui, `ethers`, and `web3`.

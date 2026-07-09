@@ -2,7 +2,7 @@
 
 # Tempo Set Fee Token
 
-Build a minimal TypeScript project that sets the account's default Tempo fee token to BetaUSD.
+Build a minimal TypeScript project that sets the account's default Tempo fee token to AlphaUSD.
 
 ## Parameters
 
@@ -10,7 +10,7 @@ Build a minimal TypeScript project that sets the account's default Tempo fee tok
 | --- | --- | --- |
 | RPC URL | `TEMPO_RPC_URL` | `http://tempo-localnet:8545` |
 | Payer private key | `TEMPO_PAYER_PRIVATE_KEY` | provided |
-| Fee token to set | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000002` |
+| Fee token to set | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 
 ## Tempo Documentation
 
