@@ -28,8 +28,11 @@ def read_lock() -> dict[str, Any]:
     if lock.get("schemaVersion") != 1:
         msg = f"Unsupported docs lock schema: {lock.get('schemaVersion')}"
         raise RuntimeError(msg)
-    if not lock.get("repo") or not lock.get("sha"):
-        msg = "Docs lock must include repo and sha"
+    if not isinstance(lock.get("repo"), str) or not lock["repo"]:
+        msg = "Docs lock must include repo"
+        raise RuntimeError(msg)
+    if lock.get("sha") is not None and not isinstance(lock["sha"], str):
+        msg = "Docs lock sha must be a string or null"
         raise RuntimeError(msg)
     return lock
 
@@ -355,9 +358,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--sha", help="Docs repository commit SHA to prepare")
     args = parser.parse_args()
 
-    lock = read_lock()
+    configured_lock = read_lock()
+    if not args.sha and not configured_lock.get("sha"):
+        print("No docs SHA selected; public docs mode does not need a local bundle.")
+        return
+    lock = {**configured_lock, "sha": args.sha or configured_lock["sha"]}
     if args.check:
         if not is_prepared(lock):
             msg = "Pinned docs bundle is missing. Run: npm run docs:prepare"

@@ -1,8 +1,8 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/set-fee-token/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
+<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/transfer-with-memo-fee-payer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
 
-# Tempo Set Fee Token
+# Tempo Transfer With Memo And Fee Payer
 
-Build a minimal TypeScript project that sets the account's default Tempo fee token to BetaUSD.
+Build a minimal TypeScript project that sends a Tempo stablecoin payment with a memo and a separate fee payer.
 
 ## Parameters
 
@@ -10,15 +10,17 @@ Build a minimal TypeScript project that sets the account's default Tempo fee tok
 | --- | --- | --- |
 | RPC URL | `TEMPO_RPC_URL` | `http://tempo-localnet:8545` |
 | Payer private key | `TEMPO_PAYER_PRIVATE_KEY` | provided |
-| Fee token to set | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000002` |
+| Token address | `TEMPO_TOKEN` | `0x20c0000000000000000000000000000000000001` |
+| Recipient address | `TEMPO_RECIPIENT` | `0x1111111111111111111111111111111111111111` |
+| Transfer amount | `TEMPO_AMOUNT` | `0.19` |
+| Token decimals | `TEMPO_DECIMALS` | `6` |
+| Transfer memo | `TEMPO_MEMO` | `TEMPO-FEEPAYER-001` |
+| Fee payer private key | `TEMPO_FEE_PAYER_PRIVATE_KEY` | provided |
+| Fee token | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 
 ## Tempo Documentation
 
 Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
-
-## Tempo MCP
-
-The official Tempo MCP server is configured as `tempo` and is available in addition to the documentation.
 
 ## Execution Constraints
 

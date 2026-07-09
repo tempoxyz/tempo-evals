@@ -34,13 +34,13 @@ npm run bench:local:oracle -- --task-suite all
 Fast oracle loop for one task while editing:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
+npm run bench:local:one -- --task-filter tempo/transfer-with-memo
 ```
 
 Fast Tempo oracle loop:
 
 ```bash
-npm run bench:local:tempo -- --task-filter "*-base"
+npm run bench:local:tempo
 ```
 
 Fast MPP oracle loop:
@@ -170,7 +170,7 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 
 | Dataset | Path | Description |
 | ------- | ---- | ----------- |
-| `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo localnet integration tasks across base, docs, and MCP profiles |
+| `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo localnet integration tasks across docs and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
 
 Benchmark majors are immutable evaluation contracts: task set, prompts,
@@ -181,9 +181,8 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 
 ## Profiles
 
-* **Base**: prompt-only Tempo task, no docs sidecar or MCP server.
-* **Docs**: local docs sidecar at `TEMPO_DOCS_URL=http://tempo-docs:3000/developers`.
-* **MCP**: Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
+* **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) serves a pinned local docs bundle instead.
+* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
 
 ## CLI
 
@@ -233,7 +232,7 @@ npm run clean
 Use the dev oracle commands while iterating on one Tempo task:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
+npm run bench:local:one -- --task-filter tempo/transfer-with-memo
 ```
 
 Use `npm run bench:local:mpp` for the same fast loop over MPP tasks. Commands

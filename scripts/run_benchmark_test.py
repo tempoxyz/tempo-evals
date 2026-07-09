@@ -25,7 +25,6 @@ class RunBenchmarkTest(unittest.TestCase):
             [
                 {
                     "path": "tasks/tempo-v1",
-                    "task_names": ["*-base", "*-docs", "*-mcp"],
                 }
             ],
         )
@@ -46,7 +45,6 @@ class RunBenchmarkTest(unittest.TestCase):
             [
                 {
                     "path": "tasks/tempo-v1",
-                    "task_names": ["*-base", "*-docs", "*-mcp"],
                 },
                 {"path": "tasks/mpp", "task_names": ["server-*"]},
             ],

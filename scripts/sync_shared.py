@@ -2,8 +2,8 @@
 """Generate versioned Tempo tasks and sync shared MPP harness files.
 
 Authored Tempo task templates live in tasks/tempo-v1/_templates/<slug>/. Generated
-task directories under tasks/tempo-v1/ contain one -base, -docs, and -mcp variant
-per template. Never hand-edit generated tasks; edit the template and re-run
+task directories under tasks/tempo-v1/ contain one un-suffixed and one -mcp
+variant per template. Never hand-edit generated tasks; edit the template and re-run
 `npm run sync`.
 """
 
@@ -41,9 +41,8 @@ TEMPO_BENCHMARK = BENCHMARKS_CONFIG["tempo"]
 MPP_BENCHMARK = BENCHMARKS_CONFIG["mpp"]
 TASK_SLUGS: list[str] = TASKS_CONFIG["task_slugs"]
 BASE_IMAGE: str = TASKS_CONFIG["base_image"]
-BASE_PROFILE: dict[str, Any] = {"id": "base", "suffix": "-base", "label": "base"}
 GENERATED_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
-ALL_PROFILES: list[dict[str, Any]] = [BASE_PROFILE, *GENERATED_PROFILES]
+ALL_PROFILES: list[dict[str, Any]] = GENERATED_PROFILES
 QUALITY_ENV: dict[str, str] = TASKS_CONFIG["quality_env"]
 FIXTURE_ENV: dict[str, str] = TASKS_CONFIG["fixture_env"]
 CASE_FIXTURES: dict[str, dict[str, str]] = TASKS_CONFIG["case_fixtures"]
@@ -185,12 +184,11 @@ def render_task_toml(task_dir: Path, slug: str, profile: dict[str, Any]) -> None
 
     task = doc["task"]
     task["name"] = f"tempo/{slug}{profile['suffix']}"
-    if profile["id"] != BASE_PROFILE["id"]:
-        description = str(task.get("description", task["name"]))
-        task["description"] = f"{description} ({profile['label']} profile)."
-        keywords = task.get("keywords")
-        if keywords is not None and profile["id"] not in keywords:
-            keywords.append(profile["id"])
+    description = str(task.get("description", task["name"]))
+    task["description"] = f"{description} ({profile['label']} profile)."
+    keywords = task.get("keywords")
+    if keywords is not None and profile["id"] not in keywords:
+        keywords.append(profile["id"])
 
     if "metadata" in doc:
         doc["metadata"]["profile"] = profile["id"]
@@ -273,27 +271,17 @@ def link_file(source: Path, destination: Path) -> None:
     destination.symlink_to(relative_symlink_target(destination, source))
 
 
-def sync_environment(task_dir: Path, profile: dict[str, Any]) -> None:
+def sync_environment(task_dir: Path, _profile: dict[str, Any]) -> None:
     write_file(task_dir / "environment" / "Dockerfile", TASK_DOCKERFILE)
     link_dir(
         TEMPO_SHARED_DIR / "docker" / "tempo-localnet",
         task_dir / "environment" / "tempo-localnet",
     )
 
-    if profile["id"] == "docs":
-        link_file(
-            TEMPO_SHARED_DIR / "docker" / "compose" / "tempo-localnet-docs.yaml",
-            task_dir / "environment" / "docker-compose.yaml",
-        )
-        link_dir(
-            TEMPO_SHARED_DIR / "docs" / "tempo-docs",
-            task_dir / "environment" / "tempo-docs",
-        )
-    else:
-        link_file(
-            TEMPO_SHARED_DIR / "docker" / "compose" / "tempo-localnet.yaml",
-            task_dir / "environment" / "docker-compose.yaml",
-        )
+    link_file(
+        TEMPO_SHARED_DIR / "docker" / "compose" / "tempo-localnet.yaml",
+        task_dir / "environment" / "docker-compose.yaml",
+    )
 
     assert_compose_build_contexts(task_dir)
 

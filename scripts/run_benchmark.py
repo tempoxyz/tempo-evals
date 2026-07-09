@@ -5,6 +5,7 @@ import argparse
 import copy
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import jinja2
+import tomlkit
 import yaml
 
 
@@ -77,6 +79,7 @@ Options:
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
                           (default: tasks/tempo-v1)
+  --docs-sha SHA          Serve docs pinned to this SHA instead of public docs
   --no-force-build        Ask Harbor to reuse Docker environment builds
   --no-delete             Keep Harbor environments after the run for debugging
   --disable-verification  Skip verifier execution
@@ -120,6 +123,7 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
         "--n-tasks", type=lambda value: read_positive_integer(value, "--n-tasks")
     )
     parser.add_argument("--tasks")
+    parser.add_argument("--docs-sha")
     parser.add_argument("--no-sync", action="store_false", dest="sync", default=True)
     parser.add_argument("--no-force-build", action="store_true")
     parser.add_argument("--no-delete", action="store_true")
@@ -179,23 +183,52 @@ def run_python(script: str, args: list[str] | None = None) -> None:
     run(sys.executable, [script, *(args or [])])
 
 
+DOCS_SHA_PATTERN = re.compile(r"[0-9a-fA-F]{7,40}")
+PUBLIC_DOCS_INSTRUCTION = (
+    "## Tempo Documentation\n\n"
+    "Tempo documentation is available publicly at https://docs.tempo.xyz. "
+    "Use it for Tempo-specific APIs and examples."
+)
+PINNED_DOCS_INSTRUCTION = (
+    "## Tempo Documentation\n\n"
+    "Tempo docs are available through the local docs service at `TEMPO_DOCS_URL` "
+    "(http://tempo-docs:3000/developers). Use those docs for Tempo-specific APIs "
+    "and examples. Do not use public Tempo docs, WebSearch, or WebFetch for Tempo "
+    "documentation."
+)
+
+
 def read_docs_lock() -> dict[str, Any]:
     lock_path = Path("config/tempo-docs.lock.json")
     lock = json.loads(lock_path.read_text())
-    if lock.get("schemaVersion") != 1 or not lock.get("repo") or not lock.get("sha"):
+    if (
+        lock.get("schemaVersion") != 1
+        or not isinstance(lock.get("repo"), str)
+        or not lock["repo"]
+    ):
         msg = f"Invalid Tempo docs lock: {lock_path}"
         raise RuntimeError(msg)
+    if lock.get("sha") is not None and not isinstance(lock["sha"], str):
+        raise RuntimeError(f"Invalid Tempo docs SHA in {lock_path}")
     return lock
 
 
-def docs_bundle_path() -> Path:
+def docs_source(options: dict[str, Any]) -> dict[str, str]:
     lock = read_docs_lock()
-    return Path(".cache") / "tempo-docs" / lock["sha"] / "public"
+    sha = options.get("docs_sha") or lock.get("sha")
+    if not sha:
+        return {"mode": "public"}
+    if not isinstance(sha, str) or not DOCS_SHA_PATTERN.fullmatch(sha):
+        raise RuntimeError(f"Invalid Tempo docs SHA: {sha!r}")
+    return {"mode": "pinned", "repo": lock["repo"], "sha": sha.lower()}
 
 
-def ensure_docs_bundle() -> str:
-    run_python("scripts/prepare_docs_bundle.py")
-    bundle_path = docs_bundle_path().resolve()
+def ensure_docs_bundle(source: dict[str, str]) -> str | None:
+    if source["mode"] == "public":
+        return None
+    run_python("scripts/prepare_docs_bundle.py", ["--sha", source["sha"]])
+    bundle_path = Path(".cache") / "tempo-docs" / source["sha"] / "public"
+    bundle_path = bundle_path.resolve()
     if not (bundle_path / "developers" / "llms.txt").exists():
         msg = f"Pinned Tempo docs bundle was not created at {bundle_path}"
         raise RuntimeError(msg)
@@ -471,7 +504,10 @@ def production_job(
 
 
 def run_production_variant(
-    run_id: str, options: dict[str, Any], docs_bundle: str
+    run_id: str,
+    options: dict[str, Any],
+    source: dict[str, str],
+    docs_bundle: str | None,
 ) -> None:
     models_config_path = options.get("models_config") or "config/models.production.yaml"
     model_config = parse_model_config(
@@ -505,7 +541,7 @@ def run_production_variant(
         "n_attempts": job["n_attempts"],
         "n_concurrent_trials": str(job["n_concurrent_trials"]),
         "max_retries": max_retries,
-        "docs_lock": read_docs_lock(),
+        "docs_source": source.get("sha", "public"),
         "docs_bundle": docs_bundle,
         "git_sha": run_output("git", ["rev-parse", "HEAD"]),
         "git_branch": run_output("git", ["branch", "--show-current"]),
@@ -628,6 +664,47 @@ def copy_tasks(source: Path, destination: Path) -> None:
     )
 
 
+def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
+    task_config_path = task_dir / "task.toml"
+    config = tomlkit.parse(task_config_path.read_text())
+    config["environment"]["env"]["TEMPO_DOCS_URL"] = "http://tempo-docs:3000/developers"
+    task_config_path.write_text(tomlkit.dumps(config))
+    instruction_path = task_dir / "instruction.md"
+    instruction = instruction_path.read_text()
+    if PUBLIC_DOCS_INSTRUCTION not in instruction:
+        raise RuntimeError(
+            f"Missing public docs instruction in staged task: {task_dir}"
+        )
+    instruction_path.write_text(
+        instruction.replace(PUBLIC_DOCS_INSTRUCTION, PINNED_DOCS_INSTRUCTION)
+    )
+    environment_dir = task_dir / "environment"
+    shutil.copyfile(
+        "shared/tempo/docker/compose/tempo-localnet-docs.yaml",
+        environment_dir / "docker-compose.yaml",
+    )
+    shutil.copytree(
+        "shared/tempo/docs/tempo-docs",
+        environment_dir / "tempo-docs",
+        dirs_exist_ok=True,
+    )
+    shutil.copytree(
+        docs_bundle, environment_dir / "tempo-docs-bundle", dirs_exist_ok=True
+    )
+
+
+def stage_task_datasets(staging_root: Path, docs_bundle: str | None) -> None:
+    staged_tasks = staging_root / "tasks" / "tempo-v1"
+    staged_tasks.parent.mkdir(parents=True, exist_ok=True)
+    copy_tasks(Path("tasks/tempo-v1"), staged_tasks)
+    if Path("tasks/mpp").exists():
+        copy_tasks(Path("tasks/mpp"), staging_root / "tasks" / "mpp")
+    if docs_bundle is not None:
+        for task_dir in staged_tasks.iterdir():
+            if task_dir.is_dir() and (task_dir / "task.toml").exists():
+                stage_pinned_docs_task(task_dir, docs_bundle)
+
+
 def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
     return apply_model_override(
         apply_task_filter(
@@ -641,35 +718,14 @@ def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str
 def stage_daytona_config(
     config: dict[str, Any],
     run_id: str,
-    docs_bundle: str,
+    docs_bundle: str | None,
     options: dict[str, Any],
 ) -> str:
     staging_root = Path(".cache") / "harbor-daytona" / run_id
-    source_tasks = Path("tasks/tempo-v1")
-    staged_tasks = staging_root / "tasks" / "tempo-v1"
-    source_mpp_tasks = Path("tasks/mpp")
-    staged_mpp_tasks = staging_root / "tasks" / "mpp"
     staged_config = staging_root / "job.yaml"
 
     shutil.rmtree(staging_root, ignore_errors=True)
-    staged_tasks.parent.mkdir(parents=True, exist_ok=True)
-    copy_tasks(source_tasks, staged_tasks)
-    if source_mpp_tasks.exists():
-        copy_tasks(source_mpp_tasks, staged_mpp_tasks)
-
-    for task_dir in staged_tasks.iterdir():
-        if not task_dir.is_dir():
-            continue
-        task_config_path = task_dir / "task.toml"
-        if not task_config_path.exists():
-            continue
-        if "TEMPO_DOCS_URL" not in task_config_path.read_text():
-            continue
-        shutil.copytree(
-            docs_bundle,
-            task_dir / "environment" / "tempo-docs-bundle",
-            dirs_exist_ok=True,
-        )
+    stage_task_datasets(staging_root, docs_bundle)
 
     config = finalize_config(config, options)
     redirect_dataset_paths(config, staging_root)
@@ -678,13 +734,20 @@ def stage_daytona_config(
 
 
 def stage_filtered_config(
-    config: dict[str, Any], run_id: str, options: dict[str, Any]
+    config: dict[str, Any],
+    run_id: str,
+    options: dict[str, Any],
+    docs_bundle: str | None,
 ) -> str:
     staging_root = Path(".cache") / "harbor-config" / run_id
     staged_config = staging_root / "job.yaml"
     shutil.rmtree(staging_root, ignore_errors=True)
     staging_root.mkdir(parents=True, exist_ok=True)
-    staged_config.write_text(dump_yaml(finalize_config(config, options)))
+    config = finalize_config(config, options)
+    if docs_bundle is not None:
+        stage_task_datasets(staging_root, docs_bundle)
+        redirect_dataset_paths(config, staging_root)
+    staged_config.write_text(dump_yaml(config))
     return str(staged_config)
 
 
@@ -728,13 +791,14 @@ def main(argv: list[str]) -> None:
         msg = f"Unknown variant: {variant_name}"
         raise RuntimeError(msg)
 
+    source = docs_source(options)
     load_env_file(options.get("env_file"))
     preflight(variant, options)
     if options.get("sync"):
         sync_dataset(options)
     if not variant.get("needs_daytona_auth"):
         build_base_image()
-    docs_bundle = ensure_docs_bundle()
+    docs_bundle = ensure_docs_bundle(source)
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))
     run_id = options.get("job_name") or (
@@ -742,14 +806,14 @@ def main(argv: list[str]) -> None:
     )
     args = ["run", "harbor", "run"]
     if variant.get("production"):
-        run_production_variant(run_id, options, docs_bundle)
+        run_production_variant(run_id, options, source, docs_bundle)
 
     if variant.get("job"):
         job_config = load_compiled_config(variant_name)
         config = (
             stage_daytona_config(job_config, run_id, docs_bundle, options)
             if variant.get("needs_daytona_auth")
-            else stage_filtered_config(job_config, run_id, options)
+            else stage_filtered_config(job_config, run_id, options, docs_bundle)
         )
         args.extend(["-c", config])
     else:
@@ -795,7 +859,7 @@ def main(argv: list[str]) -> None:
     if max_retries:
         args.extend(["--max-retries", max_retries])
     os.environ["TEMPO_DOCS_BUNDLE_PATH"] = (
-        "" if variant.get("needs_daytona_auth") else docs_bundle
+        "" if variant.get("needs_daytona_auth") or docs_bundle is None else docs_bundle
     )
     args.append("-y")
     run("uv", args)

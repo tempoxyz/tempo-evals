@@ -29,7 +29,3 @@ agents:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 datasets:
 - path: tasks/tempo-v1
-  task_names:
-  - '*-base'
-  - '*-docs'
-  - '*-mcp'
