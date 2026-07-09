@@ -12,10 +12,6 @@ Build a minimal TypeScript project that sets the account's default Tempo fee tok
 | Payer private key | `TEMPO_PAYER_PRIVATE_KEY` | provided |
 | Fee token to set | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000002` |
 
-## Tempo Documentation
-
-Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
-
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).

@@ -16,10 +16,6 @@ Build a minimal TypeScript project that sends a Tempo stablecoin payment with a 
 | Token decimals | `TEMPO_DECIMALS` | `6` |
 | Transfer memo | `TEMPO_MEMO` | `TEMPO-EVAL-001` |
 
-## Tempo Documentation
-
-Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
-
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
