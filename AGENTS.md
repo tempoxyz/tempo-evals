@@ -13,7 +13,7 @@ reproducible environment, independent verifier, oracle solution, and gradable ha
 1. **Dataset** — Harbor task collection.
 2. **Task** — `task.toml`, `instruction.md`, `environment/`, `tests/`, and
    `solution/`.
-3. **Profile** — Access mode for Tempo tasks: base, docs, or MCP.
+3. **Profile** — Access mode for Tempo tasks: docs or MCP.
 4. **Verifier** — Programmatic build/run/onchain/payment check. Writes binary
    Harbor reward.
 5. **RewardKit checks** — Diagnostic correctness/quality dimensions. Do not
@@ -52,7 +52,7 @@ npm run bench:daytona:agent      # Full Daytona agent run
 Single task:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo-base
+npm run bench:local:one -- --task-filter tempo/transfer-with-memo
 npm run bench:local:mpp -- --task-filter server-charge-pathusd
 npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
 ```
@@ -82,7 +82,7 @@ output, or cache output.
 Generated profile task directories in `tasks/tempo-v1/` are generated output; do
 not hand-edit them. Authored Tempo task templates live in
 `tasks/tempo-v1/_templates/<slug>/` (see `tasks/tempo-v1/_templates/README.md`).
-Each template generates `-base`, `-docs`, and `-mcp` variants via
+Each template generates a Docs variant (no suffix) and an `-mcp` variant via
 `npm run sync`.
 
 Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
@@ -116,7 +116,7 @@ executes it.
 All task environments build `FROM` one shared base image
 (`shared/global/docker/base/Dockerfile`, pinned as `base_image` in
 `config/tasks.yaml`). It bakes in the RewardKit venv (harbor-rewardkit,
-pympp, `shared/global/rewardkit-package/`) and the Tempo JS verifier
+pympp, `shared/global/rewardkit-lib/`) and the Tempo JS verifier
 (`shared/tempo/verifier/`). Local runs build it automatically (or run
 `npm run build-base`); CI publishes it to GHCR via
 `.github/workflows/build-base-image.yml`. After changing the base image

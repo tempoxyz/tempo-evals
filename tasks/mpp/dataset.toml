@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:f2c6e6921621e96d6dc02deb1381157dc1cb863540a4ce305fad5e2494c11416"
+digest = "sha256:17829b8e593b5ad5275ba74674e4f798ad190d2ae7bdf08ae74fab0d7b32c09d"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:36c8cc74ebd24120b24cab5f253e423cebbc9946dd9ea24b19818e392deb6c84"
+digest = "sha256:5817153e17deff1d452538f0bce54a4dd8ede02907f06b91b1b820da524e951a"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:1bf51a7fb1e3254fe400781fc4986ca59fa179b09dbefd93e7cf5cd783d57a2c"
+digest = "sha256:653027bef1cb9b38da509671fe7daf54a4be9b392d0246994774f68f3285214f"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:9166b29f929706232a39adca218faef693c409248ba2410b1c2645072c72bf31"
+digest = "sha256:bd0ce311edde13fad239be2f958cfdcb679da9e6f0015421786a876c9fab969f"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:ed50d81f16c105e24a0301795f296da8f8450946e372fc1555866589888247d8"
+digest = "sha256:50b91429772feb58cb0bdd887122df04f1d44bf030ce1f7589b13c176f1f37e9"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:226394f374a6b20f67759e66e9a9acd6542fc201425ff00a829f73fa17764fe5"
+digest = "sha256:3737d591cdf64bcc7e0a314c30e2d3cf9b1b9f94c47b6aed521bbd9e7a20546b"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:b4a8a9182df27a31e32686926cae216dcfe7ebff76bef795e3d77f3ff95dd3b3"
+digest = "sha256:a4abc85a416e2ef5e6bdde45c4caa5b640deea9e9f2b5eefa1febde2e764ffc2"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:be7a0b580afdfd3be6e2c6ac43f4f46965a8fcbc3be5a92b9d40d1c66dbee8fb"
+digest = "sha256:231a075e2e0bc8873fb40257e25cc4e0113d90f82c995f6d6102b6e6d7cf4621"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:0c7afd55a944dbc6f02ca1ce3fe4bd0b73027d90e821770f9586ba7b4982dc17"
+digest = "sha256:fbf916644df9e4a1d745d5f7a145fc39ac5c0c921c07525d8d6c7c2ada8be862"
 

@@ -51,9 +51,7 @@ case_fixtures:
     TEMPO_BENCH_CASE: "set-fee-token"
     TEMPO_AMOUNT: "0.01"
     TEMPO_MEMO: "TEMPO-FEE-TOKEN"
-    # Dev genesis pre-sets the payer's fee token to AlphaUSD (0x...0001), so the
-    # task must target a different token for setUserToken to emit UserTokenSet.
-    TEMPO_FEE_TOKEN: "0x20c0000000000000000000000000000000000002"
+    TEMPO_FEE_TOKEN: "0x20c0000000000000000000000000000000000001"
   create-stablecoin-with-policy:
     TEMPO_BENCH_CASE: "create-stablecoin-with-policy"
     TEMPO_AMOUNT: "0.01"

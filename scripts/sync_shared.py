@@ -437,7 +437,7 @@ def mpp_task_dirs() -> list[Path]:
 
 # Legacy per-task copies now baked into the base image; sync removes them.
 MPP_LEGACY_PATHS = [
-    "environment/rewardkit-package",
+    "environment/rewardkit-lib",
     "tests/support/client_lib.py",
     "tests/support/oracle_paid_server.ts",
     "tests/support/verifier_utils.py",
