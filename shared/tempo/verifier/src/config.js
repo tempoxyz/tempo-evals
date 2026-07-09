@@ -47,19 +47,12 @@ function readConfig() {
     tip20Factory: env("TEMPO_TIP20_FACTORY", "0x20fc000000000000000000000000000000000000"),
     tip403Registry: env("TEMPO_TIP403_REGISTRY", "0x403c000000000000000000000000000000000000"),
     stablecoinDex: env("TEMPO_STABLECOIN_DEX", "0xdec0000000000000000000000000000000000000"),
-    payerPrivateKey: env("TEMPO_PAYER_PRIVATE_KEY"),
-    feePayerPrivateKey: env("TEMPO_FEE_PAYER_PRIVATE_KEY"),
-    faucetPrivateKey: env("TEMPO_FAUCET_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
-    dexMakerPrivateKey: env("TEMPO_DEX_MAKER_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
     recipient: requiredEnv("TEMPO_RECIPIENT"),
     recipients: env("TEMPO_RECIPIENTS") ? addressArrayEnv("TEMPO_RECIPIENTS") : [],
     amount: requiredEnv("TEMPO_AMOUNT"),
     memo: env("TEMPO_MEMO"),
     decimals: numberEnv("TEMPO_DECIMALS"),
-    stablecoinName: env("TEMPO_STABLECOIN_NAME", "Tempo Bench USD"),
-    stablecoinSymbol: env("TEMPO_STABLECOIN_SYMBOL", "TBUSD"),
     stablecoinCurrency: env("TEMPO_STABLECOIN_CURRENCY", "USD"),
-    stablecoinSalt: env("TEMPO_STABLECOIN_SALT"),
     policyType: env("TEMPO_POLICY_TYPE", "blacklist"),
     policyAccount: env("TEMPO_POLICY_ACCOUNT", env("TEMPO_RECIPIENT")),
     swapTokenIn: env("TEMPO_SWAP_TOKEN_IN", env("TEMPO_TOKEN")),
@@ -73,13 +66,7 @@ function readConfig() {
 }
 
 function redactedConfig(config) {
-  return {
-    ...config,
-    payerPrivateKey: config.payerPrivateKey ? "<redacted>" : "",
-    feePayerPrivateKey: config.feePayerPrivateKey ? "<redacted>" : "",
-    faucetPrivateKey: config.faucetPrivateKey ? "<redacted>" : "",
-    dexMakerPrivateKey: config.dexMakerPrivateKey ? "<redacted>" : "",
-  };
+  return config;
 }
 
 module.exports = {

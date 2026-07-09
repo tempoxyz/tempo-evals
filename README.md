@@ -177,7 +177,7 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 
 | Dataset | Path | Description |
 | ------- | ---- | ----------- |
-| `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo localnet integration tasks across docs and MCP profiles |
+| `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo testnet integration tasks across docs and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
 
 Benchmark majors are immutable evaluation contracts: task set, prompts,

@@ -66,7 +66,7 @@ function runStep(config, name, command, args, env = {}) {
 }
 
 function defaultRuntimeEnv(config) {
-  const env = {
+  return {
     TEMPO_TOKEN: config.token,
     TEMPO_RECIPIENT: config.recipient,
     ...(config.recipients.length > 0 ? { TEMPO_RECIPIENTS: JSON.stringify(config.recipients) } : {}),
@@ -74,10 +74,6 @@ function defaultRuntimeEnv(config) {
     TEMPO_MEMO: config.memo,
     TEMPO_DECIMALS: String(config.decimals),
   };
-  if (config.payerPrivateKey) {
-    env.TEMPO_PAYER_PRIVATE_KEY = config.payerPrivateKey;
-  }
-  return env;
 }
 
 module.exports = {

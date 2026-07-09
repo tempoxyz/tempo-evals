@@ -18,10 +18,6 @@ register_source_patterns(
             "pattern": r"parseUnits",
         },
         {
-            "name": "source_reads_fee_payer_private_key",
-            "pattern": r"TEMPO_FEE_PAYER_PRIVATE_KEY",
-        },
-        {
             "name": "source_passes_fee_payer",
             "pattern": r"feePayer",
         },

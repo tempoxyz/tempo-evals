@@ -1,7 +1,8 @@
-import { type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { writeFileSync } from "node:fs";
+import { type Address } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Actions, createClient, http } from "viem/tempo";
-import { tempoLocalnet } from "viem/tempo/chains";
+import { tempoTestnet } from "viem/tempo/chains";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -9,19 +10,21 @@ function required(name: string): string {
   return value;
 }
 
-const account = privateKeyToAccount(required("TEMPO_PAYER_PRIVATE_KEY") as Hex);
+const account = privateKeyToAccount(generatePrivateKey());
 const feeToken = required("TEMPO_FEE_TOKEN") as Address;
-// No client-level feeToken: the transaction pays gas with the account's
-// current fee token preference while setting the new default.
 const client = createClient({
   account,
-  chain: tempoLocalnet,
-  transport: http(required("TEMPO_RPC_URL")),
+  chain: tempoTestnet,
+  transport: http(),
 });
 
+await Actions.faucet.fundSync(client, { account: account.address });
 const result = await Actions.fee.setUserTokenSync(client, { token: feeToken });
-console.log(JSON.stringify({
-  status: result.receipt.status,
-  token: result.token,
-  transactionHash: result.receipt.transactionHash,
-}, null, 2));
+if (result.receipt.status !== "success") throw new Error("set fee token failed");
+
+const output = {
+  payer: { address: account.address },
+  setFeeTokenTransactionHash: result.receipt.transactionHash,
+};
+writeFileSync("/app/out.json", `${JSON.stringify(output, null, 2)}\n`);
+console.log(JSON.stringify(output, null, 2));

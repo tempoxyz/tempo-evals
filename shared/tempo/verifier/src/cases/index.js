@@ -6,4 +6,5 @@ module.exports = {
   "set-fee-token": require("./set-fee-token"),
   "stablecoin-dex-swap": require("./stablecoin-dex-swap"),
   "transfer-with-memo": require("./transfer-with-memo"),
+  "transfer-with-memo-fee-payer": require("./transfer-with-memo-fee-payer"),
 };

@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:17829b8e593b5ad5275ba74674e4f798ad190d2ae7bdf08ae74fab0d7b32c09d"
+digest = "sha256:c3dd549eb4f97422105d4d3ea90d985af4a84a1816d02ac6a233ae3ae362cf15"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:5817153e17deff1d452538f0bce54a4dd8ede02907f06b91b1b820da524e951a"
+digest = "sha256:b46821f623e96c660ec3a71138287a9724bfc887823e9667cd203ca695c9c54b"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:653027bef1cb9b38da509671fe7daf54a4be9b392d0246994774f68f3285214f"
+digest = "sha256:4efd29dfd77ab3651558cc83715bbf93ea92e40a516d32371015ce8d5b1d0c62"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:bd0ce311edde13fad239be2f958cfdcb679da9e6f0015421786a876c9fab969f"
+digest = "sha256:19f37ba24b9786c1e9f0d10ff096c6f3d1d336f8a40137ff7954efad29ec5414"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:50b91429772feb58cb0bdd887122df04f1d44bf030ce1f7589b13c176f1f37e9"
+digest = "sha256:28307eec62060ddfbe3de954a49fd77339962d882bf22c3d8331265258144e64"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:3737d591cdf64bcc7e0a314c30e2d3cf9b1b9f94c47b6aed521bbd9e7a20546b"
+digest = "sha256:1b1eeec245378775d5c525f8dd0e6357d757148b2162690b9536efe258f8736f"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:a4abc85a416e2ef5e6bdde45c4caa5b640deea9e9f2b5eefa1febde2e764ffc2"
+digest = "sha256:9e7d1be8f620a9e5824aa578cd51a8cc53e8c948e704d6d0e9f91b827d427831"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:231a075e2e0bc8873fb40257e25cc4e0113d90f82c995f6d6102b6e6d7cf4621"
+digest = "sha256:c5c87af0ea05e08d185af82e31a1d4711339c6e264ea0f6a5df38179a1ae4f9d"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:fbf916644df9e4a1d745d5f7a145fc39ac5c0c921c07525d8d6c7c2ada8be862"
+digest = "sha256:0a4ad78c2e97f991308314e51dbbfe612dc34f59663d65e7404e9804482bcef9"
 

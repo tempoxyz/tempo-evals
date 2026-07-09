@@ -1,136 +1,151 @@
-// SYNCED FROM shared/tempo/verifier/src/cases/create-stablecoin-with-policy.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { parseAbiItem } = require("viem");
-const { privateKeyToAccount } = require("viem/accounts");
+const {
+  expectAddress,
+  expectHash,
+  expectHex32,
+  expectObject,
+  expectText,
+  expectUint,
+  readResult,
+} = require("../result");
 const { defaultRuntimeEnv } = require("../submission");
-const { sameAddress, waitForEvidence } = require("../tempo");
+const { findEvent, receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
 
-const POLICY_TYPES = {
-  whitelist: 0,
-  blacklist: 1,
-};
+const POLICY_TYPES = { whitelist: 0, blacklist: 1 };
+const TOKEN_CREATED = parseAbiItem(
+  "event TokenCreated(address indexed token, string name, string symbol, string currency, address quoteToken, address admin, bytes32 salt)",
+);
+const POLICY_CREATED = parseAbiItem(
+  "event PolicyCreated(uint64 indexed policyId, address indexed updater, uint8 policyType)",
+);
+const TRANSFER_POLICY_UPDATE = parseAbiItem(
+  "event TransferPolicyUpdate(address indexed updater, uint64 indexed newPolicyId)",
+);
 
-function runtimeEnv(config) {
-  const env = {
-    ...defaultRuntimeEnv(config),
-    TEMPO_TIP20_FACTORY: config.tip20Factory,
-    TEMPO_TIP403_REGISTRY: config.tip403Registry,
-    TEMPO_STABLECOIN_NAME: config.stablecoinName,
-    TEMPO_STABLECOIN_SYMBOL: config.stablecoinSymbol,
-    TEMPO_STABLECOIN_CURRENCY: config.stablecoinCurrency,
-    TEMPO_POLICY_TYPE: config.policyType,
-    TEMPO_POLICY_ACCOUNT: config.policyAccount,
-  };
-  if (config.stablecoinSalt) env.TEMPO_STABLECOIN_SALT = config.stablecoinSalt;
-  return env;
+function result(config) {
+  return readResult(config, (value) => {
+    expectObject(
+      config,
+      value,
+      [
+        "payer",
+        "stablecoin",
+        "policy",
+        "tokenCreateTransactionHash",
+        "policyCreateTransactionHash",
+        "policyAccountTransactionHash",
+        "linkPolicyTransactionHash",
+      ],
+      "result",
+    );
+    expectObject(config, value.payer, ["address"], "payer");
+    expectObject(config, value.stablecoin, ["address", "name", "symbol", "currency", "salt"], "stablecoin");
+    expectObject(config, value.policy, ["id"], "policy");
+    return {
+      payer: expectAddress(config, value.payer.address, "payer.address"),
+      stablecoin: {
+        address: expectAddress(config, value.stablecoin.address, "stablecoin.address"),
+        name: expectText(config, value.stablecoin.name, "stablecoin.name"),
+        symbol: expectText(config, value.stablecoin.symbol, "stablecoin.symbol"),
+        currency: expectText(config, value.stablecoin.currency, "stablecoin.currency"),
+        salt: expectHex32(config, value.stablecoin.salt, "stablecoin.salt"),
+      },
+      policyId: expectUint(config, value.policy.id, "policy.id"),
+      tokenCreateTransactionHash: expectHash(config, value.tokenCreateTransactionHash, "tokenCreateTransactionHash"),
+      policyCreateTransactionHash: expectHash(config, value.policyCreateTransactionHash, "policyCreateTransactionHash"),
+      policyAccountTransactionHash: expectHash(config, value.policyAccountTransactionHash, "policyAccountTransactionHash"),
+      linkPolicyTransactionHash: expectHash(config, value.linkPolicyTransactionHash, "linkPolicyTransactionHash"),
+    };
+  });
 }
 
-function sameHex(left, right) {
-  return left?.toLowerCase() === right?.toLowerCase();
+function runtimeEnv(config) {
+  return {
+    ...defaultRuntimeEnv(config),
+    TEMPO_POLICY_ACCOUNT: config.policyAccount,
+    TEMPO_POLICY_TYPE: config.policyType,
+    TEMPO_STABLECOIN_CURRENCY: config.stablecoinCurrency,
+  };
 }
 
 async function verify({ client, config, fromBlock }) {
-  const admin = privateKeyToAccount(config.payerPrivateKey).address;
-  const expectedPolicyType = POLICY_TYPES[config.policyType];
-  if (expectedPolicyType === undefined) {
-    throw new Error(`unsupported policy type: ${config.policyType}`);
-  }
-
-  const tokenCreated = parseAbiItem(
-    "event TokenCreated(address indexed token, string name, string symbol, string currency, address quoteToken, address admin, bytes32 salt)",
-  );
-  const policyCreated = parseAbiItem(
-    "event PolicyCreated(uint64 indexed policyId, address indexed updater, uint8 policyType)",
-  );
-  const transferPolicyUpdate = parseAbiItem(
-    "event TransferPolicyUpdate(address indexed updater, uint64 indexed newPolicyId)",
-  );
-  const policyAccountUpdated = parseAbiItem(
+  const output = result(config);
+  const policyType = POLICY_TYPES[config.policyType];
+  if (policyType === undefined) throw new Error(`unsupported policy type: ${config.policyType}`);
+  const policyAccountEvent = parseAbiItem(
     config.policyType === "whitelist"
       ? "event WhitelistUpdated(uint64 indexed policyId, address indexed updater, address indexed account, bool allowed)"
       : "event BlacklistUpdated(uint64 indexed policyId, address indexed updater, address indexed account, bool restricted)",
   );
 
   return waitForEvidence(config, async () => {
-    const latestBlock = await client.getBlockNumber();
-    const tokenLogs = await client.getLogs({
-      address: config.tip20Factory,
-      event: tokenCreated,
+    const tokenReceipt = await receiptAfter(
+      client,
       fromBlock,
-      toBlock: latestBlock,
-    });
-    const tokenLog = tokenLogs.find(
-      (log) =>
-        log.args.name === config.stablecoinName &&
-        log.args.symbol === config.stablecoinSymbol &&
-        log.args.currency === config.stablecoinCurrency &&
-        sameAddress(log.args.admin, admin) &&
-        (!config.stablecoinSalt || sameHex(log.args.salt, config.stablecoinSalt)),
+      output.tokenCreateTransactionHash,
+      output.payer,
+      "reported token-creation transaction",
     );
-
-    if (!tokenLog) {
-      return null;
-    }
-
-    const policyLogs = await client.getLogs({
-      address: config.tip403Registry,
-      event: policyCreated,
-      args: { updater: admin },
+    const policyReceipt = await receiptAfter(
+      client,
       fromBlock,
-      toBlock: latestBlock,
-    });
-    const policyLog = policyLogs.find((log) => Number(log.args.policyType) === expectedPolicyType);
-    if (!policyLog) {
-      return null;
-    }
-
-    const policyAccountLogs = await client.getLogs({
-      address: config.tip403Registry,
-      event: policyAccountUpdated,
-      args: {
-        policyId: policyLog.args.policyId,
-        updater: admin,
-        account: config.policyAccount,
-      },
-      fromBlock,
-      toBlock: latestBlock,
-    });
-    const policyAccountLog = policyAccountLogs.find((log) =>
-      config.policyType === "whitelist" ? log.args.allowed : log.args.restricted,
+      output.policyCreateTransactionHash,
+      output.payer,
+      "reported policy-creation transaction",
     );
-    if (!policyAccountLog) {
-      return null;
-    }
-
-    const linkLogs = await client.getLogs({
-      address: tokenLog.args.token,
-      event: transferPolicyUpdate,
-      args: {
-        updater: admin,
-        newPolicyId: policyLog.args.policyId,
-      },
+    const accountReceipt = await receiptAfter(
+      client,
       fromBlock,
-      toBlock: latestBlock,
-    });
-    // The event args already tie the link to this token and policy, so any
-    // order of policy-account update vs. link is acceptable.
-    const [linkLog] = linkLogs;
-    if (linkLog) {
-      return {
-        token: tokenLog.args.token,
-        policyId: policyLog.args.policyId.toString(),
-        policyAccount: config.policyAccount,
-        tokenTransactionHash: tokenLog.transactionHash,
-        policyTransactionHash: policyLog.transactionHash,
-        policyAccountTransactionHash: policyAccountLog.transactionHash,
-        linkTransactionHash: linkLog.transactionHash,
-      };
-    }
+      output.policyAccountTransactionHash,
+      output.payer,
+      "reported policy-account transaction",
+    );
+    const linkReceipt = await receiptAfter(
+      client,
+      fromBlock,
+      output.linkPolicyTransactionHash,
+      output.payer,
+      "reported policy-link transaction",
+    );
+    if (!tokenReceipt || !policyReceipt || !accountReceipt || !linkReceipt) return null;
 
-    return null;
-  }, "stablecoin creation, policy creation, and policy link were not observed");
+    const token = findEvent(tokenReceipt, config.tip20Factory, TOKEN_CREATED, (args) =>
+      sameAddress(args.token, output.stablecoin.address) &&
+      args.name === output.stablecoin.name &&
+      args.symbol === output.stablecoin.symbol &&
+      args.currency === output.stablecoin.currency &&
+      sameAddress(args.admin, output.payer) &&
+      args.salt.toLowerCase() === output.stablecoin.salt.toLowerCase(),
+    );
+    if (!token) throw new Error("reported token-creation transaction does not create the output stablecoin");
+
+    const policy = findEvent(policyReceipt, config.tip403Registry, POLICY_CREATED, (args) =>
+      args.policyId.toString() === output.policyId &&
+      sameAddress(args.updater, output.payer) &&
+      Number(args.policyType) === policyType,
+    );
+    if (!policy) throw new Error("reported policy-creation transaction does not create the output policy");
+
+    const policyAccount = findEvent(accountReceipt, config.tip403Registry, policyAccountEvent, (args) =>
+      args.policyId.toString() === output.policyId &&
+      sameAddress(args.updater, output.payer) &&
+      sameAddress(args.account, config.policyAccount) &&
+      (config.policyType === "whitelist" ? args.allowed : args.restricted),
+    );
+    if (!policyAccount) throw new Error("reported policy-account transaction does not update the required account");
+
+    const link = findEvent(linkReceipt, output.stablecoin.address, TRANSFER_POLICY_UPDATE, (args) =>
+      sameAddress(args.updater, output.payer) && args.newPolicyId.toString() === output.policyId,
+    );
+    if (!link) throw new Error("reported policy-link transaction does not link the output policy");
+
+    return {
+      blockNumber: linkReceipt.blockNumber.toString(),
+      payer: output.payer,
+      token: output.stablecoin.address,
+      policyId: output.policyId,
+    };
+  }, "stablecoin policy flow was not observed");
 }
 
-module.exports = {
-  runtimeEnv,
-  verify,
-};
+module.exports = { runtimeEnv, verify };

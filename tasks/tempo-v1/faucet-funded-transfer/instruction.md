@@ -6,12 +6,10 @@ Build a minimal TypeScript project that funds a sender wallet with Tempo's fauce
 
 | Value | Env variable | Default |
 | --- | --- | --- |
-| RPC URL | `TEMPO_RPC_URL` | `http://tempo-localnet:8545` |
 | Token address | `TEMPO_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 | Recipient address | `TEMPO_RECIPIENT` | `0x1111111111111111111111111111111111111111` |
 | Transfer amount | `TEMPO_AMOUNT` | `0.23` |
 | Token decimals | `TEMPO_DECIMALS` | `6` |
-| Sender wallet private key (fund this wallet via the faucet) | `TEMPO_FAUCET_PRIVATE_KEY` | provided |
 
 ## Tempo Documentation
 
@@ -19,13 +17,27 @@ Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for 
 
 ## Execution Constraints
 
-- `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
-- Use that localnet RPC endpoint for all eval and self-check commands.
-- Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
-- Do not run live testnet smoke tests; local eval checks must use the provided environment variables.
+- Use the Tempo testnet.
+
+## Output
+
+When `npm run eval` finishes, write `/app/out.json` matching this schema:
+
+```json
+{
+  "type": "object",
+  "required": ["payer", "fundingTransactionHashes", "transferTransactionHash"],
+  "additionalProperties": false,
+  "properties": {
+    "payer": { "type": "object", "required": ["address"], "additionalProperties": false, "properties": { "address": { "type": "string" } } },
+    "fundingTransactionHashes": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "transferTransactionHash": { "type": "string" }
+  }
+}
+```
 
 Requirements:
 
 * Put the submission directly in `/app`.
 * Put the runtime source in `src/index.ts`.
-* The script should be runnable by `npm run eval`
+* The script should be runnable by `npm run eval`.
