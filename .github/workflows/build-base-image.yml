@@ -7,6 +7,7 @@ on:
       - shared/global/docker/base/**
       - shared/global/rewardkit-package/**
       - shared/tempo/verifier/**
+      - config/tasks.yaml
       - .github/workflows/build-base-image.yml
   workflow_dispatch:
 
