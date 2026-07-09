@@ -6,6 +6,16 @@ from pathlib import Path
 
 WORKSPACE_PATH = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
 
+type TokenEfficiencyThreshold = tuple[int | str, float]
+
+DEFAULT_TOKEN_EFFICIENCY_THRESHOLDS: tuple[TokenEfficiencyThreshold, ...] = (
+    (250000, 1.0),
+    (500000, 0.8),
+    (1000000, 0.5),
+    (1500000, 0.2),
+    ("*", 0.0),
+)
+
 
 class WorkspaceFile(StrEnum):
     """Workspace-relative files used by shared RewardKit checks."""

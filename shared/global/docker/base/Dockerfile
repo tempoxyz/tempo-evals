@@ -25,7 +25,7 @@ RUN apt-get update \
     python3-venv \
   && rm -rf /var/lib/apt/lists/*
 
-COPY shared/global/rewardkit-package /opt/tempo-bench-rewardkit
+COPY shared/global/rewardkit-lib /opt/tempo-bench-rewardkit
 
 RUN python3 -m venv /opt/tempo-bench-rewardkit-venv \
   && /opt/tempo-bench-rewardkit-venv/bin/python -m pip install --no-cache-dir \

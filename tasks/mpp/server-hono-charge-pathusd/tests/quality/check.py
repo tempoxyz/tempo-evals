@@ -7,14 +7,4 @@ from tempo_bench_rewardkit.common.checks import (
 )
 
 rk.trajectory_turn_count(max_turns=20)
-register_token_efficiency_check(
-    TokenEfficiencyConfig(
-        thresholds=[
-            (250000, 1.0),
-            (500000, 0.8),
-            (1000000, 0.5),
-            (1500000, 0.2),
-            ("*", 0.0),
-        ],
-    )
-)
+register_token_efficiency_check(TokenEfficiencyConfig())
