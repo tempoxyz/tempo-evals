@@ -6,8 +6,6 @@ Build a minimal TypeScript project that pays every configured recipient the same
 
 | Value | Env variable | Default |
 | --- | --- | --- |
-| RPC URL | `TEMPO_RPC_URL` | `http://tempo-localnet:8545` |
-| Payer private key | `TEMPO_PAYER_PRIVATE_KEY` | provided |
 | Token address | `TEMPO_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 | Recipient addresses | `TEMPO_RECIPIENTS` | JSON array provided |
 | Amount per recipient | `TEMPO_AMOUNT` | `0.01` |
@@ -19,10 +17,31 @@ Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for 
 
 ## Execution Constraints
 
-- `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
-- Use that localnet RPC endpoint for all eval and self-check commands.
-- Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
-- Do not run live testnet smoke tests; local eval checks must use the provided environment variables.
+- Use the Tempo testnet.
+
+## Output
+
+When `npm run eval` finishes, write exactly one JSON file at `/app/out.json`
+matching this schema:
+
+```json
+{
+  "type": "object",
+  "required": ["payer", "transferTransactionHash"],
+  "additionalProperties": false,
+  "properties": {
+    "payer": {
+      "type": "object",
+      "required": ["address"],
+      "additionalProperties": false,
+      "properties": {
+        "address": { "type": "string" }
+      }
+    },
+    "transferTransactionHash": { "type": "string" }
+  }
+}
+```
 
 Requirements:
 

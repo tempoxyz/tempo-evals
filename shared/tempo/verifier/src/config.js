@@ -1,4 +1,6 @@
 // SYNCED FROM shared/tempo/verifier/src/config.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+const path = require("node:path");
+
 function env(name, fallback = "") {
   const value = process.env[name];
   return value && value.length > 0 ? value : fallback;
@@ -32,19 +34,20 @@ function addressArrayEnv(name) {
 }
 
 function readConfig() {
+  const workspace = env("TEMPO_BENCH_WORKSPACE", "/app");
   return {
     caseId: env("TEMPO_BENCH_CASE", "transfer-with-memo"),
-    workspace: env("TEMPO_BENCH_WORKSPACE", "/app"),
+    workspace,
     logDir: env("TEMPO_BENCH_LOG_DIR", "/logs/verifier"),
     artifactDir: env("TEMPO_BENCH_ARTIFACT_DIR", "/logs/artifacts"),
-    rpcUrl: requiredEnv("TEMPO_RPC_URL"),
+    resultPath: path.join(workspace, "out.json"),
     token: requiredEnv("TEMPO_TOKEN"),
     feeToken: env("TEMPO_FEE_TOKEN", env("TEMPO_TOKEN")),
     feeManager: env("TEMPO_FEE_MANAGER", "0xfeec000000000000000000000000000000000000"),
     tip20Factory: env("TEMPO_TIP20_FACTORY", "0x20fc000000000000000000000000000000000000"),
     tip403Registry: env("TEMPO_TIP403_REGISTRY", "0x403c000000000000000000000000000000000000"),
     stablecoinDex: env("TEMPO_STABLECOIN_DEX", "0xdec0000000000000000000000000000000000000"),
-    payerPrivateKey: requiredEnv("TEMPO_PAYER_PRIVATE_KEY"),
+    payerPrivateKey: env("TEMPO_PAYER_PRIVATE_KEY"),
     feePayerPrivateKey: env("TEMPO_FEE_PAYER_PRIVATE_KEY"),
     faucetPrivateKey: env("TEMPO_FAUCET_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
     dexMakerPrivateKey: env("TEMPO_DEX_MAKER_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
@@ -72,7 +75,7 @@ function readConfig() {
 function redactedConfig(config) {
   return {
     ...config,
-    payerPrivateKey: "<redacted>",
+    payerPrivateKey: config.payerPrivateKey ? "<redacted>" : "",
     feePayerPrivateKey: config.feePayerPrivateKey ? "<redacted>" : "",
     faucetPrivateKey: config.faucetPrivateKey ? "<redacted>" : "",
     dexMakerPrivateKey: config.dexMakerPrivateKey ? "<redacted>" : "",

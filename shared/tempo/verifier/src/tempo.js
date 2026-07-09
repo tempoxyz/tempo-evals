@@ -1,8 +1,9 @@
 // SYNCED FROM shared/tempo/verifier/src/tempo.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { createPublicClient, http, pad, stringToHex } = require("viem");
+const { tempoTestnet } = require("viem/tempo/chains");
 
-function createTempoClient(config) {
-  return createPublicClient({ transport: http(config.rpcUrl) });
+function createTempoClient() {
+  return createPublicClient({ chain: tempoTestnet, transport: http() });
 }
 
 function sleep(ms) {
@@ -42,7 +43,7 @@ async function waitForRpc(client, config) {
       await sleep(1000);
     }
   }
-  throw new Error(`Tempo RPC was not reachable at ${config.rpcUrl}`);
+  throw new Error("Tempo testnet RPC was not reachable");
 }
 
 function memoEncodings(memo) {
