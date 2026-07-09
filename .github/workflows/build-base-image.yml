@@ -24,7 +24,7 @@ jobs:
       - name: Read pinned base image ref
         id: image
         run: |
-          ref=$(python3 -c "import yaml; print(yaml.safe_load(open('config/tasks.yaml'))['base_image'])")
+          ref=$(sed -nE 's/^[[:space:]]*base_image:[[:space:]]*([^[:space:]#]+).*/\1/p' config/tasks.yaml)
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
