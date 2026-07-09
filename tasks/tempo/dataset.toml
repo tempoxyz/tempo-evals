@@ -11,73 +11,73 @@ name = "Tempo"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-base"
-digest = "sha256:836bf9c3ccff992625ed54f598058af80e60143412e9443193aba09572018bf3"
+digest = "sha256:daa67e3eba478951ab6e180e1ee349c523e8a324d6ea7d47deedc0f0cccb312d"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-docs"
-digest = "sha256:b59a8220edf364fa81fdbe1baa9dc8ff5ac5240841225b2375c37a37d6e8773e"
+digest = "sha256:f26cdc05626b6210d972d8dba48b5f324ef406403aca223ad10bbd94e8d4c4b0"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-mcp"
-digest = "sha256:8925e44fe472a29235fb5a1070d197838cd726c677b8148c94ef3182169d5615"
+digest = "sha256:8cdeb85170e7430d44309ca684026cb6a9f3f38aec6f0af90c77efae21bfcadb"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-fee-payer-base"
-digest = "sha256:48b38719871c88942352c089123976cc9d7dc6951b4292b57e30f4ecd87cd137"
+digest = "sha256:0309cd52ca2e22d1052b34678b12f23ba89342e74bb13ed4c2a0e225a380cccd"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-fee-payer-docs"
-digest = "sha256:7b442bdee44cfa6b574af37f497ffbe585d36d7f02a24461f54d2fc1b65e893f"
+digest = "sha256:62e1b539599028754bd1a32ca5c4c8600bc723fbc6f5f57080c3442d4a4aa9f2"
 
 [[tasks]]
 name = "tempo/transfer-with-memo-fee-payer-mcp"
-digest = "sha256:e02310bb8fac4cb0ac753a9beb8e85dafc10238d48f8c7e850883effb051a6e2"
+digest = "sha256:7f68d919fab21a6e142653ea021e16c35b3b0564cc48618df5cc35ae6e43af04"
 
 [[tasks]]
 name = "tempo/set-fee-token-base"
-digest = "sha256:62b2aa0f04d21650d97af3a2c9ec46a7d8718ff4ba9a234c8cd261f9a810167e"
+digest = "sha256:76da086608475946f69f7bdbcdad1342707d9460c964df4d253f0764e5daced5"
 
 [[tasks]]
 name = "tempo/set-fee-token-docs"
-digest = "sha256:bd449bde0d835b979d7fa163d17d0a3e0b3aaf9054b6ad749d65e9767c75c278"
+digest = "sha256:1299fb4ba3bf1aed3f88b22b5b5d854876078bbb2e47bfd2dfea5226981ff4ab"
 
 [[tasks]]
 name = "tempo/set-fee-token-mcp"
-digest = "sha256:64ea36c88bb7b64e1d58bf879eb55813de68aeec433ed3ee314862414dc70202"
+digest = "sha256:e5e3c6a12e1cd877d15a7ea89f206a0bad4544327dd193ebfdb3b2575503fcc1"
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-base"
-digest = "sha256:444bc3bf3acf4aa4d7b37e0849cb54f4f058f6d9c8b7d6b5b726bbeddf8b7e65"
+digest = "sha256:50c603ab71b784c68887fa8c6b0a9f5727ab9d5ace6c300e9d349ae5d8480dff"
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-docs"
-digest = "sha256:cf917a8dac0013cd7a3970f0f6e781033bfbe29247ec420f93c2b56f80be2324"
+digest = "sha256:289596ef90dfa88e249adc576eed5f75fa8b4c34dd9bc0f580d74eccf3b202b6"
 
 [[tasks]]
 name = "tempo/create-stablecoin-with-policy-mcp"
-digest = "sha256:4a93aa8cb28e0b6599b0ce99a8bc46bde08804ad7893de44d4e8f54e0a67543c"
+digest = "sha256:4b2f6213224ddcb624121bd459913bcb8bb0e73a25f94ab5837a74bc3d83516f"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-base"
-digest = "sha256:ab9cdd94e8c9c07cd44330d8c835893526bbd7bfbbfbc6dcb3b8d155fdfef8a1"
+digest = "sha256:bcf9a8074caf3553336a47e935286152ef1efe082fa7448d1f16c45a9e49902d"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-docs"
-digest = "sha256:c1a3fd507b8bb2556ccf51e030605cfb81c244392a141e53a87cb8c909c8180d"
+digest = "sha256:462953e1c7096aa338aa763d09cb7b4ecf7b54d2d134bb016ca9aea3310182ab"
 
 [[tasks]]
 name = "tempo/faucet-funded-transfer-mcp"
-digest = "sha256:66696109fd08d86040776935fd2f505056fc45950574fec5c82540e9a6b88aa1"
+digest = "sha256:0e09cd3d1d87f7de9baf7bc34c8dd4bb3c94568359b5af2966287967568f6ef2"
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-base"
-digest = "sha256:5b9ff1db070421d8879872684dfe56a1abe163f4ccf0a743efe429069ac09121"
+digest = "sha256:1f9b5c0012748ece41484cd3cfb2fc65774bded7c6ab9f0409217feee40efc35"
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-docs"
-digest = "sha256:ff48ce26675c475a89b6bcde2aef08f1b371dfba77294588a77df62c54776466"
+digest = "sha256:d503f52923018cba7772b651c37e171a1ea4c65e2085f2c99e7075dbca3fb39f"
 
 [[tasks]]
 name = "tempo/stablecoin-dex-swap-mcp"
-digest = "sha256:5cd48fbd3786ea61d4bb15f3c1fee695445ca9123d6ad7c9640ef4356059e1d5"
+digest = "sha256:43437f1352fa0df33b4368a16528e5c7a149a1ee6b69f63d662cc489c259e595"
 
