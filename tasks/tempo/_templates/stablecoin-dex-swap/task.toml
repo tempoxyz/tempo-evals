@@ -4,7 +4,7 @@ artifacts = ["/app/package.json", "/app/src"]
 
 [task]
 name = "tempo/stablecoin-dex-swap"
-description = "Build a Tempo localnet integration that approves the Stablecoin DEX, creates liquidity, and executes a swap."
+description = "Build a Tempo localnet integration that approves the Stablecoin DEX and executes a swap against seeded liquidity."
 authors = []
 keywords = ["tempo", "stablecoin-dex", "swap", "tip20", "localnet", "typescript"]
 

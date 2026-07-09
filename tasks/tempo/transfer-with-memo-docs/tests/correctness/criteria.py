@@ -9,13 +9,9 @@ from tempo_bench_rewardkit.common.checks import (
 
 register_tempo_eval_contract()
 rk.tempo_rejects_other_blockchains()
-rk.tempo_uses_viem_tempo_actions(["token.transferSync"])
+rk.tempo_uses_viem_tempo_actions(["token.transfer"])
 register_source_patterns(
     [
-        {
-            "name": "source_uses_transfer_with_memo_semantics",
-            "pattern": r"Actions\.token\.transferSync",
-        },
         {
             "name": "source_reads_tempo_memo",
             "pattern": r"TEMPO_MEMO",

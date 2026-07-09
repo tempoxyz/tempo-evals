@@ -11,16 +11,17 @@ function required(name: string): string {
 
 const account = privateKeyToAccount(required("TEMPO_PAYER_PRIVATE_KEY") as Hex);
 const feeToken = required("TEMPO_FEE_TOKEN") as Address;
+// No client-level feeToken: the transaction pays gas with the account's
+// current fee token preference while setting the new default.
 const client = createClient({
   account,
   chain: tempoLocalnet,
-  feeToken,
   transport: http(required("TEMPO_RPC_URL")),
 });
 
-await Actions.faucet.fundSync(client, { account: account.address });
-
-const transactionHash = await Actions.fee.setUserToken(client, { token: feeToken });
-const receipt = await client.waitForTransactionReceipt({ hash: transactionHash });
-const userToken = await Actions.fee.getUserToken(client);
-console.log(JSON.stringify({ status: receipt.status, token: userToken?.address, transactionHash }, null, 2));
+const result = await Actions.fee.setUserTokenSync(client, { token: feeToken });
+console.log(JSON.stringify({
+  status: result.receipt.status,
+  token: result.token,
+  transactionHash: result.receipt.transactionHash,
+}, null, 2));

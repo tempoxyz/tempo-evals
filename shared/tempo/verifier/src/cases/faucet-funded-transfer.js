@@ -19,6 +19,9 @@ function beforeLog(left, right) {
 }
 
 async function verify({ client, config, fromBlock }) {
+  // The localnet faucet proxy pays out from the payer account, and
+  // TEMPO_FAUCET_PRIVATE_KEY is the sender wallet the submission must fund
+  // via the faucet before transferring.
   const localnetFaucet = privateKeyToAccount(config.payerPrivateKey).address;
   const fundedSender = privateKeyToAccount(config.faucetPrivateKey).address;
   const expectedValue = parseUnits(config.amount, config.decimals);

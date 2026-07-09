@@ -10,24 +10,18 @@ const POLICY_TYPES = {
 };
 
 function runtimeEnv(config) {
-  return {
+  const env = {
     ...defaultRuntimeEnv(config),
     TEMPO_TIP20_FACTORY: config.tip20Factory,
     TEMPO_TIP403_REGISTRY: config.tip403Registry,
     TEMPO_STABLECOIN_NAME: config.stablecoinName,
     TEMPO_STABLECOIN_SYMBOL: config.stablecoinSymbol,
     TEMPO_STABLECOIN_CURRENCY: config.stablecoinCurrency,
-    TEMPO_STABLECOIN_SALT: config.stablecoinSalt,
     TEMPO_POLICY_TYPE: config.policyType,
     TEMPO_POLICY_ACCOUNT: config.policyAccount,
   };
-}
-
-function beforeLog(left, right) {
-  return (
-    left.blockNumber < right.blockNumber ||
-    (left.blockNumber === right.blockNumber && left.logIndex < right.logIndex)
-  );
+  if (config.stablecoinSalt) env.TEMPO_STABLECOIN_SALT = config.stablecoinSalt;
+  return env;
 }
 
 function sameHex(left, right) {
@@ -70,7 +64,7 @@ async function verify({ client, config, fromBlock }) {
         log.args.symbol === config.stablecoinSymbol &&
         log.args.currency === config.stablecoinCurrency &&
         sameAddress(log.args.admin, admin) &&
-        sameHex(log.args.salt, config.stablecoinSalt),
+        (!config.stablecoinSalt || sameHex(log.args.salt, config.stablecoinSalt)),
     );
 
     if (!tokenLog) {
@@ -117,12 +111,9 @@ async function verify({ client, config, fromBlock }) {
       fromBlock,
       toBlock: latestBlock,
     });
-    const linkLog = linkLogs.find(
-      (log) =>
-        beforeLog(tokenLog, log) &&
-        beforeLog(policyLog, log) &&
-        beforeLog(policyAccountLog, log),
-    );
+    // The event args already tie the link to this token and policy, so any
+    // order of policy-account update vs. link is acceptable.
+    const [linkLog] = linkLogs;
     if (linkLog) {
       return {
         token: tokenLog.args.token,

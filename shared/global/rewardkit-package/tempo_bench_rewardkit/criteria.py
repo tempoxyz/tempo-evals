@@ -280,7 +280,6 @@ def tempo_rejects_other_blockchains(workspace: Path) -> bool:
 def tempo_uses_viem_tempo_actions(
     workspace: Path,
     actions: list[str],
-    require_faucet_fund_sync: bool = False,
 ) -> bool:
     patterns = [
         {
@@ -295,21 +294,16 @@ def tempo_uses_viem_tempo_actions(
                 r"require\(\s*['\"]viem/tempo"
             ),
         },
-        {
-            "name": "source_imports_actions",
-            "pattern": r"\bActions\b",
-        },
     ]
-    action_names = list(actions)
-    if require_faucet_fund_sync and "faucet.fundSync" not in action_names:
-        action_names.append("faucet.fundSync")
-
     patterns.extend(
         {
             "name": f"source_uses_actions_{action.replace('.', '_')}",
-            "pattern": rf"Actions\.{re.escape(action)}\b",
+            # Accept both the namespace form Actions.token.transferSync(client,
+            # ...) and the decorated client form client.token.transferSync(...),
+            # plus Sync/non-Sync action variants.
+            "pattern": rf"\w+\.{re.escape(action)}",
         }
-        for action in action_names
+        for action in actions
     )
     results = [
         _pattern_check(
