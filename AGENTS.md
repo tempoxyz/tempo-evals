@@ -116,7 +116,7 @@ executes it.
 All task environments build `FROM` one shared base image
 (`shared/global/docker/base/Dockerfile`, pinned as `base_image` in
 `config/tasks.yaml`). It bakes in the RewardKit venv (harbor-rewardkit,
-pympp, `shared/global/rewardkit-package/`) and the Tempo JS verifier
+pympp, `shared/global/rewardkit-lib/`) and the Tempo JS verifier
 (`shared/tempo/verifier/`). Local runs build it automatically (or run
 `npm run build-base`); CI publishes it to GHCR via
 `.github/workflows/build-base-image.yml`. After changing the base image

@@ -5,7 +5,6 @@ mode = "batched"
 files = ["package.json", "tsconfig.json", "src/index.ts"]
 atif-trajectory = "/logs/agent/trajectory.json"
 timeout = 300
-weight = 2.0
 
 [[criterion]]
 name = "uses_tempo_localnet_safely"

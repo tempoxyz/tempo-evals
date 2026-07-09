@@ -5,14 +5,19 @@ from dataclasses import dataclass
 import rewardkit as rk
 
 import tempo_bench_rewardkit  # noqa: F401
-from tempo_bench_rewardkit.common.constants import SourcePattern, WorkspaceFile
-
-type TokenThreshold = tuple[int | str, float]
+from tempo_bench_rewardkit.common.constants import (
+    DEFAULT_TOKEN_EFFICIENCY_THRESHOLDS,
+    SourcePattern,
+    TokenEfficiencyThreshold,
+    WorkspaceFile,
+)
 
 
 @dataclass(frozen=True)
 class TokenEfficiencyConfig:
-    thresholds: list[TokenThreshold]
+    thresholds: tuple[TokenEfficiencyThreshold, ...] = (
+        DEFAULT_TOKEN_EFFICIENCY_THRESHOLDS
+    )
     thresholds_env: str = "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS"
     weight: float = 1.0
 
