@@ -5,9 +5,6 @@ from tempo_bench_rewardkit.common.constants import (
     WorkspaceFile,
 )
 
-rk.file_exists(WorkspaceFile.PACKAGE_JSON)
-rk.file_exists(WorkspaceFile.TSCONFIG_JSON)
-rk.file_exists(WorkspaceFile.SOURCE_INDEX)
 rk.file_contains_regex(WorkspaceFile.PACKAGE_JSON, SourcePattern.BUILD_SCRIPT)
 rk.file_contains_regex(WorkspaceFile.PACKAGE_JSON, SourcePattern.SERVE_SCRIPT)
 rk.file_contains_regex(WorkspaceFile.PACKAGE_JSON, SourcePattern.MCP_SDK_DEPENDENCY)

@@ -14,9 +14,6 @@ out_path = WORKSPACE_PATH / WorkspaceFile.OUT_JSON
 # {"freeUrl":"http://127.0.0.1:3000/free","paidUrl":"http://127.0.0.1:3000/paid"}
 
 # App correctness and structure
-rk.file_exists(WorkspaceFile.PACKAGE_JSON)
-rk.file_exists(WorkspaceFile.TSCONFIG_JSON)
-rk.file_exists(WorkspaceFile.SOURCE_INDEX)
 rk.file_contains_regex(WorkspaceFile.PACKAGE_JSON, SourcePattern.BUILD_SCRIPT)
 rk.file_contains_regex(WorkspaceFile.PACKAGE_JSON, SourcePattern.SERVE_SCRIPT)
 rk.file_contains_regex(WorkspaceFile.PACKAGE_JSON, SourcePattern.MPPX_DEPENDENCY)

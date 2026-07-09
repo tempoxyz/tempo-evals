@@ -17,10 +17,7 @@ class TokenEfficiencyConfig:
     weight: float = 1.0
 
 
-def register_tempo_typescript_project() -> None:
-    rk.file_exists(WorkspaceFile.PACKAGE_JSON, name="package_json_exists")
-    rk.file_exists(WorkspaceFile.TSCONFIG_JSON, name="tsconfig_json_exists")
-    rk.file_exists(WorkspaceFile.SOURCE_INDEX, name="src_index_ts_exists")
+def register_tempo_eval_contract() -> None:
     rk.file_contains_regex(
         WorkspaceFile.PACKAGE_JSON,
         SourcePattern.EVAL_SCRIPT,

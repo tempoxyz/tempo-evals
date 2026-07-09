@@ -10,37 +10,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:c5c054be4056dd64357fd18f5d41cddb5fb0ceb62376976809f855e8b77feb78"
+digest = "sha256:53bed50bd09d8246d4c1bc060196a9031dd2e13edd2d6ec33b96878167b9a01d"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:816288dc4d8813c3f02093fcb3181009b0bb1e02cf9fca06a4c71ebf3c3c9168"
+digest = "sha256:3a46746e7af21aef67c61c3247011eb9e086f5eb542c2c771aefeea7b8442c29"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:91271b33fe0bade684938b4268bb66de2639fc20641f4310c58bc6ec46d34458"
+digest = "sha256:2b7419d4a63beb28b5e5bac9271f565278ee33e984c64e3323be03d48d1a009a"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:5d2c7c1a8204db8884eeb8af406a8c88758c847e65536980c8d339bbdef51435"
+digest = "sha256:6d1bec6057db0f7aa22ddb5a1412f6211f39386c420d50712dd511c150bbf2d3"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:6db1bc6e2aca3fcb03ff42655bbf797653cc8c99c95f9cf9468696e01f24cb35"
+digest = "sha256:45c98ace7a113f595bf92c0570c107db9b79be4decbae2faaf7ce93b9fb4733c"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:50a11869498ff01118d6889214837e7f2569be6d6032323920c528bd2d250ba2"
+digest = "sha256:df2e3760175b06d6ecdbe802218d9a5baa088a97d31901528647664bd068bde8"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:3ceafb6171da8faedcaad5d475052abd38fad0677580c597270013d8884fbcf9"
+digest = "sha256:45a5a1c2fb826fb64ab5c495c44497b198612c1f593110788f4de458f9bef56f"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:e8b390e77d943d9d422260d0b25884a86931b6e577edad950c192ae2b35e7bd2"
+digest = "sha256:b57f13b01c74395f2189485f18f1c9a66e053cce941a828e905619de7cde39b9"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:20f82121d71652c40879be1aaf983dd2c2175854d51bcf8981f35d8e78bfd0c2"
+digest = "sha256:598894688d876e0520526e03912417d6405f646dd9ff85ea5b6a14facd40bcd7"
 
