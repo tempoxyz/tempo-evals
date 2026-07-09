@@ -66,15 +66,17 @@ function runStep(config, name, command, args, env = {}) {
 }
 
 function defaultRuntimeEnv(config) {
-  return {
-    TEMPO_RPC_URL: config.rpcUrl,
+  const env = {
     TEMPO_TOKEN: config.token,
-    TEMPO_PAYER_PRIVATE_KEY: config.payerPrivateKey,
     TEMPO_RECIPIENT: config.recipient,
     TEMPO_AMOUNT: config.amount,
     TEMPO_MEMO: config.memo,
     TEMPO_DECIMALS: String(config.decimals),
   };
+  if (config.payerPrivateKey) {
+    env.TEMPO_PAYER_PRIVATE_KEY = config.payerPrivateKey;
+  }
+  return env;
 }
 
 module.exports = {

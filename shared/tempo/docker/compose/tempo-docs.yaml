@@ -1,5 +1,5 @@
-# The runner configures the `main` service. This file only adds the Tempo
-# localnet sidecar and makes the agent container wait for it.
+# The runner configures the main service. This file forwards Tempo task
+# environment values and keeps the pinned docs sidecar.
 services:
   main:
     environment:
@@ -8,8 +8,11 @@ services:
       - TEMPO_BENCH_LOG_WAIT_MS
       - TEMPO_BENCH_RPC_WAIT_MS
       - TEMPO_BENCH_SUBMISSION_TIMEOUT_MS
+      - TEMPO_BENCH_TOKENS_SCORE_CUTOFFS
+      - TEMPO_BENCH_TURNS_SCORE_CUTOFFS
       - TEMPO_DECIMALS
       - TEMPO_DEX_MAKER_PRIVATE_KEY
+      - TEMPO_DOCS_URL
       - TEMPO_FAUCET_PRIVATE_KEY
       - TEMPO_FEE_MANAGER
       - TEMPO_FEE_PAYER_PRIVATE_KEY
@@ -19,7 +22,6 @@ services:
       - TEMPO_POLICY_ACCOUNT
       - TEMPO_POLICY_TYPE
       - TEMPO_RECIPIENT
-      - TEMPO_RPC_URL
       - TEMPO_STABLECOIN_CURRENCY
       - TEMPO_STABLECOIN_DEX
       - TEMPO_STABLECOIN_NAME
@@ -33,29 +35,19 @@ services:
       - TEMPO_TIP403_REGISTRY
       - TEMPO_TOKEN
     depends_on:
-      tempo-localnet:
+      tempo-docs:
         condition: service_healthy
 
-  tempo-localnet:
+  tempo-docs:
     build:
-      context: ./tempo-localnet
-    networks:
-      - default
+      context: ./tempo-docs
+    volumes:
+      - ${TEMPO_DOCS_BUNDLE_PATH:-./tempo-docs-bundle}:/tempo-docs:ro
     expose:
-      - "8545"
+      - "3000"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "-sf",
-          "http://localhost:8545",
-          "-H",
-          "content-type: application/json",
-          "-d",
-          "{\"jsonrpc\":\"2.0\",\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1}"
-        ]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 2s
       timeout: 5s
-      retries: 60
+      retries: 30
       start_period: 5s

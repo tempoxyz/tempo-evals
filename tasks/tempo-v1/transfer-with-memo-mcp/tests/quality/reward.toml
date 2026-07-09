@@ -7,10 +7,10 @@ atif-trajectory = "/logs/agent/trajectory.json"
 timeout = 300
 
 [[criterion]]
-name = "uses_tempo_localnet_safely"
+name = "uses_tempo_testnet_appropriately"
 type = "likert"
 points = 5
-description = "The submission uses the provided Tempo localnet environment variables, does not hard-code public Tempo RPC endpoints, secrets, recipients, amounts, or token addresses, and avoids live testnet side effects."
+description = "The submission uses the Tempo testnet and the provided task values without hard-coding task-specific secrets, recipients, amounts, or token addresses."
 
 [[criterion]]
 name = "uses_tempo_primitives_correctly"
@@ -22,7 +22,7 @@ description = "The code uses appropriate Tempo or TIP-20 transaction primitives 
 name = "is_reliable_and_observable"
 type = "likert"
 points = 5
-description = "The implementation has clear validation and error handling, surfaces useful failure messages, and avoids timing assumptions that would make localnet runs flaky."
+description = "The implementation has clear validation and error handling, surfaces useful failure messages, and waits for required testnet transactions."
 
 [[criterion]]
 name = "is_minimal_and_maintainable"

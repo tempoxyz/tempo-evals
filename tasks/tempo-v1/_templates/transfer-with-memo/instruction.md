@@ -6,8 +6,6 @@ Build a minimal TypeScript project that sends a Tempo stablecoin payment with a 
 
 | Value | Env variable | Default |
 | --- | --- | --- |
-| RPC URL | `TEMPO_RPC_URL` | `http://tempo-localnet:8545` |
-| Payer private key | `TEMPO_PAYER_PRIVATE_KEY` | provided |
 | Token address | `TEMPO_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 | Recipient address | `TEMPO_RECIPIENT` | `0x1111111111111111111111111111111111111111` |
 | Transfer amount | `TEMPO_AMOUNT` | `0.17` |
@@ -16,8 +14,32 @@ Build a minimal TypeScript project that sends a Tempo stablecoin payment with a 
 
 <!-- tempobench_sync -->
 
+## Output
+
+When `npm run eval` finishes, write exactly one JSON file at `/app/out.json`
+matching this schema:
+
+```json
+{
+  "type": "object",
+  "required": ["payer", "transferTransactionHash"],
+  "additionalProperties": false,
+  "properties": {
+    "payer": {
+      "type": "object",
+      "required": ["address"],
+      "additionalProperties": false,
+      "properties": {
+        "address": { "type": "string" }
+      }
+    },
+    "transferTransactionHash": { "type": "string" }
+  }
+}
+```
+
 Requirements:
 
 * Put the submission directly in `/app`.
 * Put the runtime source in `src/index.ts`.
-* The script should be runnable by `npm run eval`
+* The script should be runnable by `npm run eval`.

@@ -1,8 +1,78 @@
-// SYNCED FROM shared/tempo/verifier/src/cases/transfer-with-memo.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
-const { parseAbiItem, parseUnits } = require("viem");
-const { privateKeyToAccount } = require("viem/accounts");
+const fs = require("node:fs");
+const { decodeEventLog, isAddress, parseAbiItem, parseUnits } = require("viem");
 const { defaultRuntimeEnv } = require("../submission");
-const { blockEvidence, memoEncodings, sameAddress, waitForEvidence } = require("../tempo");
+const { memoEncodings, sameAddress, waitForEvidence } = require("../tempo");
+
+const TRANSFER_WITH_MEMO = parseAbiItem(
+  "event TransferWithMemo(address indexed from, address indexed to, uint256 value, bytes32 indexed memo)",
+);
+const HASH_PATTERN = /^0x[0-9a-fA-F]{64}$/;
+
+function resultError(config, observed) {
+  const error = new Error(`invalid result artifact: ${observed}`);
+  error.phase = "submission-result";
+  error.expected = `${config.resultPath} matches the transfer output schema`;
+  error.observed = observed;
+  return error;
+}
+
+function hasExactKeys(value, keys) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.keys(value).length === keys.length &&
+    keys.every((key) => Object.hasOwn(value, key))
+  );
+}
+
+function readResult(config) {
+  let result;
+  try {
+    result = JSON.parse(fs.readFileSync(config.resultPath, "utf8"));
+  } catch (error) {
+    throw resultError(config, error instanceof Error ? error.message : String(error));
+  }
+
+  if (!hasExactKeys(result, ["payer", "transferTransactionHash"])) {
+    throw resultError(config, "expected payer and transferTransactionHash only");
+  }
+  if (!hasExactKeys(result.payer, ["address"])) {
+    throw resultError(config, "payer must contain address only");
+  }
+
+  const payer = result.payer.address;
+  const transactionHash = result?.transferTransactionHash;
+  if (!isAddress(payer)) throw resultError(config, "payer.address must be an address");
+  if (typeof transactionHash !== "string" || !HASH_PATTERN.test(transactionHash)) {
+    throw resultError(config, "transferTransactionHash must be a transaction hash");
+  }
+
+  return { payer, transactionHash };
+}
+
+function hasTransfer(receipt, config, payer, expectedValue, memos) {
+  return receipt.logs.some((log) => {
+    if (!sameAddress(log.address, config.token)) return false;
+
+    try {
+      const decoded = decodeEventLog({
+        abi: [TRANSFER_WITH_MEMO],
+        data: log.data,
+        topics: log.topics,
+      });
+      return (
+        decoded.eventName === "TransferWithMemo" &&
+        sameAddress(decoded.args.from, payer) &&
+        sameAddress(decoded.args.to, config.recipient) &&
+        decoded.args.value === expectedValue &&
+        memos.has(decoded.args.memo.toLowerCase())
+      );
+    } catch {
+      return false;
+    }
+  });
+}
 
 function runtimeEnv(config) {
   const env = defaultRuntimeEnv(config);
@@ -13,75 +83,38 @@ function runtimeEnv(config) {
   return env;
 }
 
-async function assertFeePayerEnvelope(client, config, transactionHash) {
-  if (!config.feePayerPrivateKey) return null;
-
-  const feePayer = privateKeyToAccount(config.feePayerPrivateKey).address;
-  const transaction = await client.request({
-    method: "eth_getTransactionByHash",
-    params: [transactionHash],
-  });
-
-  if (
-    transaction?.type !== "0x76" ||
-    !transaction.feePayerSignature ||
-    !sameAddress(transaction?.feeToken, config.feeToken)
-  ) {
-    throw new Error("matching transfer did not use a sponsored Tempo fee-payer envelope");
-  }
-
-  // The transaction only carries feePayerSignature; the receipt reports the
-  // recovered fee payer address, so use it to confirm the expected sponsor.
-  const receipt = await client.request({
-    method: "eth_getTransactionReceipt",
-    params: [transactionHash],
-  });
-  if (!sameAddress(receipt?.feePayer, feePayer)) {
-    throw new Error("matching transfer was not sponsored by the expected fee payer");
-  }
-
-  return {
-    feePayer,
-    feeToken: transaction.feeToken,
-  };
-}
-
 async function verify({ client, config, fromBlock }) {
-  const payer = privateKeyToAccount(config.payerPrivateKey).address;
+  const { payer, transactionHash } = readResult(config);
   const expectedValue = parseUnits(config.amount, config.decimals);
-  const event = parseAbiItem(
-    "event TransferWithMemo(address indexed from, address indexed to, uint256 value, bytes32 indexed memo)",
-  );
-  const memos = memoEncodings(config.memo);
+  const memos = new Set(memoEncodings(config.memo).map((memo) => memo.toLowerCase()));
 
   return waitForEvidence(config, async () => {
-    const latestBlock = await client.getBlockNumber();
-    const logs = (
-      await Promise.all(
-        memos.map((memo) =>
-          client.getLogs({
-            address: config.token,
-            event,
-            args: {
-              from: payer,
-              to: config.recipient,
-              memo,
-            },
-            fromBlock,
-            toBlock: latestBlock,
-          }),
-        ),
-      )
-    ).flat();
-
-    const match = logs.find((log) => log.args.value === expectedValue);
-    if (match) {
-      const feePayer = await assertFeePayerEnvelope(client, config, match.transactionHash);
-      return blockEvidence(match, { ...feePayer });
+    let receipt;
+    try {
+      receipt = await client.getTransactionReceipt({ hash: transactionHash });
+    } catch {
+      return null;
     }
 
-    return null;
-  }, "no matching TransferWithMemo event observed");
+    if (receipt.status !== "success") {
+      throw new Error("reported transfer transaction did not succeed");
+    }
+    if (receipt.blockNumber <= fromBlock) {
+      throw new Error("reported transfer transaction predates this evaluation");
+    }
+    if (!sameAddress(receipt.from, payer)) {
+      throw new Error("reported transfer transaction was not sent by payer.address");
+    }
+    if (!hasTransfer(receipt, config, payer, expectedValue, memos)) {
+      throw new Error("reported transaction does not contain the required TransferWithMemo event");
+    }
+
+    return {
+      blockNumber: receipt.blockNumber.toString(),
+      payer,
+      transactionHash,
+    };
+  }, "reported transfer transaction was not observed");
 }
 
 module.exports = {

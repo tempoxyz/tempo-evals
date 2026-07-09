@@ -4,9 +4,9 @@ artifacts = ["/app/package.json", "/app/src"]
 
 [task]
 name = "tempo/transfer-with-memo"
-description = "Build a minimal Tempo localnet integration that sends a TIP-20 transfer with a memo."
+description = "Build a minimal Tempo testnet integration that sends a TIP-20 transfer with a memo."
 authors = []
-keywords = ["tempo", "tip20", "memo", "localnet", "typescript"]
+keywords = ["tempo", "tip20", "memo", "testnet", "typescript"]
 
 [metadata]
 category = "integration"

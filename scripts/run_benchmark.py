@@ -680,7 +680,7 @@ def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
     )
     environment_dir = task_dir / "environment"
     shutil.copyfile(
-        "shared/tempo/docker/compose/tempo-localnet-docs.yaml",
+        "shared/tempo/docker/compose/tempo-docs.yaml",
         environment_dir / "docker-compose.yaml",
     )
     shutil.copytree(

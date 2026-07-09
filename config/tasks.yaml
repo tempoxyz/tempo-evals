@@ -23,15 +23,13 @@ quality_env:
   TEMPO_BENCH_TURNS_SCORE_CUTOFFS: "20=1.0,40=0.8,60=0.5,80=0.2,*=0.0"
   TEMPO_BENCH_TOKENS_SCORE_CUTOFFS: "250000=1.0,500000=0.8,1000000=0.5,1500000=0.2,*=0.0"
 
-# Shared Tempo localnet fixture values merged into every generated task's
+# Shared Tempo testnet values merged into every generated task's
 # [environment.env]. Per-task overrides live in case_fixtures below.
 fixture_env:
   TEMPO_BENCH_SUBMISSION_TIMEOUT_MS: "180000"
   TEMPO_BENCH_RPC_WAIT_MS: "60000"
   TEMPO_BENCH_LOG_WAIT_MS: "30000"
-  TEMPO_RPC_URL: "http://tempo-localnet:8545"
   TEMPO_TOKEN: "0x20c0000000000000000000000000000000000001"
-  TEMPO_PAYER_PRIVATE_KEY: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   TEMPO_RECIPIENT: "0x1111111111111111111111111111111111111111"
   TEMPO_DECIMALS: "6"
 
@@ -46,7 +44,6 @@ case_fixtures:
     TEMPO_AMOUNT: "0.19"
     TEMPO_MEMO: "TEMPO-FEEPAYER-001"
     TEMPO_FEE_TOKEN: "0x20c0000000000000000000000000000000000001"
-    TEMPO_FEE_PAYER_PRIVATE_KEY: "0x59c6995e998f97a5a004497e5da46f94a879b621718eb9bde6e3db6c2b2b3b4d"
   set-fee-token:
     TEMPO_BENCH_CASE: "set-fee-token"
     TEMPO_AMOUNT: "0.01"
@@ -65,13 +62,11 @@ case_fixtures:
     TEMPO_BENCH_CASE: "faucet-funded-transfer"
     TEMPO_AMOUNT: "0.23"
     TEMPO_MEMO: "TEMPO-FAUCET"
-    TEMPO_FAUCET_PRIVATE_KEY: "0x59c6995e998f97a5a004497e5da46f94a879b621718eb9bde6e3db6c2b2b3b4d"
   stablecoin-dex-swap:
     TEMPO_BENCH_CASE: "stablecoin-dex-swap"
     TEMPO_AMOUNT: "100"
     TEMPO_MEMO: "TEMPO-DEX"
     TEMPO_STABLECOIN_DEX: "0xdec0000000000000000000000000000000000000"
-    TEMPO_DEX_MAKER_PRIVATE_KEY: "0x59c6995e998f97a5a004497e5da46f94a879b621718eb9bde6e3db6c2b2b3b4d"
     TEMPO_SWAP_TOKEN_IN: "0x20c0000000000000000000000000000000000000"
     TEMPO_SWAP_TOKEN_OUT: "0x20c0000000000000000000000000000000000001"
     TEMPO_SWAP_AMOUNT_IN: "100"
@@ -82,10 +77,7 @@ case_fixtures:
 execution_constraints: |
   ## Execution Constraints
 
-  - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).
-  - Use that localnet RPC endpoint for all eval and self-check commands.
-  - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
-  - Do not run live testnet smoke tests; local eval checks must use the provided environment variables.
+  - Use the Tempo testnet.
 
 # Generated task profiles. For each generated task, `mcp_servers` is applied
 # to task.toml and `instruction` is rendered above the execution constraints.

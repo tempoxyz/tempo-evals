@@ -6,9 +6,9 @@ artifacts = ["/app/package.json", "/app/src"]
 
 [task]
 name = "tempo/transfer-with-memo-mcp"
-description = "Build a minimal Tempo localnet integration that sends a TIP-20 transfer with a memo. (MCP profile)."
+description = "Build a minimal Tempo testnet integration that sends a TIP-20 transfer with a memo. (MCP profile)."
 authors = []
-keywords = ["tempo", "tip20", "memo", "localnet", "typescript", "mcp"]
+keywords = ["tempo", "tip20", "memo", "testnet", "typescript", "mcp"]
 
 [metadata]
 category = "integration"
@@ -33,9 +33,7 @@ storage_mb = 10240
 TEMPO_BENCH_SUBMISSION_TIMEOUT_MS = "180000"
 TEMPO_BENCH_RPC_WAIT_MS = "60000"
 TEMPO_BENCH_LOG_WAIT_MS = "30000"
-TEMPO_RPC_URL = "http://tempo-localnet:8545"
 TEMPO_TOKEN = "0x20c0000000000000000000000000000000000001"
-TEMPO_PAYER_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 TEMPO_RECIPIENT = "0x1111111111111111111111111111111111111111"
 TEMPO_DECIMALS = "6"
 TEMPO_BENCH_CASE = "transfer-with-memo"

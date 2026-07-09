@@ -10,8 +10,6 @@ variant per template. Never hand-edit generated tasks; edit the template and re-
 from __future__ import annotations
 
 import json
-import os
-import re
 import shutil
 import tomllib
 from pathlib import Path
@@ -253,37 +251,8 @@ def sync_tests(task_dir: Path, slug: str, profile: dict[str, Any]) -> None:
     test_path.chmod(0o755)
 
 
-def relative_symlink_target(destination: Path, source: Path) -> str:
-    return os.path.relpath(source, destination.parent)
-
-
-def link_dir(source: Path, destination: Path) -> None:
-    remove_path(destination)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.symlink_to(
-        relative_symlink_target(destination, source), target_is_directory=True
-    )
-
-
-def link_file(source: Path, destination: Path) -> None:
-    remove_path(destination)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.symlink_to(relative_symlink_target(destination, source))
-
-
 def sync_environment(task_dir: Path, _profile: dict[str, Any]) -> None:
     write_file(task_dir / "environment" / "Dockerfile", TASK_DOCKERFILE)
-    link_dir(
-        TEMPO_SHARED_DIR / "docker" / "tempo-localnet",
-        task_dir / "environment" / "tempo-localnet",
-    )
-
-    link_file(
-        TEMPO_SHARED_DIR / "docker" / "compose" / "tempo-localnet.yaml",
-        task_dir / "environment" / "docker-compose.yaml",
-    )
-
-    assert_compose_build_contexts(task_dir)
 
 
 def read_toml(file_path: Path) -> dict[str, Any]:
@@ -325,17 +294,6 @@ def assert_verifier_env_allowed(task_dir: Path) -> None:
 
 def read_task_case_id(slug: str) -> str | None:
     return CASE_FIXTURES.get(slug, {}).get("TEMPO_BENCH_CASE")
-
-
-def assert_compose_build_contexts(task_dir: Path) -> None:
-    compose_path = task_dir / "environment" / "docker-compose.yaml"
-    compose = compose_path.read_text()
-    for match in re.finditer(r"^\s*context:\s*(.+?)\s*$", compose, re.MULTILINE):
-        context_path = match.group(1).strip("\"'")
-        absolute_context_path = (compose_path.parent / context_path).resolve()
-        if not absolute_context_path.exists():
-            msg = f"Missing Docker Compose build context: {absolute_context_path}"
-            raise RuntimeError(msg)
 
 
 def generate_task(source_dir: Path, slug: str, profile: dict[str, Any]) -> str:

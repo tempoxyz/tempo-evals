@@ -1,4 +1,5 @@
 // SYNCED FROM shared/tempo/verifier/src/index.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+const fs = require("node:fs");
 const { readConfig, redactedConfig } = require("./config");
 const { writeException, writeJson, writeReward } = require("./logs");
 const { assertSubmissionShape, runStep } = require("./submission");
@@ -46,13 +47,14 @@ async function main() {
       logs: [],
     };
     assertSubmissionShape(config);
+    fs.rmSync(config.resultPath, { force: true });
 
     context = {
       phase: "rpc",
-      expected: `Tempo RPC is reachable at ${config.rpcUrl}`,
+      expected: "Tempo testnet RPC is reachable",
       logs: [],
     };
-    const client = createTempoClient(config);
+    const client = createTempoClient();
     const fromBlock = await waitForRpc(client, config);
 
     context = {
