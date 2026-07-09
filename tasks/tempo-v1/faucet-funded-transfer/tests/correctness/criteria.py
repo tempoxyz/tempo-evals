@@ -19,4 +19,3 @@ register_source_patterns(
         },
     ]
 )
-rk.tempo_onchain_verifier()

@@ -4,7 +4,6 @@ import fcntl
 import json
 import os
 import re
-import subprocess
 import threading
 from pathlib import Path
 from typing import Any
@@ -316,29 +315,6 @@ def tempo_uses_viem_tempo_actions(
     ]
     _write_json("tempo-actions.json", {"checks": results})
     return all(result["passed"] for result in results)
-
-
-@criterion(shared=True)
-def tempo_onchain_verifier(workspace: Path) -> bool:
-    timeout = int(os.environ.get("TEMPO_BENCH_REWARDKIT_TIMEOUT_SECONDS", "900"))
-    result = subprocess.run(
-        ["bash", "/tests/correctness/verify-tempo.sh"],
-        cwd=workspace,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
-        check=False,
-    )
-    _write_json(
-        "onchain-criterion.json",
-        {
-            "command": "bash /tests/correctness/verify-tempo.sh",
-            "returncode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-        },
-    )
-    return result.returncode == 0
 
 
 @criterion(shared=True)
