@@ -188,22 +188,12 @@ def ensure_docs_bundle() -> str:
     return str(bundle_path)
 
 
-def require_any(names: list[str], message: str) -> None:
-    if not any(os.environ.get(name) for name in names):
-        raise RuntimeError(message)
-
-
 def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
-    if os.environ.get("CLAUDE_FORCE_OAUTH") == "":
-        msg = "CLAUDE_FORCE_OAUTH is set but empty. Set it to 1/true or unset it."
-        raise RuntimeError(msg)
     effective_agent = options.get("agent") or variant.get("default_agent")
     needs_agent_auth = variant.get("needs_agent_auth") and effective_agent != "oracle"
-    if needs_agent_auth:
-        require_any(
-            ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
-            "Missing Claude Code and verifier judge auth: set ANTHROPIC_API_KEY "
-            "or ANTHROPIC_AUTH_TOKEN.",
+    if needs_agent_auth and not os.environ.get("ANTHROPIC_API_KEY"):
+        raise RuntimeError(
+            "Missing Claude Code and verifier judge auth: set ANTHROPIC_API_KEY."
         )
     if (
         variant.get("needs_daytona_auth")
@@ -221,12 +211,10 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
 
 
 def preflight_production_agents(model_config: dict[str, Any]) -> None:
-    if any(model["agent"] == "codex" for model in model_config["models"]):
-        require_any(
-            ["OPENAI_API_KEY", "CODEX_AUTH_JSON_PATH", "CODEX_FORCE_AUTH_JSON"],
-            "Missing Codex auth: set OPENAI_API_KEY, CODEX_AUTH_JSON_PATH, "
-            "or CODEX_FORCE_AUTH_JSON.",
-        )
+    if any(model["agent"] == "codex" for model in model_config["models"]) and not (
+        os.environ.get("OPENAI_API_KEY")
+    ):
+        raise RuntimeError("Missing Codex auth: set OPENAI_API_KEY.")
 
 
 def task_path(options: dict[str, Any]) -> str:

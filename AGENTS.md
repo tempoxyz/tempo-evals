@@ -69,7 +69,7 @@ npm run bench:model -- --tasks tasks/mpp --task-filter tempo/mpp-server-charge-p
 
 ## Environment
 
-- `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` for Claude/RewardKit.
+- `ANTHROPIC_API_KEY` for Claude/RewardKit.
 - `DAYTONA_API_KEY` for Daytona, or `DAYTONA_JWT_TOKEN` plus
   `DAYTONA_ORGANIZATION_ID`.
 - `DAYTONA_TARGET` for optional Daytona target selection.
