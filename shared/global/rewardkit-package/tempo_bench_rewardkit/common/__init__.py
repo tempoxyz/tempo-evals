@@ -1,5 +1,5 @@
-# SYNCED FROM shared/global/rewardkit-package/tempo_bench_rewardkit/common/__init__.py
-# BY npm run sync. DO NOT EDIT COPIES IN tasks/.
+# Baked into the tempo-bench base image as part of the tempo-bench-rewardkit
+# package.
 from .checks import TokenEfficiencyConfig, register_token_efficiency_check
 from .constants import (
     WORKSPACE_PATH,

@@ -88,8 +88,7 @@ Each template generates `-base`, `-docs`, and `-mcp` variants via
 Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:
 
-- `environment/Dockerfile`
-- `environment/rewardkit-package/` (from `shared/global/rewardkit-package/`)
+- `environment/Dockerfile` (generated `FROM` the pinned base image)
 - `solution/package.json`
 - `solution/solve.sh`
 - `solution/tsconfig.json`
@@ -98,9 +97,6 @@ Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 - `tests/correctness/verify.sh`
 - `tests/quality/check.py`
 - `tests/quality/reward.toml`
-- `tests/support/client_lib.py`
-- `tests/support/oracle_paid_server.ts`
-- `tests/support/verifier_utils.py`
 
 Task-specific MPP files stay in the task directory: `task.toml`,
 `instruction.md`, `solution/` sources, `tests/support/client.py` (scenario),
@@ -116,6 +112,16 @@ large inline JavaScript strings in Python.
 Task matrix data (task slugs, generated docs/MCP profiles, MPP shared
 file lists) lives in `config/tasks.yaml`; `scripts/sync_shared.py` only
 executes it.
+
+All task environments build `FROM` one shared base image
+(`shared/global/docker/base/Dockerfile`, pinned as `base_image` in
+`config/tasks.yaml`). It bakes in the RewardKit venv (harbor-rewardkit,
+pympp, `shared/global/rewardkit-package/`) and the Tempo JS verifier
+(`shared/tempo/verifier/`). Local runs build it automatically (or run
+`npm run build-base`); CI publishes it to GHCR via
+`.github/workflows/build-base-image.yml`. After changing the base image
+contents, bump the `base_image` tag in `config/tasks.yaml` and re-run
+`npm run sync`.
 
 Harbor job configs are compiled artifacts: `npm run sync` renders
 `config/job.yaml.j2` with per-variant values from `config/variants.yaml`,

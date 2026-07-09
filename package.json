@@ -8,6 +8,7 @@
     "docs:check": "uv run python scripts/prepare_docs_bundle.py --check",
     "sync": "uv run python scripts/run_benchmark.py sync",
     "dataset": "uv run python scripts/run_benchmark.py dataset",
+    "build-base": "uv run python scripts/run_benchmark.py build-base",
     "bench": "uv run python scripts/run_benchmark.py local-agent",
     "bench:model": "uv run python scripts/run_benchmark.py model",
     "bench:local:tempo": "uv run python scripts/run_benchmark.py local-oracle-dev --no-sync --task-suite tempo",

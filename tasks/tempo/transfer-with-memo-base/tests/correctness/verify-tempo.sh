@@ -6,7 +6,7 @@ LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
 ARTIFACT_DIR="${TEMPO_BENCH_ARTIFACT_DIR:-/logs/artifacts}"
 INTERNAL_REWARD="$LOG_DIR/tempo-bench-reward.json"
 SCORES_FILE="$LOG_DIR/tempo-bench-scores.json"
-VERIFIER="/tests/node_modules/@tempo-bench/verifier/bin/tempo-bench-verify.js"
+VERIFIER="${TEMPO_BENCH_VERIFIER:-/opt/tempo-bench/verifier/bin/tempo-bench-verify.js}"
 
 mkdir -p "$LOG_DIR" "$ARTIFACT_DIR"
 rm -f "$INTERNAL_REWARD" "$SCORES_FILE"
@@ -28,21 +28,11 @@ write_exception_artifact() {
   } > "$ARTIFACT_DIR/exception.txt"
 }
 
-cd /tests || exit 1
-npm install --silent \
-  > "$LOG_DIR/verifier-npm-install.stdout.txt" \
-  2> "$LOG_DIR/verifier-npm-install.stderr.txt"
-INSTALL_STATUS=$?
-printf '{"command":"npm","args":["install","--silent"],"status":%d}\n' \
-  "$INSTALL_STATUS" > "$LOG_DIR/verifier-npm-install.status.json"
-if [ "$INSTALL_STATUS" -ne 0 ]; then
+if [ ! -f "$VERIFIER" ]; then
   write_exception_artifact \
-    "verifier-npm-install" \
-    "npm install --silent exited $INSTALL_STATUS" \
-    "$LOG_DIR/verifier-npm-install.stdout.txt" \
-    "$LOG_DIR/verifier-npm-install.stderr.txt" \
-    "$LOG_DIR/verifier-npm-install.status.json"
-  exit "$INSTALL_STATUS"
+    "grader" \
+    "missing baked Tempo verifier: $VERIFIER (rebuild the tempo-bench base image)"
+  exit 1
 fi
 
 cd /app || exit 1
