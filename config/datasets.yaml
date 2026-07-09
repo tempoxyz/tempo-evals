@@ -3,7 +3,7 @@
 # whose variant does not declare its own `datasets` (see
 # config/variants.yaml).
 datasets:
-  - path: tasks/tempo
+  - path: tasks/tempo-v1
     task_names:
       - "*-base"
       - "*-docs"

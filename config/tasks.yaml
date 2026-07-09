@@ -8,8 +8,8 @@
 # .github/workflows/build-base-image.yml; local runs build it automatically.
 base_image: ghcr.io/tempoxyz/tempo-bench-base:v1
 
-# Authored task templates under tasks/tempo/_templates/<slug>/. Each one
-# generates a -base, -docs, and -mcp task under tasks/tempo/.
+# Authored task templates under tasks/tempo-v1/_templates/<slug>/. Each one
+# generates a -base, -docs, and -mcp task under tasks/tempo-v1/.
 task_slugs:
   - transfer-with-memo
   - transfer-with-memo-fee-payer
@@ -35,7 +35,7 @@ fixture_env:
   TEMPO_RECIPIENT: "0x1111111111111111111111111111111111111111"
   TEMPO_DECIMALS: "6"
 
-# Per-template fixture overrides keyed by tasks/tempo/_templates/<slug>/.
+# Per-template fixture overrides keyed by tasks/tempo-v1/_templates/<slug>/.
 case_fixtures:
   transfer-with-memo:
     TEMPO_BENCH_CASE: "transfer-with-memo"

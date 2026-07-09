@@ -170,8 +170,14 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 
 | Dataset | Path | Description |
 | ------- | ---- | ----------- |
-| `tempo/tempo-bench-v1` | `tasks/tempo/` | Tempo localnet integration tasks across base, docs, and MCP profiles |
+| `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo localnet integration tasks across base, docs, and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
+
+Benchmark majors are immutable evaluation contracts: task set, prompts,
+fixtures, verifier behavior, and scoring rules. Compatible maintenance fixes
+are tracked in Git; changes that make results incomparable require a new
+versioned dataset (for example, `tempo-bench-v2`). Canonical benchmark IDs and
+Harbor dataset names live in `config/benchmarks.yaml`.
 
 ## Profiles
 

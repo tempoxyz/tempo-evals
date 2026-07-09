@@ -79,9 +79,9 @@ output, or cache output.
 
 ## Generated Files
 
-Generated profile task directories in `tasks/tempo/` are generated output; do
+Generated profile task directories in `tasks/tempo-v1/` are generated output; do
 not hand-edit them. Authored Tempo task templates live in
-`tasks/tempo/_templates/<slug>/` (see `tasks/tempo/_templates/README.md`).
+`tasks/tempo-v1/_templates/<slug>/` (see `tasks/tempo-v1/_templates/README.md`).
 Each template generates `-base`, `-docs`, and `-mcp` variants via
 `npm run sync`.
 

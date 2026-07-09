@@ -1,0 +1,18 @@
+# Canonical identities for published, versioned Harbor benchmarks. A major
+# version is an immutable evaluation contract; create a new entry for an
+# incompatible task, fixture, verifier, or scoring change.
+benchmarks:
+  tempo:
+    id: tempo-bench-v1
+    dataset: tempo/tempo-bench-v1
+    path: tasks/tempo-v1
+    description: Tempo integration benchmark
+    keywords: [stablecoins, docs, tempo]
+    author: Tempo
+  mpp:
+    id: mpp-bench-v1
+    dataset: tempo/mpp-bench-v1
+    path: tasks/mpp
+    description: MPP MVP benchmark
+    keywords: [mpp, tempo, stripe, typescript]
+    author: Tempo Labs

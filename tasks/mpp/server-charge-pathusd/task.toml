@@ -11,7 +11,8 @@ keywords = ["mpp", "tempo", "pathusd", "typescript", "server"]
 [metadata]
 category = "integration"
 feature = "server-charge-pathusd"
-dataset = "mpp-bench"
+dataset = "mpp-bench-v1"
+benchmark = "mpp-bench-v1"
 
 [verifier]
 timeout_sec = 300.0
