@@ -1,6 +1,6 @@
 # MPP Server
 
-Build an MPP server using typescript in `/app` that runs on Tempo testnet and accepts pathUSD.
+Build an MPP server using TypeScript in `/app` that runs on Tempo testnet and accepts pathUSD.
 
 Expose one free endpoint and one paid endpoint which uses MPP. Both endpoints should return JSON.
 

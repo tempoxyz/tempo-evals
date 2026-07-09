@@ -17,8 +17,8 @@ Current task intents:
 - `tempo/faucet-funded-transfer`
 - `tempo/stablecoin-dex-swap`
 
-Each intent is materialized into `-base`, `-docs`, and `-mcp` profile
-variants by `npm run sync`.
+Each intent is materialized into a Docs variant (no suffix) and an `-mcp`
+variant by `npm run sync`.
 
 Each generated task is Harbor-native and self-contained:
 

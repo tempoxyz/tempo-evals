@@ -1,6 +1,6 @@
 # Tempo Bench
 
-A evaluation harness for verifying the ability of coding agents to build real Tempo and MPP apps.
+An evaluation harness for verifying the ability of coding agents to build real Tempo and MPP apps.
 
 Powered by [Harbor](https://harborframework.com)
 

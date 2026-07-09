@@ -10,3 +10,9 @@ the required memo attached.
 - Stablecoin transfer execution on Tempo localnet
 - Correct memo attachment
 - Using provided payment inputs without hardcoding fixture values
+
+## Verification
+
+- General file structure: a runnable `/app` TypeScript project with `src/index.ts` and an `npm run eval` entry point.
+- Usage of proper Tempo libraries: `viem/tempo` `Actions.token.transfer`; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
+- Correctness of the script, including a TransferWithMemo event with the configured payer, recipient, amount, and memo.
