@@ -18,13 +18,10 @@ const client = createClient({
   transport: http(required("TEMPO_RPC_URL")),
 });
 
-await Actions.faucet.fundSync(client, { account: account.address });
-
 const tokenResult = await Actions.token.createSync(client, {
   admin: account.address,
   currency: required("TEMPO_STABLECOIN_CURRENCY"),
   name: required("TEMPO_STABLECOIN_NAME"),
-  salt: required("TEMPO_STABLECOIN_SALT") as Hex,
   symbol: required("TEMPO_STABLECOIN_SYMBOL"),
 });
 

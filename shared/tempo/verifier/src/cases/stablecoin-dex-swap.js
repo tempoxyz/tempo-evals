@@ -2,13 +2,12 @@
 const { parseAbiItem, parseUnits } = require("viem");
 const { privateKeyToAccount } = require("viem/accounts");
 const { defaultRuntimeEnv } = require("../submission");
-const { blockEvidence, waitForEvidence } = require("../tempo");
+const { blockEvidence, sameAddress, waitForEvidence } = require("../tempo");
 
 function runtimeEnv(config) {
   return {
     ...defaultRuntimeEnv(config),
     TEMPO_STABLECOIN_DEX: config.stablecoinDex,
-    TEMPO_DEX_MAKER_PRIVATE_KEY: config.dexMakerPrivateKey,
     TEMPO_SWAP_TOKEN_IN: config.swapTokenIn,
     TEMPO_SWAP_TOKEN_OUT: config.swapTokenOut,
     TEMPO_SWAP_AMOUNT_IN: config.swapAmountIn,
@@ -16,29 +15,24 @@ function runtimeEnv(config) {
   };
 }
 
-function beforeLog(left, right) {
-  return (
-    left.blockNumber < right.blockNumber ||
-    (left.blockNumber === right.blockNumber && left.logIndex < right.logIndex)
-  );
-}
-
 async function verify({ client, config, fromBlock }) {
+  // Liquidity is seeded at localnet startup by the maker account, so the
+  // submission only has to take it: approve the DEX and swap.
   const maker = privateKeyToAccount(config.dexMakerPrivateKey).address;
   const taker = privateKeyToAccount(config.payerPrivateKey).address;
   const expectedAmount = parseUnits(config.swapAmountIn, config.decimals);
-  const event = parseAbiItem(
+  const orderFilled = parseAbiItem(
     "event OrderFilled(uint128 indexed orderId, address indexed maker, address indexed taker, uint128 amountFilled, bool partialFill)",
   );
-  const orderPlaced = parseAbiItem(
-    "event OrderPlaced(uint128 indexed orderId, address indexed maker, address indexed token, uint128 amount, bool isBid, int16 tick, bool isFlipOrder, int16 flipTick)",
+  const transfer = parseAbiItem(
+    "event Transfer(address indexed from, address indexed to, uint256 value)",
   );
 
   return waitForEvidence(config, async () => {
     const latestBlock = await client.getBlockNumber();
     const logs = await client.getLogs({
       address: config.stablecoinDex,
-      event,
+      event: orderFilled,
       args: { maker, taker },
       fromBlock,
       toBlock: latestBlock,
@@ -47,32 +41,28 @@ async function verify({ client, config, fromBlock }) {
     const match = logs.find((log) => log.args.amountFilled === expectedAmount);
     if (!match) return null;
 
-    const orderLogs = await client.getLogs({
-      address: config.stablecoinDex,
-      event: orderPlaced,
-      args: {
-        orderId: match.args.orderId,
-        maker,
-        token: config.swapTokenOut,
-      },
-      fromBlock,
+    // Confirm the swap actually spent the configured input token by finding
+    // the taker's token-in Transfer in the same transaction.
+    const tokenInLogs = await client.getLogs({
+      address: config.swapTokenIn,
+      event: transfer,
+      args: { from: taker },
+      fromBlock: match.blockNumber,
       toBlock: match.blockNumber,
     });
-    const order = orderLogs.find(
-      (log) => log.args.amount >= expectedAmount && !log.args.isBid && beforeLog(log, match),
+    const spent = tokenInLogs.find((log) =>
+      sameAddress(log.transactionHash, match.transactionHash),
     );
+    if (!spent) return null;
 
-    return (
-      order &&
-      blockEvidence(match, {
-        maker,
-        orderId: match.args.orderId.toString(),
-        orderPlacedTransactionHash: order.transactionHash,
-        orderIsBid: order.args.isBid,
-        orderToken: order.args.token,
-        amountFilled: match.args.amountFilled.toString(),
-      })
-    );
+    return blockEvidence(match, {
+      maker,
+      taker,
+      orderId: match.args.orderId.toString(),
+      amountFilled: match.args.amountFilled.toString(),
+      tokenIn: config.swapTokenIn,
+      tokenInAmount: spent.args.value.toString(),
+    });
   }, "no matching Stablecoin DEX OrderFilled event observed");
 }
 

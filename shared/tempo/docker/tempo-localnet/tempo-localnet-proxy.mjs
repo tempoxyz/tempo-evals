@@ -8,6 +8,13 @@ import {
   parseAbi,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import {
+  Actions as TempoActions,
+  Addresses as TempoAddresses,
+  createClient as createTempoClient,
+  http as tempoHttp,
+} from "viem/tempo";
+import { tempoLocalnet } from "viem/tempo/chains";
 
 const listenHost = "0.0.0.0";
 const listenPort = 8545;
@@ -31,6 +38,20 @@ const faucetTokens = (
 
 const tokenAbi = parseAbi(["function transfer(address to,uint256 amount) returns (bool)"]);
 const faucetAccount = privateKeyToAccount(faucetPrivateKey);
+const dexMakerPrivateKey =
+  process.env.TEMPO_LOCALNET_DEX_MAKER_PRIVATE_KEY ??
+  "0x59c6995e998f97a5a004497e5da46f94a879b621718eb9bde6e3db6c2b2b3b4d";
+const dexSeedBase =
+  process.env.TEMPO_LOCALNET_DEX_SEED_BASE ?? "0x20c0000000000000000000000000000000000001";
+const dexSeedAmount = BigInt(process.env.TEMPO_LOCALNET_DEX_SEED_AMOUNT ?? "100000000000");
+// Dev genesis only seeds FeeAMM liquidity for AlphaUSD, so fund the BetaUSD
+// pool too; the validator payout token on localnet is pathUSD.
+const feeAmmUserToken =
+  process.env.TEMPO_LOCALNET_FEE_AMM_USER_TOKEN ?? "0x20c0000000000000000000000000000000000002";
+const feeAmmValidatorToken =
+  process.env.TEMPO_LOCALNET_FEE_AMM_VALIDATOR_TOKEN ??
+  "0x20c0000000000000000000000000000000000000";
+const feeAmmSeedAmount = BigInt(process.env.TEMPO_LOCALNET_FEE_AMM_SEED_AMOUNT ?? "100000000000");
 let clientPromise;
 
 const tempo = spawn(
@@ -150,6 +171,49 @@ async function fundAddress(id, params) {
   return jsonRpcResult(id, hashes);
 }
 
+// Seed Stablecoin DEX liquidity so swap tasks are taker-only: fund the maker,
+// create the pair, and place a large resting sell order on the base token.
+async function seedDexLiquidity() {
+  const maker = privateKeyToAccount(dexMakerPrivateKey);
+  await fundAddress(0, [maker.address]);
+
+  const makerClient = createTempoClient({
+    account: maker,
+    chain: tempoLocalnet,
+    feeToken: dexSeedBase,
+    transport: tempoHttp(tempoRpcUrl),
+  });
+  await TempoActions.dex
+    .createPairSync(makerClient, { base: dexSeedBase })
+    .catch(() => undefined);
+  await TempoActions.token.approveSync(makerClient, {
+    amount: dexSeedAmount,
+    spender: TempoAddresses.stablecoinDex,
+    token: dexSeedBase,
+  });
+  await TempoActions.dex.placeSync(makerClient, {
+    amount: dexSeedAmount,
+    tick: 0,
+    token: dexSeedBase,
+    type: "sell",
+  });
+}
+
+async function seedFeeAmmLiquidity() {
+  const funderClient = createTempoClient({
+    account: faucetAccount,
+    chain: tempoLocalnet,
+    feeToken: dexSeedBase,
+    transport: tempoHttp(tempoRpcUrl),
+  });
+  await TempoActions.amm.mintSync(funderClient, {
+    to: faucetAccount.address,
+    userTokenAddress: feeAmmUserToken,
+    validatorTokenAddress: feeAmmValidatorToken,
+    validatorTokenAmount: feeAmmSeedAmount,
+  });
+}
+
 async function handleRpc(payload) {
   if (Array.isArray(payload)) return Promise.all(payload.map(handleRpc));
   if (payload?.method === "tempo_fundAddress") {
@@ -162,7 +226,7 @@ async function handleRpc(payload) {
   return postToTempo(payload);
 }
 
-createServer(async (request, response) => {
+const server = createServer(async (request, response) => {
   if (request.method !== "POST") {
     response.writeHead(405, { "content-type": "application/json" });
     response.end(JSON.stringify({ error: "method not allowed" }));
@@ -185,4 +249,18 @@ createServer(async (request, response) => {
       response.end(JSON.stringify(jsonRpcError(null, -32603, error?.message ?? String(error))));
     }
   });
-}).listen(listenPort, listenHost);
+});
+
+// Listen only after liquidity seeding so the compose healthcheck holds the
+// agent container back until the localnet is fully prepared.
+seedDexLiquidity()
+  .catch((error) => {
+    console.error("Stablecoin DEX liquidity seeding failed:", error?.message ?? error);
+  })
+  .then(() => seedFeeAmmLiquidity())
+  .catch((error) => {
+    console.error("FeeAMM liquidity seeding failed:", error?.message ?? error);
+  })
+  .finally(() => {
+    server.listen(listenPort, listenHost);
+  });

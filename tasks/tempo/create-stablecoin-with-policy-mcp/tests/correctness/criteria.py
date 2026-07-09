@@ -11,30 +11,13 @@ register_tempo_eval_contract()
 rk.tempo_rejects_other_blockchains()
 rk.tempo_uses_viem_tempo_actions(
     [
-        "token.createSync",
-        "policy.createSync",
-        "token.changeTransferPolicySync",
-    ],
-    require_faucet_fund_sync=True,
+        "token.create",
+        "policy.create",
+        "token.changeTransferPolicy",
+    ]
 )
 register_source_patterns(
     [
-        {
-            "name": "source_creates_stablecoin",
-            "pattern": r"Actions\.token\.createSync",
-        },
-        {
-            "name": "source_creates_transfer_policy",
-            "pattern": r"Actions\.policy\.createSync",
-        },
-        {
-            "name": "source_links_transfer_policy",
-            "pattern": r"Actions\.token\.changeTransferPolicySync",
-        },
-        {
-            "name": "source_funds_localnet_account",
-            "pattern": r"Actions\.faucet\.fundSync",
-        },
         {
             "name": "source_reads_stablecoin_currency",
             "pattern": r"TEMPO_STABLECOIN_CURRENCY",

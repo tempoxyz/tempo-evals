@@ -3,7 +3,9 @@
 # Tempo Create Stablecoin With Transfer Policy
 
 Build a minimal TypeScript project that creates a TIP-20 stablecoin,
-creates a Tempo transfer policy, and links that policy to the new token.
+creates a Tempo transfer policy of type `TEMPO_POLICY_TYPE` that covers
+`TEMPO_POLICY_ACCOUNT` (a blacklist policy must restrict that account),
+and links that policy to the new token.
 
 ## Parameters
 
@@ -15,7 +17,6 @@ creates a Tempo transfer policy, and links that policy to the new token.
 | Stablecoin name | `TEMPO_STABLECOIN_NAME` | `Tempo Bench Policy USD` |
 | Stablecoin symbol | `TEMPO_STABLECOIN_SYMBOL` | `TBPUSD` |
 | Stablecoin currency | `TEMPO_STABLECOIN_CURRENCY` | `USD` |
-| Stablecoin salt | `TEMPO_STABLECOIN_SALT` | `0x0000000000000000000000000000000000000000000000000000000000000b01` |
 | Policy type | `TEMPO_POLICY_TYPE` | `blacklist` |
 | Policy account | `TEMPO_POLICY_ACCOUNT` | `0x1111111111111111111111111111111111111111` |
 

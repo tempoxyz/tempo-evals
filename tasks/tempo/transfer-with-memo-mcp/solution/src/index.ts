@@ -1,4 +1,4 @@
-import { pad, parseUnits, stringToHex, type Address, type Hex } from "viem";
+import { parseUnits, stringToHex, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { Actions, createClient, http } from "viem/tempo";
 import { tempoLocalnet } from "viem/tempo/chains";
@@ -23,7 +23,7 @@ const client = createClient({
 
 const result = await Actions.token.transferSync(client, {
   amount: parseUnits(amount, decimals),
-  memo: pad(stringToHex(memo), { size: 32 }),
+  memo: stringToHex(memo, { size: 32 }),
   to: recipient,
   token,
 });

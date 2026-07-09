@@ -30,6 +30,16 @@ async function assertFeePayerEnvelope(client, config, transactionHash) {
     throw new Error("matching transfer did not use a sponsored Tempo fee-payer envelope");
   }
 
+  // The transaction only carries feePayerSignature; the receipt reports the
+  // recovered fee payer address, so use it to confirm the expected sponsor.
+  const receipt = await client.request({
+    method: "eth_getTransactionReceipt",
+    params: [transactionHash],
+  });
+  if (!sameAddress(receipt?.feePayer, feePayer)) {
+    throw new Error("matching transfer was not sponsored by the expected fee payer");
+  }
+
   return {
     feePayer,
     feeToken: transaction.feeToken,

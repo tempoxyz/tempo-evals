@@ -1,6 +1,8 @@
 # Tempo Stablecoin DEX Swap
 
-Build a minimal TypeScript project that uses Tempo's Stablecoin DEX to execute a swap.
+Build a minimal TypeScript project that swaps `TEMPO_SWAP_AMOUNT_IN` of the
+input token for the output token on Tempo's Stablecoin DEX. The localnet DEX
+already has resting liquidity for the pair, so the project only has to take it.
 
 ## Parameters
 
@@ -8,7 +10,6 @@ Build a minimal TypeScript project that uses Tempo's Stablecoin DEX to execute a
 | --- | --- | --- |
 | RPC URL | `TEMPO_RPC_URL` | `http://tempo-localnet:8545` |
 | Taker private key | `TEMPO_PAYER_PRIVATE_KEY` | provided |
-| DEX maker private key | `TEMPO_DEX_MAKER_PRIVATE_KEY` | provided |
 | Stablecoin DEX address | `TEMPO_STABLECOIN_DEX` | `0xdec0000000000000000000000000000000000000` |
 | Swap token in | `TEMPO_SWAP_TOKEN_IN` | `0x20c0000000000000000000000000000000000000` |
 | Swap token out | `TEMPO_SWAP_TOKEN_OUT` | `0x20c0000000000000000000000000000000000001` |
