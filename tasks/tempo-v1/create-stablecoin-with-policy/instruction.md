@@ -20,6 +20,10 @@ and links that policy to the new token.
 | Policy type | `TEMPO_POLICY_TYPE` | `blacklist` |
 | Policy account | `TEMPO_POLICY_ACCOUNT` | `0x1111111111111111111111111111111111111111` |
 
+## Tempo Documentation
+
+Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
+
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).

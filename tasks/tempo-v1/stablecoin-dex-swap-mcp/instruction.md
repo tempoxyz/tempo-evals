@@ -19,6 +19,14 @@ already has resting liquidity for the pair, so the project only has to take it.
 | Minimum amount out | `TEMPO_SWAP_MIN_AMOUNT_OUT` | `0` |
 | Token decimals | `TEMPO_DECIMALS` | `6` |
 
+## Tempo Documentation
+
+Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
+
+## Tempo MCP
+
+The official Tempo MCP server is configured as `tempo` and is available in addition to the documentation.
+
 ## Execution Constraints
 
 - `TEMPO_RPC_URL` is already set to the Tempo localnet RPC endpoint (`http://tempo-localnet:8545`).

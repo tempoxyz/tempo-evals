@@ -182,7 +182,7 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 ## Profiles
 
 * **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) transparently serves a pinned bundle at `https://docs.tempo.xyz` and `https://tempo.xyz/developers`.
-* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`; the tool is available without being mandated in the task prompt.
+* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
 
 ## CLI
 

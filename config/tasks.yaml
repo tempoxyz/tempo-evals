@@ -88,12 +88,17 @@ execution_constraints: |
   - Do not run live testnet smoke tests; local eval checks must use the provided environment variables.
 
 # Generated task profiles. For each generated task, `mcp_servers` is applied
-# to task.toml. A pinned docs SHA transparently routes docs.tempo.xyz to the
-# staged bundle at run time; generated tasks default to public docs.
+# to task.toml and `instruction` is rendered above the execution constraints.
+# A pinned docs SHA transparently routes docs.tempo.xyz to the staged bundle at
+# run time; generated tasks default to public docs.
 profiles:
   - id: docs
     suffix: ""
     label: docs
+    instruction: |
+      ## Tempo Documentation
+
+      Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
   - id: mcp
     suffix: -mcp
     label: MCP
@@ -101,6 +106,14 @@ profiles:
       - name: tempo
         transport: streamable-http
         url: https://mcp.tempo.xyz
+    instruction: |
+      ## Tempo Documentation
+
+      Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
+
+      ## Tempo MCP
+
+      The official Tempo MCP server is configured as `tempo` and is available in addition to the documentation.
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.
