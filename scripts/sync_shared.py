@@ -108,7 +108,7 @@ def toml_string(value: str) -> str:
 
 
 def toml_array(values: list[str]) -> str:
-    return json.dumps(values)
+    return "[ " + ", ".join(toml_string(value) for value in values) + ",]"
 
 
 def generated_header(source: str) -> str:
