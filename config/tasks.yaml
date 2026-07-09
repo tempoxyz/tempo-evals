@@ -89,8 +89,8 @@ execution_constraints: |
 
 # Generated task profiles. For each generated task, `mcp_servers` is applied
 # to task.toml and `instruction` is rendered above the execution constraints.
-# A pinned docs SHA changes the staged task instruction and environment at run
-# time; generated tasks default to public docs.
+# A pinned docs SHA transparently routes docs.tempo.xyz to the staged bundle at
+# run time; generated tasks default to public docs.
 profiles:
   - id: docs
     suffix: ""

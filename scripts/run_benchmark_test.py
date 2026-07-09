@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 from typing import Any
 
 from scripts.run_benchmark import (
@@ -8,6 +12,7 @@ from scripts.run_benchmark import (
     benchmark_provenance,
     finalize_config,
     run_benchmark_key,
+    stage_pinned_docs_task,
     versioned_name,
 )
 
@@ -64,6 +69,82 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual(
             run_benchmark_key({"benchmark": "tempo"}, "mpp"), BenchmarkKey.MPP
         )
+
+    def test_staged_pinned_docs_keep_the_public_hostname(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            task_dir = Path(directory) / "transfer-with-memo"
+            environment_dir = task_dir / "environment"
+            environment_dir.mkdir(parents=True)
+            (task_dir / "task.toml").write_text(
+                'artifacts = ["/app/package.json"]\n\n'
+                "[environment]\n"
+                "[environment.env]\n"
+                'TEMPO_RPC_URL = "http://tempo-localnet:8545"\n'
+            )
+            (environment_dir / "Dockerfile").write_text("FROM node:22-bookworm\n")
+            bundle_dir = Path(directory) / "bundle"
+            (bundle_dir / "developers").mkdir(parents=True)
+            (bundle_dir / "developers" / "llms.txt").write_text("# Tempo Docs\n")
+            (bundle_dir / "manifest.json").write_text(json.dumps({"sha": "docs123"}))
+
+            stage_pinned_docs_task(task_dir, str(bundle_dir))
+
+            config = (task_dir / "task.toml").read_text()
+            self.assertNotIn("TEMPO_DOCS_URL", config)
+            self.assertIn('source = "/var/log/tempo-docs/access.log"', config)
+            self.assertIn('service = "tempo-docs"', config)
+            self.assertIn(
+                "COPY docs-tls/ca.crt "
+                "/usr/local/share/ca-certificates/tempo-bench-docs.crt",
+                (environment_dir / "Dockerfile").read_text(),
+            )
+            self.assertEqual(
+                (environment_dir / ".dockerignore").read_text(),
+                "docs-tls/*\n!docs-tls/ca.crt\n",
+            )
+            self.assertTrue((environment_dir / "docs-tls" / "ca.crt").exists())
+            self.assertTrue((environment_dir / "docs-tls" / "docs.crt").exists())
+            self.assertTrue((environment_dir / "docs-tls" / "docs.key").exists())
+            self.assertFalse((environment_dir / "docs-tls" / "ca.key").exists())
+            certificate_check = subprocess.run(
+                [
+                    "openssl",
+                    "x509",
+                    "-checkend",
+                    str(2 * 24 * 60 * 60),
+                    "-noout",
+                    "-in",
+                    str(environment_dir / "docs-tls" / "docs.crt"),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(certificate_check.returncode, 0)
+            certificate = subprocess.run(
+                [
+                    "openssl",
+                    "x509",
+                    "-in",
+                    str(environment_dir / "docs-tls" / "docs.crt"),
+                    "-noout",
+                    "-ext",
+                    "subjectAltName",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("DNS:docs.tempo.xyz", certificate.stdout)
+            self.assertIn("DNS:tempo.xyz", certificate.stdout)
+            self.assertIn(
+                "- docs.tempo.xyz",
+                (environment_dir / "docker-compose.yaml").read_text(),
+            )
+            self.assertIn(
+                "- tempo.xyz",
+                (environment_dir / "docker-compose.yaml").read_text(),
+            )
 
 
 if __name__ == "__main__":
