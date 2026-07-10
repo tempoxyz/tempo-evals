@@ -7,13 +7,20 @@ WORKSPACE="${TEMPO_BENCH_WORKSPACE:-/app}"
 TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
 REWARDKIT_PYTHON="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}/bin/python"
 REWARDKIT_TESTS_DIR="$TESTS_DIR"
+REWARDKIT_WORKSPACE="$(mktemp -d)"
 
 mkdir -p "$LOG_DIR"
 rm -f "$LOG_DIR/reward.json" "$LOG_DIR/reward-details.json"
+trap 'rm -rf "$REWARDKIT_WORKSPACE"' EXIT
 
 write_zero_reward() {
   printf '{"reward":0}\n' > "$LOG_DIR/reward.json"
 }
+
+if ! cp -R "$WORKSPACE/." "$REWARDKIT_WORKSPACE"; then
+  write_zero_reward
+  exit 0
+fi
 
 if ! bash "$TESTS_DIR/correctness/verify-tempo.sh"; then
   write_zero_reward
@@ -29,6 +36,6 @@ if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -f "$TESTS_DIR/quality/reward.toml" ]; t
 fi
 
 if [ ! -x "$REWARDKIT_PYTHON" ] || ! "$REWARDKIT_PYTHON" -m rewardkit \
-  "$REWARDKIT_TESTS_DIR" --workspace "$WORKSPACE"; then
+  "$REWARDKIT_TESTS_DIR" --workspace "$REWARDKIT_WORKSPACE"; then
   write_zero_reward
 fi
