@@ -29,6 +29,7 @@ class BenchmarkKey(StrEnum):
 # variant's "job" spec into config/generated/, and runs use those checked-in
 # files.
 RUN_CONFIG: dict[str, Any] = yaml.safe_load(Path("config/variants.yaml").read_text())
+TASKS_CONFIG: dict[str, Any] = yaml.safe_load(Path("config/tasks.yaml").read_text())
 VARIANTS: dict[str, dict[str, Any]] = RUN_CONFIG["variants"]
 RAW_BENCHMARKS: dict[str, dict[str, Any]] = yaml.safe_load(
     Path("config/benchmarks.yaml").read_text()
@@ -36,6 +37,19 @@ RAW_BENCHMARKS: dict[str, dict[str, Any]] = yaml.safe_load(
 BENCHMARKS: dict[BenchmarkKey, dict[str, Any]] = {
     key: RAW_BENCHMARKS[key.value] for key in BenchmarkKey
 }
+TEMPO_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
+
+
+def tempo_profile(profile_id: str) -> dict[str, Any]:
+    for profile in TEMPO_PROFILES:
+        if profile["id"] == profile_id:
+            return profile
+    raise RuntimeError(f"Missing Tempo profile: {profile_id}")
+
+
+DOCS_PROFILE = tempo_profile("docs")
+MCP_PROFILE = tempo_profile("mcp")
+PROFILE_IDS = tuple(profile["id"] for profile in TEMPO_PROFILES)
 
 
 def usage() -> None:
@@ -80,6 +94,7 @@ Options:
   --tasks PATH            Task dataset path for dataset/model variants
                           (default: tasks/tempo-v1)
   --docs-sha SHA          Serve docs pinned to this SHA instead of public docs
+  --profile PROFILE       Tempo access profile: docs or mcp (default: docs)
   --no-force-build        Ask Harbor to reuse Docker environment builds
   --no-delete             Keep Harbor environments after the run for debugging
   --disable-verification  Skip verifier execution
@@ -124,6 +139,7 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     )
     parser.add_argument("--tasks")
     parser.add_argument("--docs-sha")
+    parser.add_argument("--profile", choices=PROFILE_IDS, default=DOCS_PROFILE["id"])
     parser.add_argument("--no-sync", action="store_false", dest="sync", default=True)
     parser.add_argument("--no-force-build", action="store_true")
     parser.add_argument("--no-delete", action="store_true")
@@ -536,6 +552,7 @@ def run_production_variant(
         "max_retries": max_retries,
         "docs_source": source.get("sha", "public"),
         "docs_bundle": docs_bundle,
+        "profile": options["profile"],
         "git_sha": run_output("git", ["rev-parse", "HEAD"]),
         "git_branch": run_output("git", ["branch", "--show-current"]),
         "harbor_version": run_output("uv", ["run", "harbor", "--version"]),
@@ -629,6 +646,16 @@ def apply_model_override(
 
     msg = "Could not apply model override to config"
     raise RuntimeError(msg)
+
+
+def apply_profile(config: dict[str, Any], profile_id: str) -> dict[str, Any]:
+    if profile_id == DOCS_PROFILE["id"]:
+        return config
+
+    for agent in config.get("agents", []):
+        if agent.get("name") != "oracle":
+            agent["mcp_servers"] = copy.deepcopy(MCP_PROFILE["mcp_servers"])
+    return config
 
 
 def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
@@ -825,7 +852,7 @@ def stage_daytona_config(
     shutil.rmtree(staging_root, ignore_errors=True)
     stage_task_datasets(staging_root, docs_bundle)
 
-    config = finalize_config(config, options)
+    config = apply_profile(finalize_config(config, options), options["profile"])
     redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
@@ -841,7 +868,7 @@ def stage_filtered_config(
     staged_config = staging_root / "job.yaml"
     shutil.rmtree(staging_root, ignore_errors=True)
     staging_root.mkdir(parents=True, exist_ok=True)
-    config = finalize_config(config, options)
+    config = apply_profile(finalize_config(config, options), options["profile"])
     if docs_bundle is not None:
         stage_task_datasets(staging_root, docs_bundle)
         redirect_dataset_paths(config, staging_root)
@@ -889,6 +916,9 @@ def main(argv: list[str]) -> None:
         msg = f"Unknown variant: {variant_name}"
         raise RuntimeError(msg)
 
+    if options["profile"] == MCP_PROFILE["id"] and not variant.get("job"):
+        raise RuntimeError("The MCP profile requires a job-backed benchmark variant.")
+
     source = docs_source(options)
     load_env_file(options.get("env_file"))
     preflight(variant, options)
@@ -899,8 +929,9 @@ def main(argv: list[str]) -> None:
     docs_bundle = ensure_docs_bundle(source)
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))
+    default_run_name = versioned_name(benchmark, variant["prefix"])
     run_id = options.get("job_name") or (
-        f"{versioned_name(benchmark, variant['prefix'])}-{timestamp()}"
+        f"{default_run_name}-{options['profile']}-{timestamp()}"
     )
     args = ["run", "harbor", "run"]
     if variant.get("production"):

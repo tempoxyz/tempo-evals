@@ -116,6 +116,7 @@ def build_context(job_dir: Path, run_id: str, metadata: JsonObject) -> JsonObjec
         "docs_source": source
         if isinstance(source, str) and source
         else default_docs_source(),
+        "tempo_profile": profile_from_job(job_dir),
     }
 
 
@@ -127,11 +128,22 @@ def result_files(root: Path) -> list[Path]:
     )
 
 
-def parse_task_name(task_name: str) -> dict[str, str]:
+def profile_from_job(job_dir: Path) -> str:
+    config = read_json(job_dir / "config.json") or {}
+    for agent in as_object(config).get("agents", []):
+        if not isinstance(agent, dict):
+            continue
+        for server in agent.get("mcp_servers") or []:
+            if isinstance(server, dict) and server.get("name") == "tempo":
+                return "mcp"
+    return "docs"
+
+
+def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, str]:
     if task_name.endswith(MCP_PROFILE_SUFFIX):
         return {"task_family": task_name[: -len(MCP_PROFILE_SUFFIX)], "profile": "mcp"}
     if task_name.startswith("tempo-v1/"):
-        return {"task_family": task_name, "profile": "docs"}
+        return {"task_family": task_name, "profile": tempo_profile}
     return {"task_family": task_name, "profile": "unknown"}
 
 
@@ -233,7 +245,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     agent_info = as_object(result.get("agent_info"))
     model_info = as_object(agent_info.get("model_info"))
     exception_info = as_object(result.get("exception_info"))
-    task = parse_task_name(result["task_name"])
+    task = parse_task_name(result["task_name"], as_string(context.get("tempo_profile")))
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
     tokens = token_totals(result)

@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 from scripts.run_benchmark import (
+    MCP_PROFILE,
     BenchmarkKey,
+    apply_profile,
     benchmark_provenance,
     finalize_config,
     run_benchmark_key,
@@ -86,6 +88,17 @@ class RunBenchmarkTest(unittest.TestCase):
         )
         self.assertEqual(
             run_benchmark_key({"benchmark": "tempo"}, "mpp"), BenchmarkKey.MPP
+        )
+
+    def test_mcp_profile_is_injected_at_job_level(self) -> None:
+        config = {"agents": [{"name": "claude-code"}, {"name": "oracle"}]}
+
+        self.assertEqual(
+            apply_profile(config, "mcp")["agents"],
+            [
+                {"name": "claude-code", "mcp_servers": MCP_PROFILE["mcp_servers"]},
+                {"name": "oracle"},
+            ],
         )
 
     def test_staged_pinned_docs_keep_the_public_hostname(self) -> None:

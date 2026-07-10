@@ -58,7 +58,7 @@ npm run bench:local:agent:dev
 Run one task on Daytona:
 
 ```bash
-npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
+npm run bench:daytona:agent:dev -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
 ```
 
 Run the MPP task family with the generic runner:
@@ -76,7 +76,7 @@ verifiers, or agent setup.
 Local Tempo smoke run:
 
 ```bash
-npm run bench:local:agent:dev -- --task-filter transfer-with-memo-mcp
+npm run bench:local:agent:dev -- --task-filter transfer-with-memo
 ```
 
 Local MPP smoke run:
@@ -88,7 +88,7 @@ npm run bench:local:agent:dev -- --task-suite mpp --task-filter server-charge-pa
 Daytona Tempo smoke run:
 
 ```bash
-npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
+npm run bench:daytona:agent:dev -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
 ```
 
 Daytona MPP smoke run:
@@ -101,7 +101,8 @@ Useful development options:
 
 | Option | Description |
 | ------ | ----------- |
-| `--task-filter GLOB` | Run only matching task names, e.g. `transfer-with-memo-mcp` |
+| `--task-filter GLOB` | Run only matching canonical task names, e.g. `transfer-with-memo` |
+| `--profile PROFILE` | Tempo access profile: `docs` (default) or `mcp` |
 | `--task-suite SUITE` | Select `tempo`, `mpp`, or `all`; default is `tempo` |
 | `--concurrency N` | Override total concurrent trials |
 | `--agent-concurrency N` | Override concurrent agent executions |
@@ -132,7 +133,7 @@ npm run bench:production
 Run a limited production check:
 
 ```bash
-npm run bench:production -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
+npm run bench:production -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
 ```
 
 View raw Harbor results:
@@ -145,6 +146,13 @@ Export CSV and JSON results for notebooks or external tools:
 
 ```bash
 npm run results:export -- --job runs/<run_id>/harbor-job --run-id <run_id>
+```
+
+Compare canonical Tempo tasks across access profiles with separate runs:
+
+```bash
+npm run bench:daytona:agent:dev -- --profile docs
+npm run bench:daytona:agent:dev -- --profile mcp
 ```
 
 Production options:

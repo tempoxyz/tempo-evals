@@ -2,10 +2,9 @@
 """Generate versioned Tempo tasks and sync shared MPP harness files.
 
 Authored Tempo task templates live in tasks/tempo-v1/_templates/<slug>/. Generated
-task directories under tasks/tempo-v1/ contain one canonical Docs task per
-template. Docs and MCP profiles are expanded as run-time configuration by
-scripts/run_benchmark.py. Never hand-edit generated tasks; edit the template and
-re-run `npm run sync`.
+task directories under tasks/tempo-v1/ contain one canonical task per template.
+Benchmark jobs configure Docs or MCP access at run time. Never hand-edit
+generated tasks; edit the template and re-run `npm run sync`.
 """
 
 from __future__ import annotations
@@ -42,8 +41,9 @@ TEMPO_BENCHMARK = BENCHMARKS_CONFIG["tempo"]
 MPP_BENCHMARK = BENCHMARKS_CONFIG["mpp"]
 TASK_SLUGS: list[str] = TASKS_CONFIG["task_slugs"]
 BASE_IMAGE: str = TASKS_CONFIG["base_image"]
-RUNTIME_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
-TRACKED_PROFILES = [profile for profile in RUNTIME_PROFILES if profile["id"] == "docs"]
+TRACKED_PROFILES = [
+    profile for profile in TASKS_CONFIG["profiles"] if profile["id"] == "docs"
+]
 QUALITY_ENV: dict[str, str] = TASKS_CONFIG["quality_env"]
 FIXTURE_ENV: dict[str, str] = TASKS_CONFIG["fixture_env"]
 CASE_FIXTURES: dict[str, dict[str, str]] = TASKS_CONFIG["case_fixtures"]

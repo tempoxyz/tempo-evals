@@ -54,7 +54,7 @@ Single task:
 ```bash
 npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 npm run bench:local:mpp -- --task-filter server-charge-pathusd
-npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
+npm run bench:daytona:agent:dev -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
 ```
 
 Use `npm run sync` after changing shared/generated task assets. Use
@@ -79,11 +79,11 @@ output, or cache output.
 
 ## Generated Files
 
-Generated profile task directories in `tasks/tempo-v1/` are generated output; do
+Generated Tempo task directories in `tasks/tempo-v1/` are generated output; do
 not hand-edit them. Authored Tempo task templates live in
 `tasks/tempo-v1/_templates/<slug>/` (see `tasks/tempo-v1/_templates/README.md`).
-Each template generates a Docs variant (no suffix) and an `-mcp` variant via
-`npm run sync`.
+Each template generates one canonical task. Benchmark jobs select the Docs or
+MCP access profile; MCP configuration is injected at the agent level.
 
 Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:
@@ -109,9 +109,8 @@ When MPP verifier helpers need Node-side logic, write checked-in TypeScript
 `.ts` files and run them with `tsx`; do not add `.mjs` verifier helpers or
 large inline JavaScript strings in Python.
 
-Task matrix data (task slugs, generated docs/MCP profiles, MPP shared
-file lists) lives in `config/tasks.yaml`; `scripts/sync_shared.py` only
-executes it.
+Task matrix data (task slugs, access profiles, MPP shared file lists) lives in
+`config/tasks.yaml`; `scripts/sync_shared.py` only executes it.
 
 All task environments build `FROM` one shared base image
 (`shared/global/docker/base/Dockerfile`, pinned as `base_image` in
