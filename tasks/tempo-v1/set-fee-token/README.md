@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/set-fee-token/README.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Set Fee Token
 
 ## Overview

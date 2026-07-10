@@ -1,5 +1,3 @@
-# SYNCED FROM shared/global/rewardkit/quality/check.py
-# BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 from pathlib import Path
 
 import rewardkit as rk

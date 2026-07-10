@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/transfer-with-memo-fee-payer/README.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Transfer With Memo And Fee Payer
 
 ## Overview

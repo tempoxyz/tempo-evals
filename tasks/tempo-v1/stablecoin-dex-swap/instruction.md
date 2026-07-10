@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/stablecoin-dex-swap/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Stablecoin DEX Swap
 
 Build a minimal TypeScript project that swaps `TEMPO_SWAP_AMOUNT_IN` of the

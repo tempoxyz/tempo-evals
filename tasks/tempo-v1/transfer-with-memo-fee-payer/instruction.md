@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/transfer-with-memo-fee-payer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Transfer With Memo And Fee Payer
 
 Build a minimal TypeScript project that sends a Tempo stablecoin payment with a memo and a separate fee payer.

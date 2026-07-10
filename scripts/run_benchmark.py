@@ -68,8 +68,8 @@ Variants:
   daytona-agent      Claude Code matrix on Daytona
   daytona-agent-dev  One-attempt Claude Code smoke run on Daytona
   production-daytona Production Daytona run over configured models
-  sync               Sync generated task assets and compiled job configs
-  dataset            Sync generated task assets and Harbor dataset digests
+  sync               Sync shared MPP assets and compiled job configs
+  dataset            Sync shared assets and Harbor dataset digests
   build-base         Build the shared task base image locally
   check-dataset      Verify dataset digests are fresh
   check-generated    Verify sync leaves no generated diff

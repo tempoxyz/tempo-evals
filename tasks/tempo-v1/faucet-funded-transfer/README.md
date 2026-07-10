@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/faucet-funded-transfer/README.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Faucet Funded Transfer
 
 ## Overview

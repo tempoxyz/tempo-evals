@@ -3,7 +3,7 @@
 services:
   main:
     # Docker Compose only forwards task env vars that are listed here. This is
-    # the union needed by the generated Tempo tasks; individual tasks use
+    # the union needed by Tempo tasks; individual tasks use
     # subsets of these values.
     environment:
       - TEMPO_AMOUNT

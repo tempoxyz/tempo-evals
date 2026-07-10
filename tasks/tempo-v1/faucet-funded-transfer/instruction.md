@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/faucet-funded-transfer/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Faucet Funded Transfer
 
 Build a minimal TypeScript project that funds a sender wallet with Tempo's faucet, then sends an AlphaUSD transfer from that funded wallet.
