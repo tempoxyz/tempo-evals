@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -u -o pipefail
+
+LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
+WORKSPACE="${TEMPO_BENCH_WORKSPACE:-/app}"
+TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
+REWARDKIT_PYTHON="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}/bin/python"
+JUDGE_WORKSPACE="$(mktemp -d)"
+
+mkdir -p "$LOG_DIR"
+trap 'rm -rf "$JUDGE_WORKSPACE"' EXIT
+
+python3 "$TESTS_DIR/check.py"
+
+if ! python3 - "$LOG_DIR/reward.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+score = json.loads(Path(sys.argv[1]).read_text()).get("reward", 0)
+raise SystemExit(0 if score == 1 else 1)
+PY
+then
+  exit 0
+fi
+
+if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+  printf '%s\n' 'Skipping LLM quality reward because ANTHROPIC_API_KEY is not set.' \
+    > "$LOG_DIR/quality-skipped.txt"
+  exit 0
+fi
+
+if [ ! -x "$REWARDKIT_PYTHON" ]; then
+  printf '%s\n' 'Skipping LLM quality reward because RewardKit is unavailable.' \
+    > "$LOG_DIR/quality-skipped.txt"
+  exit 0
+fi
+
+cp "$WORKSPACE/answer.json" "$JUDGE_WORKSPACE/answer.json" 2>/dev/null || true
+cp "$TESTS_DIR/instruction.md" "$JUDGE_WORKSPACE/instruction.md"
+
+if ! (
+  cd "$JUDGE_WORKSPACE" || exit 1
+  "$REWARDKIT_PYTHON" -m rewardkit "$TESTS_DIR/quality" \
+    --workspace "$JUDGE_WORKSPACE" --output "$LOG_DIR/quality-reward.json"
+); then
+  printf '%s\n' 'Skipping LLM quality reward because the judge failed.' \
+    > "$LOG_DIR/quality-skipped.txt"
+  exit 0
+fi
+
+python3 - "$LOG_DIR/reward.json" "$LOG_DIR/quality-reward.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+reward_path = Path(sys.argv[1])
+quality_path = Path(sys.argv[2])
+reward = json.loads(reward_path.read_text())
+quality = json.loads(quality_path.read_text()).get("reward")
+if isinstance(quality, int | float):
+    reward["quality"] = quality
+reward_path.write_text(json.dumps(reward) + "\n")
+PY

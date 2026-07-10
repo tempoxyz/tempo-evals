@@ -15,6 +15,8 @@ daytona:
 # use --task-suite all to include every task family.
 tempo_only_datasets: &tempo_only_datasets
   - path: tasks/tempo-v1
+mcp_only_datasets: &mcp_only_datasets
+  - path: tasks/tempo-mcp-v1
 mpp_only_datasets: &mpp_only_datasets
   - path: tasks/mpp
     task_names: ["server-*"]

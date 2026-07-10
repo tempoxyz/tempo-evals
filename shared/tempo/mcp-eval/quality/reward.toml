@@ -1,0 +1,26 @@
+[judge]
+judge = "anthropic/claude-haiku-4-5"
+mode = "batched"
+files = ["instruction.md", "answer.json"]
+timeout = 120
+
+[[criterion]]
+name = "answers_the_question"
+type = "likert"
+points = 5
+description = "Rate whether answer.json directly and completely answers the documentation question in instruction.md. Reward specific, technically coherent explanations; do not penalize different correct wording."
+
+[[criterion]]
+name = "has_useful_citations"
+type = "likert"
+points = 5
+description = "Rate whether the sources in answer.json are clearly relevant Tempo documentation URLs and support a reader who wants to verify the answer."
+
+[[criterion]]
+name = "is_concise_and_clear"
+type = "likert"
+points = 5
+description = "Rate whether the answer is concise, readable, and free of irrelevant material while retaining the necessary explanation."
+
+[scoring]
+aggregation = "weighted_mean"

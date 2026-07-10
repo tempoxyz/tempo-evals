@@ -19,6 +19,23 @@ profiles:
       - name: tempo
         transport: streamable-http
         url: https://mcp.tempo.xyz
+  - id: mcp-direct
+    mcp_servers:
+      - name: tempo-direct
+        transport: streamable-http
+        url: http://tempo-mcp-direct:8787/mcp
+  - id: mcp-code
+    mcp_servers:
+      - name: tempo-code
+        transport: streamable-http
+        url: http://tempo-mcp-code:8787/mcp
+
+# The canonical run must provide an immutable deployment URL (for example a
+# release Worker URL) through TEMPO_MCP_EVAL_URL. The bridge relays to that
+# endpoint; mcp.tempo.xyz remains only the legacy profile above.
+mcp_eval:
+  target_id: tempo-mcp-codemode-v1
+  docs_sha: ${TEMPO_MCP_EVAL_DOCS_SHA:-unrecorded}
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.

@@ -16,3 +16,10 @@ benchmarks:
     description: MPP MVP benchmark
     keywords: [mpp, tempo, stripe, typescript]
     author: Tempo Labs
+  tempo-mcp:
+    id: tempo-mcp-bench-v1
+    dataset: tempo/tempo-mcp-bench-v1
+    path: tasks/tempo-mcp-v1
+    description: Tempo MCP code-mode efficiency benchmark
+    keywords: [tempo, mcp, docs, code-mode, efficiency]
+    author: Tempo

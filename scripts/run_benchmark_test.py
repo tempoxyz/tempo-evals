@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from scripts.run_benchmark import (
+    MCP_CODE_PROFILE,
+    MCP_DIRECT_PROFILE,
     MCP_PROFILE,
     BenchmarkKey,
     apply_profile,
@@ -46,6 +48,12 @@ class RunBenchmarkTest(unittest.TestCase):
             [{"path": "tasks/mpp", "task_names": ["server-*"]}],
         )
 
+    def test_finalize_config_selects_tempo_mcp_suite(self) -> None:
+        self.assertEqual(
+            finalize_config(base_config(), {"task_suite": "tempo-mcp"})["datasets"],
+            [{"path": "tasks/tempo-mcp-v1"}],
+        )
+
     def test_finalize_config_requires_all_suite_for_full_matrix(self) -> None:
         config = finalize_config(base_config(), {"task_suite": "all"})
 
@@ -54,6 +62,9 @@ class RunBenchmarkTest(unittest.TestCase):
             [
                 {
                     "path": "tasks/tempo-v1",
+                },
+                {
+                    "path": "tasks/tempo-mcp-v1",
                 },
                 {"path": "tasks/mpp", "task_names": ["server-*"]},
             ],
@@ -109,6 +120,20 @@ class RunBenchmarkTest(unittest.TestCase):
                 {"name": "claude-code", "mcp_servers": MCP_PROFILE["mcp_servers"]},
                 {"name": "oracle"},
             ],
+        )
+
+    def test_mcp_eval_profiles_inject_distinct_bridge_servers(self) -> None:
+        self.assertEqual(
+            apply_profile({"agents": [{"name": "claude-code"}]}, "mcp-direct")[
+                "agents"
+            ][0]["mcp_servers"],
+            MCP_DIRECT_PROFILE["mcp_servers"],
+        )
+        self.assertEqual(
+            apply_profile({"agents": [{"name": "claude-code"}]}, "mcp-code")["agents"][
+                0
+            ]["mcp_servers"],
+            MCP_CODE_PROFILE["mcp_servers"],
         )
 
     def test_daytona_base_image_uses_the_supplied_image(self) -> None:

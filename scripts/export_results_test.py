@@ -8,6 +8,7 @@ from typing import Any
 
 import pandas as pd
 
+from scripts.compare_mcp_results import compare
 from scripts.export_results import export_results, parse_task_name, summarize_rows
 
 
@@ -160,6 +161,108 @@ class ExportResultsTest(unittest.TestCase):
             result = export_results(job_dir)
 
             self.assertEqual(result["trials"][0]["profile"], "mcp")
+
+    def test_export_results_reads_mcp_eval_profiles(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+            job_dir = Path(root) / "job"
+            write_json(
+                job_dir / "direct" / "result.json",
+                trial(
+                    {
+                        "task_name": "tempo-mcp-v1/wallet-client",
+                        "config": {
+                            "agent": {"mcp_servers": [{"name": "tempo-direct"}]}
+                        },
+                    }
+                ),
+            )
+            write_json(
+                job_dir / "code" / "result.json",
+                trial(
+                    {
+                        "task_name": "tempo-mcp-v1/wallet-client",
+                        "trial_name": "code",
+                        "config": {"agent": {"mcp_servers": [{"name": "tempo-code"}]}},
+                    }
+                ),
+            )
+            self.assertEqual(
+                {row["profile"] for row in export_results(job_dir)["trials"]},
+                {"mcp-direct", "mcp-code"},
+            )
+
+    def test_export_marks_only_clean_mcp_trials_eligible(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+            job_dir = Path(root) / "job"
+            trial_dir = job_dir / "trial"
+            write_json(
+                trial_dir / "result.json",
+                trial(
+                    {
+                        "task_name": "tempo-mcp-v1/wallet-client",
+                        "config": {
+                            "agent": {"mcp_servers": [{"name": "tempo-direct"}]}
+                        },
+                        "verifier_result": {"rewards": {"reward": 1, "quality": 0.8}},
+                    }
+                ),
+            )
+            trace = trial_dir / "artifacts" / "var/log/tempo-mcp/direct-trace.jsonl"
+            trace.parent.mkdir(parents=True)
+            trace.write_text(
+                json.dumps(
+                    {
+                        "method": "tools/call",
+                        "tool": "search",
+                        "allowed": True,
+                        "duration_ms": 12,
+                    }
+                )
+                + "\n"
+            )
+            (trial_dir / "agent").mkdir()
+            (trial_dir / "agent" / "claude-code.txt").write_text(
+                json.dumps({"type": "result", "num_turns": 7}) + "\n"
+            )
+
+            row = export_results(job_dir)["trials"][0]
+
+            self.assertEqual(row["quality"], 0.8)
+            self.assertEqual(row["model_turns"], 7)
+            self.assertTrue(row["mcp_used"])
+            self.assertTrue(row["mcp_trace_clean"])
+            self.assertTrue(row["eligible"])
+
+    def test_compare_pairs_direct_and_code_trials(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-compare-") as root:
+            root_path = Path(root)
+            direct_path = root_path / "direct.csv"
+            code_path = root_path / "code.csv"
+            row = {
+                "task_family": "tempo-mcp-v1/wallet-client",
+                "model": "test",
+                "agent": "agent",
+                "attempt_index": 1,
+                "task_checksum": "task",
+                "docs_source": "docs",
+                "passed": "true",
+                "input_tokens": 20,
+                "cache_tokens": 0,
+                "output_tokens": 10,
+                "model_turns": 2,
+                "mcp_calls": 3,
+                "duration_sec": 4,
+                "cost_usd": 0.01,
+            }
+            pd.DataFrame([{**row, "profile": "mcp-direct"}]).to_csv(
+                direct_path, index=False
+            )
+            pd.DataFrame(
+                [{**row, "profile": "mcp-code", "input_tokens": 12, "mcp_calls": 1}]
+            ).to_csv(code_path, index=False)
+            result = compare(str(direct_path), str(code_path))
+            self.assertEqual(result.loc[0, "input_tokens_delta"], 8)
+            self.assertEqual(result.loc[0, "mcp_calls_delta"], 2)
 
     def test_summarize_rows_groups_by_model_task_and_profile(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:

@@ -22,6 +22,7 @@ import yaml
 
 class BenchmarkKey(StrEnum):
     TEMPO = "tempo"
+    TEMPO_MCP = "tempo-mcp"
     MPP = "mpp"
 
 
@@ -50,7 +51,10 @@ def tempo_profile(profile_id: str) -> dict[str, Any]:
 
 DOCS_PROFILE = tempo_profile("docs")
 MCP_PROFILE = tempo_profile("mcp")
+MCP_DIRECT_PROFILE = tempo_profile("mcp-direct")
+MCP_CODE_PROFILE = tempo_profile("mcp-code")
 PROFILE_IDS = tuple(profile["id"] for profile in TEMPO_PROFILES)
+DEFAULT_PROFILE_IDS = (DOCS_PROFILE["id"], MCP_PROFILE["id"])
 
 
 def usage() -> None:
@@ -89,7 +93,7 @@ Options:
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and config variants
-  --task-suite SUITE      Task family for config variants: tempo, mpp, or all
+  --task-suite SUITE      Task family: tempo, tempo-mcp, mpp, or all
                           (default: tempo; use all explicitly for full matrix)
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
@@ -135,14 +139,16 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument("--agent")
     parser.add_argument("--model")
     parser.add_argument("--task-filter")
-    parser.add_argument("--task-suite", choices=["tempo", "mpp", "all"])
+    parser.add_argument("--task-suite", choices=["tempo", "tempo-mcp", "mpp", "all"])
     parser.add_argument(
         "--n-tasks", type=lambda value: read_positive_integer(value, "--n-tasks")
     )
     parser.add_argument("--tasks")
     parser.add_argument("--docs-sha")
     parser.add_argument(
-        "--profile", choices=(*PROFILE_IDS, "all"), default=DOCS_PROFILE["id"]
+        "--profile",
+        choices=(*PROFILE_IDS, "mcp-both", "all"),
+        default=DOCS_PROFILE["id"],
     )
     parser.add_argument("--base-image")
     parser.add_argument("--no-sync", action="store_false", dest="sync", default=True)
@@ -209,6 +215,9 @@ DOCS_ACCESS_LOG = "/var/log/tempo-docs/access.log"
 DOCS_TLS_DIR = "docs-tls"
 DOCS_CA_FILE = "ca.crt"
 DOCS_CA_DESTINATION = "/usr/local/share/ca-certificates/tempo-bench-docs.crt"
+MCP_UPSTREAM_PLACEHOLDER = (
+    "${TEMPO_MCP_EVAL_URL:?Set TEMPO_MCP_EVAL_URL to an immutable MCP deployment URL}"
+)
 DOCS_TLS_VALIDITY_DAYS = "30"
 
 
@@ -269,6 +278,15 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             "and DAYTONA_ORGANIZATION_ID."
         )
         raise RuntimeError(msg)
+
+
+def preflight_mcp_target(options: dict[str, Any]) -> None:
+    if options["profile"] not in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}:
+        return
+    run_python(
+        "scripts/verify_tempo_mcp.py",
+        ["--url", os.environ.get("TEMPO_MCP_EVAL_URL", "https://mcp.tempo.xyz")],
+    )
 
 
 def preflight_production_agents(model_config: dict[str, Any]) -> None:
@@ -402,7 +420,7 @@ def benchmark_key(value: str | BenchmarkKey | None) -> BenchmarkKey:
 
 def benchmark_provenance(task_suite: str | None) -> list[dict[str, str]]:
     keys = (
-        (BenchmarkKey.TEMPO, BenchmarkKey.MPP)
+        (BenchmarkKey.TEMPO, BenchmarkKey.TEMPO_MCP, BenchmarkKey.MPP)
         if task_suite == "all"
         else (benchmark_key(task_suite),)
     )
@@ -527,7 +545,7 @@ def production_job(
         "environment_type": "daytona",
         "force_build": False,
         "agents": [production_agent(model) for model in model_config["models"]],
-        "datasets": RUN_CONFIG["tempo_only_datasets"],
+        "datasets": datasets_for_suite(options.get("task_suite") or "tempo"),
     }
 
 
@@ -611,6 +629,8 @@ def datasets_for_suite(task_suite: str) -> list[dict[str, Any]]:
         return copy.deepcopy(RUN_CONFIG["tempo_only_datasets"])
     if task_suite == "mpp":
         return copy.deepcopy(RUN_CONFIG["mpp_only_datasets"])
+    if task_suite == "tempo-mcp":
+        return copy.deepcopy(RUN_CONFIG["mcp_only_datasets"])
     return copy.deepcopy(read_yaml("config/datasets.yaml").get("datasets", []))
 
 
@@ -633,14 +653,14 @@ def apply_task_filter(
         config["datasets"] = [{"path": "tasks/mpp", "task_names": [mpp_filter]}]
         return config
 
-    tempo_prefixes = ("tempo-v1/", "tempo/")
+    tempo_prefixes = ("tempo-v1/", "tempo-mcp-v1/", "tempo/")
     filters = [task_filter]
     for prefix in tempo_prefixes:
         if task_filter.startswith(prefix):
             filters.append(task_filter.removeprefix(prefix))
             break
     for dataset in config.get("datasets", []):
-        if dataset.get("path") in {"tasks", "tasks/tempo-v1"}:
+        if dataset.get("path") in {"tasks", "tasks/tempo-v1", "tasks/tempo-mcp-v1"}:
             dataset["task_names"] = filters
             config["datasets"] = [dataset]
             return config
@@ -671,9 +691,10 @@ def apply_profile(config: dict[str, Any], profile_id: str) -> dict[str, Any]:
     if profile_id == DOCS_PROFILE["id"]:
         return config
 
+    profile = tempo_profile(profile_id)
     for agent in config.get("agents", []):
         if agent.get("name") != "oracle":
-            agent["mcp_servers"] = copy.deepcopy(MCP_PROFILE["mcp_servers"])
+            agent["mcp_servers"] = copy.deepcopy(profile["mcp_servers"])
     return config
 
 
@@ -681,6 +702,7 @@ def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
     path_map = {
         "tasks/mpp": str(staging_root / "tasks" / "mpp"),
         "tasks/tempo-v1": str(staging_root / "tasks" / "tempo-v1"),
+        "tasks/tempo-mcp-v1": str(staging_root / "tasks" / "tempo-mcp-v1"),
         "tasks": str(staging_root / "tasks" / "tempo-v1"),
     }
     changed = False
@@ -854,6 +876,46 @@ def stage_task_datasets(
     staged_tasks = staging_root / "tasks" / "tempo-v1"
     staged_tasks.parent.mkdir(parents=True, exist_ok=True)
     copy_tasks(Path("tasks/tempo-v1"), staged_tasks)
+    if Path("tasks/tempo-mcp-v1").exists():
+        mcp_tasks = staging_root / "tasks" / "tempo-mcp-v1"
+        copy_tasks(Path("tasks/tempo-mcp-v1"), mcp_tasks)
+        for task_dir in mcp_tasks.iterdir():
+            if not task_dir.is_dir() or not (task_dir / "task.toml").exists():
+                continue
+            environment_dir = task_dir / "environment"
+            shutil.copyfile(
+                "shared/tempo/docker/compose/tempo-mcp-eval.yaml",
+                environment_dir / "docker-compose.yaml",
+            )
+            upstream_url = os.environ.get("TEMPO_MCP_EVAL_URL")
+            if upstream_url:
+                compose_path = environment_dir / "docker-compose.yaml"
+                compose_path.write_text(
+                    compose_path.read_text().replace(
+                        MCP_UPSTREAM_PLACEHOLDER,
+                        upstream_url,
+                    )
+                )
+            shutil.copytree(
+                "shared/tempo/mcp-bridge",
+                environment_dir / "mcp-bridge",
+                dirs_exist_ok=True,
+            )
+            shutil.copyfile(
+                "shared/tempo/mcp-eval/check.py", task_dir / "tests" / "check.py"
+            )
+            shutil.copyfile(
+                "shared/tempo/mcp-eval/test.sh", task_dir / "tests" / "test.sh"
+            )
+            (task_dir / "tests" / "test.sh").chmod(0o755)
+            shutil.copyfile(
+                task_dir / "instruction.md", task_dir / "tests" / "instruction.md"
+            )
+            shutil.copytree(
+                "shared/tempo/mcp-eval/quality",
+                task_dir / "tests" / "quality",
+                dirs_exist_ok=True,
+            )
     if Path("tasks/mpp").exists():
         copy_tasks(Path("tasks/mpp"), staging_root / "tasks" / "mpp")
     if base_image is not None:
@@ -903,7 +965,11 @@ def stage_filtered_config(
     shutil.rmtree(staging_root, ignore_errors=True)
     staging_root.mkdir(parents=True, exist_ok=True)
     config = apply_profile(finalize_config(config, options), options["profile"])
-    if docs_bundle is not None:
+    if (
+        docs_bundle is not None
+        or options["profile"] in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}
+        or options.get("task_suite") == "tempo-mcp"
+    ):
         stage_task_datasets(staging_root, docs_bundle)
         redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
@@ -944,7 +1010,7 @@ def main(argv: list[str]) -> None:
         Path("jobs").mkdir(parents=True, exist_ok=True)
         return
 
-    if options["profile"] == "all":
+    if options["profile"] in {"all", "mcp-both"}:
         variant = VARIANTS.get(variant_name)
         if not variant:
             usage()
@@ -964,7 +1030,11 @@ def main(argv: list[str]) -> None:
                 ),
                 "sync": options["sync"] if index == 0 else False,
             }
-            for index, profile_id in enumerate(PROFILE_IDS)
+            for index, profile_id in enumerate(
+                (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"])
+                if options["profile"] == "mcp-both"
+                else DEFAULT_PROFILE_IDS
+            )
         ]
         with ThreadPoolExecutor(max_workers=len(profile_options)) as executor:
             futures = [
@@ -986,12 +1056,17 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         msg = f"Unknown variant: {variant_name}"
         raise RuntimeError(msg)
 
-    if options["profile"] == MCP_PROFILE["id"] and not variant.get("job"):
+    if options["profile"] in {
+        MCP_PROFILE["id"],
+        MCP_DIRECT_PROFILE["id"],
+        MCP_CODE_PROFILE["id"],
+    } and not variant.get("job"):
         raise RuntimeError("The MCP profile requires a job-backed benchmark variant.")
 
     source = docs_source(options)
     load_env_file(options.get("env_file"))
     preflight(variant, options)
+    preflight_mcp_target(options)
     if options.get("sync"):
         sync_dataset(options)
     if not variant.get("needs_daytona_auth"):

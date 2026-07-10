@@ -67,6 +67,14 @@ Run the MPP task family with the generic runner:
 npm run bench:local:oracle -- --task-suite mpp
 ```
 
+Run the paired MCP efficiency suite (three attempts per arm):
+
+```bash
+TEMPO_MCP_EVAL_URL=https://<immutable-mcp-deployment>/mcp \
+TEMPO_MCP_TARGET_ID=<deployment-id> \
+npm run bench:local:mcp
+```
+
 ## Running Development Benchmarks
 
 Development flows are for iteration and smoke testing. They keep attempts low and
@@ -179,6 +187,7 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 | ------- | ---- | ----------- |
 | `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo localnet integration tasks across docs and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
+| `tempo/tempo-mcp-bench-v1` | `tasks/tempo-mcp-v1/` | Direct-tools vs code-mode MCP efficiency tasks |
 
 Benchmark majors are immutable evaluation contracts: task set, prompts,
 fixtures, verifier behavior, and scoring rules. Compatible maintenance fixes
@@ -190,6 +199,7 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 
 * **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) transparently serves a pinned bundle at `https://docs.tempo.xyz` and `https://tempo.xyz/developers`.
 * **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
+* **MCP efficiency**: paired `mcp-direct` and `mcp-code` profiles connect through a local bridge. Set `TEMPO_MCP_EVAL_URL` to the immutable deployment being measured and `TEMPO_MCP_TARGET_ID` to its release identifier.
 
 ## CLI
 
