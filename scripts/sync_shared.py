@@ -183,7 +183,7 @@ def render_task_toml(task_dir: Path, slug: str, profile: dict[str, Any]) -> None
     doc = tomlkit.parse(task_config_path.read_text())
 
     task = doc["task"]
-    task["name"] = f"tempo/{slug}{profile['suffix']}"
+    task["name"] = f"tempo-v1/{slug}{profile['suffix']}"
     description = str(task.get("description", task["name"]))
     task["description"] = f"{description} ({profile['label']} profile)."
     keywords = task.get("keywords")
@@ -397,7 +397,7 @@ def read_manifest_digests(dataset_path: Path) -> dict[str, str]:
 
 def matrix_task_names() -> list[str]:
     return [
-        f"tempo/{slug}{profile['suffix']}"
+        f"tempo-v1/{slug}{profile['suffix']}"
         for slug in TASK_SLUGS
         for profile in ALL_PROFILES
     ]

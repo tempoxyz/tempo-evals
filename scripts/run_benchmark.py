@@ -597,11 +597,12 @@ def apply_task_filter(
         config["datasets"] = [{"path": "tasks/mpp", "task_names": [mpp_filter]}]
         return config
 
-    filters = (
-        [task_filter, task_filter.removeprefix("tempo/")]
-        if task_filter.startswith("tempo/")
-        else [task_filter]
-    )
+    tempo_prefixes = ("tempo-v1/", "tempo/")
+    filters = [task_filter]
+    for prefix in tempo_prefixes:
+        if task_filter.startswith(prefix):
+            filters.append(task_filter.removeprefix(prefix))
+            break
     for dataset in config.get("datasets", []):
         if dataset.get("path") in {"tasks", "tasks/tempo-v1"}:
             dataset["task_names"] = filters

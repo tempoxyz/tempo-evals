@@ -52,7 +52,7 @@ npm run bench:daytona:agent      # Full Daytona agent run
 Single task:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo
+npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 npm run bench:local:mpp -- --task-filter server-charge-pathusd
 npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
 ```
@@ -120,7 +120,11 @@ pympp, `shared/global/rewardkit-lib/`) and the Tempo JS verifier
 (`shared/tempo/verifier/`). Local runs build it automatically (or run
 `npm run build-base`); CI publishes it to GHCR via
 `.github/workflows/build-base-image.yml`. After changing the base image
-contents, bump the `base_image` tag in `config/tasks.yaml` and re-run
+contents, re-run `npm run sync`.
+
+The pinned base-image tag is intentionally mutable during a Tempo Bench version.
+Only bump `base_image` when cutting a new Tempo Bench version; ordinary shared
+base-image changes should replace the image at the existing tag and re-run
 `npm run sync`.
 
 Harbor job configs are compiled artifacts: `npm run sync` renders

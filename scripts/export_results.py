@@ -130,7 +130,7 @@ def result_files(root: Path) -> list[Path]:
 def parse_task_name(task_name: str) -> dict[str, str]:
     if task_name.endswith(MCP_PROFILE_SUFFIX):
         return {"task_family": task_name[: -len(MCP_PROFILE_SUFFIX)], "profile": "mcp"}
-    if task_name.startswith("tempo/"):
+    if task_name.startswith("tempo-v1/"):
         return {"task_family": task_name, "profile": "docs"}
     return {"task_family": task_name, "profile": "unknown"}
 

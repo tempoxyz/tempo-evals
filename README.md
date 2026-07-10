@@ -34,7 +34,7 @@ npm run bench:local:oracle -- --task-suite all
 Fast oracle loop for one task while editing:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo
+npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 ```
 
 Fast Tempo oracle loop:
@@ -232,7 +232,7 @@ npm run clean
 Use the dev oracle commands while iterating on one Tempo task:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo
+npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 ```
 
 Use `npm run bench:local:mpp` for the same fast loop over MPP tasks. Commands

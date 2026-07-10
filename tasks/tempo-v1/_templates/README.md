@@ -14,7 +14,7 @@ A template task contains only the authored files:
 - `README.md` — the Harbor Hub display summary. It must include `## Overview`,
   `## What the Task Tests`, and `## Verification`.
 - `task.toml` — profile-neutral task config. `[task].name` is the bare
-  intent (`tempo/<slug>`); sync appends the profile suffix, description
+  intent (`tempo-v1/<slug>`); sync appends the profile suffix, description
   label, keywords, per-profile env, and MCP servers. Tempo fixture values
   live in `config/tasks.yaml` under `fixture_env` and `case_fixtures`;
   sync renders them into each generated task's `[environment.env]`. Shared

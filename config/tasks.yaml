@@ -6,6 +6,9 @@
 # venv (harbor-rewardkit, pympp[tempo], tempo-bench-rewardkit) and the Tempo
 # JS verifier; see shared/global/docker/base/Dockerfile. CI publishes it via
 # .github/workflows/build-base-image.yml; local runs build it automatically.
+# This tag is intentionally mutable during a Tempo Bench version. Only bump it
+# when cutting a new Tempo Bench version; ordinary shared-base changes replace
+# the image at the existing tag.
 base_image: ghcr.io/tempoxyz/tempo-bench-base:v1
 
 # Authored task templates under tasks/tempo-v1/_templates/<slug>/. Each one

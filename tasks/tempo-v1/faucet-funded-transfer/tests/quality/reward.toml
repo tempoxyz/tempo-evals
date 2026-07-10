@@ -1,7 +1,7 @@
 # SYNCED FROM shared/global/rewardkit/quality/reward.toml BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 [judge]
 judge = "anthropic/claude-haiku-4-5"
-mode = "batched"
+mode = "individual"
 files = ["package.json", "tsconfig.json", "src/index.ts"]
 atif-trajectory = "/logs/agent/trajectory.json"
 timeout = 300
