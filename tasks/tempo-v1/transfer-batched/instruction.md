@@ -11,10 +11,11 @@ Build a minimal TypeScript project that pays every configured recipient the same
 | Amount per recipient | `TEMPO_AMOUNT` | `0.01` |
 | Token decimals | `TEMPO_DECIMALS` | `6` |
 
-Use `Actions.token.transferSync` from `viem/tempo` with `tempoTestnet`, not a
-generic ERC-20 client. Choose and report the payer; use the Tempo testnet
-`Actions.faucet.fundSync` if it needs funds. Report the hash from the successful
-transfer.
+Use `Actions.token.transferSync` from `viem/tempo` with `tempoTestnet`.
+Generic ERC-20 and RPC fallbacks do not satisfy this task. No `PRIVATE_KEY` is
+provided: create and report the payer, then use `Actions.faucet.fundSync` if it
+needs funds. Convert the amount with `parseUnits` and `TEMPO_DECIMALS`. Only write
+`/app/out.json` after the `Actions.token.transferSync` call succeeds.
 
 ## Tempo Documentation
 

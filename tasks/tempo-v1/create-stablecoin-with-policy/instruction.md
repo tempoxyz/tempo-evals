@@ -15,9 +15,9 @@ and links that policy to the new token.
 | Policy account | `TEMPO_POLICY_ACCOUNT` | `0x1111111111111111111111111111111111111111` |
 
 Use the token and policy `Actions` APIs from `viem/tempo` with `tempoTestnet`.
-Choose and report the payer, stablecoin metadata, and salt; use
-`Actions.faucet.fundSync` if the payer needs funds. Report successful testnet
-hashes.
+No `PRIVATE_KEY` is provided: create and report the payer, stablecoin metadata,
+and salt; use `Actions.faucet.fundSync` if the payer needs funds. Report
+successful testnet hashes.
 
 ## Tempo Documentation
 

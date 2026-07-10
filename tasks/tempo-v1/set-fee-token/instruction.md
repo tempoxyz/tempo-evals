@@ -9,8 +9,9 @@ Build a minimal TypeScript project that sets the account's default Tempo fee tok
 | Fee token to set | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 
 Use `Actions.fee.setUserTokenSync` from `viem/tempo` with `tempoTestnet`.
-Choose and report the payer; use `Actions.faucet.fundSync` if it needs funds.
-Report the hash from the successful fee-token transaction.
+No `PRIVATE_KEY` is provided: create and report the payer, then use
+`Actions.faucet.fundSync` if it needs funds. Report the hash from the successful
+fee-token transaction.
 
 ## Tempo Documentation
 

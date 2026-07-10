@@ -13,10 +13,12 @@ Build a minimal TypeScript project that sends a Tempo stablecoin payment with a 
 | Transfer memo | `TEMPO_MEMO` | `TEMPO-FEEPAYER-001` |
 | Fee token | `TEMPO_FEE_TOKEN` | `0x20c0000000000000000000000000000000000001` |
 
-Use `Actions.token.transferSync` from `viem/tempo` with `tempoTestnet`, not a
-generic ERC-20 client. Choose and report both accounts; use the Tempo testnet
-`Actions.faucet.fundSync` if either needs funds. Report the hash from the
-successful transfer.
+Use `Actions.token.transferSync` from `viem/tempo` with `tempoTestnet`.
+Generic ERC-20 and RPC fallbacks do not satisfy this task. No private-key
+environment variables are provided: create and report both accounts, then use
+`Actions.faucet.fundSync` if either needs funds. Convert the amount with
+`parseUnits` and `TEMPO_DECIMALS`. Only write
+`/app/out.json` after the `Actions.token.transferSync` call succeeds.
 
 ## Tempo Documentation
 

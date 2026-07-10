@@ -12,8 +12,9 @@ Build a minimal TypeScript project that funds a sender wallet with Tempo's fauce
 | Token decimals | `TEMPO_DECIMALS` | `6` |
 
 Use `Actions.faucet.fundSync` then `Actions.token.transferSync` from
-`viem/tempo` with `tempoTestnet`. Choose and report the payer, then fund it
-before sending the transfer. Report the actual faucet and transfer hashes.
+`viem/tempo` with `tempoTestnet`. No `PRIVATE_KEY` is provided: create and report
+the payer, then fund it before sending the transfer. Report the actual faucet
+and transfer hashes.
 
 ## Tempo Documentation
 
