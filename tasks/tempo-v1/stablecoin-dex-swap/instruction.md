@@ -14,6 +14,10 @@ input token for the output token on Tempo's Stablecoin DEX.
 | Minimum amount out | `TEMPO_SWAP_MIN_AMOUNT_OUT` | `0` |
 | Token decimals | `TEMPO_DECIMALS` | `6` |
 
+Use `Actions.dex` and `Actions.token` from `viem/tempo` with `tempoTestnet`.
+Choose and report the taker; use `Actions.faucet.fundSync` if it needs funds.
+Report the hash from the successful swap.
+
 ## Tempo Documentation
 
 Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.

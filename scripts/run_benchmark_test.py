@@ -130,7 +130,7 @@ class RunBenchmarkTest(unittest.TestCase):
                 'artifacts = ["/app/package.json"]\n\n'
                 "[environment]\n"
                 "[environment.env]\n"
-                'TEMPO_RPC_URL = "http://tempo-localnet:8545"\n'
+                'TEMPO_TOKEN = "0x20c0000000000000000000000000000000000001"\n'
             )
             (environment_dir / "Dockerfile").write_text("FROM node:22-bookworm\n")
             bundle_dir = Path(directory) / "bundle"

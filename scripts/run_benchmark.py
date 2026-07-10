@@ -780,6 +780,8 @@ def generate_docs_tls_assets(environment_dir: Path) -> Path:
             str(ca_cert),
             "-CAkey",
             str(ca_key),
+            "-CAserial",
+            str(tls_dir / "ca.srl"),
             "-CAcreateserial",
             "-out",
             str(leaf_cert),
