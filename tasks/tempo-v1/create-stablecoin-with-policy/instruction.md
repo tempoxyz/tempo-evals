@@ -14,14 +14,9 @@ and links that policy to the new token.
 | Policy type | `TEMPO_POLICY_TYPE` | `blacklist` |
 | Policy account | `TEMPO_POLICY_ACCOUNT` | `0x1111111111111111111111111111111111111111` |
 
-Use the token and policy `Actions` APIs from `viem/tempo` with `tempoTestnet`.
-No `PRIVATE_KEY` is provided: create and report the payer, stablecoin metadata,
-and salt; use `Actions.faucet.fundSync` if the payer needs funds. Report
-successful testnet hashes.
-
 ## Tempo Documentation
 
-Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
+Tempo documentation is available at https://docs.tempo.xyz.
 
 ## Execution Constraints
 
