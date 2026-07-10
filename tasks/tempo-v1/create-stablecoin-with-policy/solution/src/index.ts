@@ -51,7 +51,6 @@ const output = {
     address: tokenResult.token,
     name,
     symbol,
-    currency: required("TEMPO_STABLECOIN_CURRENCY"),
     salt,
   },
   policy: { id: policyResult.policyId.toString() },

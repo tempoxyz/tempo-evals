@@ -33,7 +33,7 @@ When `npm run eval` finishes, write `/app/out.json` matching this schema:
   "additionalProperties": false,
   "properties": {
     "payer": { "type": "object", "required": ["address"], "additionalProperties": false, "properties": { "address": { "type": "string" } } },
-    "stablecoin": { "type": "object", "required": ["address", "name", "symbol", "currency", "salt"], "additionalProperties": false, "properties": { "address": { "type": "string" }, "name": { "type": "string" }, "symbol": { "type": "string" }, "currency": { "type": "string" }, "salt": { "type": "string" } } },
+    "stablecoin": { "type": "object", "required": ["address", "name", "symbol", "salt"], "additionalProperties": false, "properties": { "address": { "type": "string" }, "name": { "type": "string" }, "symbol": { "type": "string" }, "salt": { "type": "string" } } },
     "policy": { "type": "object", "required": ["id"], "additionalProperties": false, "properties": { "id": { "type": "string" } } },
     "tokenCreateTransactionHash": { "type": "string" },
     "policyCreateTransactionHash": { "type": "string" },

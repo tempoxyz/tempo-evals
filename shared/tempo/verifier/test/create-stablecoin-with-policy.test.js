@@ -36,7 +36,7 @@ test("rejects a stablecoin with the wrong configured currency", async () => {
     resultPath,
     JSON.stringify({
       payer: { address: payer },
-      stablecoin: { address: token, name: "Agent Dollar", symbol: "AGD", currency: "EUR", salt },
+      stablecoin: { address: token, name: "Agent Dollar", symbol: "AGD", salt },
       policy: { id: "1" },
       tokenCreateTransactionHash: hash("1"),
       policyCreateTransactionHash: hash("2"),
