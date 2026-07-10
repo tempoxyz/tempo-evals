@@ -71,6 +71,7 @@ function defaultRuntimeEnv(config) {
     TEMPO_TOKEN: config.token,
     TEMPO_PAYER_PRIVATE_KEY: config.payerPrivateKey,
     TEMPO_RECIPIENT: config.recipient,
+    ...(config.recipients.length > 0 ? { TEMPO_RECIPIENTS: JSON.stringify(config.recipients) } : {}),
     TEMPO_AMOUNT: config.amount,
     TEMPO_MEMO: config.memo,
     TEMPO_DECIMALS: String(config.decimals),
