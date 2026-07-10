@@ -1,6 +1,6 @@
 # Access Keys
 
-Explain how access keys relate to a Tempo account and the permission boundary they provide.
+Find two recent Tempo transactions that demonstrate access-key use or sponsored fees. Give concrete examples, identify the authorization and fee-paying accounts when observable, then explain how the observed behavior maps to the access-key and fee-sponsorship documentation.
 
 Use the injected Tempo MCP server for Tempo-specific research. Do not browse public Tempo documentation directly.
 
@@ -21,4 +21,4 @@ Write only `/app/answer.json` matching this schema:
 }
 ```
 
-Keep `answer` concise and cite the Tempo documentation used.
+Keep `answer` concise. `sources` must include Tempo documentation URLs and every data tool used as `mcp://tempo/<tool-name>`.

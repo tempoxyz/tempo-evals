@@ -11,7 +11,14 @@ import tempfile
 from typing import Any
 from urllib.request import Request, urlopen
 
-EXPECTED_TOOLS = {"search", "find_pages", "read_page", "code"}
+EXPECTED_TOOLS = {
+    "docs_search",
+    "docs_find_pages",
+    "docs_read_page",
+    "docs_code",
+    "v1_blocks_get",
+    "v1_transactions_get",
+}
 
 
 def parse_mcp_response(raw: bytes) -> dict[str, Any]:
@@ -114,7 +121,7 @@ def verify_tools(actual: set[str], expected: set[str]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--url", default="https://mcp.tempo.xyz")
+    parser.add_argument("--url", default="https://api.tempo.xyz/mcp")
     parser.add_argument("--claude", default="claude")
     parser.add_argument("--skip-claude", action="store_true")
     parser.add_argument("--expected-tools", nargs="+", default=sorted(EXPECTED_TOOLS))

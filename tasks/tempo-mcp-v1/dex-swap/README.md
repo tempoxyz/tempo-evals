@@ -2,14 +2,20 @@
 
 ## Overview
 
-Answer a concise Tempo documentation question using the injected MCP server.
+Investigate live Fee AMM liquidity through the injected MCP server.
 
 ## What the Task Tests
 
-- Multi-step Tempo documentation retrieval
-- Grounded, cited synthesis
+- Fee AMM pool comparison
+- Grounded explanation of observed fee-token support
+
+## Required MCP Tools
+
+- Data: `v1_fee-amm_pools` and optionally `v1_fee-amm_mints`
+- Docs: `docs_search`/`docs_find_pages`/`docs_read_page` or `docs_code`
 
 ## Verification
 
 - A valid /app/answer.json is produced.
-- The answer includes required concepts and a Tempo docs citation.
+- The active MCP arm calls both a data tool and a docs tool.
+- The answer cites Tempo docs and MCP data tools.

@@ -215,9 +215,7 @@ DOCS_ACCESS_LOG = "/var/log/tempo-docs/access.log"
 DOCS_TLS_DIR = "docs-tls"
 DOCS_CA_FILE = "ca.crt"
 DOCS_CA_DESTINATION = "/usr/local/share/ca-certificates/tempo-bench-docs.crt"
-MCP_UPSTREAM_PLACEHOLDER = (
-    "${TEMPO_MCP_EVAL_URL:?Set TEMPO_MCP_EVAL_URL to an immutable MCP deployment URL}"
-)
+MCP_UPSTREAM_PLACEHOLDER = "${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}"
 DOCS_TLS_VALIDITY_DAYS = "30"
 
 
@@ -285,7 +283,7 @@ def preflight_mcp_target(options: dict[str, Any]) -> None:
         return
     run_python(
         "scripts/verify_tempo_mcp.py",
-        ["--url", os.environ.get("TEMPO_MCP_EVAL_URL", "https://mcp.tempo.xyz")],
+        ["--url", os.environ.get("TEMPO_MCP_EVAL_URL", "https://api.tempo.xyz/mcp")],
     )
 
 
@@ -903,6 +901,10 @@ def stage_task_datasets(
             )
             shutil.copyfile(
                 "shared/tempo/mcp-eval/check.py", task_dir / "tests" / "check.py"
+            )
+            shutil.copyfile(
+                "shared/tempo/mcp-eval/validation.py",
+                task_dir / "tests" / "validation.py",
             )
             shutil.copyfile(
                 "shared/tempo/mcp-eval/test.sh", task_dir / "tests" / "test.sh"

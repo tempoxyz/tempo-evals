@@ -1,6 +1,6 @@
 # Faucet Funding
 
-Explain the sequence for funding an account through the Tempo faucet before it sends a token transfer.
+Inspect a recently active Tempo address: summarize its current verified balances and its 20 most recent activities, then explain which documented Tempo features those activities use. Choose and report the address you inspected.
 
 Use the injected Tempo MCP server for Tempo-specific research. Do not browse public Tempo documentation directly.
 
@@ -21,4 +21,4 @@ Write only `/app/answer.json` matching this schema:
 }
 ```
 
-Keep `answer` concise and cite the Tempo documentation used.
+Keep `answer` concise. `sources` must include Tempo documentation URLs and every data tool used as `mcp://tempo/<tool-name>`.

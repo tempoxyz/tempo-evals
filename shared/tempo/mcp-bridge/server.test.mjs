@@ -7,19 +7,20 @@ process.env.MCP_UPSTREAM_URL = "https://example.test/mcp";
 process.env.MCP_TRACE_PATH = "/tmp/tempo-mcp-bridge-test.trace.jsonl";
 const { allowedToolNames, filterTools, isAllowedToolCall, parseMcpPayload } = await import("./server.mjs");
 
-test("direct mode exposes only retrieval tools", () => {
-  assert.deepEqual(allowedToolNames("direct"), ["search", "find_pages", "read_page"]);
+test("direct mode exposes data tools and direct docs retrieval", () => {
+  assert.deepEqual(allowedToolNames("direct").slice(-3), ["docs_search", "docs_find_pages", "docs_read_page"]);
   assert.deepEqual(
-    filterTools({ result: { tools: [{ name: "search" }, { name: "code" }] } }, "direct").result.tools,
-    [{ name: "search" }],
+    filterTools({ result: { tools: [{ name: "v1_blocks_get" }, { name: "docs_search" }, { name: "docs_code" }] } }, "direct").result.tools,
+    [{ name: "v1_blocks_get" }, { name: "docs_search" }],
   );
 });
 
-test("code mode exposes only the code tool", () => {
-  assert.deepEqual(allowedToolNames("code"), ["code"]);
+test("code mode keeps data tools and exposes only docs code mode", () => {
+  assert.equal(allowedToolNames("code").includes("v1_blocks_get"), true);
+  assert.equal(allowedToolNames("code").includes("docs_code"), true);
   assert.deepEqual(
-    filterTools({ result: { tools: [{ name: "search" }, { name: "code" }] } }, "code").result.tools,
-    [{ name: "code" }],
+    filterTools({ result: { tools: [{ name: "v1_blocks_get" }, { name: "docs_search" }, { name: "docs_code" }] } }, "code").result.tools,
+    [{ name: "v1_blocks_get" }, { name: "docs_code" }],
   );
 });
 
@@ -33,8 +34,9 @@ test("parses a Streamable HTTP SSE tools/list response", () => {
 
 test("direct and code modes reject each other's tool calls", () => {
   const call = (name) => ({ method: "tools/call", params: { name } });
-  assert.equal(isAllowedToolCall(call("search"), "direct"), true);
-  assert.equal(isAllowedToolCall(call("code"), "direct"), false);
-  assert.equal(isAllowedToolCall(call("code"), "code"), true);
-  assert.equal(isAllowedToolCall(call("read_page"), "code"), false);
+  assert.equal(isAllowedToolCall(call("v1_blocks_get"), "direct"), true);
+  assert.equal(isAllowedToolCall(call("v1_blocks_get"), "code"), true);
+  assert.equal(isAllowedToolCall(call("docs_code"), "direct"), false);
+  assert.equal(isAllowedToolCall(call("docs_code"), "code"), true);
+  assert.equal(isAllowedToolCall(call("docs_read_page"), "code"), false);
 });

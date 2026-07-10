@@ -18,7 +18,7 @@ profiles:
     mcp_servers:
       - name: tempo
         transport: streamable-http
-        url: https://mcp.tempo.xyz
+        url: https://api.tempo.xyz/mcp
   - id: mcp-direct
     mcp_servers:
       - name: tempo-direct
@@ -30,11 +30,12 @@ profiles:
         transport: streamable-http
         url: http://tempo-mcp-code:8787/mcp
 
-# The canonical run must provide an immutable deployment URL (for example a
-# release Worker URL) through TEMPO_MCP_EVAL_URL. The bridge relays to that
-# endpoint; mcp.tempo.xyz remains only the legacy profile above.
+# The canonical run may override the public data MCP with a pinned deployment
+# URL. The bridge exposes the same read-only data tools in both arms and only
+# varies direct docs calls versus docs_code.
 mcp_eval:
-  target_id: tempo-mcp-codemode-v1
+  target_id: tempo-api-mcp-v1
+  endpoint: https://api.tempo.xyz/mcp
   docs_sha: ${TEMPO_MCP_EVAL_DOCS_SHA:-unrecorded}
 
 mpp:

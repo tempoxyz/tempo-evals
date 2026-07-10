@@ -1,30 +1,50 @@
 import { createServer } from "node:http";
-import { appendFileSync, mkdirSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 const mode = process.env.MCP_TOOL_MODE;
 const upstream = process.env.MCP_UPSTREAM_URL;
 const port = Number(process.env.PORT ?? "8787");
 const tracePath = process.env.MCP_TRACE_PATH ?? "/var/log/tempo-mcp/trace.jsonl";
-const targetId = process.env.MCP_TARGET_ID ?? "tempo-mcp-codemode-v1";
+const targetId = process.env.MCP_TARGET_ID ?? "tempo-api-mcp-v1";
 const MCP_HEADER_NAMES = [
   "mcp-session-id",
   "mcp-protocol-version",
   "last-event-id",
 ];
-const allowed = {
-  direct: new Set(["search", "find_pages", "read_page"]),
-  code: new Set(["code"]),
-}[mode];
+const DATA_TOOLS = [
+  "rpc_chain",
+  "v1_addresses_address_activities",
+  "v1_addresses_address_balances",
+  "v1_blocks_block",
+  "v1_blocks_get",
+  "v1_exchange_pairs_base_get",
+  "v1_exchange_swaps",
+  "v1_fee-amm_mints",
+  "v1_fee-amm_pools",
+  "v1_tokens_get",
+  "v1_tokens_token_holders",
+  "v1_tokens_token_transactions",
+  "v1_transactions_get",
+  "v1_transactions_transactionHash_activities",
+  "v1_transactions_transactionHash_get",
+  "v1_transfers",
+];
+const DOCS_TOOLS = {
+  direct: ["docs_search", "docs_find_pages", "docs_read_page"],
+  code: ["docs_code"],
+};
+const allowed = new Set([...DATA_TOOLS, ...(DOCS_TOOLS[mode] ?? [])]);
 
-if (!allowed || !upstream) throw new Error("MCP_TOOL_MODE and MCP_UPSTREAM_URL are required");
+if (!(mode in DOCS_TOOLS) || !upstream) {
+  throw new Error("MCP_TOOL_MODE must be direct or code and MCP_UPSTREAM_URL is required");
+}
 mkdirSync(dirname(tracePath), { recursive: true });
 appendFileSync(tracePath, "");
 
 export function allowedToolNames(toolMode) {
-  const tools = { direct: ["search", "find_pages", "read_page"], code: ["code"] };
-  if (!(toolMode in tools)) throw new Error(`Unknown MCP tool mode: ${toolMode}`);
-  return tools[toolMode];
+  if (!(toolMode in DOCS_TOOLS)) throw new Error(`Unknown MCP tool mode: ${toolMode}`);
+  return [...DATA_TOOLS, ...DOCS_TOOLS[toolMode]];
 }
 
 export function isAllowedToolCall(payload, toolMode) {
@@ -94,6 +114,13 @@ export function parseMcpPayload(text, contentType = "") {
 
 if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
   if (request.url === "/health") return reply(response, { ok: true, mode, tools: allowedToolNames(mode) });
+  if (request.url === "/trace") {
+    const events = readFileSync(tracePath, "utf8")
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line));
+    return reply(response, { events });
+  }
   if (request.url !== "/mcp") return reply(response, { error: "Not found" }, 404);
   const raw = await new Promise((resolve, reject) => {
     let value = "";

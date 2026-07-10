@@ -70,8 +70,6 @@ npm run bench:local:oracle -- --task-suite mpp
 Run the paired MCP efficiency suite (three attempts per arm):
 
 ```bash
-TEMPO_MCP_EVAL_URL=https://<immutable-mcp-deployment>/mcp \
-TEMPO_MCP_TARGET_ID=<deployment-id> \
 npm run bench:local:mcp
 ```
 
@@ -198,7 +196,7 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 | ------- | ---- | ----------- |
 | `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo localnet integration tasks across docs and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
-| `tempo/tempo-mcp-bench-v1` | `tasks/tempo-mcp-v1/` | Direct-tools vs code-mode MCP efficiency tasks |
+| `tempo/tempo-mcp-bench-v1` | `tasks/tempo-mcp-v1/` | Live Tempo data investigations: direct docs tools vs docs code mode |
 
 Benchmark majors are immutable evaluation contracts: task set, prompts,
 fixtures, verifier behavior, and scoring rules. Compatible maintenance fixes
@@ -209,8 +207,8 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 ## Profiles
 
 * **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) transparently serves a pinned bundle at `https://docs.tempo.xyz` and `https://tempo.xyz/developers`.
-* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
-* **MCP efficiency**: paired `mcp-direct` and `mcp-code` profiles connect through a local bridge. Set `TEMPO_MCP_EVAL_URL` to the immutable deployment being measured and `TEMPO_MCP_TARGET_ID` to its release identifier.
+* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://api.tempo.xyz/mcp`.
+* **MCP efficiency**: paired `mcp-direct` and `mcp-code` profiles connect through a local bridge. Both receive the same read-only Tempo data tools; direct receives docs search/read tools while code receives `docs_code`. The upstream defaults to `https://api.tempo.xyz/mcp` and can be overridden with `TEMPO_MCP_EVAL_URL`.
 
 ## CLI
 
@@ -321,5 +319,5 @@ Useful runner flags:
 
 * [Harbor](https://www.harborframework.com/docs/core-concepts)
 * [Tempo docs](https://docs.tempo.xyz/)
-* [Tempo MCP](https://mcp.tempo.xyz)
+* [Tempo API MCP](https://developers.tempo.xyz/docs/api/mcp)
 * [MPP](https://mpp.dev/)
