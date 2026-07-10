@@ -67,15 +67,13 @@ async function verify({ client, config, fromBlock }) {
     );
   }
 
-  return waitForEvidence(config, async () => {
-    const evidence = await findEvidence(fromBlock);
-    if (evidence || fromBlock === 0n) return evidence;
-
-    // A shared-environment runner can hand the verifier an RPC snapshot taken
-    // after submission execution. The task localnet is isolated per trial, so
-    // retrying from genesis preserves the full funding-and-transfer contract.
-    return findEvidence(0n);
-  }, "no matching faucet-funded transfer event observed");
+  // The verifier captures this baseline before `npm run eval`. Keep it: the
+  // localnet seeds the DEX maker with the same fixture key during setup.
+  return waitForEvidence(
+    config,
+    () => findEvidence(fromBlock),
+    "no matching faucet-funded transfer event observed",
+  );
 }
 
 module.exports = {
