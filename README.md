@@ -151,8 +151,7 @@ npm run results:export -- --job runs/<run_id>/harbor-job --run-id <run_id>
 Compare canonical Tempo tasks across access profiles with separate runs:
 
 ```bash
-npm run bench:daytona:agent:dev -- --profile docs
-npm run bench:daytona:agent:dev -- --profile mcp
+npm run bench:daytona:agent:dev -- --profile all
 ```
 
 Production options:

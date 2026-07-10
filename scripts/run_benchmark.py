@@ -9,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
@@ -94,7 +95,7 @@ Options:
   --tasks PATH            Task dataset path for dataset/model variants
                           (default: tasks/tempo-v1)
   --docs-sha SHA          Serve docs pinned to this SHA instead of public docs
-  --profile PROFILE       Tempo access profile: docs or mcp (default: docs)
+  --profile PROFILE       Tempo access profile: docs, mcp, or all (default: docs)
   --no-force-build        Ask Harbor to reuse Docker environment builds
   --no-delete             Keep Harbor environments after the run for debugging
   --disable-verification  Skip verifier execution
@@ -139,7 +140,9 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     )
     parser.add_argument("--tasks")
     parser.add_argument("--docs-sha")
-    parser.add_argument("--profile", choices=PROFILE_IDS, default=DOCS_PROFILE["id"])
+    parser.add_argument(
+        "--profile", choices=(*PROFILE_IDS, "all"), default=DOCS_PROFILE["id"]
+    )
     parser.add_argument("--no-sync", action="store_false", dest="sync", default=True)
     parser.add_argument("--no-force-build", action="store_true")
     parser.add_argument("--no-delete", action="store_true")
@@ -909,6 +912,42 @@ def main(argv: list[str]) -> None:
         shutil.rmtree(Path(".cache") / "harbor-production", ignore_errors=True)
         Path("jobs").mkdir(parents=True, exist_ok=True)
         return
+
+    if options["profile"] == "all":
+        variant = VARIANTS.get(variant_name)
+        if not variant:
+            usage()
+            raise RuntimeError(f"Unknown variant: {variant_name}")
+        if not variant.get("job"):
+            raise RuntimeError(
+                "The all profile requires a job-backed benchmark variant."
+            )
+        profile_options = [
+            options
+            | {
+                "profile": profile_id,
+                "job_name": (
+                    f"{options['job_name']}-{profile_id}"
+                    if options.get("job_name")
+                    else None
+                ),
+                "sync": options["sync"] if index == 0 else False,
+            }
+            for index, profile_id in enumerate(PROFILE_IDS)
+        ]
+        with ThreadPoolExecutor(max_workers=len(profile_options)) as executor:
+            futures = [
+                executor.submit(run_benchmark_variant, variant_name, profile)
+                for profile in profile_options
+            ]
+            for future in futures:
+                future.result()
+        return
+
+    run_benchmark_variant(variant_name, options)
+
+
+def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
 
     variant = VARIANTS.get(variant_name)
     if not variant:
