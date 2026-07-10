@@ -11,11 +11,11 @@ Build a minimal TypeScript project that pays every configured recipient the same
 | Amount per recipient | `TEMPO_AMOUNT` | `0.01` |
 | Token decimals | `TEMPO_DECIMALS` | `6` |
 
-Use `Actions.token.transferSync` from `viem/tempo` with `tempoTestnet`.
-Generic ERC-20 and RPC fallbacks do not satisfy this task. No `PRIVATE_KEY` is
-provided: create and report the payer, then use `Actions.faucet.fundSync` if it
-needs funds. Convert the amount with `parseUnits` and `TEMPO_DECIMALS`. Only write
-`/app/out.json` after the `Actions.token.transferSync` call succeeds.
+Use `viem/tempo` with `tempoTestnet` to submit one transaction containing every
+TIP-20 transfer call. No `PRIVATE_KEY` is provided: create and report the payer,
+then use `Actions.faucet.fundSync` if it needs funds. Convert the amount with
+`parseUnits` and `TEMPO_DECIMALS`. Only write `/app/out.json` after the batch
+transaction succeeds.
 
 ## Tempo Documentation
 
