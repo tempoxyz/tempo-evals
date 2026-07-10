@@ -184,18 +184,11 @@ def run_python(script: str, args: list[str] | None = None) -> None:
 
 
 DOCS_SHA_PATTERN = re.compile(r"[0-9a-fA-F]{7,40}")
-PUBLIC_DOCS_INSTRUCTION = (
-    "## Tempo Documentation\n\n"
-    "Tempo documentation is available publicly at https://docs.tempo.xyz. "
-    "Use it for Tempo-specific APIs and examples."
-)
-PINNED_DOCS_INSTRUCTION = (
-    "## Tempo Documentation\n\n"
-    "Tempo docs are available through the local docs service at `TEMPO_DOCS_URL` "
-    "(http://tempo-docs:3000/developers). Use those docs for Tempo-specific APIs "
-    "and examples. Do not use public Tempo docs, WebSearch, or WebFetch for Tempo "
-    "documentation."
-)
+DOCS_ACCESS_LOG = "/var/log/tempo-docs/access.log"
+DOCS_TLS_DIR = "docs-tls"
+DOCS_CA_FILE = "ca.crt"
+DOCS_CA_DESTINATION = "/usr/local/share/ca-certificates/tempo-bench-docs.crt"
+DOCS_TLS_VALIDITY_DAYS = "30"
 
 
 def read_docs_lock() -> dict[str, Any]:
@@ -604,11 +597,12 @@ def apply_task_filter(
         config["datasets"] = [{"path": "tasks/mpp", "task_names": [mpp_filter]}]
         return config
 
-    filters = (
-        [task_filter, task_filter.removeprefix("tempo/")]
-        if task_filter.startswith("tempo/")
-        else [task_filter]
-    )
+    tempo_prefixes = ("tempo-v1/", "tempo/")
+    filters = [task_filter]
+    for prefix in tempo_prefixes:
+        if task_filter.startswith(prefix):
+            filters.append(task_filter.removeprefix(prefix))
+            break
     for dataset in config.get("datasets", []):
         if dataset.get("path") in {"tasks", "tasks/tempo-v1"}:
             dataset["task_names"] = filters
@@ -664,20 +658,123 @@ def copy_tasks(source: Path, destination: Path) -> None:
     )
 
 
+def run_openssl(args: list[str]) -> None:
+    result = subprocess.run(
+        ["openssl", *args],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        output = (result.stderr or result.stdout).strip()
+        raise RuntimeError(f"openssl {' '.join(args)} failed: {output}")
+
+
+def generate_docs_tls_assets(environment_dir: Path) -> Path:
+    """Create an ephemeral CA and docs.tempo.xyz leaf certificate for one run."""
+    tls_dir = environment_dir / DOCS_TLS_DIR
+    shutil.rmtree(tls_dir, ignore_errors=True)
+    tls_dir.mkdir(parents=True)
+
+    ca_key = tls_dir / "ca.key"
+    ca_cert = tls_dir / DOCS_CA_FILE
+    leaf_key = tls_dir / "docs.key"
+    leaf_csr = tls_dir / "docs.csr"
+    leaf_cert = tls_dir / "docs.crt"
+    extensions = tls_dir / "docs.ext"
+
+    run_openssl(
+        [
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-nodes",
+            "-keyout",
+            str(ca_key),
+            "-out",
+            str(ca_cert),
+            "-days",
+            DOCS_TLS_VALIDITY_DAYS,
+            "-subj",
+            "/CN=Tempo Bench Ephemeral Docs CA",
+            "-addext",
+            "basicConstraints=critical,CA:TRUE",
+            "-addext",
+            "keyUsage=critical,keyCertSign,cRLSign",
+        ]
+    )
+    run_openssl(
+        [
+            "req",
+            "-newkey",
+            "rsa:2048",
+            "-nodes",
+            "-keyout",
+            str(leaf_key),
+            "-out",
+            str(leaf_csr),
+            "-subj",
+            "/CN=tempo.xyz",
+        ]
+    )
+    extensions.write_text(
+        "basicConstraints=critical,CA:FALSE\n"
+        "keyUsage=critical,digitalSignature,keyEncipherment\n"
+        "extendedKeyUsage=serverAuth\n"
+        "subjectAltName=DNS:docs.tempo.xyz,DNS:tempo.xyz\n"
+    )
+    run_openssl(
+        [
+            "x509",
+            "-req",
+            "-in",
+            str(leaf_csr),
+            "-CA",
+            str(ca_cert),
+            "-CAkey",
+            str(ca_key),
+            "-CAcreateserial",
+            "-out",
+            str(leaf_cert),
+            "-days",
+            DOCS_TLS_VALIDITY_DAYS,
+            "-extfile",
+            str(extensions),
+        ]
+    )
+    ca_key.unlink()
+    leaf_csr.unlink()
+    extensions.unlink()
+    (tls_dir / "ca.srl").unlink(missing_ok=True)
+    return tls_dir
+
+
+def trust_docs_ca(environment_dir: Path, tls_dir: Path) -> None:
+    dockerfile = environment_dir / "Dockerfile"
+    ca_path = tls_dir.relative_to(environment_dir) / DOCS_CA_FILE
+    content = dockerfile.read_text().rstrip()
+    dockerfile.write_text(
+        f"{content}\n\n"
+        f"COPY {ca_path.as_posix()} {DOCS_CA_DESTINATION}\n"
+        "RUN update-ca-certificates\n"
+        f"ENV NODE_EXTRA_CA_CERTS={DOCS_CA_DESTINATION}\n"
+    )
+    (environment_dir / ".dockerignore").write_text("docs-tls/*\n!docs-tls/ca.crt\n")
+
+
 def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
     task_config_path = task_dir / "task.toml"
     config = tomlkit.parse(task_config_path.read_text())
-    config["environment"]["env"]["TEMPO_DOCS_URL"] = "http://tempo-docs:3000/developers"
+    artifacts = config.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise RuntimeError(f"Missing artifacts array in staged task: {task_dir}")
+    access_log = tomlkit.inline_table()
+    access_log["source"] = DOCS_ACCESS_LOG
+    access_log["service"] = "tempo-docs"
+    artifacts.append(access_log)
     task_config_path.write_text(tomlkit.dumps(config))
-    instruction_path = task_dir / "instruction.md"
-    instruction = instruction_path.read_text()
-    if PUBLIC_DOCS_INSTRUCTION not in instruction:
-        raise RuntimeError(
-            f"Missing public docs instruction in staged task: {task_dir}"
-        )
-    instruction_path.write_text(
-        instruction.replace(PUBLIC_DOCS_INSTRUCTION, PINNED_DOCS_INSTRUCTION)
-    )
+
     environment_dir = task_dir / "environment"
     shutil.copyfile(
         "shared/tempo/docker/compose/tempo-localnet-docs.yaml",
@@ -691,6 +788,7 @@ def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
     shutil.copytree(
         docs_bundle, environment_dir / "tempo-docs-bundle", dirs_exist_ok=True
     )
+    trust_docs_ca(environment_dir, generate_docs_tls_assets(environment_dir))
 
 
 def stage_task_datasets(staging_root: Path, docs_bundle: str | None) -> None:

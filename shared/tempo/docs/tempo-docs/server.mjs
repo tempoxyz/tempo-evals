@@ -1,9 +1,21 @@
-import { createReadStream, existsSync, statSync } from "node:fs";
-import { createServer } from "node:http";
+import {
+  appendFileSync,
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+} from "node:fs";
+import { createServer as createHttpServer } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
 import path from "node:path";
 
 const port = Number(process.env.PORT ?? "3000");
+const httpsPort = Number(process.env.HTTPS_PORT ?? "443");
 const docsRoot = path.resolve(process.env.TEMPO_DOCS_ROOT ?? "/tempo-docs");
+const tlsCertFile = process.env.TLS_CERT_FILE ?? "/tls/docs.crt";
+const tlsKeyFile = process.env.TLS_KEY_FILE ?? "/tls/docs.key";
+const accessLogPath = process.env.ACCESS_LOG_PATH ?? "/var/log/tempo-docs/access.log";
 
 const contentTypes = new Map([
   [".html", "text/html; charset=utf-8"],
@@ -61,8 +73,33 @@ function sendJson(response, statusCode, value) {
   response.end(`${JSON.stringify(value)}\n`);
 }
 
-const server = createServer((request, response) => {
-  const url = new URL(request.url ?? "/", "http://tempo-docs");
+function docsSha() {
+  try {
+    return JSON.parse(readFileSync(path.join(docsRoot, "manifest.json"), "utf8")).sha ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function logRequest(request, url) {
+  mkdirSync(path.dirname(accessLogPath), { recursive: true });
+  appendFileSync(
+    accessLogPath,
+    `${JSON.stringify({
+      host: request.headers.host ?? "",
+      method: request.method,
+      path: url.pathname,
+      query: url.search,
+      sha: docsSha(),
+    })}\n`,
+  );
+}
+
+mkdirSync(path.dirname(accessLogPath), { recursive: true });
+appendFileSync(accessLogPath, "");
+
+function serveDocs(request, response) {
+  const url = new URL(request.url ?? "/", "https://docs.tempo.xyz");
 
   if (url.pathname === "/health") {
     const manifestPath = path.join(docsRoot, "manifest.json");
@@ -70,11 +107,12 @@ const server = createServer((request, response) => {
     sendJson(response, existsSync(llmsPath) ? 200 : 503, {
       ok: existsSync(llmsPath),
       manifest: existsSync(manifestPath) ? "/manifest.json" : null,
+      sha: docsSha(),
     });
     return;
   }
 
-  console.log(`${request.method} ${url.pathname}`);
+  logRequest(request, url);
 
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.writeHead(405, { "content-type": "text/plain; charset=utf-8" });
@@ -96,12 +134,35 @@ const server = createServer((request, response) => {
     return;
   }
   createReadStream(filePath).pipe(response);
+}
+
+const httpServer = createHttpServer((request, response) => {
+  if (new URL(request.url ?? "/", "http://docs.tempo.xyz").pathname === "/health") {
+    serveDocs(request, response);
+    return;
+  }
+  const host = (request.headers.host ?? "docs.tempo.xyz").replace(/:80$/, "");
+  response.writeHead(308, { location: `https://${host}${request.url ?? "/"}` });
+  response.end();
 });
 
-server.listen(port, (error) => {
+const httpsServer = createHttpsServer(
+  { cert: readFileSync(tlsCertFile), key: readFileSync(tlsKeyFile) },
+  serveDocs,
+);
+
+httpServer.listen(port, (error) => {
   if (error) {
-    console.error("Failed to start Tempo docs server:", error);
+    console.error("Failed to start Tempo docs HTTP server:", error);
     process.exit(1);
   }
-  console.log(`Tempo docs server serving ${docsRoot} on port ${port}`);
+  console.log(`Tempo docs HTTP server serving ${docsRoot} on port ${port}`);
+});
+
+httpsServer.listen(httpsPort, (error) => {
+  if (error) {
+    console.error("Failed to start Tempo docs HTTPS server:", error);
+    process.exit(1);
+  }
+  console.log(`Tempo docs HTTPS server serving ${docsRoot} on port ${httpsPort}`);
 });

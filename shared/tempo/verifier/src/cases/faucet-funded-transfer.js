@@ -27,7 +27,7 @@ async function verify({ client, config, fromBlock }) {
   const expectedValue = parseUnits(config.amount, config.decimals);
   const event = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
-  return waitForEvidence(config, async () => {
+  async function findEvidence(startBlock) {
     const latestBlock = await client.getBlockNumber();
     const logs = await client.getLogs({
       address: config.token,
@@ -36,7 +36,7 @@ async function verify({ client, config, fromBlock }) {
         from: fundedSender,
         to: config.recipient,
       },
-      fromBlock,
+      fromBlock: startBlock,
       toBlock: latestBlock,
     });
 
@@ -50,7 +50,7 @@ async function verify({ client, config, fromBlock }) {
         from: localnetFaucet,
         to: fundedSender,
       },
-      fromBlock,
+      fromBlock: startBlock,
       toBlock: match.blockNumber,
     });
     const funding = fundingLogs.find(
@@ -65,7 +65,15 @@ async function verify({ client, config, fromBlock }) {
         fundingTransactionHash: funding.transactionHash,
       })
     );
-  }, "no matching faucet-funded transfer event observed");
+  }
+
+  // The verifier captures this baseline before `npm run eval`. Keep it: the
+  // localnet seeds the DEX maker with the same fixture key during setup.
+  return waitForEvidence(
+    config,
+    () => findEvidence(fromBlock),
+    "no matching faucet-funded transfer event observed",
+  );
 }
 
 module.exports = {

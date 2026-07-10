@@ -3,7 +3,7 @@ schema_version = "1.3"
 artifacts = ["/app/package.json", "/app/src"]
 
 [task]
-name = "tempo/transfer-with-memo"
+name = "tempo-v1/transfer-with-memo"
 description = "Build a minimal Tempo localnet integration that sends a TIP-20 transfer with a memo."
 authors = []
 keywords = ["tempo", "tip20", "memo", "localnet", "typescript"]

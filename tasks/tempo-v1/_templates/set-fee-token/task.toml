@@ -3,7 +3,7 @@ schema_version = "1.3"
 artifacts = ["/app/package.json", "/app/src"]
 
 [task]
-name = "tempo/set-fee-token"
+name = "tempo-v1/set-fee-token"
 description = "Build a Tempo localnet integration that sets AlphaUSD as the account's default fee token."
 authors = []
 keywords = ["tempo", "fee-token", "alpha-usd", "localnet", "typescript"]

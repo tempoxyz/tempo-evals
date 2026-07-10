@@ -10,12 +10,12 @@ authoring guide.
 
 Current task intents:
 
-- `tempo/transfer-with-memo`
-- `tempo/transfer-with-memo-fee-payer`
-- `tempo/set-fee-token`
-- `tempo/create-stablecoin-with-policy`
-- `tempo/faucet-funded-transfer`
-- `tempo/stablecoin-dex-swap`
+- `tempo-v1/transfer-with-memo`
+- `tempo-v1/transfer-with-memo-fee-payer`
+- `tempo-v1/set-fee-token`
+- `tempo-v1/create-stablecoin-with-policy`
+- `tempo-v1/faucet-funded-transfer`
+- `tempo-v1/stablecoin-dex-swap`
 
 Each intent is materialized into a Docs variant (no suffix) and an `-mcp`
 variant by `npm run sync`.
@@ -30,16 +30,15 @@ Each generated task is Harbor-native and self-contained:
 - `environment/` contains the task runtime and Docker Compose additions.
   Common sidecars are symlinked from `../../shared/` where Harbor and Docker
   can consume them.
-- `tests/correctness/` contains the task's RewardKit criteria plus the e2e
-  command criterion. `tests/quality/` contains non-binary turn/token
-  efficiency checks and the Claude Haiku LLM judge. `tests/test.sh` writes
-  Harbor's primary `/logs/verifier/reward.json` from the RewardKit
-  correctness score, gated by the independent Tempo onchain verifier. A task
-  receives zero reward unless `tempo_onchain_verifier` passes; after that,
-  static correctness criteria contribute weighted partial credit instead of
-  requiring every criterion to pass. Quality dimensions remain diagnostic.
-  `tests/tempo-bench-verifier/` is a minimal copied verifier package for the
-  selected `TEMPO_BENCH_CASE`.
+- `tests/correctness/` contains task-specific RewardKit criteria and the
+  independent onchain verifier. `tests/quality/` contains turn/token
+  efficiency checks and the Claude Haiku LLM judge. `tests/test.sh` runs the
+  onchain verifier first: failure writes Harbor's primary
+  `/logs/verifier/reward.json` as zero and skips RewardKit. On success,
+  RewardKit writes the primary score from the weighted aggregate of all static
+  and available LLM quality criteria. A score of one requires every included
+  criterion to score one. `tests/tempo-bench-verifier/` is a minimal copied
+  verifier package for the selected `TEMPO_BENCH_CASE`.
 - `solution/` contains the oracle solution used for sanity checks.
 
 After changing sources or shared code, run `npm run sync`, then

@@ -34,7 +34,7 @@ npm run bench:local:oracle -- --task-suite all
 Fast oracle loop for one task while editing:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo
+npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 ```
 
 Fast Tempo oracle loop:
@@ -181,7 +181,7 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 
 ## Profiles
 
-* **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) serves a pinned local docs bundle instead.
+* **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) transparently serves a pinned bundle at `https://docs.tempo.xyz` and `https://tempo.xyz/developers`.
 * **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
 
 ## CLI
@@ -232,7 +232,7 @@ npm run clean
 Use the dev oracle commands while iterating on one Tempo task:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo
+npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 ```
 
 Use `npm run bench:local:mpp` for the same fast loop over MPP tasks. Commands

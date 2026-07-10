@@ -4,7 +4,6 @@ import fcntl
 import json
 import os
 import re
-import subprocess
 import threading
 from pathlib import Path
 from typing import Any
@@ -319,29 +318,6 @@ def tempo_uses_viem_tempo_actions(
 
 
 @criterion(shared=True)
-def tempo_onchain_verifier(workspace: Path) -> bool:
-    timeout = int(os.environ.get("TEMPO_BENCH_REWARDKIT_TIMEOUT_SECONDS", "900"))
-    result = subprocess.run(
-        ["bash", "/tests/correctness/verify-tempo.sh"],
-        cwd=workspace,
-        text=True,
-        capture_output=True,
-        timeout=timeout,
-        check=False,
-    )
-    _write_json(
-        "onchain-criterion.json",
-        {
-            "command": "bash /tests/correctness/verify-tempo.sh",
-            "returncode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-        },
-    )
-    return result.returncode == 0
-
-
-@criterion(shared=True)
 def tempo_trajectory_matches(_workspace: Path, pattern: str) -> bool:
     for candidate in (
         Path("/logs/trajectory.json"),
@@ -436,6 +412,17 @@ def agent_token_efficiency(
         return 0.0
 
     metrics = _token_metrics(json.loads(path.read_text(encoding="utf-8")))
-    score = _score_by_cutoff(metrics["total_tokens"], cutoffs)
-    _merge_efficiency("tokens", {"score": score, "cutoffs": cutoffs, **metrics})
+    # Cached prompt reads repeat prior context across turns; they do not reflect
+    # new agent work. Score the uncached estimate while retaining all token
+    # totals in the artifact for cost analysis.
+    score = _score_by_cutoff(metrics["uncached_token_estimate"], cutoffs)
+    _merge_efficiency(
+        "tokens",
+        {
+            "score": score,
+            "score_basis": "uncached_token_estimate",
+            "cutoffs": cutoffs,
+            **metrics,
+        },
+    )
     return score
