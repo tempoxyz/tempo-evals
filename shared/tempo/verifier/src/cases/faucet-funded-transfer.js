@@ -27,7 +27,7 @@ async function verify({ client, config, fromBlock }) {
   const expectedValue = parseUnits(config.amount, config.decimals);
   const event = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
-  return waitForEvidence(config, async () => {
+  async function findEvidence(startBlock) {
     const latestBlock = await client.getBlockNumber();
     const logs = await client.getLogs({
       address: config.token,
@@ -36,7 +36,7 @@ async function verify({ client, config, fromBlock }) {
         from: fundedSender,
         to: config.recipient,
       },
-      fromBlock,
+      fromBlock: startBlock,
       toBlock: latestBlock,
     });
 
@@ -50,7 +50,7 @@ async function verify({ client, config, fromBlock }) {
         from: localnetFaucet,
         to: fundedSender,
       },
-      fromBlock,
+      fromBlock: startBlock,
       toBlock: match.blockNumber,
     });
     const funding = fundingLogs.find(
@@ -65,6 +65,16 @@ async function verify({ client, config, fromBlock }) {
         fundingTransactionHash: funding.transactionHash,
       })
     );
+  }
+
+  return waitForEvidence(config, async () => {
+    const evidence = await findEvidence(fromBlock);
+    if (evidence || fromBlock === 0n) return evidence;
+
+    // A shared-environment runner can hand the verifier an RPC snapshot taken
+    // after submission execution. The task localnet is isolated per trial, so
+    // retrying from genesis preserves the full funding-and-transfer contract.
+    return findEvidence(0n);
   }, "no matching faucet-funded transfer event observed");
 }
 

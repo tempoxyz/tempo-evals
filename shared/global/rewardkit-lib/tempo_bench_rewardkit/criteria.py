@@ -412,6 +412,17 @@ def agent_token_efficiency(
         return 0.0
 
     metrics = _token_metrics(json.loads(path.read_text(encoding="utf-8")))
-    score = _score_by_cutoff(metrics["total_tokens"], cutoffs)
-    _merge_efficiency("tokens", {"score": score, "cutoffs": cutoffs, **metrics})
+    # Cached prompt reads repeat prior context across turns; they do not reflect
+    # new agent work. Score the uncached estimate while retaining all token
+    # totals in the artifact for cost analysis.
+    score = _score_by_cutoff(metrics["uncached_token_estimate"], cutoffs)
+    _merge_efficiency(
+        "tokens",
+        {
+            "score": score,
+            "score_basis": "uncached_token_estimate",
+            "cutoffs": cutoffs,
+            **metrics,
+        },
+    )
     return score
