@@ -14,6 +14,7 @@ base_image: ghcr.io/tempoxyz/tempo-bench-base:v1
 # Authored task templates under tasks/tempo-v1/_templates/<slug>/. Each one
 # generates one canonical task under tasks/tempo-v1/.
 task_slugs:
+  - transfer-batched
   - transfer-with-memo
   - transfer-with-memo-fee-payer
   - set-fee-token
@@ -40,6 +41,10 @@ fixture_env:
 
 # Per-template fixture overrides keyed by tasks/tempo-v1/_templates/<slug>/.
 case_fixtures:
+  transfer-batched:
+    TEMPO_BENCH_CASE: "transfer-batched"
+    TEMPO_AMOUNT: "0.01"
+    TEMPO_RECIPIENTS: '["0x70997970C51812dc3A010C7d01b50e0d17dc79C8", "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC", "0x90F79bf6EB2c4f870365E785982E1f101E93b906"]'
   transfer-with-memo:
     TEMPO_BENCH_CASE: "transfer-with-memo"
     TEMPO_AMOUNT: "0.17"

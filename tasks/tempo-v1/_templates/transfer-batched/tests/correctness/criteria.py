@@ -1,0 +1,33 @@
+import rewardkit as rk
+from tempo_bench_rewardkit.common.checks import (
+    register_source_patterns,
+    register_tempo_eval_contract,
+)
+
+register_tempo_eval_contract()
+rk.tempo_rejects_other_blockchains()
+register_source_patterns(
+    [
+        {
+            "name": "package_depends_on_viem",
+            "file": "package.json",
+            "pattern": r'"viem"\s*:',
+        },
+        {
+            "name": "source_imports_viem_tempo",
+            "pattern": r"from\s+['\"]viem/tempo['\"]",
+        },
+        {
+            "name": "source_reads_tempo_recipients",
+            "pattern": r"TEMPO_RECIPIENTS",
+        },
+        {
+            "name": "source_encodes_tip20_transfers",
+            "pattern": r"Abis\.tip20|encodeFunctionData",
+        },
+        {
+            "name": "source_submits_tempo_batch_calls",
+            "pattern": r"sendTransaction\s*\(\s*\{\s*calls\b",
+        },
+    ]
+)

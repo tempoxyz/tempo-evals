@@ -16,6 +16,21 @@ function numberEnv(name) {
   return value;
 }
 
+function addressArrayEnv(name) {
+  const value = requiredEnv(name);
+  let parsed;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error(`invalid JSON environment variable: ${name}`);
+  }
+
+  if (!Array.isArray(parsed) || parsed.length === 0 || !parsed.every((item) => typeof item === "string")) {
+    throw new Error(`environment variable ${name} must be a non-empty JSON string array`);
+  }
+  return parsed;
+}
+
 function readConfig() {
   return {
     caseId: env("TEMPO_BENCH_CASE", "transfer-with-memo"),
@@ -34,8 +49,9 @@ function readConfig() {
     faucetPrivateKey: env("TEMPO_FAUCET_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
     dexMakerPrivateKey: env("TEMPO_DEX_MAKER_PRIVATE_KEY", env("TEMPO_PAYER_PRIVATE_KEY")),
     recipient: requiredEnv("TEMPO_RECIPIENT"),
+    recipients: env("TEMPO_RECIPIENTS") ? addressArrayEnv("TEMPO_RECIPIENTS") : [],
     amount: requiredEnv("TEMPO_AMOUNT"),
-    memo: requiredEnv("TEMPO_MEMO"),
+    memo: env("TEMPO_MEMO"),
     decimals: numberEnv("TEMPO_DECIMALS"),
     stablecoinName: env("TEMPO_STABLECOIN_NAME", "Tempo Bench USD"),
     stablecoinSymbol: env("TEMPO_STABLECOIN_SYMBOL", "TBUSD"),
