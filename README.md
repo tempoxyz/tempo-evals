@@ -194,7 +194,7 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 ## CLI
 
 ```bash
-# Sync generated Tempo task assets
+# Sync shared MPP task assets and generated job configs
 npm run sync
 
 # Refresh Tempo dataset digests
@@ -206,7 +206,7 @@ npm run dataset -- --tasks tasks/mpp
 # Check scripts, format, and lint
 npm run check
 
-# Check generated Tempo files
+# Check generated MPP assets and job configs
 npm run check:generated
 
 # Print the immutable source-derived base-image tag for Daytona
@@ -270,9 +270,9 @@ Use `npm run bench:local:mpp` for the same fast loop over MPP tasks. Commands
 default to Tempo. Use `--task-suite all` or `npm run bench:local:all` when you
 intentionally want both Tempo and MPP tasks.
 
-These commands use `local-oracle-dev`, skip generated asset sync, and avoid
-forced Docker rebuilds. Run `npm run sync` after changing shared/generated task
-assets. Run
+These commands use `local-oracle-dev`, skip MPP asset sync, and avoid forced
+Docker rebuilds. Run `npm run sync` after changing shared MPP assets or job
+config sources, and `npm run dataset` after changing Tempo tasks. Run
 `npm run bench:local:oracle -- --task-suite all` before opening a PR for clean
 validation across both task families.
 

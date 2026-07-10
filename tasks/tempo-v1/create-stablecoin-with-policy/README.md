@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/create-stablecoin-with-policy/README.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Create Stablecoin With Transfer Policy
 
 ## Overview

@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/transfer-batched/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Batched Transfer
 
 Build a minimal TypeScript project that pays every configured recipient the same Tempo stablecoin amount in one transaction.

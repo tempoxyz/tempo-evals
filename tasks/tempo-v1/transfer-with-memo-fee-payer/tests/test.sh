@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# SYNCED FROM shared/global/rewardkit/test.sh BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 set -u -o pipefail
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"

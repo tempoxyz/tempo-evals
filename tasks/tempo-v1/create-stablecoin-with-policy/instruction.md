@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/create-stablecoin-with-policy/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Create Stablecoin With Transfer Policy
 
 Build a minimal TypeScript project that creates a TIP-20 stablecoin,

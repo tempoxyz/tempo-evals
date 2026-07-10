@@ -24,12 +24,12 @@ reproducible environment, independent verifier, oracle solution, and gradable ha
 
 ```bash
 npm run docs:prepare        # Build pinned Tempo docs bundle
-npm run sync                # Sync generated Tempo variants and shared assets
-npm run dataset             # Sync Tempo assets and refresh digests
+npm run sync                # Sync shared MPP assets and generated job configs
+npm run dataset             # Refresh Tempo task digests
 npm run check               # Compile scripts, run tests, format check, lint
 npm run check:scripts       # Python script compile check
 npm run check:dataset       # Verify Tempo dataset digest freshness
-npm run check:generated     # Verify generated Tempo output freshness
+npm run check:generated     # Verify generated MPP/job output freshness
 npm run clean               # Remove job/cache output
 ```
 
@@ -57,7 +57,7 @@ npm run bench:local:mpp -- --task-filter server-charge-pathusd
 npm run bench:daytona:agent:dev -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
 ```
 
-Use `npm run sync` after changing shared/generated task assets. Use
+Use `npm run sync` after changing shared MPP assets or job config sources. Use
 `npm run bench:local:oracle -- --task-suite all` for clean local oracle
 validation across Tempo and MPP before PRs.
 
@@ -79,11 +79,9 @@ output, or cache output.
 
 ## Generated Files
 
-Generated Tempo task directories in `tasks/tempo-v1/` are generated output; do
-not hand-edit them. Authored Tempo task templates live in
-`tasks/tempo-v1/_templates/<slug>/` (see `tasks/tempo-v1/_templates/README.md`).
-Each template generates one canonical task. Benchmark jobs select the Docs or
-MCP access profile; MCP configuration is injected at the agent level.
+Tempo task directories in `tasks/tempo-v1/` are authored source. Edit them
+directly. Benchmark jobs select the Docs or MCP access profile; MCP
+configuration is injected at the agent level.
 
 Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
 `tasks/mpp/<task>/`:
@@ -109,8 +107,9 @@ When MPP verifier helpers need Node-side logic, write checked-in TypeScript
 `.ts` files and run them with `tsx`; do not add `.mjs` verifier helpers or
 large inline JavaScript strings in Python.
 
-Task matrix data (task slugs, access profiles, MPP shared file lists) lives in
-`config/tasks.yaml`; `scripts/sync_shared.py` only executes it.
+Run-time access profiles and MPP shared file lists live in
+`config/tasks.yaml`; `scripts/sync_shared.py` syncs MPP files and refreshes
+dataset manifests.
 
 All task environments build `FROM` one shared base image
 (`shared/global/docker/base/Dockerfile`, pinned as `base_image` in
@@ -139,15 +138,16 @@ checked-in files; do not hand-edit them. Production runs render the same
 template at run time because they depend on the run ID and
 `config/models.production.yaml`.
 
-Change the task source or generator, then run:
+After changing a Tempo task, refresh its dataset manifest:
+
+```bash
+npm run dataset
+```
+
+After changing shared MPP task files or job config sources, run:
 
 ```bash
 npm run sync
-
-# if you want to sync Tempo tasks
-npm run dataset
-
-# if you want to sync mpp tasks
 npm run dataset -- --tasks tasks/mpp
 ```
 
@@ -235,9 +235,9 @@ Prefer specific messages, e.g. `docs: scaffold benchmark runbook`.
 
 ### Before opening or updating a PR
 
-If your changes affect generated task assets, shared verifier packages, task
-fixtures, or task digests, run the matching artifact sync before committing and
-include the resulting generated files in the PR:
+If your changes affect Tempo task files, shared verifier packages, synced MPP
+assets, task fixtures, or task digests, run the matching artifact sync before
+committing and include the resulting generated files in the PR:
 
 ```bash
 npm run dataset                  # Tempo tasks

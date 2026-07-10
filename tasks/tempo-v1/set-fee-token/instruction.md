@@ -1,5 +1,3 @@
-<!-- AUTO-GENERATED FROM tasks/tempo-v1/_templates/set-fee-token/instruction.md BY npm run sync. DO NOT EDIT MANUALLY. -->
-
 # Tempo Set Fee Token
 
 Build a minimal TypeScript project that sets the account's default Tempo fee token to AlphaUSD.
