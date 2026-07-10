@@ -142,23 +142,19 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(summary_json["n_trials"], 3)
             self.assertEqual(summary_json["reward_keys"], ["correctness", "reward"])
 
-    def test_export_results_reads_mcp_profile_from_job_config(self) -> None:
+    def test_export_results_reads_mcp_profile_from_trial_config(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
             job_dir = Path(root) / "job"
             write_json(
-                job_dir / "config.json",
-                {
-                    "agents": [
-                        {
-                            "name": "claude-code",
-                            "mcp_servers": [{"name": "tempo"}],
-                        }
-                    ]
-                },
-            )
-            write_json(
                 job_dir / "trial" / "result.json",
-                trial({"task_name": "tempo-v1/transfer-with-memo"}),
+                trial(
+                    {
+                        "task_name": "tempo-v1/transfer-with-memo",
+                        "config": {
+                            "agent": {"mcp_servers": [{"name": "tempo"}]},
+                        },
+                    }
+                ),
             )
 
             result = export_results(job_dir)
