@@ -55,10 +55,10 @@ Run a local agent smoke test:
 npm run bench:local:agent:dev
 ```
 
-Run one task on Daytona:
+Run one task on Daytona with a published base image:
 
 ```bash
-npm run bench:daytona:agent:dev -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
+npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
 ```
 
 Run the MPP task family with the generic runner:
@@ -88,13 +88,13 @@ npm run bench:local:agent:dev -- --task-suite mpp --task-filter server-charge-pa
 Daytona Tempo smoke run:
 
 ```bash
-npm run bench:daytona:agent:dev -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
+npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
 ```
 
 Daytona MPP smoke run:
 
 ```bash
-npm run bench:daytona:agent:dev -- --task-suite mpp --task-filter server-charge-pathusd --concurrency 1 --agent-concurrency 1
+npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> --task-suite mpp --task-filter server-charge-pathusd --concurrency 1 --agent-concurrency 1
 ```
 
 Useful development options:
@@ -221,18 +221,24 @@ npm run clean
 
 ## Daytona Base Images
 
-Daytona runs require an explicit base image. If you change the shared base image,
-RewardKit library, or Tempo verifier on a branch, CI publishes a short-lived PR
-image before you run Daytona:
+Local Docker runs build the shared base image from the current checkout, so they
+do not need a pushed branch or a registry image. Use a local oracle smoke run to
+test base-image changes first.
+
+Daytona sandboxes cannot use your local Docker daemon. If you change the shared
+base image, RewardKit library, or Tempo verifier, push the branch and wait for
+the **Build base image** PR workflow to publish its image. Copy the image
+reference from the workflow summary into the Daytona command:
 
 ```bash
-# CI prints the PR image tag, then resolve and use it for the run.
+# The workflow summary provides the exact PR image reference.
 npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash>
 ```
 
-The runner writes the exact image reference into staged tasks. CI never
-overwrites source-tagged images; PR image versions are deleted when the PR
-closes and by a seven-day cleanup job.
+The runner writes that reference into staged task Dockerfiles. `npm run
+base-image:ref` prints the source-derived tag for inspection, while CI adds the
+PR number used by Daytona. PR image versions are deleted when the PR closes and
+by a seven-day cleanup job.
 
 ## Jobs
 

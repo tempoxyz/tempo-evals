@@ -19,6 +19,11 @@ on:
       - config/tasks.yaml
       - .github/workflows/build-base-image.yml
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number for a short-lived image
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -35,12 +40,11 @@ jobs:
       - name: Resolve image refs
         id: image
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
         run: |
           repository=$(uv run python scripts/base_image.py ref | sed 's/:source-.*$//')
           source_tag=$(uv run python scripts/base_image.py tag)
-          if [ "$EVENT_NAME" = pull_request ]; then
+          if [ -n "$PR_NUMBER" ]; then
             tag="pr-$PR_NUMBER-$source_tag"
           else
             tag="main-$source_tag"
@@ -65,4 +69,5 @@ jobs:
           fi
 
       - name: Publish image reference
-        run: echo "Base image: \`${{ steps.image.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Base image: \`${{ steps.image.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
