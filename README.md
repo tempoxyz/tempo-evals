@@ -221,8 +221,7 @@ npm run clean
 
 ## Daytona Base Images
 
-Daytona runs require an explicit base image and resolve its tag to an immutable
-digest before staging task Dockerfiles. If you change the shared base image,
+Daytona runs require an explicit base image. If you change the shared base image,
 RewardKit library, or Tempo verifier on a branch, CI publishes a short-lived PR
 image before you run Daytona:
 
@@ -231,9 +230,9 @@ image before you run Daytona:
 npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash>
 ```
 
-The runner resolves tags to digests and writes the exact `FROM` reference into
-the staged tasks. PR image versions are deleted when the PR closes and by a
-seven-day cleanup job.
+The runner writes the exact image reference into staged tasks. CI never
+overwrites source-tagged images; PR image versions are deleted when the PR
+closes and by a seven-day cleanup job.
 
 ## Jobs
 

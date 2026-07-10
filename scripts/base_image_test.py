@@ -16,7 +16,7 @@ class BaseImageTest(unittest.TestCase):
             f"{base_image_ref().rsplit(':', 1)[0]}:source-{source_hash()}",
         )
 
-    def test_override_staged_base_image_uses_an_immutable_ref(self) -> None:
+    def test_override_staged_base_image_uses_the_published_ref(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             dockerfile = (
                 Path(directory)

@@ -121,9 +121,9 @@ pympp, `shared/global/rewardkit-lib/`) and the Tempo JS verifier
 `.github/workflows/build-base-image.yml`. After changing the base image
 contents, re-run `npm run sync`.
 
-Daytona requires an explicit CI-published base image and resolves it to an
-immutable digest before running. PR base images are short-lived; use the image
-tag from the PR build workflow for Daytona validation.
+Daytona requires an explicit CI-published base image. PR base images are
+short-lived; use the image tag from the PR build workflow for Daytona
+validation.
 
 The pinned base-image tag is intentionally mutable during a Tempo Bench version.
 Only bump `base_image` when cutting a new Tempo Bench version; ordinary shared

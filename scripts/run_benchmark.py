@@ -308,23 +308,6 @@ def build_base_image() -> None:
     )
 
 
-def resolve_image_digest(image: str) -> str:
-    if "@sha256:" in image:
-        return image
-    digest = run_output(
-        "docker",
-        ["buildx", "imagetools", "inspect", "--format", "{{.Manifest.Digest}}", image],
-    )
-    if not digest or not digest.startswith("sha256:"):
-        msg = (
-            f"Could not resolve a digest for {image}. Publish this branch base image "
-            "with the Build base image workflow, then retry."
-        )
-        raise RuntimeError(msg)
-    repository = image.rsplit(":", maxsplit=1)[0]
-    return f"{repository}@{digest}"
-
-
 def daytona_base_image(options: dict[str, Any]) -> str:
     image = options.get("base_image")
     if not image:
@@ -332,7 +315,7 @@ def daytona_base_image(options: dict[str, Any]) -> str:
             "Daytona requires --base-image. Publish a branch image in CI and use its "
             "tag or digest."
         )
-    return resolve_image_digest(image)
+    return image
 
 
 def sync_dataset(options: dict[str, Any]) -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -24,12 +25,25 @@ def base_image_repository() -> str:
 
 def source_hash() -> str:
     digest = hashlib.sha256()
-    for input_path in INPUTS:
-        directory = ROOT / input_path
-        for file_path in sorted(
-            path for path in directory.rglob("*") if path.is_file()
-        ):
-            digest.update(file_path.relative_to(ROOT).as_posix().encode())
+    result = subprocess.run(
+        [
+            "git",
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            *(str(path) for path in INPUTS),
+        ],
+        check=True,
+        cwd=ROOT,
+        capture_output=True,
+    )
+    for name in sorted(filter(None, result.stdout.decode().split("\0"))):
+        file_path = ROOT / name
+        if file_path.is_file():
+            digest.update(name.encode())
             digest.update(b"\0")
             digest.update(file_path.read_bytes())
             digest.update(b"\0")

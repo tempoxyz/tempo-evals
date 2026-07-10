@@ -6,7 +6,6 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
 
 from scripts.run_benchmark import (
     MCP_PROFILE,
@@ -109,11 +108,10 @@ class RunBenchmarkTest(unittest.TestCase):
             ],
         )
 
-    @patch("scripts.run_benchmark.run_output", return_value="sha256:base")
-    def test_daytona_base_image_resolves_to_a_digest(self, _: object) -> None:
+    def test_daytona_base_image_uses_the_supplied_image(self) -> None:
         self.assertEqual(
             daytona_base_image({"base_image": "ghcr.io/tempoxyz/base:source-test"}),
-            "ghcr.io/tempoxyz/base@sha256:base",
+            "ghcr.io/tempoxyz/base:source-test",
         )
 
     def test_daytona_base_image_requires_an_explicit_image(self) -> None:
