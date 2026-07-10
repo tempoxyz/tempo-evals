@@ -50,6 +50,24 @@ class RunBenchmarkTest(unittest.TestCase):
             ],
         )
 
+    def test_finalize_config_resolves_versioned_tempo_task_filter(self) -> None:
+        config = finalize_config(
+            base_config(), {"task_filter": "tempo-v1/transfer-with-memo"}
+        )
+
+        self.assertEqual(
+            config["datasets"],
+            [
+                {
+                    "path": "tasks/tempo-v1",
+                    "task_names": [
+                        "tempo-v1/transfer-with-memo",
+                        "transfer-with-memo",
+                    ],
+                }
+            ],
+        )
+
     def test_benchmark_provenance_uses_versioned_dataset_identity(self) -> None:
         self.assertEqual(
             benchmark_provenance("tempo"),

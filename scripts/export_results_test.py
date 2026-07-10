@@ -91,7 +91,7 @@ class ExportResultsTest(unittest.TestCase):
                 trial(
                     {
                         "trial_name": "trial-c",
-                        "task_name": "tempo/set-fee-token",
+                        "task_name": "tempo-v1/set-fee-token",
                         "agent_info": {
                             "name": "claude-code",
                             "model_info": {"name": "other-model"},

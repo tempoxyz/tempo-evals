@@ -10,12 +10,12 @@ authoring guide.
 
 Current task intents:
 
-- `tempo/transfer-with-memo`
-- `tempo/transfer-with-memo-fee-payer`
-- `tempo/set-fee-token`
-- `tempo/create-stablecoin-with-policy`
-- `tempo/faucet-funded-transfer`
-- `tempo/stablecoin-dex-swap`
+- `tempo-v1/transfer-with-memo`
+- `tempo-v1/transfer-with-memo-fee-payer`
+- `tempo-v1/set-fee-token`
+- `tempo-v1/create-stablecoin-with-policy`
+- `tempo-v1/faucet-funded-transfer`
+- `tempo-v1/stablecoin-dex-swap`
 
 Each intent is materialized into a Docs variant (no suffix) and an `-mcp`
 variant by `npm run sync`.

@@ -52,7 +52,7 @@ npm run bench:daytona:agent      # Full Daytona agent run
 Single task:
 
 ```bash
-npm run bench:local:one -- --task-filter tempo/transfer-with-memo
+npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 npm run bench:local:mpp -- --task-filter server-charge-pathusd
 npm run bench:daytona:agent:dev -- --task-filter transfer-with-memo-mcp --concurrency 1 --agent-concurrency 1
 ```

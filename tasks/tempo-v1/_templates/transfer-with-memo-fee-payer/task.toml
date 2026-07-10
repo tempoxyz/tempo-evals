@@ -3,7 +3,7 @@ schema_version = "1.3"
 artifacts = ["/app/package.json", "/app/src"]
 
 [task]
-name = "tempo/transfer-with-memo-fee-payer"
+name = "tempo-v1/transfer-with-memo-fee-payer"
 description = "Build a Tempo localnet integration that sends a memo transfer sponsored by a fee payer."
 authors = []
 keywords = ["tempo", "tip20", "memo", "fee-payer", "localnet", "typescript"]
