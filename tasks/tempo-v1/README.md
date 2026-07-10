@@ -1,6 +1,6 @@
 # tempo/tempo-bench-v1
 
-Local Harbor dataset for Tempo integration evaluations.
+Harbor dataset for Tempo integration evaluations on Tempo testnet.
 
 Task directories in this directory are the authored Tempo benchmark tasks.
 Edit them directly. `npm run sync` refreshes dataset manifests, MPP shared
@@ -17,20 +17,17 @@ Current task intents:
 - `tempo-v1/faucet-funded-transfer`
 - `tempo-v1/stablecoin-dex-swap`
 
-Each task is run with either the Docs or MCP access profile. The benchmark job
-serves pinned docs for the Docs profile and injects the Tempo MCP server for
-the MCP profile, so both profiles use the same task artifact.
+Each task is run with either the Docs or MCP access profile. Docs uses Tempo's
+public documentation by default and can serve a pinned bundle with
+`--docs-sha`; MCP adds the Tempo MCP server at the job level. Both profiles use
+the same task artifact.
 
-Each task is Harbor-native and self-contained:
+Each task is authored directly as a Harbor task:
 
-- `instruction.md` is the agent-facing prompt, including the localnet
-  execution constraints and Docs access guidance.
-- `task.toml` owns fixture values, verifier selection, resources, and
-  sidecars. MCP configuration is applied by the benchmark job, not stored in
-  the task artifact.
-- `environment/` contains the task runtime and Docker Compose additions.
-  Common sidecars are symlinked from `../../shared/` where Harbor and Docker
-  can consume them.
+- `instruction.md` is the agent-facing prompt and output contract.
+- `task.toml` owns task metadata, environment defaults, verifier selection,
+  and resource limits. Profile configuration is applied by the benchmark job.
+- `environment/Dockerfile` extends the shared benchmark base image.
 - `tests/correctness/` contains task-specific RewardKit criteria and the
   independent onchain verifier. `tests/quality/` contains turn/token
   efficiency checks and the Claude Haiku LLM judge. `tests/test.sh` runs the
@@ -38,8 +35,8 @@ Each task is Harbor-native and self-contained:
   `/logs/verifier/reward.json` as zero and skips RewardKit. On success,
   RewardKit writes the primary score from the weighted aggregate of all static
   and available LLM quality criteria. A score of one requires every included
-  criterion to score one. `tests/tempo-bench-verifier/` is a minimal copied
-  verifier package for the selected `TEMPO_BENCH_CASE`.
+  criterion to score one. The shared Tempo verifier is installed in the base
+  image and selects the case named by `TEMPO_BENCH_CASE`.
 - `solution/` contains the oracle solution used for sanity checks.
 
 After changing a task, run `npm run dataset` to refresh `dataset.toml` digests.
