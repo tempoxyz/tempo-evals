@@ -43,7 +43,7 @@ digest = "sha256:1866c061e9230a76ede3b281aee861179c1b830a968b58cb924662b23e21710
 
 [[tasks]]
 name = "tempo-mcp-v1/stablecoin-creation"
-digest = "sha256:8b1bae9d1b3655c83b65a297da415f8c9ec16d6a600c65444a3e1ab6394d77e1"
+digest = "sha256:9dbbb9c79fce42e6d71c50eb9dd1bf6f1bc96ff0a5ed57444fae55a60d7e407a"
 
 [[tasks]]
 name = "tempo-mcp-v1/tip20-transfer-memo"

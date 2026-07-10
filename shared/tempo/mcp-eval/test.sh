@@ -43,7 +43,7 @@ if ! (
   cd "$JUDGE_WORKSPACE" || exit 1
   "$REWARDKIT_PYTHON" -m rewardkit "$TESTS_DIR/quality" \
     --workspace "$JUDGE_WORKSPACE" --output "$LOG_DIR/quality-reward.json"
-); then
+) > "$LOG_DIR/quality-stdout.txt" 2> "$LOG_DIR/quality-stderr.txt"; then
   printf '%s\n' 'Skipping LLM quality reward because the judge failed.' \
     > "$LOG_DIR/quality-skipped.txt"
   exit 0
