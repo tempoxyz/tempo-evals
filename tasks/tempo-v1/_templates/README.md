@@ -1,22 +1,22 @@
 # Tempo task templates
 
 Authored templates for the Tempo Harbor tasks. Each `tasks/tempo-v1/_templates/<slug>/`
-directory generates two tasks under `tasks/tempo-v1/`: `<slug>` and
-`<slug>-mcp`. `npm run sync` regenerates that output from
-scratch; never edit generated profile task directories by hand.
+directory generates one canonical task under `tasks/tempo-v1/`. Benchmark jobs
+select the Docs or MCP access profile, so both profiles still receive separate
+scores without duplicating task artifacts. `npm run sync` regenerates tracked
+output from scratch; never edit generated task directories by hand.
 
 A template task contains only the authored files:
 
 - `instruction.md` — the agent-facing prompt. It must contain exactly one
   `<!-- tempobench_sync -->` placeholder, which sync replaces with the shared
-  execution constraints (and the per-profile access block for docs/MCP
-  variants) from `config/tasks.yaml`.
+  execution constraints and Docs access block from `config/tasks.yaml`.
 - `README.md` — the Harbor Hub display summary. It must include `## Overview`,
   `## What the Task Tests`, and `## Verification`.
-- `task.toml` — profile-neutral task config. `[task].name` is the bare
-  intent (`tempo-v1/<slug>`); sync appends the profile suffix, description
-  label, keywords, per-profile env, and MCP servers. Tempo fixture values
-  live in `config/tasks.yaml` under `fixture_env` and `case_fixtures`;
+- `task.toml` — canonical task config. `[task].name` is the bare intent
+  (`tempo-v1/<slug>`); the benchmark job injects the MCP server for the MCP
+  profile. Tempo fixture values live in `config/tasks.yaml` under `fixture_env`
+  and `case_fixtures`;
   sync renders them into each generated task's `[environment.env]`. Shared
   compose injects those keys into `main` so shared-mode verifier commands
   inherit the same env. Sync rejects duplicated `[verifier.env]` blocks.

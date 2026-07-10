@@ -57,6 +57,10 @@ class ExportResultsTest(unittest.TestCase):
             {"task_family": "transfer-with-memo-fee-payer", "profile": "mcp"},
         )
         self.assertEqual(
+            parse_task_name("tempo-v1/transfer-with-memo", "mcp"),
+            {"task_family": "tempo-v1/transfer-with-memo", "profile": "mcp"},
+        )
+        self.assertEqual(
             parse_task_name("custom-task"),
             {"task_family": "custom-task", "profile": "unknown"},
         )
@@ -137,6 +141,25 @@ class ExportResultsTest(unittest.TestCase):
             summary_json = json.loads((out_dir / "summary.json").read_text())
             self.assertEqual(summary_json["n_trials"], 3)
             self.assertEqual(summary_json["reward_keys"], ["correctness", "reward"])
+
+    def test_export_results_reads_mcp_profile_from_trial_config(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+            job_dir = Path(root) / "job"
+            write_json(
+                job_dir / "trial" / "result.json",
+                trial(
+                    {
+                        "task_name": "tempo-v1/transfer-with-memo",
+                        "config": {
+                            "agent": {"mcp_servers": [{"name": "tempo"}]},
+                        },
+                    }
+                ),
+            )
+
+            result = export_results(job_dir)
+
+            self.assertEqual(result["trials"][0]["profile"], "mcp")
 
     def test_summarize_rows_groups_by_model_task_and_profile(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:

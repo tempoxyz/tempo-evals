@@ -1,6 +1,6 @@
-# Data for npm run sync: which Tempo task templates get generated into
-# docs/MCP variants, the per-profile task.toml/instruction edits, and the
-# shared files synced into MPP tasks.
+# Data for npm run sync: which Tempo task templates get generated, their
+# canonical task.toml/instruction edits, and the shared files synced into MPP
+# tasks.
 
 # Shared base image for every task environment. It bakes in the RewardKit
 # venv (harbor-rewardkit, pympp[tempo], tempo-bench-rewardkit) and the Tempo
@@ -12,7 +12,7 @@
 base_image: ghcr.io/tempoxyz/tempo-bench-base:v1
 
 # Authored task templates under tasks/tempo-v1/_templates/<slug>/. Each one
-# generates a task without a suffix and a -mcp task under tasks/tempo-v1/.
+# generates one canonical task under tasks/tempo-v1/.
 task_slugs:
   - transfer-with-memo
   - transfer-with-memo-fee-payer
@@ -90,10 +90,9 @@ execution_constraints: |
   - Do not hard-code or call public Tempo RPC endpoints such as Moderato/testnet.
   - Do not run live testnet smoke tests; local eval checks must use the provided environment variables.
 
-# Generated task profiles. For each generated task, `mcp_servers` is applied
-# to task.toml and `instruction` is rendered above the execution constraints.
-# A pinned docs SHA transparently routes docs.tempo.xyz to the staged bundle at
-# run time; generated tasks default to public docs.
+# Run-time access profiles. The tracked dataset contains one canonical task per
+# template. Benchmark jobs inject the MCP server for the MCP profile; a pinned
+# docs SHA transparently routes docs.tempo.xyz to the staged bundle at run time.
 profiles:
   - id: docs
     suffix: ""
@@ -103,20 +102,10 @@ profiles:
 
       Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
   - id: mcp
-    suffix: -mcp
-    label: MCP
     mcp_servers:
       - name: tempo
         transport: streamable-http
         url: https://mcp.tempo.xyz
-    instruction: |
-      ## Tempo Documentation
-
-      Tempo documentation is available publicly at https://docs.tempo.xyz. Use it for Tempo-specific APIs and examples.
-
-      ## Tempo MCP
-
-      The official Tempo MCP server is configured as `tempo` and is available in addition to the documentation.
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.

@@ -2,9 +2,9 @@
 """Generate versioned Tempo tasks and sync shared MPP harness files.
 
 Authored Tempo task templates live in tasks/tempo-v1/_templates/<slug>/. Generated
-task directories under tasks/tempo-v1/ contain one un-suffixed and one -mcp
-variant per template. Never hand-edit generated tasks; edit the template and re-run
-`npm run sync`.
+task directories under tasks/tempo-v1/ contain one canonical task per template.
+Benchmark jobs configure Docs or MCP access at run time. Never hand-edit
+generated tasks; edit the template and re-run `npm run sync`.
 """
 
 from __future__ import annotations
@@ -41,8 +41,9 @@ TEMPO_BENCHMARK = BENCHMARKS_CONFIG["tempo"]
 MPP_BENCHMARK = BENCHMARKS_CONFIG["mpp"]
 TASK_SLUGS: list[str] = TASKS_CONFIG["task_slugs"]
 BASE_IMAGE: str = TASKS_CONFIG["base_image"]
-GENERATED_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
-ALL_PROFILES: list[dict[str, Any]] = GENERATED_PROFILES
+TRACKED_PROFILES = [
+    profile for profile in TASKS_CONFIG["profiles"] if profile["id"] == "docs"
+]
 QUALITY_ENV: dict[str, str] = TASKS_CONFIG["quality_env"]
 FIXTURE_ENV: dict[str, str] = TASKS_CONFIG["fixture_env"]
 CASE_FIXTURES: dict[str, dict[str, str]] = TASKS_CONFIG["case_fixtures"]
@@ -366,7 +367,7 @@ def generate_task_matrix() -> int:
         if not (source_dir / "task.toml").exists():
             msg = f"Missing template task: {source_dir}"
             raise RuntimeError(msg)
-        for profile in ALL_PROFILES:
+        for profile in TRACKED_PROFILES:
             generated_slugs.add(generate_task(source_dir, slug, profile))
 
     for entry in TASKS_DIR.iterdir():
@@ -399,7 +400,7 @@ def matrix_task_names() -> list[str]:
     return [
         f"tempo-v1/{slug}{profile['suffix']}"
         for slug in TASK_SLUGS
-        for profile in ALL_PROFILES
+        for profile in TRACKED_PROFILES
     ]
 
 
