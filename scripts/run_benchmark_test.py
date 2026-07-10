@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from scripts.run_benchmark import (
     MCP_CODE_PROFILE,
@@ -18,6 +19,7 @@ from scripts.run_benchmark import (
     finalize_config,
     parse_args,
     run_benchmark_key,
+    stage_filtered_config,
     stage_pinned_docs_task,
     versioned_name,
 )
@@ -145,6 +147,18 @@ class RunBenchmarkTest(unittest.TestCase):
     def test_daytona_base_image_requires_an_explicit_image(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "requires --base-image"):
             daytona_base_image({})
+
+    def test_all_suite_stages_mcp_tasks_without_a_pinned_docs_bundle(self) -> None:
+        config = {"agents": [{"name": "oracle"}], "datasets": []}
+        options = {"profile": "docs", "task_suite": "all"}
+        with (
+            patch("scripts.run_benchmark.stage_task_datasets") as stage_tasks,
+            patch("scripts.run_benchmark.redirect_dataset_paths") as redirect,
+        ):
+            stage_filtered_config(config, "all-suite", options, None)
+
+        stage_tasks.assert_called_once()
+        redirect.assert_called_once()
 
     def test_staged_pinned_docs_keep_the_public_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

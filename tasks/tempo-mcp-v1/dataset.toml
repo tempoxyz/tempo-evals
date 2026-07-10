@@ -11,7 +11,7 @@ name = "Tempo"
 
 [[tasks]]
 name = "tempo-mcp-v1/access-keys"
-digest = "sha256:c3b90cc2e4d03bb57845b3656bf881ba254ed8e7e7dcc4b761c09ca4416f0948"
+digest = "sha256:d68013e0aa8cac4d73d44e11c727f9836bb2b11992b4a066d505fcf4ed82f018"
 
 [[tasks]]
 name = "tempo-mcp-v1/batched-transfers"

@@ -970,7 +970,7 @@ def stage_filtered_config(
     if (
         docs_bundle is not None
         or options["profile"] in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}
-        or options.get("task_suite") == "tempo-mcp"
+        or options.get("task_suite") in {"tempo-mcp", "all"}
     ):
         stage_task_datasets(staging_root, docs_bundle)
         redirect_dataset_paths(config, staging_root)
