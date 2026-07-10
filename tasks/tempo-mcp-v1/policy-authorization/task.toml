@@ -1,0 +1,28 @@
+schema_version = "1.3"
+
+artifacts = [
+  "/app/answer.json",
+  { source = "/var/log/tempo-mcp/direct-trace.jsonl", service = "tempo-mcp-direct" },
+  { source = "/var/log/tempo-mcp/code-trace.jsonl", service = "tempo-mcp-code" },
+]
+
+[task]
+name = "tempo-mcp-v1/policy-authorization"
+description = "Answer a multi-hop Tempo documentation question about policy authorization."
+keywords = ["tempo", "mcp", "docs", "code-mode", "efficiency"]
+
+[metadata]
+category = "documentation"
+benchmark = "tempo-mcp-bench-v1"
+
+[agent]
+timeout_sec = 300.0
+
+[verifier]
+timeout_sec = 90.0
+environment_mode = "shared"
+
+[environment]
+cpus = 1
+memory_mb = 1024
+storage_mb = 2048

@@ -1,0 +1,35 @@
+services:
+  main:
+    depends_on:
+      tempo-mcp-direct:
+        condition: service_healthy
+      tempo-mcp-code:
+        condition: service_healthy
+
+  tempo-mcp-direct:
+    build:
+      context: ./mcp-bridge
+    environment:
+      MCP_TOOL_MODE: direct
+      MCP_UPSTREAM_URL: ${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}
+      MCP_TRACE_PATH: /var/log/tempo-mcp/direct-trace.jsonl
+      MCP_TARGET_ID: ${TEMPO_MCP_TARGET_ID:-tempo-api-mcp-v1}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8787/health').then(r => process.exit(r.ok ? 0 : 1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  tempo-mcp-code:
+    build:
+      context: ./mcp-bridge
+    environment:
+      MCP_TOOL_MODE: code
+      MCP_UPSTREAM_URL: ${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}
+      MCP_TRACE_PATH: /var/log/tempo-mcp/code-trace.jsonl
+      MCP_TARGET_ID: ${TEMPO_MCP_TARGET_ID:-tempo-api-mcp-v1}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8787/health').then(r => process.exit(r.ok ? 0 : 1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30

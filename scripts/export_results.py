@@ -27,6 +27,10 @@ TRIAL_COLUMNS = [
     "attempt_index",
     "reward",
     "passed",
+    "quality",
+    "mcp_used",
+    "mcp_trace_clean",
+    "eligible",
     "exception_type",
     "exception_message",
     "started_at",
@@ -39,10 +43,15 @@ TRIAL_COLUMNS = [
     "input_tokens",
     "cache_tokens",
     "output_tokens",
+    "model_turns",
+    "mcp_calls",
+    "mcp_denied_calls",
+    "mcp_latency_ms",
     "cost_usd",
     "task_checksum",
     "git_sha",
     "docs_source",
+    "mcp_target_id",
     "result_path",
 ]
 
@@ -57,12 +66,38 @@ SUMMARY_COLUMNS = [
     "n_trials",
     "n_passed",
     "pass_rate",
+    "n_eligible",
+    "eligible_rate",
     "n_errors",
     "mean_reward",
+    "n_quality_scored",
+    "quality_coverage",
+    "mean_quality",
+    "median_quality",
+    "quality_at_k",
     "input_tokens",
     "cache_tokens",
     "output_tokens",
+    "model_turns",
+    "mcp_calls",
+    "mcp_denied_calls",
+    "mcp_latency_ms",
     "cost_usd",
+]
+
+QUALITY_SUMMARY_COLUMNS = [
+    "run_id",
+    "job_name",
+    "model",
+    "agent",
+    "profile",
+    "n_tasks",
+    "n_trials",
+    "n_quality_scored",
+    "quality_coverage",
+    "mean_quality",
+    "median_quality",
+    "quality_at_k",
 ]
 
 
@@ -116,6 +151,7 @@ def build_context(job_dir: Path, run_id: str, metadata: JsonObject) -> JsonObjec
         "docs_source": source
         if isinstance(source, str) and source
         else default_docs_source(),
+        "mcp_target_id": metadata.get("mcp_target_id", ""),
     }
 
 
@@ -130,15 +166,21 @@ def result_files(root: Path) -> list[Path]:
 def profile_from_trial(result: JsonObject) -> str:
     agent = as_object(as_object(result.get("config")).get("agent"))
     for server in agent.get("mcp_servers") or []:
-        if isinstance(server, dict) and server.get("name") == "tempo":
-            return "mcp"
+        if isinstance(server, dict):
+            name = server.get("name")
+            if name == "tempo-direct":
+                return "mcp-direct"
+            if name == "tempo-code":
+                return "mcp-code"
+            if name == "tempo":
+                return "mcp"
     return "docs"
 
 
 def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, str]:
     if task_name.endswith(MCP_PROFILE_SUFFIX):
         return {"task_family": task_name[: -len(MCP_PROFILE_SUFFIX)], "profile": "mcp"}
-    if task_name.startswith("tempo-v1/"):
+    if task_name.startswith(("tempo-v1/", "tempo-mcp-v1/")):
         return {"task_family": task_name, "profile": tempo_profile}
     return {"task_family": task_name, "profile": "unknown"}
 
@@ -215,6 +257,57 @@ def token_totals(result: JsonObject) -> dict[str, Numeric]:
     }
 
 
+def model_turns(result: JsonObject, file_path: Path) -> Numeric:
+    contexts = collect_agent_contexts(result)
+    for key in ("n_turns", "turn_count", "num_turns"):
+        value = sum_optional(contexts, key)
+        if value != "":
+            return value
+    for log_path in file_path.parent.glob("agent/*.txt"):
+        for line in reversed(log_path.read_text(errors="replace").splitlines()):
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            value = as_number(as_object(event).get("num_turns"))
+            if value is not None:
+                return value
+    return ""
+
+
+def trace_metrics(file_path: Path) -> dict[str, Numeric]:
+    calls = denied = errors = latency = 0
+    target_id = ""
+    found = False
+    for trace_file in file_path.parent.rglob("*trace.jsonl"):
+        for line in trace_file.read_text().splitlines():
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(event, dict):
+                continue
+            target_id = target_id or as_string(event.get("target_id"))
+            if event.get("error"):
+                errors += 1
+            if event.get("method") != "tools/call":
+                continue
+            found = True
+            if event.get("allowed") is False:
+                denied += 1
+            else:
+                calls += 1
+                value = as_number(event.get("duration_ms"))
+                latency += value if isinstance(value, int | float) else 0
+    return {
+        "calls": calls if found else "",
+        "denied": denied if found else "",
+        "errors": errors if found else "",
+        "latency": latency if found else "",
+        "target_id": target_id,
+    }
+
+
 def extract_rewards(result: JsonObject) -> dict[str, float | int]:
     raw_rewards = as_object(as_object(result.get("verifier_result")).get("rewards"))
     return {
@@ -245,6 +338,15 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
     tokens = token_totals(result)
+    trace = trace_metrics(file_path)
+    passed = isinstance(reward, int | float) and reward >= 1
+    used_mcp = isinstance(trace["calls"], int | float) and trace["calls"] > 0
+    trace_clean = (
+        isinstance(trace["denied"], int | float)
+        and trace["denied"] == 0
+        and isinstance(trace["errors"], int | float)
+        and trace["errors"] == 0
+    )
 
     return {
         "run_id": context["run_id"],
@@ -257,7 +359,13 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "model": as_string(model_info.get("name")),
         "attempt_index": 0,
         "reward": reward,
-        "passed": isinstance(reward, int | float) and reward >= 1,
+        "passed": passed,
+        "quality": (
+            value if (value := as_number(rewards.get("quality"))) is not None else ""
+        ),
+        "mcp_used": used_mcp,
+        "mcp_trace_clean": trace_clean,
+        "eligible": passed and used_mcp and trace_clean,
         "exception_type": as_string(exception_info.get("exception_type")),
         "exception_message": as_string(exception_info.get("exception_message")),
         "started_at": as_string(result.get("started_at")),
@@ -275,10 +383,15 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "input_tokens": tokens["input"],
         "cache_tokens": tokens["cache"],
         "output_tokens": tokens["output"],
+        "model_turns": model_turns(result, file_path),
+        "mcp_calls": trace["calls"],
+        "mcp_denied_calls": trace["denied"],
+        "mcp_latency_ms": trace["latency"],
         "cost_usd": tokens["cost"],
         "task_checksum": as_string(result.get("task_checksum")),
         "git_sha": context["git_sha"],
         "docs_source": context["docs_source"],
+        "mcp_target_id": context["mcp_target_id"] or trace["target_id"],
         "result_path": str(file_path),
         "rewards": rewards,
     }
@@ -332,9 +445,20 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
 
     frame = pd.DataFrame(rows)
     frame["_reward"] = pd.to_numeric(frame["reward"], errors="coerce")
+    frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
     frame["_passed"] = frame["passed"].astype(int)
+    frame["_eligible"] = frame["eligible"].astype(int)
     frame["_error"] = frame["exception_type"].astype(bool).astype(int)
-    for column in ["input_tokens", "cache_tokens", "output_tokens", "cost_usd"]:
+    for column in [
+        "input_tokens",
+        "cache_tokens",
+        "output_tokens",
+        "cost_usd",
+        "model_turns",
+        "mcp_calls",
+        "mcp_denied_calls",
+        "mcp_latency_ms",
+    ]:
         frame[column] = pd.to_numeric(frame[column], errors="coerce").fillna(0)
 
     group_columns = ["model", "agent", "task_name", "task_family", "profile"]
@@ -345,21 +469,72 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             job_name=("job_name", "first"),
             n_trials=("trial_name", "size"),
             n_passed=("_passed", "sum"),
+            n_eligible=("_eligible", "sum"),
             n_errors=("_error", "sum"),
             mean_reward=("_reward", "mean"),
+            n_quality_scored=("_quality", "count"),
+            mean_quality=("_quality", "mean"),
+            median_quality=("_quality", "median"),
+            quality_at_k=("_quality", "max"),
             input_tokens=("input_tokens", "sum"),
             cache_tokens=("cache_tokens", "sum"),
             output_tokens=("output_tokens", "sum"),
+            model_turns=("model_turns", "sum"),
+            mcp_calls=("mcp_calls", "sum"),
+            mcp_denied_calls=("mcp_denied_calls", "sum"),
+            mcp_latency_ms=("mcp_latency_ms", "sum"),
             cost_usd=("cost_usd", "sum"),
         )
-        .assign(pass_rate=lambda data: data["n_passed"] / data["n_trials"])
+        .assign(
+            pass_rate=lambda data: data["n_passed"] / data["n_trials"],
+            eligible_rate=lambda data: data["n_eligible"] / data["n_trials"],
+            quality_coverage=lambda data: data["n_quality_scored"] / data["n_trials"],
+        )
         .sort_values(["model", "task_name", "profile"], kind="stable")
     )
     summary["mean_reward"] = summary["mean_reward"].where(
         summary["mean_reward"].notna(),
         "",
     )
+    for column in ("mean_quality", "median_quality", "quality_at_k"):
+        summary[column] = summary[column].where(summary[column].notna(), "")
     return summary[SUMMARY_COLUMNS].to_dict("records")
+
+
+def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
+    if not rows:
+        return []
+
+    frame = pd.DataFrame(rows)
+    frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
+    group_columns = ["run_id", "job_name", "model", "agent", "profile"]
+    task_quality = frame.groupby(
+        [*group_columns, "task_family"], as_index=False, sort=False
+    ).agg(quality_at_k=("_quality", "max"))
+    summary = (
+        frame.groupby(group_columns, as_index=False, sort=False)
+        .agg(
+            n_tasks=("task_family", "nunique"),
+            n_trials=("trial_name", "size"),
+            n_quality_scored=("_quality", "count"),
+            mean_quality=("_quality", "mean"),
+            median_quality=("_quality", "median"),
+        )
+        .merge(
+            task_quality.groupby(group_columns, as_index=False, sort=False).agg(
+                quality_at_k=("quality_at_k", "mean")
+            ),
+            on=group_columns,
+            how="left",
+            validate="one_to_one",
+        )
+        .assign(
+            quality_coverage=lambda data: data["n_quality_scored"] / data["n_trials"]
+        )
+    )
+    for column in ("mean_quality", "median_quality", "quality_at_k"):
+        summary[column] = summary[column].where(summary[column].notna(), "")
+    return summary[QUALITY_SUMMARY_COLUMNS].to_dict("records")
 
 
 def write_summary_json(
@@ -368,6 +543,7 @@ def write_summary_json(
     run_id: str,
     trials: list[JsonObject],
     summary: list[JsonObject],
+    quality_summary: list[JsonObject],
 ) -> None:
     reward_keys = sorted({key for row in trials for key in row["rewards"]})
     file_path.write_text(
@@ -381,6 +557,7 @@ def write_summary_json(
                     'n_trials': len(trials),
                     'reward_keys': reward_keys,
                     'summary': summary,
+                    'quality_summary': quality_summary,
                 },
                 indent=2,
             )
@@ -412,6 +589,7 @@ def export_results(
         ],
     )
     summary = summarize_rows(trials)
+    quality_summary = summarize_quality(trials)
 
     out_path.mkdir(parents=True, exist_ok=True)
     write_csv(
@@ -420,8 +598,16 @@ def export_results(
         trial_csv_rows(trials),
     )
     write_csv(out_path / "summary.csv", SUMMARY_COLUMNS, summary)
+    write_csv(
+        out_path / "quality_summary.csv", QUALITY_SUMMARY_COLUMNS, quality_summary
+    )
     write_summary_json(
-        out_path / "summary.json", job_path, effective_run_id, trials, summary
+        out_path / "summary.json",
+        job_path,
+        effective_run_id,
+        trials,
+        summary,
+        quality_summary,
     )
 
     return {
@@ -429,6 +615,7 @@ def export_results(
         "out_dir": str(out_path),
         "trials": trials,
         "summary": summary,
+        "quality_summary": quality_summary,
     }
 
 

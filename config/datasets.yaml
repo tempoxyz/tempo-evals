@@ -4,6 +4,7 @@
 # config/variants.yaml).
 datasets:
   - path: tasks/tempo-v1
+  - path: tasks/tempo-mcp-v1
   - path: tasks/mpp
     task_names:
       - "server-*"

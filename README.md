@@ -67,6 +67,12 @@ Run the MPP task family with the generic runner:
 npm run bench:local:oracle -- --task-suite mpp
 ```
 
+Run the paired MCP efficiency suite (three attempts per arm):
+
+```bash
+npm run bench:local:mcp
+```
+
 ## Running Development Benchmarks
 
 Development flows are for iteration and smoke testing. They keep attempts low and
@@ -148,6 +154,16 @@ Export CSV and JSON results for notebooks or external tools:
 npm run results:export -- --job runs/<run_id>/harbor-job --run-id <run_id>
 ```
 
+Compare paired direct/code exports. The command also writes per-task and
+task-weighted overall quality summaries beside the paired trial CSV:
+
+```bash
+npm run results:compare -- \
+  --direct jobs/<direct-job>/exports/trials.csv \
+  --code jobs/<code-job>/exports/trials.csv \
+  --out jobs/<paired-job>.csv
+```
+
 Compare canonical Tempo tasks across access profiles with separate runs:
 
 ```bash
@@ -171,6 +187,7 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 | ---- | ----------- |
 | `trials.csv` | One row per Harbor trial result |
 | `summary.csv` | Aggregates by model, agent, task, task family, and profile |
+| `quality_summary.csv` | Mean, median, coverage, and quality@k across attempts |
 | `summary.json` | Structured aggregate data and export metadata |
 
 ## Datasets
@@ -179,6 +196,7 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 | ------- | ---- | ----------- |
 | `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo testnet integration tasks across docs and MCP profiles |
 | `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
+| `tempo/tempo-mcp-bench-v1` | `tasks/tempo-mcp-v1/` | Live Tempo data investigations: direct docs tools vs docs code mode |
 
 Benchmark majors are immutable evaluation contracts: task set, prompts,
 fixtures, verifier behavior, and scoring rules. Compatible maintenance fixes
@@ -189,7 +207,8 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 ## Profiles
 
 * **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) transparently serves a pinned bundle at `https://docs.tempo.xyz` and `https://tempo.xyz/developers`.
-* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://mcp.tempo.xyz`.
+* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://api.tempo.xyz/mcp`.
+* **MCP efficiency**: paired `mcp-direct` and `mcp-code` profiles connect through a local bridge. Both receive the same read-only Tempo data tools; direct receives docs search/read tools while code receives `docs_code`. The upstream defaults to `https://api.tempo.xyz/mcp` and can be overridden with `TEMPO_MCP_EVAL_URL`.
 
 ## CLI
 
@@ -300,5 +319,5 @@ Useful runner flags:
 
 * [Harbor](https://www.harborframework.com/docs/core-concepts)
 * [Tempo docs](https://docs.tempo.xyz/)
-* [Tempo MCP](https://mcp.tempo.xyz)
+* [Tempo API MCP](https://developers.tempo.xyz/docs/api/mcp)
 * [MPP](https://mpp.dev/)

@@ -6,8 +6,11 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from scripts.run_benchmark import (
+    MCP_CODE_PROFILE,
+    MCP_DIRECT_PROFILE,
     MCP_PROFILE,
     BenchmarkKey,
     apply_profile,
@@ -16,6 +19,7 @@ from scripts.run_benchmark import (
     finalize_config,
     parse_args,
     run_benchmark_key,
+    stage_filtered_config,
     stage_pinned_docs_task,
     versioned_name,
 )
@@ -46,6 +50,12 @@ class RunBenchmarkTest(unittest.TestCase):
             [{"path": "tasks/mpp", "task_names": ["server-*"]}],
         )
 
+    def test_finalize_config_selects_tempo_mcp_suite(self) -> None:
+        self.assertEqual(
+            finalize_config(base_config(), {"task_suite": "tempo-mcp"})["datasets"],
+            [{"path": "tasks/tempo-mcp-v1"}],
+        )
+
     def test_finalize_config_requires_all_suite_for_full_matrix(self) -> None:
         config = finalize_config(base_config(), {"task_suite": "all"})
 
@@ -54,6 +64,9 @@ class RunBenchmarkTest(unittest.TestCase):
             [
                 {
                     "path": "tasks/tempo-v1",
+                },
+                {
+                    "path": "tasks/tempo-mcp-v1",
                 },
                 {"path": "tasks/mpp", "task_names": ["server-*"]},
             ],
@@ -111,6 +124,20 @@ class RunBenchmarkTest(unittest.TestCase):
             ],
         )
 
+    def test_mcp_eval_profiles_inject_distinct_bridge_servers(self) -> None:
+        self.assertEqual(
+            apply_profile({"agents": [{"name": "claude-code"}]}, "mcp-direct")[
+                "agents"
+            ][0]["mcp_servers"],
+            MCP_DIRECT_PROFILE["mcp_servers"],
+        )
+        self.assertEqual(
+            apply_profile({"agents": [{"name": "claude-code"}]}, "mcp-code")["agents"][
+                0
+            ]["mcp_servers"],
+            MCP_CODE_PROFILE["mcp_servers"],
+        )
+
     def test_daytona_base_image_uses_the_supplied_image(self) -> None:
         self.assertEqual(
             daytona_base_image({"base_image": "ghcr.io/tempoxyz/base:source-test"}),
@@ -120,6 +147,18 @@ class RunBenchmarkTest(unittest.TestCase):
     def test_daytona_base_image_requires_an_explicit_image(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "requires --base-image"):
             daytona_base_image({})
+
+    def test_all_suite_stages_mcp_tasks_without_a_pinned_docs_bundle(self) -> None:
+        config = {"agents": [{"name": "oracle"}], "datasets": []}
+        options = {"profile": "docs", "task_suite": "all"}
+        with (
+            patch("scripts.run_benchmark.stage_task_datasets") as stage_tasks,
+            patch("scripts.run_benchmark.redirect_dataset_paths") as redirect,
+        ):
+            stage_filtered_config(config, "all-suite", options, None)
+
+        stage_tasks.assert_called_once()
+        redirect.assert_called_once()
 
     def test_staged_pinned_docs_keep_the_public_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
