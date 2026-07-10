@@ -1,7 +1,8 @@
-import { parseUnits, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { writeFileSync } from "node:fs";
+import { parseUnits, type Address } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Actions, createClient, http } from "viem/tempo";
-import { tempoLocalnet } from "viem/tempo/chains";
+import { tempoTestnet } from "viem/tempo/chains";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -16,27 +17,34 @@ const decimals = Number(required("TEMPO_DECIMALS"));
 const amountIn = parseUnits(required("TEMPO_SWAP_AMOUNT_IN"), decimals);
 const minAmountOut = parseUnits(required("TEMPO_SWAP_MIN_AMOUNT_OUT"), decimals);
 
-const client = createClient({
-  account: privateKeyToAccount(required("TEMPO_PAYER_PRIVATE_KEY") as Hex),
-  chain: tempoLocalnet,
+const taker = privateKeyToAccount(generatePrivateKey());
+const client = (account: typeof taker) => createClient({
+  account,
+  chain: tempoTestnet,
   feeToken: tokenIn,
-  transport: http(required("TEMPO_RPC_URL")),
+  transport: http(),
 });
+const takerClient = client(taker);
 
-await Actions.token.approveSync(client, {
+await Actions.faucet.fundSync(takerClient, { account: taker.address });
+await Actions.token.approveSync(takerClient, {
   amount: amountIn,
   spender: dex,
   token: tokenIn,
 });
 
-const result = await Actions.dex.sellSync(client, {
+const result = await Actions.dex.sellSync(takerClient, {
   amountIn,
   minAmountOut,
   tokenIn,
   tokenOut,
 });
 
-console.log(JSON.stringify({
-  status: result.receipt.status,
-  transactionHash: result.receipt.transactionHash,
-}, null, 2));
+if (result.receipt.status !== "success") throw new Error("swap failed");
+
+const output = {
+  taker: { address: taker.address },
+  swapTransactionHash: result.receipt.transactionHash,
+};
+writeFileSync("/app/out.json", `${JSON.stringify(output, null, 2)}\n`);
+console.log(JSON.stringify(output, null, 2));

@@ -67,9 +67,7 @@ function runStep(config, name, command, args, env = {}) {
 
 function defaultRuntimeEnv(config) {
   return {
-    TEMPO_RPC_URL: config.rpcUrl,
     TEMPO_TOKEN: config.token,
-    TEMPO_PAYER_PRIVATE_KEY: config.payerPrivateKey,
     TEMPO_RECIPIENT: config.recipient,
     ...(config.recipients.length > 0 ? { TEMPO_RECIPIENTS: JSON.stringify(config.recipients) } : {}),
     TEMPO_AMOUNT: config.amount,

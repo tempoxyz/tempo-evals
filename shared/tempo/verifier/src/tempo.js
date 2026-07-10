@@ -1,8 +1,9 @@
 // SYNCED FROM shared/tempo/verifier/src/tempo.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
-const { createPublicClient, http, pad, stringToHex } = require("viem");
+const { createPublicClient, decodeEventLog, http, pad, stringToHex } = require("viem");
+const { tempoTestnet } = require("viem/tempo/chains");
 
-function createTempoClient(config) {
-  return createPublicClient({ transport: http(config.rpcUrl) });
+function createTempoClient() {
+  return createPublicClient({ chain: tempoTestnet, transport: http() });
 }
 
 function sleep(ms) {
@@ -33,6 +34,34 @@ function sameAddress(left, right) {
   return left?.toLowerCase() === right?.toLowerCase();
 }
 
+function findEvent(receipt, address, event, matches) {
+  for (const log of receipt.logs) {
+    if (!sameAddress(log.address, address)) continue;
+    try {
+      const decoded = decodeEventLog({ abi: [event], data: log.data, topics: log.topics });
+      if (matches(decoded.args)) return decoded;
+    } catch {
+      // Ignore unrelated logs.
+    }
+  }
+  return null;
+}
+
+async function receiptAfter(client, fromBlock, hash, from, label) {
+  let receipt;
+  try {
+    receipt = await client.getTransactionReceipt({ hash });
+  } catch {
+    return null;
+  }
+  if (receipt.status !== "success") throw new Error(`${label} did not succeed`);
+  if (receipt.blockNumber <= fromBlock) throw new Error(`${label} predates this evaluation`);
+  if (from && !sameAddress(receipt.from, from)) {
+    throw new Error(`${label} was not sent by the reported account`);
+  }
+  return receipt;
+}
+
 async function waitForRpc(client, config) {
   const deadline = Date.now() + config.rpcWaitMs;
   while (Date.now() < deadline) {
@@ -42,7 +71,7 @@ async function waitForRpc(client, config) {
       await sleep(1000);
     }
   }
-  throw new Error(`Tempo RPC was not reachable at ${config.rpcUrl}`);
+  throw new Error("Tempo testnet RPC was not reachable");
 }
 
 function memoEncodings(memo) {
@@ -58,7 +87,9 @@ function memoEncodings(memo) {
 module.exports = {
   blockEvidence,
   createTempoClient,
+  findEvent,
   memoEncodings,
+  receiptAfter,
   sameAddress,
   sleep,
   waitForEvidence,

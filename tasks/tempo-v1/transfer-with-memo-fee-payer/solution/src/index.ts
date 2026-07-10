@@ -1,7 +1,8 @@
-import { parseUnits, stringToHex, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { writeFileSync } from "node:fs";
+import { parseUnits, stringToHex, type Address } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Actions, createClient, http } from "viem/tempo";
-import { tempoLocalnet } from "viem/tempo/chains";
+import { tempoTestnet } from "viem/tempo/chains";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -9,23 +10,22 @@ function required(name: string): string {
   return value;
 }
 
-const rpcUrl = required("TEMPO_RPC_URL");
 const token = required("TEMPO_TOKEN") as Address;
 const feeToken = required("TEMPO_FEE_TOKEN") as Address;
 const recipient = required("TEMPO_RECIPIENT") as Address;
 const amount = parseUnits(required("TEMPO_AMOUNT"), Number(required("TEMPO_DECIMALS")));
 const memo = stringToHex(required("TEMPO_MEMO"), { size: 32 });
 
-const payer = privateKeyToAccount(required("TEMPO_PAYER_PRIVATE_KEY") as Hex);
-const feePayer = privateKeyToAccount(required("TEMPO_FEE_PAYER_PRIVATE_KEY") as Hex);
+const payer = privateKeyToAccount(generatePrivateKey());
+const feePayer = privateKeyToAccount(generatePrivateKey());
 const client = createClient({
   account: payer,
-  chain: tempoLocalnet,
+  chain: tempoTestnet,
   feeToken,
-  transport: http(rpcUrl),
+  transport: http(),
 });
 
-// The fee payer sponsors the transfer, so it needs fee-token balance.
+await Actions.faucet.fundSync(client, { account: payer.address });
 await Actions.faucet.fundSync(client, { account: feePayer.address });
 
 const result = await Actions.token.transferSync(client, {
@@ -37,4 +37,12 @@ const result = await Actions.token.transferSync(client, {
   token,
 });
 
-console.log(JSON.stringify({ status: result.receipt.status, transactionHash: result.receipt.transactionHash }, null, 2));
+if (result.receipt.status !== "success") throw new Error("transfer failed");
+
+const output = {
+  payer: { address: payer.address },
+  feePayer: { address: feePayer.address },
+  transferTransactionHash: result.receipt.transactionHash,
+};
+writeFileSync("/app/out.json", `${JSON.stringify(output, null, 2)}\n`);
+console.log(JSON.stringify(output, null, 2));

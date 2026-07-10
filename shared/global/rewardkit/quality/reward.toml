@@ -7,10 +7,10 @@ atif-trajectory = "/logs/agent/trajectory.json"
 timeout = 300
 
 [[criterion]]
-name = "uses_tempo_localnet_safely"
+name = "uses_tempo_testnet_appropriately"
 type = "likert"
 points = 5
-description = "The submission uses the provided Tempo localnet environment variables, does not hard-code public Tempo RPC endpoints, secrets, recipients, amounts, or token addresses, and avoids live testnet side effects."
+description = "The submission uses the Tempo testnet and the provided task values without hard-coding task-specific secrets, recipients, amounts, or token addresses."
 
 [[criterion]]
 name = "uses_tempo_primitives_correctly"

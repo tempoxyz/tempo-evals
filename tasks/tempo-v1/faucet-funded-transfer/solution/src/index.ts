@@ -1,7 +1,8 @@
-import { parseUnits, type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { writeFileSync } from "node:fs";
+import { parseUnits, type Address } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Actions, createClient, http } from "viem/tempo";
-import { tempoLocalnet } from "viem/tempo/chains";
+import { tempoTestnet } from "viem/tempo/chains";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -10,15 +11,15 @@ function required(name: string): string {
 }
 
 const token = required("TEMPO_TOKEN") as Address;
-const account = privateKeyToAccount(required("TEMPO_FAUCET_PRIVATE_KEY") as Hex);
+const account = privateKeyToAccount(generatePrivateKey());
 const client = createClient({
   account,
-  chain: tempoLocalnet,
+  chain: tempoTestnet,
   feeToken: token,
-  transport: http(required("TEMPO_RPC_URL")),
+  transport: http(),
 });
 
-await Actions.faucet.fundSync(client, { account: account.address });
+const funding = await Actions.faucet.fundSync(client, { account: account.address });
 
 const result = await Actions.token.transferSync(client, {
   amount: parseUnits(required("TEMPO_AMOUNT"), Number(required("TEMPO_DECIMALS"))),
@@ -26,4 +27,12 @@ const result = await Actions.token.transferSync(client, {
   token,
 });
 
-console.log(JSON.stringify({ status: result.receipt.status, transactionHash: result.receipt.transactionHash }, null, 2));
+if (result.receipt.status !== "success") throw new Error("transfer failed");
+
+const output = {
+  payer: { address: account.address },
+  fundingTransactionHashes: funding.map((receipt) => receipt.transactionHash),
+  transferTransactionHash: result.receipt.transactionHash,
+};
+writeFileSync("/app/out.json", `${JSON.stringify(output, null, 2)}\n`);
+console.log(JSON.stringify(output, null, 2));

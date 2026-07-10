@@ -1,7 +1,8 @@
-import { type Address, type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { writeFileSync } from "node:fs";
+import { type Address } from "viem";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Actions, createClient, http } from "viem/tempo";
-import { tempoLocalnet } from "viem/tempo/chains";
+import { tempoTestnet } from "viem/tempo/chains";
 
 function required(name: string): string {
   const value = process.env[name];
@@ -9,20 +10,26 @@ function required(name: string): string {
   return value;
 }
 
-const account = privateKeyToAccount(required("TEMPO_PAYER_PRIVATE_KEY") as Hex);
+const account = privateKeyToAccount(generatePrivateKey());
 const feeToken = required("TEMPO_TOKEN") as Address;
+const salt = generatePrivateKey();
+const suffix = salt.slice(2, 8).toUpperCase();
+const name = `Tempo Bench ${suffix}`;
+const symbol = `TB${suffix.slice(0, 4)}`;
 const client = createClient({
   account,
-  chain: tempoLocalnet,
+  chain: tempoTestnet,
   feeToken,
-  transport: http(required("TEMPO_RPC_URL")),
+  transport: http(),
 });
 
+await Actions.faucet.fundSync(client, { account: account.address });
 const tokenResult = await Actions.token.createSync(client, {
   admin: account.address,
   currency: required("TEMPO_STABLECOIN_CURRENCY"),
-  name: required("TEMPO_STABLECOIN_NAME"),
-  symbol: required("TEMPO_STABLECOIN_SYMBOL"),
+  name,
+  salt,
+  symbol,
 });
 
 const policyResult = await Actions.policy.createSync(client, {
@@ -36,8 +43,22 @@ const linkResult = await Actions.token.changeTransferPolicySync(client, {
   token: tokenResult.token,
 });
 
-console.log(JSON.stringify({
-  linkStatus: linkResult.receipt.status,
-  policyId: policyResult.policyId.toString(),
-  token: tokenResult.token,
-}, null, 2));
+if (linkResult.receipt.status !== "success") throw new Error("link policy failed");
+
+const output = {
+  payer: { address: account.address },
+  stablecoin: {
+    address: tokenResult.token,
+    name,
+    symbol,
+    currency: required("TEMPO_STABLECOIN_CURRENCY"),
+    salt,
+  },
+  policy: { id: policyResult.policyId.toString() },
+  tokenCreateTransactionHash: tokenResult.receipt.transactionHash,
+  policyCreateTransactionHash: policyResult.receipt.transactionHash,
+  policyAccountTransactionHash: policyResult.receipt.transactionHash,
+  linkPolicyTransactionHash: linkResult.receipt.transactionHash,
+};
+writeFileSync("/app/out.json", `${JSON.stringify(output, null, 2)}\n`);
+console.log(JSON.stringify(output, null, 2));

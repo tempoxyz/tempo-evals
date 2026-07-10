@@ -2,7 +2,7 @@
 
 ## Overview
 
-Build a TypeScript integration that pays every recipient in a supplied list the same TIP-20 stablecoin amount through one Tempo batch transaction.
+Build a TypeScript integration that pays every recipient in a supplied list the same TIP-20 stablecoin amount through one Tempo testnet batch transaction.
 
 ## What the Task Tests
 
@@ -17,4 +17,4 @@ Build a TypeScript integration that pays every recipient in a supplied list the 
 - Correctness of the script, including:
   - Every configured recipient receives the configured stablecoin amount.
   - All transfers originate from the configured payer.
-  - All required transfer events share one transaction hash.
+  - One native transaction contains a TIP-20 transfer call for every recipient.

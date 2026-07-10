@@ -780,6 +780,8 @@ def generate_docs_tls_assets(environment_dir: Path) -> Path:
             str(ca_cert),
             "-CAkey",
             str(ca_key),
+            "-CAserial",
+            str(tls_dir / "ca.srl"),
             "-CAcreateserial",
             "-out",
             str(leaf_cert),
@@ -823,7 +825,7 @@ def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
 
     environment_dir = task_dir / "environment"
     shutil.copyfile(
-        "shared/tempo/docker/compose/tempo-localnet-docs.yaml",
+        "shared/tempo/docker/compose/tempo-docs.yaml",
         environment_dir / "docker-compose.yaml",
     )
     shutil.copytree(

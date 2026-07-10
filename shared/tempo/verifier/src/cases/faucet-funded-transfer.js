@@ -1,82 +1,75 @@
-// SYNCED FROM shared/tempo/verifier/src/cases/faucet-funded-transfer.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { parseAbiItem, parseUnits } = require("viem");
-const { privateKeyToAccount } = require("viem/accounts");
+const { expectAddress, expectHash, expectHashes, expectObject, readResult } = require("../result");
 const { defaultRuntimeEnv } = require("../submission");
-const { blockEvidence, waitForEvidence } = require("../tempo");
+const { findEvent, receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
 
-function runtimeEnv(config) {
-  return {
-    ...defaultRuntimeEnv(config),
-    TEMPO_FAUCET_PRIVATE_KEY: config.faucetPrivateKey,
-  };
+const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
+
+function result(config) {
+  return readResult(config, (value) => {
+    expectObject(
+      config,
+      value,
+      ["payer", "fundingTransactionHashes", "transferTransactionHash"],
+      "result",
+    );
+    expectObject(config, value.payer, ["address"], "payer");
+    return {
+      payer: expectAddress(config, value.payer.address, "payer.address"),
+      fundingTransactionHashes: expectHashes(config, value.fundingTransactionHashes, "fundingTransactionHashes"),
+      transactionHash: expectHash(config, value.transferTransactionHash, "transferTransactionHash"),
+    };
+  });
 }
 
-function beforeLog(left, right) {
+function before(left, right) {
   return (
     left.blockNumber < right.blockNumber ||
-    (left.blockNumber === right.blockNumber && left.logIndex < right.logIndex)
+    (left.blockNumber === right.blockNumber && left.transactionIndex < right.transactionIndex)
   );
+}
+
+function runtimeEnv(config) {
+  return defaultRuntimeEnv(config);
 }
 
 async function verify({ client, config, fromBlock }) {
-  // The localnet faucet proxy pays out from the payer account, and
-  // TEMPO_FAUCET_PRIVATE_KEY is the sender wallet the submission must fund
-  // via the faucet before transferring.
-  const localnetFaucet = privateKeyToAccount(config.payerPrivateKey).address;
-  const fundedSender = privateKeyToAccount(config.faucetPrivateKey).address;
-  const expectedValue = parseUnits(config.amount, config.decimals);
-  const event = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
+  const { payer, fundingTransactionHashes, transactionHash } = result(config);
+  const amount = parseUnits(config.amount, config.decimals);
 
-  async function findEvidence(startBlock) {
-    const latestBlock = await client.getBlockNumber();
-    const logs = await client.getLogs({
-      address: config.token,
-      event,
-      args: {
-        from: fundedSender,
-        to: config.recipient,
-      },
-      fromBlock: startBlock,
-      toBlock: latestBlock,
-    });
-
-    const match = logs.find((log) => log.args.value === expectedValue);
-    if (!match) return null;
-
-    const fundingLogs = await client.getLogs({
-      address: config.token,
-      event,
-      args: {
-        from: localnetFaucet,
-        to: fundedSender,
-      },
-      fromBlock: startBlock,
-      toBlock: match.blockNumber,
-    });
-    const funding = fundingLogs.find(
-      (log) => log.args.value >= expectedValue && beforeLog(log, match),
+  return waitForEvidence(config, async () => {
+    const transferReceipt = await receiptAfter(
+      client,
+      fromBlock,
+      transactionHash,
+      payer,
+      "reported transfer transaction",
     );
-
-    return (
-      funding &&
-      blockEvidence(match, {
-        localnetFaucet,
-        fundedSender,
-        fundingTransactionHash: funding.transactionHash,
-      })
+    if (!transferReceipt) return null;
+    const transfer = findEvent(transferReceipt, config.token, TRANSFER, (args) =>
+      sameAddress(args.from, payer) &&
+      sameAddress(args.to, config.recipient) &&
+      args.value === amount,
     );
-  }
+    if (!transfer) throw new Error("reported transaction does not transfer the requested token amount");
 
-  // The verifier captures this baseline before `npm run eval`. Keep it: the
-  // localnet seeds the DEX maker with the same fixture key during setup.
-  return waitForEvidence(
-    config,
-    () => findEvidence(fromBlock),
-    "no matching faucet-funded transfer event observed",
-  );
+    for (const hash of fundingTransactionHashes) {
+      const receipt = await receiptAfter(client, fromBlock, hash, null, "reported faucet transaction");
+      if (!receipt) return null;
+      const funding = findEvent(receipt, config.token, TRANSFER, (args) =>
+        sameAddress(args.to, payer) && args.value >= amount,
+      );
+      if (funding && before(receipt, transferReceipt)) {
+        return {
+          blockNumber: transferReceipt.blockNumber.toString(),
+          payer,
+          fundingTransactionHash: hash,
+          transactionHash,
+        };
+      }
+    }
+    throw new Error("reported faucet transactions did not fund the transfer payer");
+  }, "faucet-funded transfer was not observed");
 }
 
-module.exports = {
-  runtimeEnv,
-  verify,
-};
+module.exports = { runtimeEnv, verify };

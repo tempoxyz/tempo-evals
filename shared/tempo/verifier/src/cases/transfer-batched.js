@@ -1,7 +1,20 @@
-const { parseAbiItem, parseUnits } = require("viem");
-const { privateKeyToAccount } = require("viem/accounts");
+const { decodeFunctionData, parseAbi, parseUnits } = require("viem");
+const { expectAddress, expectHash, expectObject, readResult } = require("../result");
 const { defaultRuntimeEnv } = require("../submission");
-const { blockEvidence, sameAddress, waitForEvidence } = require("../tempo");
+const { receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
+
+const TRANSFER = parseAbi(["function transfer(address to, uint256 value)"]);
+
+function result(config) {
+  return readResult(config, (value) => {
+    expectObject(config, value, ["payer", "transferTransactionHash"], "result");
+    expectObject(config, value.payer, ["address"], "payer");
+    return {
+      payer: expectAddress(config, value.payer.address, "payer.address"),
+      transactionHash: expectHash(config, value.transferTransactionHash, "transferTransactionHash"),
+    };
+  });
+}
 
 function runtimeEnv(config) {
   return {
@@ -11,43 +24,47 @@ function runtimeEnv(config) {
 }
 
 async function verify({ client, config, fromBlock }) {
-  const payer = privateKeyToAccount(config.payerPrivateKey).address;
+  const { payer, transactionHash } = result(config);
   const expectedValue = parseUnits(config.amount, config.decimals);
-  const event = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
   return waitForEvidence(config, async () => {
-    const latestBlock = await client.getBlockNumber();
-    const logsByRecipient = await Promise.all(
-      config.recipients.map((recipient) =>
-        client.getLogs({
-          address: config.token,
-          event,
-          args: { from: payer, to: recipient },
-          fromBlock,
-          toBlock: latestBlock,
-        }),
-      ),
+    const receipt = await receiptAfter(
+      client,
+      fromBlock,
+      transactionHash,
+      payer,
+      "reported batch transaction",
     );
-    const matchingLogs = logsByRecipient.map((logs) =>
-      logs.filter((log) => log.args.value === expectedValue),
-    );
-    if (matchingLogs.some((logs) => logs.length === 0)) return null;
+    if (!receipt) return null;
 
-    const transactionHashes = new Set(
-      matchingLogs.flatMap((logs) => logs.map((log) => log.transactionHash.toLowerCase())),
+    const transaction = await client.getTransaction({ hash: transactionHash });
+    const paidEveryRecipient = config.recipients.every((recipient) =>
+      transaction.calls?.some((call) => {
+        if (!sameAddress(call.to, config.token)) return false;
+        try {
+          const decoded = decodeFunctionData({ abi: TRANSFER, data: call.data });
+          return (
+            decoded.functionName === "transfer" &&
+            sameAddress(decoded.args[0], recipient) &&
+            decoded.args[1] === expectedValue
+          );
+        } catch {
+          return false;
+        }
+      }),
     );
-    const transactionHash = [...transactionHashes].find((hash) =>
-      matchingLogs.every((logs) => logs.some((log) => sameAddress(log.transactionHash, hash))),
-    );
-    if (!transactionHash) return null;
+    if (!paidEveryRecipient) {
+      throw new Error("reported transaction does not pay every configured recipient");
+    }
 
-    const match = matchingLogs[0].find((log) => sameAddress(log.transactionHash, transactionHash));
-    return blockEvidence(match, {
+    return {
+      blockNumber: receipt.blockNumber.toString(),
       payer,
       recipientCount: config.recipients.length,
       recipients: config.recipients,
-    });
-  }, "no single transaction paid every configured recipient");
+      transactionHash,
+    };
+  }, "reported batch transaction was not observed");
 }
 
 module.exports = {
