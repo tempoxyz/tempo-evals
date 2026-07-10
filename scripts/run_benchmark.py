@@ -96,6 +96,7 @@ Options:
                           (default: tasks/tempo-v1)
   --docs-sha SHA          Serve docs pinned to this SHA instead of public docs
   --profile PROFILE       Tempo access profile: docs, mcp, or all (default: docs)
+  --base-image REF        Immutable Daytona base image tag or digest (required)
   --no-force-build        Ask Harbor to reuse Docker environment builds
   --no-delete             Keep Harbor environments after the run for debugging
   --disable-verification  Skip verifier execution
@@ -143,6 +144,7 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument(
         "--profile", choices=(*PROFILE_IDS, "all"), default=DOCS_PROFILE["id"]
     )
+    parser.add_argument("--base-image")
     parser.add_argument("--no-sync", action="store_false", dest="sync", default=True)
     parser.add_argument("--no-force-build", action="store_true")
     parser.add_argument("--no-delete", action="store_true")
@@ -304,6 +306,16 @@ def build_base_image() -> None:
             ".",
         ],
     )
+
+
+def daytona_base_image(options: dict[str, Any]) -> str:
+    image = options.get("base_image")
+    if not image:
+        raise RuntimeError(
+            "Daytona requires --base-image. Publish a branch image in CI and use its "
+            "tag or digest."
+        )
+    return image
 
 
 def sync_dataset(options: dict[str, Any]) -> None:
@@ -821,12 +833,27 @@ def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
     trust_docs_ca(environment_dir, generate_docs_tls_assets(environment_dir))
 
 
-def stage_task_datasets(staging_root: Path, docs_bundle: str | None) -> None:
+def override_staged_base_image(staging_root: Path, image: str) -> None:
+    expected = f"FROM {base_image_ref()}"
+    for dockerfile in staging_root.glob("tasks/*/*/environment/Dockerfile"):
+        content = dockerfile.read_text()
+        if expected not in content:
+            raise RuntimeError(f"Unexpected base image in staged task: {dockerfile}")
+        dockerfile.write_text(content.replace(expected, f"FROM {image}", count=1))
+
+
+def stage_task_datasets(
+    staging_root: Path,
+    docs_bundle: str | None,
+    base_image: str | None = None,
+) -> None:
     staged_tasks = staging_root / "tasks" / "tempo-v1"
     staged_tasks.parent.mkdir(parents=True, exist_ok=True)
     copy_tasks(Path("tasks/tempo-v1"), staged_tasks)
     if Path("tasks/mpp").exists():
         copy_tasks(Path("tasks/mpp"), staging_root / "tasks" / "mpp")
+    if base_image is not None:
+        override_staged_base_image(staging_root, base_image)
     if docs_bundle is not None:
         for task_dir in staged_tasks.iterdir():
             if task_dir.is_dir() and (task_dir / "task.toml").exists():
@@ -853,7 +880,7 @@ def stage_daytona_config(
     staged_config = staging_root / "job.yaml"
 
     shutil.rmtree(staging_root, ignore_errors=True)
-    stage_task_datasets(staging_root, docs_bundle)
+    stage_task_datasets(staging_root, docs_bundle, daytona_base_image(options))
 
     config = apply_profile(finalize_config(config, options), options["profile"])
     redirect_dataset_paths(config, staging_root)

@@ -209,12 +209,30 @@ npm run check
 # Check generated Tempo files
 npm run check:generated
 
+# Print the immutable source-derived base-image tag for Daytona
+npm run base-image:ref
+
 # Open Harbor job viewer
 npm run harbor:view
 
 # Clean job/cache output
 npm run clean
 ```
+
+## Daytona Base Images
+
+Daytona runs require an explicit base image. If you change the shared base image,
+RewardKit library, or Tempo verifier on a branch, CI publishes a short-lived PR
+image before you run Daytona:
+
+```bash
+# CI prints the PR image tag, then resolve and use it for the run.
+npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash>
+```
+
+The runner writes the exact image reference into staged tasks. CI never
+overwrites source-tagged images; PR image versions are deleted when the PR
+closes and by a seven-day cleanup job.
 
 ## Jobs
 

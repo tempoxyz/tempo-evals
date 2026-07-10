@@ -12,6 +12,7 @@ from scripts.run_benchmark import (
     BenchmarkKey,
     apply_profile,
     benchmark_provenance,
+    daytona_base_image,
     finalize_config,
     parse_args,
     run_benchmark_key,
@@ -106,6 +107,16 @@ class RunBenchmarkTest(unittest.TestCase):
                 {"name": "oracle"},
             ],
         )
+
+    def test_daytona_base_image_uses_the_supplied_image(self) -> None:
+        self.assertEqual(
+            daytona_base_image({"base_image": "ghcr.io/tempoxyz/base:source-test"}),
+            "ghcr.io/tempoxyz/base:source-test",
+        )
+
+    def test_daytona_base_image_requires_an_explicit_image(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "requires --base-image"):
+            daytona_base_image({})
 
     def test_staged_pinned_docs_keep_the_public_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
