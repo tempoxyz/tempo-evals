@@ -156,6 +156,16 @@ Export CSV and JSON results for notebooks or external tools:
 npm run results:export -- --job runs/<run_id>/harbor-job --run-id <run_id>
 ```
 
+Compare paired direct/code exports. The command also writes per-task and
+task-weighted overall quality summaries beside the paired trial CSV:
+
+```bash
+npm run results:compare -- \
+  --direct jobs/<direct-job>/exports/trials.csv \
+  --code jobs/<code-job>/exports/trials.csv \
+  --out jobs/<paired-job>.csv
+```
+
 Compare canonical Tempo tasks across access profiles with separate runs:
 
 ```bash
@@ -179,6 +189,7 @@ Export outputs are written to `runs/<run_id>/exports/` by default:
 | ---- | ----------- |
 | `trials.csv` | One row per Harbor trial result |
 | `summary.csv` | Aggregates by model, agent, task, task family, and profile |
+| `quality_summary.csv` | Mean, median, coverage, and quality@k across attempts |
 | `summary.json` | Structured aggregate data and export metadata |
 
 ## Datasets

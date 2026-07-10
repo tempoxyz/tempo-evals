@@ -70,7 +70,11 @@ SUMMARY_COLUMNS = [
     "eligible_rate",
     "n_errors",
     "mean_reward",
+    "n_quality_scored",
+    "quality_coverage",
     "mean_quality",
+    "median_quality",
+    "quality_at_k",
     "input_tokens",
     "cache_tokens",
     "output_tokens",
@@ -79,6 +83,21 @@ SUMMARY_COLUMNS = [
     "mcp_denied_calls",
     "mcp_latency_ms",
     "cost_usd",
+]
+
+QUALITY_SUMMARY_COLUMNS = [
+    "run_id",
+    "job_name",
+    "model",
+    "agent",
+    "profile",
+    "n_tasks",
+    "n_trials",
+    "n_quality_scored",
+    "quality_coverage",
+    "mean_quality",
+    "median_quality",
+    "quality_at_k",
 ]
 
 
@@ -453,7 +472,10 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             n_eligible=("_eligible", "sum"),
             n_errors=("_error", "sum"),
             mean_reward=("_reward", "mean"),
+            n_quality_scored=("_quality", "count"),
             mean_quality=("_quality", "mean"),
+            median_quality=("_quality", "median"),
+            quality_at_k=("_quality", "max"),
             input_tokens=("input_tokens", "sum"),
             cache_tokens=("cache_tokens", "sum"),
             output_tokens=("output_tokens", "sum"),
@@ -466,6 +488,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
         .assign(
             pass_rate=lambda data: data["n_passed"] / data["n_trials"],
             eligible_rate=lambda data: data["n_eligible"] / data["n_trials"],
+            quality_coverage=lambda data: data["n_quality_scored"] / data["n_trials"],
         )
         .sort_values(["model", "task_name", "profile"], kind="stable")
     )
@@ -473,11 +496,45 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
         summary["mean_reward"].notna(),
         "",
     )
-    summary["mean_quality"] = summary["mean_quality"].where(
-        summary["mean_quality"].notna(),
-        "",
-    )
+    for column in ("mean_quality", "median_quality", "quality_at_k"):
+        summary[column] = summary[column].where(summary[column].notna(), "")
     return summary[SUMMARY_COLUMNS].to_dict("records")
+
+
+def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
+    if not rows:
+        return []
+
+    frame = pd.DataFrame(rows)
+    frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
+    group_columns = ["run_id", "job_name", "model", "agent", "profile"]
+    task_quality = frame.groupby(
+        [*group_columns, "task_family"], as_index=False, sort=False
+    ).agg(quality_at_k=("_quality", "max"))
+    summary = (
+        frame.groupby(group_columns, as_index=False, sort=False)
+        .agg(
+            n_tasks=("task_family", "nunique"),
+            n_trials=("trial_name", "size"),
+            n_quality_scored=("_quality", "count"),
+            mean_quality=("_quality", "mean"),
+            median_quality=("_quality", "median"),
+        )
+        .merge(
+            task_quality.groupby(group_columns, as_index=False, sort=False).agg(
+                quality_at_k=("quality_at_k", "mean")
+            ),
+            on=group_columns,
+            how="left",
+            validate="one_to_one",
+        )
+        .assign(
+            quality_coverage=lambda data: data["n_quality_scored"] / data["n_trials"]
+        )
+    )
+    for column in ("mean_quality", "median_quality", "quality_at_k"):
+        summary[column] = summary[column].where(summary[column].notna(), "")
+    return summary[QUALITY_SUMMARY_COLUMNS].to_dict("records")
 
 
 def write_summary_json(
@@ -486,6 +543,7 @@ def write_summary_json(
     run_id: str,
     trials: list[JsonObject],
     summary: list[JsonObject],
+    quality_summary: list[JsonObject],
 ) -> None:
     reward_keys = sorted({key for row in trials for key in row["rewards"]})
     file_path.write_text(
@@ -499,6 +557,7 @@ def write_summary_json(
                     'n_trials': len(trials),
                     'reward_keys': reward_keys,
                     'summary': summary,
+                    'quality_summary': quality_summary,
                 },
                 indent=2,
             )
@@ -530,6 +589,7 @@ def export_results(
         ],
     )
     summary = summarize_rows(trials)
+    quality_summary = summarize_quality(trials)
 
     out_path.mkdir(parents=True, exist_ok=True)
     write_csv(
@@ -538,8 +598,16 @@ def export_results(
         trial_csv_rows(trials),
     )
     write_csv(out_path / "summary.csv", SUMMARY_COLUMNS, summary)
+    write_csv(
+        out_path / "quality_summary.csv", QUALITY_SUMMARY_COLUMNS, quality_summary
+    )
     write_summary_json(
-        out_path / "summary.json", job_path, effective_run_id, trials, summary
+        out_path / "summary.json",
+        job_path,
+        effective_run_id,
+        trials,
+        summary,
+        quality_summary,
     )
 
     return {
@@ -547,6 +615,7 @@ def export_results(
         "out_dir": str(out_path),
         "trials": trials,
         "summary": summary,
+        "quality_summary": quality_summary,
     }
 
 

@@ -8,8 +8,13 @@ from typing import Any
 
 import pandas as pd
 
-from scripts.compare_mcp_results import compare
-from scripts.export_results import export_results, parse_task_name, summarize_rows
+from scripts.compare_mcp_results import compare, summarize_quality_comparison
+from scripts.export_results import (
+    export_results,
+    parse_task_name,
+    summarize_quality,
+    summarize_rows,
+)
 
 
 def write_json(file_path: Path, value: Any) -> None:
@@ -252,6 +257,7 @@ class ExportResultsTest(unittest.TestCase):
                 "model_turns": 2,
                 "mcp_calls": 3,
                 "duration_sec": 4,
+                "agent_execution_duration_sec": 3,
                 "cost_usd": 0.01,
             }
             pd.DataFrame([{**row, "profile": "mcp-direct"}]).to_csv(
@@ -263,6 +269,55 @@ class ExportResultsTest(unittest.TestCase):
             result = compare(str(direct_path), str(code_path))
             self.assertEqual(result.loc[0, "input_tokens_delta"], 8)
             self.assertEqual(result.loc[0, "mcp_calls_delta"], 2)
+
+    def test_quality_summaries_preserve_missing_judge_scores(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-quality-") as root:
+            root_path = Path(root)
+            direct_path = root_path / "direct.csv"
+            code_path = root_path / "code.csv"
+            base = {
+                "task_family": "tempo-mcp-v1/wallet-client",
+                "model": "test",
+                "agent": "agent",
+                "task_checksum": "task",
+                "docs_source": "docs",
+                "passed": "true",
+                "eligible": "true",
+                "input_tokens": 20,
+                "cache_tokens": 0,
+                "output_tokens": 10,
+                "model_turns": 2,
+                "mcp_calls": 3,
+                "duration_sec": 4,
+                "agent_execution_duration_sec": 3,
+                "cost_usd": 0.01,
+            }
+            direct = [
+                {**base, "attempt_index": 1, "quality": 0.2, "profile": "mcp-direct"},
+                {**base, "attempt_index": 2, "quality": 0.4, "profile": "mcp-direct"},
+                {**base, "attempt_index": 3, "quality": 0.6, "profile": "mcp-direct"},
+            ]
+            code = [
+                {**base, "attempt_index": 1, "quality": 0.3, "profile": "mcp-code"},
+                {**base, "attempt_index": 2, "quality": 0.3, "profile": "mcp-code"},
+                {**base, "attempt_index": 3, "quality": "", "profile": "mcp-code"},
+            ]
+            pd.DataFrame(direct).to_csv(direct_path, index=False)
+            pd.DataFrame(code).to_csv(code_path, index=False)
+
+            task_summary, overall_summary = summarize_quality_comparison(
+                compare(str(direct_path), str(code_path))
+            )
+
+            self.assertEqual(task_summary.loc[0, "n_attempts"], 3)
+            self.assertEqual(task_summary.loc[0, "direct_quality_at_k"], 0.6)
+            self.assertAlmostEqual(task_summary.loc[0, "code_quality_coverage"], 2 / 3)
+            self.assertAlmostEqual(
+                task_summary.loc[0, "paired_quality_coverage"], 2 / 3
+            )
+            self.assertAlmostEqual(task_summary.loc[0, "mean_quality_delta"], 0.0)
+            self.assertEqual(overall_summary.loc[0, "n_tasks"], 1)
+            self.assertAlmostEqual(overall_summary.loc[0, "direct_quality_at_k"], 0.6)
 
     def test_summarize_rows_groups_by_model_task_and_profile(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
@@ -303,6 +358,47 @@ class ExportResultsTest(unittest.TestCase):
                 ],
                 3,
             )
+
+    def test_quality_summary_reports_task_weighted_quality_at_k(self) -> None:
+        rows = [
+            {
+                "run_id": "run",
+                "job_name": "job",
+                "model": "model",
+                "agent": "agent",
+                "profile": "mcp-code",
+                "task_family": "task-a",
+                "trial_name": "a-1",
+                "quality": 0.2,
+            },
+            {
+                "run_id": "run",
+                "job_name": "job",
+                "model": "model",
+                "agent": "agent",
+                "profile": "mcp-code",
+                "task_family": "task-a",
+                "trial_name": "a-2",
+                "quality": 0.8,
+            },
+            {
+                "run_id": "run",
+                "job_name": "job",
+                "model": "model",
+                "agent": "agent",
+                "profile": "mcp-code",
+                "task_family": "task-b",
+                "trial_name": "b-1",
+                "quality": "",
+            },
+        ]
+
+        summary = summarize_quality(rows)
+
+        self.assertEqual(summary[0]["n_tasks"], 2)
+        self.assertEqual(summary[0]["n_quality_scored"], 2)
+        self.assertAlmostEqual(summary[0]["quality_coverage"], 2 / 3)
+        self.assertEqual(summary[0]["quality_at_k"], 0.8)
 
 
 if __name__ == "__main__":
