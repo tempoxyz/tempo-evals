@@ -29,7 +29,7 @@
     "results:export": "uv run python scripts/export_results.py",
     "results:compare": "uv run python scripts/compare_mcp_results.py",
     "harbor:view": "uv run harbor view jobs",
-    "check": "npm run check:scripts && npm run test:results && npm run check:shell && npm run check:docs && npm run check:format && npm run check:lint",
+    "check": "npm run check:scripts && npm run test:results && npm run test:tempo-verifier && npm run check:shell && npm run check:docs && npm run check:format && npm run check:lint",
     "check:dataset": "uv run python scripts/run_benchmark.py check-dataset",
     "check:docs": "npm run docs:prepare && npm run docs:check",
     "check:generated": "uv run python scripts/run_benchmark.py check-generated",
@@ -39,6 +39,7 @@
     "check:scripts": "uv run python -m compileall -q scripts",
     "test:results": "uv run python -m unittest discover -s scripts -p '*_test.py'",
     "test:mcp-bridge": "node --test shared/tempo/mcp-bridge/server.test.mjs",
+    "test:tempo-verifier": "npm ci --ignore-scripts --no-audit --no-fund --prefix shared/tempo/verifier && npm test --prefix shared/tempo/verifier",
     "clean": "uv run python scripts/run_benchmark.py clean",
     "clean:jobs": "uv run python scripts/run_benchmark.py clean-jobs"
   }

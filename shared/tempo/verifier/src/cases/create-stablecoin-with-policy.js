@@ -114,6 +114,7 @@ async function verify({ client, config, fromBlock }) {
       args.name === output.stablecoin.name &&
       args.symbol === output.stablecoin.symbol &&
       args.currency === output.stablecoin.currency &&
+      args.currency === config.stablecoinCurrency &&
       sameAddress(args.admin, output.payer) &&
       args.salt.toLowerCase() === output.stablecoin.salt.toLowerCase(),
     );
