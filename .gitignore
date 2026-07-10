@@ -27,6 +27,7 @@ pnpm-debug.log*
 node_modules/
 package-lock.json
 !/package-lock.json
+!shared/tempo/verifier/package-lock.json
 yarn.lock
 pnpm-lock.yaml
 tasks/**/tests/node_modules/

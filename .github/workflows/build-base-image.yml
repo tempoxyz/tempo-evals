@@ -58,15 +58,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: docker/setup-buildx-action@v3
+
       - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: shared/global/docker/base/Dockerfile
+          tags: ${{ steps.image.outputs.ref }}
+          push: true
+          cache-from: type=gha,scope=tempo-bench-base
+          cache-to: type=gha,mode=max,scope=tempo-bench-base
+
+      - name: Update release image
+        if: github.ref == 'refs/heads/main'
         run: |
-          docker build -t "${{ steps.image.outputs.ref }}" \
-            -f shared/global/docker/base/Dockerfile .
-          docker push "${{ steps.image.outputs.ref }}"
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker tag "${{ steps.image.outputs.ref }}" "${{ steps.image.outputs.release_ref }}"
-            docker push "${{ steps.image.outputs.release_ref }}"
-          fi
+          docker buildx imagetools create \
+            --tag "${{ steps.image.outputs.release_ref }}" \
+            "${{ steps.image.outputs.ref }}"
 
       - name: Publish image reference
         run: |
