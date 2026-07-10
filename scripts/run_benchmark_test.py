@@ -91,6 +91,9 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual(
             run_benchmark_key({"benchmark": "tempo"}, "mpp"), BenchmarkKey.MPP
         )
+        self.assertEqual(
+            run_benchmark_key({"benchmark": "tempo"}, "all"), BenchmarkKey.TEMPO
+        )
 
     def test_parse_args_accepts_all_profiles(self) -> None:
         _, options = parse_args(["daytona-agent", "--profile", "all"])

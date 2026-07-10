@@ -413,6 +413,10 @@ def benchmark_provenance(task_suite: str | None) -> list[dict[str, str]]:
 
 
 def run_benchmark_key(variant: dict[str, Any], task_suite: str | None) -> BenchmarkKey:
+    # An all-suite run combines datasets, so retain the variant's benchmark
+    # identity for the generated job name.
+    if task_suite == "all":
+        return benchmark_key(variant.get("benchmark"))
     return benchmark_key(task_suite or variant.get("benchmark"))
 
 
