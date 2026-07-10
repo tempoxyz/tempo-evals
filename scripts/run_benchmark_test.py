@@ -6,12 +6,14 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 from scripts.run_benchmark import (
     MCP_PROFILE,
     BenchmarkKey,
     apply_profile,
     benchmark_provenance,
+    daytona_base_image,
     finalize_config,
     parse_args,
     run_benchmark_key,
@@ -106,6 +108,17 @@ class RunBenchmarkTest(unittest.TestCase):
                 {"name": "oracle"},
             ],
         )
+
+    @patch("scripts.run_benchmark.run_output", return_value="sha256:base")
+    def test_daytona_base_image_resolves_to_a_digest(self, _: object) -> None:
+        self.assertEqual(
+            daytona_base_image({"base_image": "ghcr.io/tempoxyz/base:source-test"}),
+            "ghcr.io/tempoxyz/base@sha256:base",
+        )
+
+    def test_daytona_base_image_requires_an_explicit_image(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "requires --base-image"):
+            daytona_base_image({})
 
     def test_staged_pinned_docs_keep_the_public_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -5,8 +5,17 @@ on:
     branches: [main]
     paths:
       - shared/global/docker/base/**
-      - shared/global/rewardkit-package/**
+      - shared/global/rewardkit-lib/**
       - shared/tempo/verifier/**
+      - scripts/base_image.py
+      - config/tasks.yaml
+      - .github/workflows/build-base-image.yml
+  pull_request:
+    paths:
+      - shared/global/docker/base/**
+      - shared/global/rewardkit-lib/**
+      - shared/tempo/verifier/**
+      - scripts/base_image.py
       - config/tasks.yaml
       - .github/workflows/build-base-image.yml
   workflow_dispatch:
@@ -17,18 +26,29 @@ permissions:
 
 jobs:
   build-and-push:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
 
-      - name: Read pinned base image ref
+      - name: Resolve image refs
         id: image
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          ref=$(sed -nE 's/^[[:space:]]*base_image:[[:space:]]*([^[:space:]#]+).*/\1/p' config/tasks.yaml)
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          repository=$(uv run python scripts/base_image.py ref | sed 's/:source-.*$//')
+          source_tag=$(uv run python scripts/base_image.py tag)
+          if [ "$EVENT_NAME" = pull_request ]; then
+            tag="pr-$PR_NUMBER-$source_tag"
+          else
+            tag="main-$source_tag"
+          fi
+          echo "ref=$repository:$tag" >> "$GITHUB_OUTPUT"
+          echo "release_ref=$(sed -nE 's/^[[:space:]]*base_image:[[:space:]]*([^[:space:]#]+).*/\1/p' config/tasks.yaml)" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -39,3 +59,10 @@ jobs:
           docker build -t "${{ steps.image.outputs.ref }}" \
             -f shared/global/docker/base/Dockerfile .
           docker push "${{ steps.image.outputs.ref }}"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            docker tag "${{ steps.image.outputs.ref }}" "${{ steps.image.outputs.release_ref }}"
+            docker push "${{ steps.image.outputs.release_ref }}"
+          fi
+
+      - name: Publish image reference
+        run: echo "Base image: \`${{ steps.image.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
