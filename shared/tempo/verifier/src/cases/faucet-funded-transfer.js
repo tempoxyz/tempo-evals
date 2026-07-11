@@ -1,4 +1,4 @@
-const { parseAbiItem, parseUnits } = require("viem");
+const { parseAbiItem, parseUnits, zeroAddress } = require("viem");
 const { expectAddress, expectHash, expectHashes, expectObject, readResult } = require("../result");
 const { defaultRuntimeEnv } = require("../submission");
 const { findEvent, receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
@@ -57,7 +57,7 @@ async function verify({ client, config, fromBlock }) {
       const receipt = await receiptAfter(client, fromBlock, hash, null, "reported faucet transaction");
       if (!receipt) return null;
       const funding = findEvent(receipt, config.token, TRANSFER, (args) =>
-        sameAddress(args.to, payer) && args.value >= amount,
+        sameAddress(args.from, zeroAddress) && sameAddress(args.to, payer) && args.value >= amount,
       );
       if (funding && before(receipt, transferReceipt)) {
         return {
