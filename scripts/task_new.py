@@ -102,7 +102,15 @@ def files_for(suite_id: str, suite: Suite, slug: str, canary: str) -> dict[str, 
     }
     if suite_id == "tempo-mcp":
         files["tests/expected.json"] = (
-            json.dumps({"required_claims": [], "prohibited_claims": []}, indent=2)
+            json.dumps(
+                {
+                    "required_terms": [],
+                    "required_patterns": [],
+                    "minimum_sources": 1,
+                    "required_data_tools": [],
+                },
+                indent=2,
+            )
             + "\n"
         )
     return files
