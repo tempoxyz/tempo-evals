@@ -6,7 +6,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared/tempo/mcp-eval"))
 
-from validation import has_required_tool_mix, used_data_tools  # noqa: E402
+from validation import (  # noqa: E402
+    evidence_summary,
+    has_required_tool_mix,
+    used_data_tools,
+    validated_data_evidence,
+)
 
 
 class McpEvalValidationTest(unittest.TestCase):
@@ -41,6 +46,52 @@ class McpEvalValidationTest(unittest.TestCase):
             ),
             {"v1_blocks_get"},
         )
+
+    def test_evidence_must_reference_an_executed_data_tool(self) -> None:
+        events = [
+            {
+                "allowed": True,
+                "tool": "v1_blocks_get",
+                "arguments": {"number": 1},
+                "response_sha256": "response",
+            }
+        ]
+        evidence = validated_data_evidence(
+            events,
+            [
+                {
+                    "source": "mcp://tempo/v1_blocks_get",
+                    "claim": "The block contains the observed transfer.",
+                }
+            ],
+        )
+        self.assertEqual(
+            evidence_summary(events, evidence),
+            [
+                {
+                    "source": "mcp://tempo/v1_blocks_get",
+                    "claim": "The block contains the observed transfer.",
+                    "calls": [
+                        {
+                            "arguments": {"number": 1},
+                            "response_sha256": "response",
+                        }
+                    ],
+                }
+            ],
+        )
+
+    def test_evidence_rejects_an_exploratory_tool(self) -> None:
+        with self.assertRaisesRegex(ValueError, "was not used"):
+            validated_data_evidence(
+                [{"allowed": True, "tool": "v1_blocks_get"}],
+                [
+                    {
+                        "source": "mcp://tempo/v1_transactions_get",
+                        "claim": "Not supported by the trace.",
+                    }
+                ],
+            )
 
 
 if __name__ == "__main__":

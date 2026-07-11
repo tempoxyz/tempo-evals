@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname } from "node:path";
 
@@ -112,6 +113,10 @@ export function parseMcpPayload(text, contentType = "") {
   return JSON.parse(data);
 }
 
+export function responseDigest(text) {
+  return createHash("sha256").update(text).digest("hex");
+}
+
 if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
   if (request.url === "/health") return reply(response, { ok: true, mode, tools: allowedToolNames(mode) });
   if (request.url === "/trace") {
@@ -138,7 +143,14 @@ if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
   const started = performance.now();
   try {
     const upstreamResponse = await proxy(request, body);
-    trace({ method: body?.method, tool, allowed: true, duration_ms: Math.round(performance.now() - started) });
+    trace({
+      method: body?.method,
+      tool,
+      allowed: true,
+      arguments: body?.method === "tools/call" ? (body?.params?.arguments ?? {}) : undefined,
+      response_sha256: responseDigest(upstreamResponse.text),
+      duration_ms: Math.round(performance.now() - started),
+    });
     if (body?.method === "tools/list") {
       const parsed = parseMcpPayload(
         upstreamResponse.text,

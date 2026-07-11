@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 from urllib.request import urlopen
 
-from validation import has_required_tool_mix, used_data_tools
+from validation import evidence_summary, has_required_tool_mix, validated_data_evidence
 
 
 def fail(reason: str) -> None:
@@ -21,6 +21,7 @@ except (OSError, json.JSONDecodeError):
 
 text = answer.get("answer")
 sources = answer.get("sources")
+evidence = answer.get("evidence")
 if not isinstance(text, str) or not text.strip():
     fail("answer must be a non-empty string")
 tempo_docs_prefixes = (
@@ -47,11 +48,12 @@ except (OSError, TimeoutError, json.JSONDecodeError):
 
 if len(traces) != 1 or not has_required_tool_mix(traces[0]):
     fail("the active MCP arm must use both a Tempo data tool and a Tempo docs tool")
-for tool in used_data_tools(traces[0]):
-    if not any(
-        isinstance(source, str) and source.startswith(f"mcp://tempo/{tool}")
-        for source in sources
-    ):
-        fail(f"answer must cite used MCP data tool: {tool}")
+try:
+    validated_evidence = validated_data_evidence(traces[0], evidence)
+except ValueError as error:
+    fail(str(error))
 Path("/logs/verifier").mkdir(parents=True, exist_ok=True)
+Path("/logs/verifier/evidence.json").write_text(
+    json.dumps({"evidence": evidence_summary(traces[0], validated_evidence)}) + "\n"
+)
 Path("/logs/verifier/reward.json").write_text('{"reward":1,"valid_answer":1}\n')
