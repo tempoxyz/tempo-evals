@@ -216,6 +216,12 @@ Harbor dataset names live in `config/benchmarks.yaml`.
 # Sync shared MPP task assets and generated job configs
 npm run sync
 
+# Create a suite-conformant task scaffold
+npm run task:new -- --suite tempo --name example-task
+
+# Validate task structure, metadata, and unique canaries
+npm run task:lint
+
 # Refresh Tempo dataset digests
 npm run dataset
 

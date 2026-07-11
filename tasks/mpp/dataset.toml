@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:17829b8e593b5ad5275ba74674e4f798ad190d2ae7bdf08ae74fab0d7b32c09d"
+digest = "sha256:741e8734ca2cc9583dedab4963dd65f27b798c2824a46c43e275340f1c1fd0fd"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:5817153e17deff1d452538f0bce54a4dd8ede02907f06b91b1b820da524e951a"
+digest = "sha256:1252a93c63bb447fca26be55afd2d7192b4f7431ed808506cd9592ee012a5ee5"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:653027bef1cb9b38da509671fe7daf54a4be9b392d0246994774f68f3285214f"
+digest = "sha256:b580a64399cdc4a95bc9daaa47c129221957c8ff18cad74f462a209f7535ab20"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:bd0ce311edde13fad239be2f958cfdcb679da9e6f0015421786a876c9fab969f"
+digest = "sha256:6348f8e252ea055a67c3b4524f1c859b2a45c0c96f721c91c996b3a3385ba7d5"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:50b91429772feb58cb0bdd887122df04f1d44bf030ce1f7589b13c176f1f37e9"
+digest = "sha256:1b5c0d34a441f8a11f5497c97346ab795e42c5cb86dbec4b45a7d634fff746de"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:3737d591cdf64bcc7e0a314c30e2d3cf9b1b9f94c47b6aed521bbd9e7a20546b"
+digest = "sha256:55dc33d5fb73bcb54083f128e2377a2e13625590962853098cdd916673813dd6"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:a4abc85a416e2ef5e6bdde45c4caa5b640deea9e9f2b5eefa1febde2e764ffc2"
+digest = "sha256:2b8bb0ba7abb7bf7a7e0c88f1417cdfb33d6eab65e3917babd612c5b295b2c48"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:231a075e2e0bc8873fb40257e25cc4e0113d90f82c995f6d6102b6e6d7cf4621"
+digest = "sha256:000865523832576e6654d2f86d0babc927a730c5fa6bbf9cc3568425b905907f"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:fbf916644df9e4a1d745d5f7a145fc39ac5c0c921c07525d8d6c7c2ada8be862"
+digest = "sha256:4ac5942be93bb57655e07e0d99bc9e79bed971b14917d2c252a5f7adc2dc9d8e"
 
