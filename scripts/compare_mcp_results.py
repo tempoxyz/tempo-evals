@@ -60,6 +60,7 @@ OVERALL_QUALITY_SUMMARY_COLUMNS = [
     "median_quality_delta",
 ]
 KEYS = [
+    "pair_id",
     "task_family",
     "model",
     "agent",
@@ -87,6 +88,11 @@ def compare(direct_path: str, code_path: str) -> pd.DataFrame:
     code = code[code["profile"] == "mcp-code"].copy()
     if direct.empty or code.empty:
         raise ValueError("inputs must contain mcp-direct and mcp-code trials")
+    if (
+        not direct["pair_id"].astype(str).str.strip().all()
+        or not code["pair_id"].astype(str).str.strip().all()
+    ):
+        raise ValueError("all MCP trials must include a pair_id")
     merged = direct.merge(
         code, on=KEYS, suffixes=("_direct", "_code"), validate="one_to_one"
     )

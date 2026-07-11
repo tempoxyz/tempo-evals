@@ -1,1 +1,1 @@
-{"terms":["fee","token","payer"]}
+{"required_terms":["fee","token","payer"],"required_patterns":[{"name":"the requested transaction hash","pattern":"0x52420cada2074e5ca33c381f39acb0c7849522f916a516ccad2ab936306198ec","min_matches":1}],"minimum_sources":2,"required_data_tools":["v1_transactions_transactionHash_get"]}

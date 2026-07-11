@@ -176,7 +176,10 @@ class ExportResultsTest(unittest.TestCase):
                     {
                         "task_name": "tempo-mcp-v1/wallet-client",
                         "config": {
-                            "agent": {"mcp_servers": [{"name": "tempo-direct"}]}
+                            "agent": {
+                                "mcp_servers": [{"name": "tempo-direct"}],
+                                "env": {"TEMPO_BENCH_PAIR_ID": "pair-1"},
+                            }
                         },
                     }
                 ),
@@ -207,7 +210,10 @@ class ExportResultsTest(unittest.TestCase):
                     {
                         "task_name": "tempo-mcp-v1/wallet-client",
                         "config": {
-                            "agent": {"mcp_servers": [{"name": "tempo-direct"}]}
+                            "agent": {
+                                "mcp_servers": [{"name": "tempo-direct"}],
+                                "env": {"TEMPO_BENCH_PAIR_ID": "pair-1"},
+                            }
                         },
                         "verifier_result": {"rewards": {"reward": 1, "quality": 0.8}},
                     }
@@ -238,6 +244,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertTrue(row["mcp_used"])
             self.assertTrue(row["mcp_trace_clean"])
             self.assertTrue(row["eligible"])
+            self.assertEqual(row["pair_id"], "pair-1")
 
     def test_compare_pairs_direct_and_code_trials(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-compare-") as root:
@@ -246,6 +253,7 @@ class ExportResultsTest(unittest.TestCase):
             code_path = root_path / "code.csv"
             row = {
                 "task_family": "tempo-mcp-v1/wallet-client",
+                "pair_id": "pair-1",
                 "model": "test",
                 "agent": "agent",
                 "attempt_index": 1,
@@ -271,6 +279,39 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(result.loc[0, "input_tokens_delta"], 8)
             self.assertEqual(result.loc[0, "mcp_calls_delta"], 2)
 
+    def test_compare_rejects_unpaired_mcp_trials(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-compare-") as root:
+            root_path = Path(root)
+            direct_path = root_path / "direct.csv"
+            code_path = root_path / "code.csv"
+            row = {
+                "task_family": "tempo-mcp-v1/wallet-client",
+                "pair_id": "",
+                "model": "test",
+                "agent": "agent",
+                "attempt_index": 1,
+                "task_checksum": "task",
+                "docs_source": "docs",
+                "passed": "true",
+                "input_tokens": 20,
+                "cache_tokens": 0,
+                "output_tokens": 10,
+                "model_turns": 2,
+                "mcp_calls": 3,
+                "duration_sec": 4,
+                "agent_execution_duration_sec": 3,
+                "cost_usd": 0.01,
+            }
+            pd.DataFrame([{**row, "profile": "mcp-direct"}]).to_csv(
+                direct_path, index=False
+            )
+            pd.DataFrame([{**row, "profile": "mcp-code"}]).to_csv(
+                code_path, index=False
+            )
+
+            with self.assertRaisesRegex(ValueError, "pair_id"):
+                compare(str(direct_path), str(code_path))
+
     def test_quality_summaries_preserve_missing_judge_scores(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-quality-") as root:
             root_path = Path(root)
@@ -278,6 +319,7 @@ class ExportResultsTest(unittest.TestCase):
             code_path = root_path / "code.csv"
             base = {
                 "task_family": "tempo-mcp-v1/wallet-client",
+                "pair_id": "pair-1",
                 "model": "test",
                 "agent": "agent",
                 "task_checksum": "task",

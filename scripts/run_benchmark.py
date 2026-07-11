@@ -700,6 +700,15 @@ def apply_profile(config: dict[str, Any], profile_id: str) -> dict[str, Any]:
     return config
 
 
+def apply_pair_id(config: dict[str, Any], pair_id: str | None) -> dict[str, Any]:
+    if not pair_id:
+        return config
+    for agent in config.get("agents", []):
+        if agent.get("name") != "oracle":
+            agent.setdefault("env", {})["TEMPO_BENCH_PAIR_ID"] = pair_id
+    return config
+
+
 def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
     path_map = {
         "tasks/mpp": str(staging_root / "tasks" / "mpp"),
@@ -956,7 +965,10 @@ def stage_daytona_config(
     shutil.rmtree(staging_root, ignore_errors=True)
     stage_task_datasets(staging_root, docs_bundle, daytona_base_image(options))
 
-    config = apply_profile(finalize_config(config, options), options["profile"])
+    config = apply_pair_id(
+        apply_profile(finalize_config(config, options), options["profile"]),
+        options.get("pair_id"),
+    )
     redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
@@ -972,7 +984,10 @@ def stage_filtered_config(
     staged_config = staging_root / "job.yaml"
     shutil.rmtree(staging_root, ignore_errors=True)
     staging_root.mkdir(parents=True, exist_ok=True)
-    config = apply_profile(finalize_config(config, options), options["profile"])
+    config = apply_pair_id(
+        apply_profile(finalize_config(config, options), options["profile"]),
+        options.get("pair_id"),
+    )
     if (
         docs_bundle is not None
         or options["profile"] in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}
@@ -1027,15 +1042,15 @@ def main(argv: list[str]) -> None:
             raise RuntimeError(
                 "The all profile requires a job-backed benchmark variant."
             )
+        benchmark = run_benchmark_key(variant, options.get("task_suite"))
+        prefix = versioned_name(benchmark, variant["prefix"])
+        pair_id = options.get("job_name") or f"{prefix}-mcp-pair-{timestamp()}"
         profile_options = [
             options
             | {
                 "profile": profile_id,
-                "job_name": (
-                    f"{options['job_name']}-{profile_id}"
-                    if options.get("job_name")
-                    else None
-                ),
+                "job_name": f"{pair_id}-{profile_id}",
+                "pair_id": pair_id,
                 "sync": options["sync"] if index == 0 else False,
             }
             for index, profile_id in enumerate(

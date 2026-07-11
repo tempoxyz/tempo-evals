@@ -73,6 +73,10 @@ Run the paired MCP efficiency suite (three attempts per arm):
 npm run bench:local:mcp
 ```
 
+The direct and code arms receive one shared pair ID. Export both runs before
+using `npm run results:compare`; comparisons reject exports without matching
+pair IDs.
+
 ## Running Development Benchmarks
 
 Development flows are for iteration and smoke testing. They keep attempts low and

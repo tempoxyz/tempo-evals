@@ -164,7 +164,7 @@ def write_mcp_dataset_manifest() -> None:
         f"keywords = {toml_array(MCP_BENCHMARK['keywords'])}\n"
         "[[dataset.authors]]\n"
         f"name = {toml_string(MCP_BENCHMARK['author'])}\n\n\n"
-        f"{task_entries.rstrip()}",
+        f"{task_entries.rstrip()}\n\n",
     )
 
 

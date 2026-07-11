@@ -1,1 +1,1 @@
-{"terms":["swap","amount","slippage"]}
+{"required_terms":["pool","fee","token","amm"],"required_patterns":[],"minimum_sources":2,"required_data_tools":["v1_fee-amm_pools"]}

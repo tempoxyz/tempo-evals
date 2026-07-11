@@ -18,6 +18,7 @@ LIVE_MCP_DOCS_SOURCE = "live"
 
 TRIAL_COLUMNS = [
     "run_id",
+    "pair_id",
     "job_name",
     "trial_name",
     "task_name",
@@ -176,6 +177,11 @@ def profile_from_trial(result: JsonObject) -> str:
             if name == "tempo":
                 return "mcp"
     return "docs"
+
+
+def pair_id_from_trial(result: JsonObject) -> str:
+    agent = as_object(as_object(result.get("config")).get("agent"))
+    return as_string(as_object(agent.get("env")).get("TEMPO_BENCH_PAIR_ID"))
 
 
 def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, str]:
@@ -361,6 +367,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
 
     return {
         "run_id": context["run_id"],
+        "pair_id": pair_id_from_trial(result),
         "job_name": context["job_name"],
         "trial_name": result["trial_name"],
         "task_name": result["task_name"],

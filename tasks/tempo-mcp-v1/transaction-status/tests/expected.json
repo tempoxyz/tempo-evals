@@ -1,1 +1,1 @@
-{"terms":["transaction","submit","status"]}
+{"required_terms":["block","transaction","transfer","t7"],"required_patterns":[],"minimum_sources":2,"required_data_tools":["v1_blocks_get"]}

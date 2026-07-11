@@ -13,6 +13,7 @@ from scripts.run_benchmark import (
     MCP_DIRECT_PROFILE,
     MCP_PROFILE,
     BenchmarkKey,
+    apply_pair_id,
     apply_profile,
     benchmark_provenance,
     daytona_base_image,
@@ -165,6 +166,20 @@ class RunBenchmarkTest(unittest.TestCase):
                 0
             ]["mcp_servers"],
             MCP_CODE_PROFILE["mcp_servers"],
+        )
+
+    def test_pair_id_is_injected_for_non_oracle_agents(self) -> None:
+        self.assertEqual(
+            apply_pair_id(
+                {"agents": [{"name": "claude-code"}, {"name": "oracle"}]},
+                "pair-1",
+            ),
+            {
+                "agents": [
+                    {"name": "claude-code", "env": {"TEMPO_BENCH_PAIR_ID": "pair-1"}},
+                    {"name": "oracle"},
+                ]
+            },
         )
 
     def test_daytona_base_image_uses_the_supplied_image(self) -> None:

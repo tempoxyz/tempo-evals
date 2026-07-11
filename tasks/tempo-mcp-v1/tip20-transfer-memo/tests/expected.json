@@ -1,1 +1,1 @@
-{"terms":["tip-20","transfer","memo"]}
+{"required_terms":["transfer","balance","snapshot","block"],"required_patterns":[{"name":"an account address","pattern":"0x[a-fA-F0-9]{40}","min_matches":1}],"minimum_sources":2,"required_data_tools":["v1_addresses_address_activities"]}

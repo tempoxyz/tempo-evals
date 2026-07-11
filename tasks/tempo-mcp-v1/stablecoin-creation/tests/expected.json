@@ -1,1 +1,1 @@
-{"terms":["stablecoin","policy","currency"]}
+{"required_terms":["five","token","holder","transaction"],"required_patterns":[],"minimum_sources":3,"required_data_tools":["v1_tokens_get","v1_tokens_token_transactions"]}

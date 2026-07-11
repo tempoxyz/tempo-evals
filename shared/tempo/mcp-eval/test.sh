@@ -10,6 +10,19 @@ JUDGE_WORKSPACE="$(mktemp -d)"
 mkdir -p "$LOG_DIR"
 trap 'rm -rf "$JUDGE_WORKSPACE"' EXIT
 
+write_failed_reward() {
+  python3 - "$LOG_DIR/reward.json" "$1" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+Path(sys.argv[1]).write_text(
+    json.dumps({"reward": 0, "valid_answer": 0, "quality_judge_unavailable": sys.argv[2]})
+    + "\n"
+)
+PY
+}
+
 python3 "$TESTS_DIR/check.py"
 
 if ! python3 - "$LOG_DIR/reward.json" <<'PY'
@@ -25,13 +38,15 @@ then
 fi
 
 if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-  printf '%s\n' 'Skipping LLM quality reward because ANTHROPIC_API_KEY is not set.' \
+  write_failed_reward 'missing_api_key'
+  printf '%s\n' 'Failing task because ANTHROPIC_API_KEY is required for MCP quality grading.' \
     > "$LOG_DIR/quality-skipped.txt"
   exit 0
 fi
 
 if [ ! -x "$REWARDKIT_PYTHON" ]; then
-  printf '%s\n' 'Skipping LLM quality reward because RewardKit is unavailable.' \
+  write_failed_reward 'missing_rewardkit'
+  printf '%s\n' 'Failing task because RewardKit is required for MCP quality grading.' \
     > "$LOG_DIR/quality-skipped.txt"
   exit 0
 fi
@@ -45,7 +60,8 @@ if ! (
   "$REWARDKIT_PYTHON" -m rewardkit "$TESTS_DIR/quality" \
     --workspace "$JUDGE_WORKSPACE" --output "$LOG_DIR/quality-reward.json"
 ) > "$LOG_DIR/quality-stdout.txt" 2> "$LOG_DIR/quality-stderr.txt"; then
-  printf '%s\n' 'Skipping LLM quality reward because the judge failed.' \
+  write_failed_reward 'judge_failed'
+  printf '%s\n' 'Failing task because the MCP quality judge failed.' \
     > "$LOG_DIR/quality-skipped.txt"
   exit 0
 fi

@@ -1,1 +1,1 @@
-{"terms":["wallet","client","transaction"]}
+{"required_terms":["transaction","transfer","account","inference"],"required_patterns":[{"name":"a transaction hash","pattern":"0x[a-fA-F0-9]{64}","min_matches":1}],"minimum_sources":2,"required_data_tools":["v1_transactions_get"]}

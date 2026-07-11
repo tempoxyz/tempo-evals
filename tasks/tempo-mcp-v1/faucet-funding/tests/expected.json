@@ -1,1 +1,1 @@
-{"terms":["faucet","fund","transfer"]}
+{"required_terms":["address","balance","activities","faucet"],"required_patterns":[{"name":"an account address","pattern":"0x[a-fA-F0-9]{40}","min_matches":1}],"minimum_sources":3,"required_data_tools":["v1_addresses_address_balances","v1_addresses_address_activities"]}
