@@ -26,6 +26,7 @@ function runtimeEnv(config) {
 
 async function verify({ client, config, fromBlock }) {
   const { payer, feePayer, transactionHash } = result(config);
+  if (sameAddress(payer, feePayer)) throw new Error("reported fee payer must be separate from the payer");
   const amount = parseUnits(config.amount, config.decimals);
   const memos = new Set(memoEncodings(config.memo).map((memo) => memo.toLowerCase()));
 
