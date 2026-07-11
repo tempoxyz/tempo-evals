@@ -244,6 +244,10 @@ def docs_source(options: dict[str, Any]) -> dict[str, str]:
     return {"mode": "pinned", "repo": lock["repo"], "sha": sha.lower()}
 
 
+def uses_live_mcp_eval(options: dict[str, Any]) -> bool:
+    return options.get("task_suite") == "tempo-mcp"
+
+
 def ensure_docs_bundle(source: dict[str, str]) -> str | None:
     if source["mode"] == "public":
         return None
@@ -1067,7 +1071,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     } and not variant.get("job"):
         raise RuntimeError("The MCP profile requires a job-backed benchmark variant.")
 
-    source = docs_source(options)
+    source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
     load_env_file(options.get("env_file"))
     preflight(variant, options)
     preflight_mcp_target(options)
@@ -1075,7 +1079,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         sync_dataset(options)
     if not variant.get("needs_daytona_auth"):
         build_base_image()
-    docs_bundle = ensure_docs_bundle(source)
+    docs_bundle = None if source["mode"] == "live" else ensure_docs_bundle(source)
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))
     default_run_name = versioned_name(benchmark, variant["prefix"])

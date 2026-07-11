@@ -19,8 +19,10 @@ from scripts.run_benchmark import (
     finalize_config,
     parse_args,
     run_benchmark_key,
+    run_benchmark_variant,
     stage_filtered_config,
     stage_pinned_docs_task,
+    uses_live_mcp_eval,
     versioned_name,
 )
 
@@ -55,6 +57,33 @@ class RunBenchmarkTest(unittest.TestCase):
             finalize_config(base_config(), {"task_suite": "tempo-mcp"})["datasets"],
             [{"path": "tasks/tempo-mcp-v1"}],
         )
+
+    def test_tempo_mcp_suite_uses_the_live_mcp_server(self) -> None:
+        self.assertTrue(uses_live_mcp_eval({"task_suite": "tempo-mcp"}))
+        self.assertFalse(uses_live_mcp_eval({"task_suite": "tempo"}))
+
+    def test_live_mcp_eval_skips_pinned_docs_preparation(self) -> None:
+        options = {
+            "profile": "mcp-direct",
+            "task_suite": "tempo-mcp",
+            "sync": False,
+            "env_file": None,
+            "job_name": "live-mcp-test",
+        }
+        with (
+            patch("scripts.run_benchmark.preflight"),
+            patch("scripts.run_benchmark.preflight_mcp_target"),
+            patch("scripts.run_benchmark.ensure_docs_bundle") as ensure_bundle,
+            patch(
+                "scripts.run_benchmark.stage_daytona_config", return_value="job.yaml"
+            ) as stage,
+            patch("scripts.run_benchmark.run") as run,
+        ):
+            run_benchmark_variant("daytona-agent-dev", options)
+
+        ensure_bundle.assert_not_called()
+        self.assertIsNone(stage.call_args.args[2])
+        run.assert_called_once()
 
     def test_finalize_config_requires_all_suite_for_full_matrix(self) -> None:
         config = finalize_config(base_config(), {"task_suite": "all"})

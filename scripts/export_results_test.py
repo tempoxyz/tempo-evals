@@ -191,10 +191,11 @@ class ExportResultsTest(unittest.TestCase):
                     }
                 ),
             )
+            rows = export_results(job_dir)["trials"]
             self.assertEqual(
-                {row["profile"] for row in export_results(job_dir)["trials"]},
-                {"mcp-direct", "mcp-code"},
+                {row["profile"] for row in rows}, {"mcp-direct", "mcp-code"}
             )
+            self.assertEqual({row["docs_source"] for row in rows}, {"live"})
 
     def test_export_marks_only_clean_mcp_trials_eligible(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:

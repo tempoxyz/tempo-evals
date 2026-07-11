@@ -14,6 +14,7 @@ JsonObject = dict[str, Any]
 Numeric = float | int | str
 
 MCP_PROFILE_SUFFIX = "-mcp"
+LIVE_MCP_DOCS_SOURCE = "live"
 
 TRIAL_COLUMNS = [
     "run_id",
@@ -185,6 +186,15 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
     return {"task_family": task_name, "profile": "unknown"}
 
 
+def result_docs_source(result: JsonObject, profile: str, context: JsonObject) -> str:
+    if result.get("task_name", "").startswith("tempo-mcp-v1/") and profile in {
+        "mcp-direct",
+        "mcp-code",
+    }:
+        return LIVE_MCP_DOCS_SOURCE
+    return as_string(context.get("docs_source"))
+
+
 def as_object(value: Any) -> JsonObject:
     return value if isinstance(value, dict) else {}
 
@@ -335,6 +345,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     model_info = as_object(agent_info.get("model_info"))
     exception_info = as_object(result.get("exception_info"))
     task = parse_task_name(result["task_name"], profile_from_trial(result))
+    docs_source = result_docs_source(result, task["profile"], context)
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
     tokens = token_totals(result)
@@ -390,7 +401,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "cost_usd": tokens["cost"],
         "task_checksum": as_string(result.get("task_checksum")),
         "git_sha": context["git_sha"],
-        "docs_source": context["docs_source"],
+        "docs_source": docs_source,
         "mcp_target_id": context["mcp_target_id"] or trace["target_id"],
         "result_path": str(file_path),
         "rewards": rewards,

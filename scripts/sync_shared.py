@@ -21,6 +21,7 @@ TASKS_DIR = ROOT / "tasks" / "tempo-v1"
 MCP_TASKS_DIR = ROOT / "tasks" / "tempo-mcp-v1"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
 MPP_SHARED_DIR = ROOT / "shared" / "mpp"
+MCP_ORACLE = ROOT / "shared" / "tempo" / "mcp-eval" / "oracle.mjs"
 
 TASKS_CONFIG: dict[str, Any] = yaml.safe_load(
     (ROOT / "config" / "tasks.yaml").read_text()
@@ -167,6 +168,17 @@ def write_mcp_dataset_manifest() -> None:
     )
 
 
+def sync_mcp_oracles() -> int:
+    task_dirs = sorted(
+        entry
+        for entry in MCP_TASKS_DIR.iterdir()
+        if entry.is_dir() and (entry / "task.toml").exists()
+    )
+    for task_dir in task_dirs:
+        copy_file(MCP_ORACLE, task_dir / "solution" / "oracle.mjs")
+    return len(task_dirs)
+
+
 def mpp_task_dirs() -> list[Path]:
     if not MPP_TASKS_DIR.exists():
         return []
@@ -237,10 +249,12 @@ def main() -> None:
     task_count = len(tempo_task_names())
     write_dataset_manifest()
     write_mcp_dataset_manifest()
+    mcp_task_count = sync_mcp_oracles()
     mpp_task_count = sync_mpp_tasks()
     write_mpp_dataset_manifest()
     print(
-        f"Validated {task_count} authored Tempo task(s) and 12 MCP task(s); "
+        "Validated "
+        f"{task_count} authored Tempo task(s) and {mcp_task_count} MCP task(s); "
         f"synced MPP harness into {mpp_task_count} task(s).",
     )
 
