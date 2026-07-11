@@ -30,14 +30,6 @@ profiles:
         transport: streamable-http
         url: http://tempo-mcp-code:8787/mcp
 
-# The canonical run may override the public data MCP with a pinned deployment
-# URL. The bridge exposes the same read-only data tools in both arms and only
-# varies direct docs calls versus docs_code.
-mcp_eval:
-  target_id: tempo-api-mcp-v1
-  endpoint: https://api.tempo.xyz/mcp
-  docs_sha: ${TEMPO_MCP_EVAL_DOCS_SHA:-unrecorded}
-
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.
   shared_files:
