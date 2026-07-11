@@ -23,11 +23,11 @@ digest = "sha256:d570aba84facf31ac0dcd3214456779725143039438bc9e39dfb3f1b6d9a6a9
 
 [[tasks]]
 name = "tempo-v1/stablecoin-dex-swap"
-digest = "sha256:579b41f09f8e33ca9689159ac461a7661a849e7ba91d805db2007ed5a86fe4c8"
+digest = "sha256:60ac6fe374fb39d1ce8a4eb75b61ed839df6bcbf21a2f892ee28496397432c03"
 
 [[tasks]]
 name = "tempo-v1/transfer-batched"
-digest = "sha256:7401db096b493ed57de50cf6d64f16b0c628e6e99a8ecca11f9b14fbce021c16"
+digest = "sha256:f5f70fb3fa9f149d37d5c0539ad04591ead165d247cdc805c683ca137cf768cf"
 
 [[tasks]]
 name = "tempo-v1/transfer-with-memo"

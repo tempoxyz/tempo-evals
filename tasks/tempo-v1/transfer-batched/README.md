@@ -16,5 +16,5 @@ Build a TypeScript integration that pays every recipient in a supplied list the 
 - Usage of proper Tempo libraries: `viem/tempo` TIP-20 ABI utilities are required; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
 - Correctness of the script, including:
   - Every configured recipient receives the configured stablecoin amount.
-  - All transfers originate from the configured payer.
+  - All transfers originate from the reported payer.
   - One native transaction contains a TIP-20 transfer call for every recipient.

@@ -9,7 +9,7 @@ on testnet.
 
 - Token approval flow
 - Stablecoin DEX swap execution
-- Maker and taker output artifacts
+- Taker output artifact and on-chain fill evidence
 
 ## Verification
 
