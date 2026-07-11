@@ -9,7 +9,10 @@ import re
 import uuid
 from pathlib import Path
 
-from scripts.task_lint import ROOT, SUITES, Suite
+if __package__:
+    from .task_lint import ROOT, SUITES, Suite
+else:
+    from task_lint import ROOT, SUITES, Suite
 
 SLUG_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*$")
 SUITES_BY_ID = {
