@@ -1,1 +1,1 @@
-{"terms":["fee","token","transaction"]}
+{"required_terms":["fee","token","payer","pool"],"required_patterns":[{"name":"a transaction hash","pattern":"0x[a-fA-F0-9]{64}","min_matches":1}],"minimum_sources":3,"required_data_tools":["v1_transactions_get","v1_fee-amm_pools"]}

@@ -1,1 +1,1 @@
-{"terms":["access","key","account"]}
+{"required_terms":["access","key","fee"],"required_patterns":[{"name":"two transaction hashes","pattern":"0x[a-fA-F0-9]{64}","min_matches":2}],"minimum_sources":3,"required_data_tools":["v1_transactions_get"]}

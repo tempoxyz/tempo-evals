@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared/tempo/mcp-e
 
 from validation import (  # noqa: E402
     evidence_summary,
+    expected_answer_errors,
     has_required_tool_mix,
     used_data_tools,
     validated_data_evidence,
@@ -92,6 +93,33 @@ class McpEvalValidationTest(unittest.TestCase):
                     }
                 ],
             )
+
+    def test_requires_task_specific_terms_evidence_and_tools(self) -> None:
+        expected = {
+            "required_terms": ["fee", "payer"],
+            "required_patterns": [
+                {
+                    "name": "transaction hash",
+                    "pattern": "0x[a-f0-9]{64}",
+                    "min_matches": 1,
+                }
+            ],
+            "minimum_sources": 1,
+            "required_data_tools": [],
+        }
+        answer = {
+            "answer": "Fee payer 0x" + "a" * 64,
+            "sources": ["https://docs.tempo.xyz/"],
+        }
+        events = [{"allowed": True, "tool": "v1_transactions_get"}]
+
+        self.assertEqual(expected_answer_errors(answer, expected, events), [])
+        self.assertIn(
+            "answer must address task concept: payer",
+            expected_answer_errors(
+                {**answer, "answer": "Fee 0x" + "a" * 64}, expected, events
+            ),
+        )
 
 
 if __name__ == "__main__":

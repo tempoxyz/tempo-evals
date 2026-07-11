@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 DOCS_PREFIX = "docs_"
@@ -70,3 +71,42 @@ def evidence_summary(
         ]
         summary.append({**item, "calls": calls})
     return summary
+
+
+def expected_answer_errors(
+    answer: dict[str, Any], expected: dict[str, Any], events: list[dict[str, Any]]
+) -> list[str]:
+    """Return task-specific deterministic answer-validation failures."""
+    text = answer.get("answer")
+    sources = answer.get("sources")
+    if not isinstance(text, str):
+        return ["answer must be a string"]
+    if not isinstance(sources, list):
+        return ["sources must be an array"]
+
+    errors = []
+    normalized = text.casefold()
+    for term in expected.get("required_terms", []):
+        if not isinstance(term, str) or term.casefold() not in normalized:
+            errors.append(f"answer must address task concept: {term}")
+    for requirement in expected.get("required_patterns", []):
+        if not isinstance(requirement, dict):
+            errors.append("expected pattern requirement must be an object")
+            continue
+        pattern = requirement.get("pattern")
+        count = requirement.get("min_matches", 1)
+        name = requirement.get("name", "required evidence")
+        if not isinstance(pattern, str) or not isinstance(count, int):
+            errors.append("expected pattern requirement is invalid")
+            continue
+        if len(re.findall(pattern, text, flags=re.IGNORECASE)) < count:
+            errors.append(f"answer is missing {name}")
+    minimum_sources = expected.get("minimum_sources", 1)
+    if not isinstance(minimum_sources, int) or len(sources) < minimum_sources:
+        errors.append(f"answer must provide at least {minimum_sources} sources")
+    required_tools = expected.get("required_data_tools", [])
+    actual_tools = used_data_tools(events)
+    for tool in required_tools:
+        if not isinstance(tool, str) or tool not in actual_tools:
+            errors.append(f"answer must use data tool: {tool}")
+    return errors
