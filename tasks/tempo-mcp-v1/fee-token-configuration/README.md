@@ -18,4 +18,4 @@ Investigate a live non-default fee-token transaction through the injected MCP se
 
 - A valid /app/answer.json is produced.
 - The active MCP arm calls both a data tool and a docs tool.
-- The answer cites Tempo docs and MCP data tools.
+- The answer cites Tempo docs and maps claim evidence to MCP data tools it used.

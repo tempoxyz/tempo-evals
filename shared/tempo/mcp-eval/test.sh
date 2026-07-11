@@ -37,6 +37,7 @@ if [ ! -x "$REWARDKIT_PYTHON" ]; then
 fi
 
 cp "$WORKSPACE/answer.json" "$JUDGE_WORKSPACE/answer.json" 2>/dev/null || true
+cp "$LOG_DIR/evidence.json" "$JUDGE_WORKSPACE/evidence.json" 2>/dev/null || true
 cp "$TESTS_DIR/instruction.md" "$JUDGE_WORKSPACE/instruction.md"
 
 if ! (
