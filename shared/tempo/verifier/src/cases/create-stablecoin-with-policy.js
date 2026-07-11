@@ -39,7 +39,7 @@ function result(config) {
       "result",
     );
     expectObject(config, value.payer, ["address"], "payer");
-    expectObject(config, value.stablecoin, ["address", "name", "symbol", "currency", "salt"], "stablecoin");
+    expectObject(config, value.stablecoin, ["address", "name", "symbol", "salt"], "stablecoin");
     expectObject(config, value.policy, ["id"], "policy");
     return {
       payer: expectAddress(config, value.payer.address, "payer.address"),
@@ -47,7 +47,6 @@ function result(config) {
         address: expectAddress(config, value.stablecoin.address, "stablecoin.address"),
         name: expectText(config, value.stablecoin.name, "stablecoin.name"),
         symbol: expectText(config, value.stablecoin.symbol, "stablecoin.symbol"),
-        currency: expectText(config, value.stablecoin.currency, "stablecoin.currency"),
         salt: expectHex32(config, value.stablecoin.salt, "stablecoin.salt"),
       },
       policyId: expectUint(config, value.policy.id, "policy.id"),
@@ -113,7 +112,7 @@ async function verify({ client, config, fromBlock }) {
       sameAddress(args.token, output.stablecoin.address) &&
       args.name === output.stablecoin.name &&
       args.symbol === output.stablecoin.symbol &&
-      args.currency === output.stablecoin.currency &&
+      args.currency === config.stablecoinCurrency &&
       sameAddress(args.admin, output.payer) &&
       args.salt.toLowerCase() === output.stablecoin.salt.toLowerCase(),
     );

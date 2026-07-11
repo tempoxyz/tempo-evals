@@ -6,6 +6,9 @@
   "bin": {
     "tempo-bench-verify": "bin/tempo-bench-verify.js"
   },
+  "scripts": {
+    "test": "node --test"
+  },
   "dependencies": {
     "viem": "^2.53.1"
   }

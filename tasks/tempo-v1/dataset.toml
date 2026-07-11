@@ -11,7 +11,7 @@ name = "Tempo"
 
 [[tasks]]
 name = "tempo-v1/create-stablecoin-with-policy"
-digest = "sha256:cde77a23624d7d86e28bdbf5cf95678e3e40201110309b09fa5c4dbcc1fa9040"
+digest = "sha256:7e3dbaed73a5943c78bd95414d24b11481507f7745813e16c83643a6b1c38b82"
 
 [[tasks]]
 name = "tempo-v1/faucet-funded-transfer"
