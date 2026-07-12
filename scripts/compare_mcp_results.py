@@ -113,7 +113,7 @@ def compare(direct_path: str, code_path: str) -> pd.DataFrame:
         & merged["quality_direct"].notna()
         & merged["quality_code"].notna()
     )
-    merged["quality_delta"] = (merged["quality_direct"] - merged["quality_code"]).where(
+    merged["quality_delta"] = (merged["quality_code"] - merged["quality_direct"]).where(
         merged["quality_comparable"]
     )
     return merged

@@ -1,1 +1,11 @@
-{"required_terms":["fee","token","payer"],"required_patterns":[{"name":"the requested transaction hash","pattern":"0x52420cada2074e5ca33c381f39acb0c7849522f916a516ccad2ab936306198ec","min_matches":1}],"minimum_sources":2,"required_data_tools":["v1_transactions_transactionHash_get"]}
+{
+  "minimum_sources": 2,
+  "required_data_tools": ["v1_transactions_transactionHash_get"],
+  "structured": {
+    "required_fields": ["summary", "observations", "inferences"],
+    "array_fields": {
+      "observations": {"min_items": 1, "item_required_fields": ["subject", "details", "evidence_refs"], "item_patterns": {"subject": "0x52420cada2074e5ca33c381f39acb0c7849522f916a516ccad2ab936306198ec"}},
+      "inferences": {"min_items": 1, "item_required_fields": ["claim", "basis", "evidence_refs"], "item_patterns": {}}
+    }
+  }
+}

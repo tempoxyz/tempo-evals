@@ -16,10 +16,17 @@ import json
 import sys
 from pathlib import Path
 
-Path(sys.argv[1]).write_text(
-    json.dumps({"reward": 0, "valid_answer": 0, "quality_judge_unavailable": sys.argv[2]})
-    + "\n"
+reward_path = Path(sys.argv[1])
+reward = json.loads(reward_path.read_text()) if reward_path.exists() else {}
+reward.update(
+    {
+        "reward": 0,
+        "valid_answer": 0,
+        "quality_judge_available": 0,
+        "quality_judge_unavailable": sys.argv[2],
+    }
 )
+reward_path.write_text(json.dumps(reward) + "\n")
 PY
 }
 
@@ -77,5 +84,6 @@ reward = json.loads(reward_path.read_text())
 quality = json.loads(quality_path.read_text()).get("reward")
 if isinstance(quality, int | float):
     reward["quality"] = quality
+    reward["quality_judge_available"] = 1
 reward_path.write_text(json.dumps(reward) + "\n")
 PY

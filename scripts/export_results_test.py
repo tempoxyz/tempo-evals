@@ -215,9 +215,29 @@ class ExportResultsTest(unittest.TestCase):
                                 "env": {"TEMPO_BENCH_PAIR_ID": "pair-1"},
                             }
                         },
-                        "verifier_result": {"rewards": {"reward": 1, "quality": 0.8}},
+                        "verifier_result": {
+                            "rewards": {
+                                "reward": 1,
+                                "quality": 0.8,
+                                "quality_judge_available": 1,
+                            }
+                        },
                     }
                 ),
+            )
+            write_json(
+                trial_dir / "verifier" / "validation.json",
+                {
+                    "components": {
+                        "schema_valid": 1,
+                        "docs_source_valid": 1,
+                        "mcp_tool_mix_valid": 1,
+                        "data_evidence_valid": 1,
+                        "task_requirements_valid": 1,
+                    },
+                    "errors": [],
+                    "warnings": ["documentation provenance in evidence"],
+                },
             )
             trace = trial_dir / "artifacts" / "var/log/tempo-mcp/direct-trace.jsonl"
             trace.parent.mkdir(parents=True)
@@ -245,6 +265,11 @@ class ExportResultsTest(unittest.TestCase):
             self.assertTrue(row["mcp_trace_clean"])
             self.assertTrue(row["eligible"])
             self.assertEqual(row["pair_id"], "pair-1")
+            self.assertEqual(row["outcome"], "passed")
+            self.assertEqual(row["validation_error_count"], 0)
+            self.assertEqual(row["validation_warning_count"], 1)
+            self.assertEqual(row["data_evidence_valid"], 1)
+            self.assertEqual(row["quality_judge_available"], 1)
 
     def test_compare_pairs_direct_and_code_trials(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-compare-") as root:
@@ -358,6 +383,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertAlmostEqual(
                 task_summary.loc[0, "paired_quality_coverage"], 2 / 3
             )
+            self.assertAlmostEqual(task_summary.loc[0, "mean_quality_delta"], 0.0)
             self.assertAlmostEqual(task_summary.loc[0, "mean_quality_delta"], 0.0)
             self.assertEqual(overall_summary.loc[0, "n_tasks"], 1)
             self.assertAlmostEqual(overall_summary.loc[0, "direct_quality_at_k"], 0.6)

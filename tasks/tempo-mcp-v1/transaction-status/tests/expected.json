@@ -1,1 +1,11 @@
-{"required_terms":["block","transaction","transfer","t7"],"required_patterns":[],"minimum_sources":2,"required_data_tools":["v1_blocks_get"]}
+{
+  "minimum_sources": 2,
+  "required_data_tools": ["v1_blocks_get"],
+  "structured": {
+    "required_fields": ["summary", "observations", "inferences"],
+    "array_fields": {
+      "observations": {"min_items": 1, "item_required_fields": ["subject", "details", "evidence_refs"], "item_patterns": {}},
+      "inferences": {"min_items": 1, "item_required_fields": ["claim", "basis", "evidence_refs"], "item_patterns": {}}
+    }
+  }
+}
