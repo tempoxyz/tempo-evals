@@ -16,6 +16,8 @@ environment:
   kwargs:
     dind_image: {{ dind_image | tojson }}
     connection_pool_maxsize: null
+    auto_stop_interval_mins: 15
+    auto_delete_interval_mins: 0
 {% endif %}
 verifier:
   include_logs:
