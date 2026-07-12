@@ -9,7 +9,6 @@ import unittest
 from pathlib import Path
 from typing import Any
 
-
 ROOT = Path(__file__).resolve().parents[1]
 CHECK = ROOT / "shared/tempo/mcp-eval/check.py"
 

@@ -102,7 +102,7 @@ def used_data_tools(events: list[dict[str, Any]]) -> set[str]:
 def validated_data_evidence(
     events: list[dict[str, Any]], evidence: Any
 ) -> dict[str, Any]:
-    """Validate trace-backed data evidence without rejecting recognized docs citations."""
+    """Validate data evidence while preserving recognized docs citations as warnings."""
     used_tools = used_data_tools(events)
     validated: list[dict[str, str]] = []
     errors: list[str] = []
