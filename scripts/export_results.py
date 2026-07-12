@@ -15,6 +15,14 @@ Numeric = float | int | str
 
 MCP_PROFILE_SUFFIX = "-mcp"
 LIVE_MCP_DOCS_SOURCE = "live"
+VALIDATION_COMPONENTS = (
+    "schema_valid",
+    "docs_source_valid",
+    "mcp_tool_mix_valid",
+    "data_evidence_valid",
+    "task_requirements_valid",
+    "quality_judge_available",
+)
 
 TRIAL_COLUMNS = [
     "run_id",
@@ -33,6 +41,12 @@ TRIAL_COLUMNS = [
     "mcp_used",
     "mcp_trace_clean",
     "eligible",
+    "outcome",
+    "validation_error_count",
+    "validation_warning_count",
+    "validation_errors",
+    "validation_warnings",
+    *VALIDATION_COMPONENTS,
     "exception_type",
     "exception_message",
     "started_at",
@@ -324,6 +338,25 @@ def trace_metrics(file_path: Path) -> dict[str, Numeric]:
     }
 
 
+def validation_metrics(file_path: Path) -> JsonObject:
+    details = read_json(file_path.parent / "verifier" / "validation.json") or {}
+    components = as_object(details.get("components"))
+    errors = [item for item in details.get("errors", []) if isinstance(item, str)]
+    warnings = [item for item in details.get("warnings", []) if isinstance(item, str)]
+    return {
+        "validation_error_count": len(errors),
+        "validation_warning_count": len(warnings),
+        "validation_errors": " | ".join(errors),
+        "validation_warnings": " | ".join(warnings),
+        **{
+            component: as_number(components.get(component))
+            if component in components
+            else ""
+            for component in VALIDATION_COMPONENTS
+        },
+    }
+
+
 def extract_rewards(result: JsonObject) -> dict[str, float | int]:
     raw_rewards = as_object(as_object(result.get("verifier_result")).get("rewards"))
     return {
@@ -356,6 +389,11 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     reward = primary_reward(rewards)
     tokens = token_totals(result)
     trace = trace_metrics(file_path)
+    validation = validation_metrics(file_path)
+    if (
+        judge_available := as_number(rewards.get("quality_judge_available"))
+    ) is not None:
+        validation["quality_judge_available"] = judge_available
     passed = isinstance(reward, int | float) and reward >= 1
     used_mcp = isinstance(trace["calls"], int | float) and trace["calls"] > 0
     trace_clean = (
@@ -363,6 +401,13 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         and trace["denied"] == 0
         and isinstance(trace["errors"], int | float)
         and trace["errors"] == 0
+    )
+    outcome = (
+        "execution_error"
+        if exception_info
+        else "passed"
+        if passed
+        else "verifier_failed"
     )
 
     return {
@@ -384,6 +429,8 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "mcp_used": used_mcp,
         "mcp_trace_clean": trace_clean,
         "eligible": passed and used_mcp and trace_clean,
+        "outcome": outcome,
+        **validation,
         "exception_type": as_string(exception_info.get("exception_type")),
         "exception_message": as_string(exception_info.get("exception_message")),
         "started_at": as_string(result.get("started_at")),

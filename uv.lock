@@ -2391,7 +2391,7 @@ wheels = [
 ]
 
 [[package]]
-name = "tempo-bench"
+name = "tempo-evals"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
