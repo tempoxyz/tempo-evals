@@ -156,11 +156,15 @@ class McpEvalValidationTest(unittest.TestCase):
                     "source": "mcp://tempo/docs/wallet-developers",
                     "claim": "The docs route identifies the wallet guide.",
                 },
+                {
+                    "source": "mcp://tempo/spec-fee",
+                    "claim": "The docs page covers fee semantics.",
+                },
             ],
         )
         self.assertEqual(len(result["evidence"]), 1)
         self.assertEqual(result["errors"], [])
-        self.assertEqual(len(result["warnings"]), 4)
+        self.assertEqual(len(result["warnings"]), 5)
 
     def test_docs_only_evidence_does_not_satisfy_data_provenance(self) -> None:
         result = validated_data_evidence(

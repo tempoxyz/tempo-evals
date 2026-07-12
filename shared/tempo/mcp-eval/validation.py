@@ -67,11 +67,12 @@ def docs_tool_name(tool: str) -> bool:
 
 
 def docs_evidence_source(source: Any) -> bool:
-    """Return whether source is recognizable Tempo documentation provenance."""
+    """Return whether source is non-data provenance on an approved Tempo surface."""
     if is_tempo_docs_url(source):
         return True
     try:
-        return docs_tool_name(mcp_tool_from_source(source))
+        tool = mcp_tool_from_source(source)
+        return docs_tool_name(tool) or not tool.startswith(DATA_PREFIXES)
     except ValueError:
         return False
 
