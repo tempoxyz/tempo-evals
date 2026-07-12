@@ -191,30 +191,43 @@ class McpEvalValidationTest(unittest.TestCase):
             "evidence source was not used: v1_transactions_get", result["errors"]
         )
 
-    def test_requires_task_specific_terms_evidence_and_tools(self) -> None:
+    def test_requires_structured_task_fields_and_tools(self) -> None:
         expected = {
-            "required_terms": ["fee", "payer"],
-            "required_patterns": [
-                {
-                    "name": "transaction hash",
-                    "pattern": "0x[a-f0-9]{64}",
-                    "min_matches": 1,
-                }
-            ],
             "minimum_sources": 1,
             "required_data_tools": [],
+            "structured": {
+                "required_fields": ["summary", "observations", "inferences"],
+                "array_fields": {
+                    "observations": {
+                        "min_items": 1,
+                        "item_required_fields": ["subject", "details"],
+                        "item_patterns": {"subject": "0x[a-f0-9]{64}"},
+                    },
+                    "inferences": {
+                        "min_items": 1,
+                        "item_required_fields": ["claim", "basis"],
+                        "item_patterns": {},
+                    },
+                },
+            },
         }
         answer = {
-            "answer": "Fee payer 0x" + "a" * 64,
+            "summary": "The fee payer sponsored the transaction.",
+            "observations": [
+                {"subject": "0x" + "a" * 64, "details": "Observed fee payer."}
+            ],
+            "inferences": [{"claim": "The fee was sponsored.", "basis": "Fee payer."}],
             "sources": ["https://docs.tempo.xyz/"],
         }
         events = [{"allowed": True, "tool": "v1_transactions_get"}]
 
         self.assertEqual(expected_answer_errors(answer, expected, events), [])
         self.assertIn(
-            "answer must address task concept: payer",
+            "answer item is missing field: inferences[0].basis",
             expected_answer_errors(
-                {**answer, "answer": "Fee 0x" + "a" * 64}, expected, events
+                {**answer, "inferences": [{"claim": "The fee was sponsored."}]},
+                expected,
+                events,
             ),
         )
 

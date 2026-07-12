@@ -56,16 +56,43 @@ class McpEvalCheckTest(unittest.TestCase):
             {"allowed": True, "tool": "docs_search"},
         ]
         self.expected = {
-            "required_terms": ["fee"],
-            "required_patterns": [],
             "minimum_sources": 1,
             "required_data_tools": ["v1_transactions_get"],
+            "structured": {
+                "required_fields": ["summary", "observations", "inferences"],
+                "array_fields": {
+                    "observations": {
+                        "min_items": 1,
+                        "item_required_fields": ["subject", "details", "evidence_refs"],
+                        "item_patterns": {},
+                    },
+                    "inferences": {
+                        "min_items": 1,
+                        "item_required_fields": ["claim", "basis", "evidence_refs"],
+                        "item_patterns": {},
+                    },
+                },
+            },
         }
 
     def test_accepts_docs_provenance_as_a_warning_alongside_data_evidence(self) -> None:
         result = run_check(
             {
-                "answer": "The observed fee was paid by the account.",
+                "summary": "The observed fee was paid by the account.",
+                "observations": [
+                    {
+                        "subject": "transaction",
+                        "details": "Observed fee payer.",
+                        "evidence_refs": [0],
+                    }
+                ],
+                "inferences": [
+                    {
+                        "claim": "The fee was sponsored.",
+                        "basis": "Fee payer field.",
+                        "evidence_refs": [0],
+                    }
+                ],
                 "sources": ["https://docs.tempo.xyz"],
                 "evidence": [
                     {
@@ -89,7 +116,9 @@ class McpEvalCheckTest(unittest.TestCase):
     def test_reports_all_deterministic_failures(self) -> None:
         result = run_check(
             {
-                "answer": "No details available.",
+                "summary": "No details available.",
+                "observations": [],
+                "inferences": [],
                 "sources": [],
                 "evidence": [
                     {
@@ -113,7 +142,8 @@ class McpEvalCheckTest(unittest.TestCase):
             result["validation"]["errors"],
         )
         self.assertIn(
-            "answer must address task concept: fee", result["validation"]["errors"]
+            "answer field needs at least 1 item(s): observations",
+            result["validation"]["errors"],
         )
 
 

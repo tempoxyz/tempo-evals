@@ -77,14 +77,14 @@ if not isinstance(expected, dict):
     expected = {}
     errors.append("expected.json must be a JSON object")
 
-text = answer.get("answer")
+summary = answer.get("summary")
 sources = answer.get("sources")
 evidence = answer.get("evidence")
-if not isinstance(text, str) or not text.strip():
-    errors.append("answer must be a non-empty string")
+if not isinstance(summary, str) or not summary.strip():
+    errors.append("summary must be a non-empty string")
 if (
-    isinstance(text, str)
-    and text.strip()
+    isinstance(summary, str)
+    and summary.strip()
     and isinstance(sources, list)
     and isinstance(evidence, list)
 ):

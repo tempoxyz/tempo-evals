@@ -1,1 +1,11 @@
-{"required_terms":["five","token","holder","transaction"],"required_patterns":[],"minimum_sources":3,"required_data_tools":["v1_tokens_get","v1_tokens_token_transactions"]}
+{
+  "minimum_sources": 3,
+  "required_data_tools": ["v1_tokens_get", "v1_tokens_token_transactions"],
+  "structured": {
+    "required_fields": ["summary", "observations", "inferences"],
+    "array_fields": {
+      "observations": {"min_items": 5, "item_required_fields": ["subject", "details", "evidence_refs"], "item_patterns": {}},
+      "inferences": {"min_items": 1, "item_required_fields": ["claim", "basis", "evidence_refs"], "item_patterns": {}}
+    }
+  }
+}
