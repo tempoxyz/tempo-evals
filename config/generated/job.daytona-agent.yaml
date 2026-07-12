@@ -13,6 +13,8 @@ environment:
   kwargs:
     dind_image: docker:28.3.3-dind
     connection_pool_maxsize: null
+    auto_stop_interval_mins: 15
+    auto_delete_interval_mins: 0
 verifier:
   include_logs:
   - '*.json'
