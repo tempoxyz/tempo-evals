@@ -1,10 +1,12 @@
-const { parseAbi, parseAbiItem } = require("viem");
+const { decodeFunctionData, parseAbi } = require("viem");
 const { expectAddress, expectHash, expectObject, readResult } = require("../result");
 const { defaultRuntimeEnv } = require("../submission");
-const { findEvent, receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
+const { receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
 
-const USER_TOKEN_SET = parseAbiItem("event UserTokenSet(address indexed user, address indexed token)");
-const FEE_MANAGER = parseAbi(["function userTokens(address user) view returns (address)"]);
+const FEE_MANAGER = parseAbi([
+  "function setUserToken(address token)",
+  "function userTokens(address user) view returns (address)",
+]);
 
 function result(config) {
   return readResult(config, (value) => {
@@ -34,10 +36,18 @@ async function verify({ client, config, fromBlock }) {
     );
     if (!receipt) return null;
 
-    const event = findEvent(receipt, config.feeManager, USER_TOKEN_SET, (args) =>
-      sameAddress(args.user, payer) && sameAddress(args.token, config.feeToken),
-    );
-    if (!event) throw new Error("reported transaction did not set the requested fee token");
+    const transaction = await client.getTransaction({ hash: transactionHash });
+    if (!sameAddress(transaction.to, config.feeManager)) {
+      throw new Error("reported transaction did not call the Fee Manager");
+    }
+    try {
+      const call = decodeFunctionData({ abi: FEE_MANAGER, data: transaction.input });
+      if (call.functionName !== "setUserToken" || !sameAddress(call.args[0], config.feeToken)) {
+        throw new Error();
+      }
+    } catch {
+      throw new Error("reported transaction did not request the expected fee token");
+    }
 
     const token = await client.readContract({
       address: config.feeManager,
