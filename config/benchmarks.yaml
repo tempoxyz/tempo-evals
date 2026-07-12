@@ -8,7 +8,7 @@ benchmarks:
     path: tasks/tempo-v1
     description: Tempo integration benchmark
     keywords: [stablecoins, docs, tempo]
-    author: Tempo
+    author: Tempo Labs
   mpp:
     id: mpp-bench-v1
     dataset: tempo/mpp-bench-v1
@@ -22,4 +22,4 @@ benchmarks:
     path: tasks/tempo-mcp-v1
     description: Tempo MCP code-mode efficiency benchmark
     keywords: [tempo, mcp, docs, code-mode, efficiency]
-    author: Tempo
+    author: Tempo Labs

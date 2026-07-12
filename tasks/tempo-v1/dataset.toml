@@ -6,7 +6,7 @@ name = "tempo/tempo-bench-v1"
 description = "Tempo integration benchmark"
 keywords = [ "stablecoins", "docs", "tempo",]
 [[dataset.authors]]
-name = "Tempo"
+name = "Tempo Labs"
 
 
 [[tasks]]

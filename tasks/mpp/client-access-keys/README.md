@@ -3,7 +3,7 @@
 ## Overview
 
 This task challenges agents to build a TypeScript MPP client that uses a
-provided payment access key to call a paid JSON endpoint accepting pathUSD on
+provided payer private key to call a paid JSON endpoint accepting pathUSD on
 Tempo testnet.
 
 ## What the Task Tests

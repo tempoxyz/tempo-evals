@@ -98,8 +98,9 @@ Options:
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
                           (default: tasks/tempo-v1)
-  --docs-sha SHA          Serve docs pinned to this SHA instead of public docs
-  --profile PROFILE       Tempo access profile: docs, mcp, or all (default: docs)
+  --docs-sha SHA          Override the pinned documentation revision for a run
+  --profile PROFILE       Access profile: docs, mcp, mcp-direct, mcp-code,
+                          mcp-both, or all (default: docs)
   --base-image REF        Immutable Daytona base image tag or digest (required)
   --no-force-build        Ask Harbor to reuse Docker environment builds
   --no-delete             Keep Harbor environments after the run for debugging
