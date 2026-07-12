@@ -239,7 +239,7 @@ def expected_answer_errors(
                             errors.append(
                                 f"answer item has invalid patterned field: {item_label}"
                             )
-                        elif not re.fullmatch(pattern, item_value, flags=re.IGNORECASE):
+                        elif not re.search(pattern, item_value, flags=re.IGNORECASE):
                             errors.append(
                                 f"answer item has invalid value: {item_label}"
                             )

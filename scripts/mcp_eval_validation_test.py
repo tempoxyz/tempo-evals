@@ -223,6 +223,35 @@ class McpEvalValidationTest(unittest.TestCase):
         events = [{"allowed": True, "tool": "v1_transactions_get"}]
 
         self.assertEqual(expected_answer_errors(answer, expected, events), [])
+        self.assertEqual(
+            expected_answer_errors(
+                {
+                    **answer,
+                    "observations": [
+                        {
+                            "subject": "transaction 0x" + "a" * 64,
+                            "details": "Observed fee payer.",
+                        }
+                    ],
+                },
+                expected,
+                events,
+            ),
+            [],
+        )
+        self.assertIn(
+            "answer item has invalid value: observations[0].subject",
+            expected_answer_errors(
+                {
+                    **answer,
+                    "observations": [
+                        {"subject": "not-a-hash", "details": "Observed fee payer."}
+                    ],
+                },
+                expected,
+                events,
+            ),
+        )
         self.assertIn(
             "answer item is missing field: inferences[0].basis",
             expected_answer_errors(
