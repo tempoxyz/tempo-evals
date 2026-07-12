@@ -5,7 +5,7 @@ from .criteria import (
     tempo_mcp_tool_used,
     tempo_rejects_other_blockchains,
     tempo_trajectory_matches,
-    tempo_uses_viem_tempo_actions,
+    tempo_uses_viem_tempo,
 )
 
 __all__ = [
@@ -13,5 +13,5 @@ __all__ = [
     "tempo_mcp_tool_used",
     "tempo_rejects_other_blockchains",
     "tempo_trajectory_matches",
-    "tempo_uses_viem_tempo_actions",
+    "tempo_uses_viem_tempo",
 ]

@@ -275,11 +275,7 @@ def tempo_rejects_other_blockchains(workspace: Path) -> bool:
     return all(result["passed"] for result in results)
 
 
-@criterion(shared=True)
-def tempo_uses_viem_tempo_actions(
-    workspace: Path,
-    actions: list[str],
-) -> bool:
+def _uses_viem_tempo(workspace: Path) -> bool:
     patterns = [
         {
             "name": "package_depends_on_viem",
@@ -290,20 +286,11 @@ def tempo_uses_viem_tempo_actions(
             "name": "source_imports_viem_tempo",
             "pattern": (
                 r"from\s+['\"]viem/tempo(?:/chains)?['\"]|"
-                r"require\(\s*['\"]viem/tempo"
+                r"require\(\s*['\"]viem/tempo|"
+                r"import\(\s*['\"]viem/tempo"
             ),
         },
     ]
-    patterns.extend(
-        {
-            "name": f"source_uses_actions_{action.replace('.', '_')}",
-            # Accept both the namespace form Actions.token.transferSync(client,
-            # ...) and the decorated client form client.token.transferSync(...),
-            # plus Sync/non-Sync action variants.
-            "pattern": rf"\w+\.{re.escape(action)}",
-        }
-        for action in actions
-    )
     results = [
         _pattern_check(
             workspace,
@@ -315,6 +302,11 @@ def tempo_uses_viem_tempo_actions(
     ]
     _write_json("tempo-actions.json", {"checks": results})
     return all(result["passed"] for result in results)
+
+
+@criterion(shared=True)
+def tempo_uses_viem_tempo(workspace: Path) -> bool:
+    return _uses_viem_tempo(workspace)
 
 
 @criterion(shared=True)

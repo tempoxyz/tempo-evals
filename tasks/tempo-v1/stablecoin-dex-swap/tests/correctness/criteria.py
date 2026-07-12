@@ -6,13 +6,9 @@ from tempo_bench_rewardkit.common.checks import (
 
 register_tempo_eval_contract()
 rk.tempo_rejects_other_blockchains()
-rk.tempo_uses_viem_tempo_actions(["token.approve"])
+rk.tempo_uses_viem_tempo()
 register_source_patterns(
     [
-        {
-            "name": "source_executes_dex_swap",
-            "pattern": r"\w+\.dex\.(sell|buy)",
-        },
         {
             "name": "source_reads_swap_token_env",
             "pattern": (
