@@ -113,7 +113,7 @@ Useful development options:
 | ------ | ----------- |
 | `--task-filter GLOB` | Run only matching canonical task names, e.g. `transfer-with-memo` |
 | `--profile PROFILE` | Tempo access profile: `docs` (default) or `mcp` |
-| `--task-suite SUITE` | Select `tempo`, `mpp`, or `all`; default is `tempo` |
+| `--task-suite SUITE` | Select `tempo`, `tempo-mcp`, `mpp`, or `all`; default is `tempo` |
 | `--concurrency N` | Override total concurrent trials |
 | `--agent-concurrency N` | Override concurrent agent executions |
 | `--max-retries N` | Retry transient trial/setup failures |
@@ -171,7 +171,9 @@ npm run results:compare -- \
 Compare canonical Tempo tasks across access profiles with separate runs:
 
 ```bash
-npm run bench:daytona:agent:dev -- --profile all
+npm run bench:daytona:agent:dev -- \
+  --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> \
+  --profile all
 ```
 
 Production options:
