@@ -27,7 +27,7 @@ digest = "sha256:c3c5e347296cc097b57038da9b893e8ff259d8c24e99b49f126198398e64908
 
 [[tasks]]
 name = "tempo-v1/transfer-batched"
-digest = "sha256:c941110605cd19b290eff1eb6822f70baa5d621c74272eee8efb82b7a5bc7f63"
+digest = "sha256:b501252f4d6b46a29bb79ef554366c28868f71c1ea4077ee9e7734cc1843a782"
 
 [[tasks]]
 name = "tempo-v1/transfer-with-memo"

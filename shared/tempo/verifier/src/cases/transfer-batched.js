@@ -1,9 +1,10 @@
-const { decodeFunctionData, parseAbi, parseUnits } = require("viem");
+const { decodeFunctionData, parseAbi, parseAbiItem, parseUnits } = require("viem");
 const { expectAddress, expectHash, expectObject, readResult } = require("../result");
 const { defaultRuntimeEnv } = require("../submission");
-const { receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
+const { findEvent, receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
 
 const TRANSFER = parseAbi(["function transfer(address to, uint256 value)"]);
+const TRANSFER_EVENT = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
 function result(config) {
   return readResult(config, (value) => {
@@ -38,7 +39,7 @@ async function verify({ client, config, fromBlock }) {
     if (!receipt) return null;
 
     const transaction = await client.getTransaction({ hash: transactionHash });
-    const paidEveryRecipient = config.recipients.every((recipient) =>
+    const requestedEveryPayment = config.recipients.every((recipient) =>
       transaction.calls?.some((call) => {
         if (!sameAddress(call.to, config.token)) return false;
         try {
@@ -53,8 +54,18 @@ async function verify({ client, config, fromBlock }) {
         }
       }),
     );
-    if (!paidEveryRecipient) {
-      throw new Error("reported transaction does not pay every configured recipient");
+    if (!requestedEveryPayment) {
+      throw new Error("reported transaction does not request payment to every configured recipient");
+    }
+    const deliveredEveryPayment = config.recipients.every((recipient) =>
+      findEvent(receipt, config.token, TRANSFER_EVENT, (args) =>
+        sameAddress(args.from, payer) &&
+        sameAddress(args.to, recipient) &&
+        args.value === expectedValue,
+      ),
+    );
+    if (!deliveredEveryPayment) {
+      throw new Error("reported transaction did not deliver payment to every configured recipient");
     }
 
     return {
