@@ -7,9 +7,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared/tempo/mcp-eval"))
 
 from validation import (  # noqa: E402
+    data_tool_from_source,
     evidence_summary,
     expected_answer_errors,
     has_required_tool_mix,
+    is_tempo_docs_url,
     used_data_tools,
     validated_data_evidence,
 )
@@ -81,6 +83,40 @@ class McpEvalValidationTest(unittest.TestCase):
                 }
             ],
         )
+
+    def test_evidence_accepts_injected_mcp_server_names(self) -> None:
+        events = [{"allowed": True, "tool": "v1_blocks_get"}]
+        for source in (
+            "mcp://tempo/v1_blocks_get",
+            "mcp://tempo-direct/v1_blocks_get",
+            "mcp://tempo-code/v1_blocks_get",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(data_tool_from_source(source), "v1_blocks_get")
+                self.assertEqual(
+                    validated_data_evidence(
+                        events,
+                        [
+                            {
+                                "source": source,
+                                "claim": "The block contains the transfer.",
+                            }
+                        ],
+                    ),
+                    [{"source": source, "claim": "The block contains the transfer."}],
+                )
+
+    def test_docs_urls_accept_bare_origins_without_matching_lookalikes(self) -> None:
+        for source in (
+            "https://docs.tempo.xyz",
+            "https://developers.tempo.xyz/docs",
+            "https://accounts.tempo.xyz/docs",
+            "https://tips.sh",
+            "https://docs.tempo.xyz/guide/payments",
+        ):
+            with self.subTest(source=source):
+                self.assertTrue(is_tempo_docs_url(source))
+        self.assertFalse(is_tempo_docs_url("https://docs.tempo.xyz.example.com"))
 
     def test_evidence_rejects_an_exploratory_tool(self) -> None:
         with self.assertRaisesRegex(ValueError, "was not used"):

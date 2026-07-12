@@ -7,7 +7,36 @@ from typing import Any
 
 DOCS_PREFIX = "docs_"
 DATA_PREFIXES = ("v1_", "rpc_")
-DATA_SOURCE_PREFIX = "mcp://tempo/"
+DATA_SOURCE_PREFIXES = (
+    "mcp://tempo/",
+    "mcp://tempo-direct/",
+    "mcp://tempo-code/",
+)
+TEMPO_DOCS_URLS = (
+    "https://docs.tempo.xyz",
+    "https://developers.tempo.xyz/docs",
+    "https://accounts.tempo.xyz/docs",
+    "https://tips.sh",
+)
+
+
+def is_tempo_docs_url(source: Any) -> bool:
+    """Return whether source is a Tempo documentation URL, including a bare origin."""
+    return isinstance(source, str) and any(
+        source == base or source.startswith(f"{base}/") for base in TEMPO_DOCS_URLS
+    )
+
+
+def data_tool_from_source(source: Any) -> str:
+    """Normalize a supported MCP evidence URI to its underlying data tool name."""
+    if not isinstance(source, str):
+        raise ValueError("each evidence source must be an MCP data-tool URI")
+    for prefix in DATA_SOURCE_PREFIXES:
+        if source.startswith(prefix):
+            tool = source.removeprefix(prefix)
+            if tool:
+                return tool
+    raise ValueError("each evidence source must be an MCP data-tool URI")
 
 
 def has_required_tool_mix(events: list[dict[str, Any]]) -> bool:
@@ -44,9 +73,7 @@ def validated_data_evidence(
             raise ValueError("each evidence item must be an object")
         source = item.get("source")
         claim = item.get("claim")
-        if not isinstance(source, str) or not source.startswith(DATA_SOURCE_PREFIX):
-            raise ValueError("each evidence source must be an MCP data-tool URI")
-        tool = source.removeprefix(DATA_SOURCE_PREFIX)
+        tool = data_tool_from_source(source)
         if tool not in used_tools:
             raise ValueError(f"evidence source was not used: {tool}")
         if not isinstance(claim, str) or not claim.strip():
@@ -60,7 +87,7 @@ def evidence_summary(
 ) -> list[dict[str, Any]]:
     summary: list[dict[str, Any]] = []
     for item in evidence:
-        tool = item["source"].removeprefix(DATA_SOURCE_PREFIX)
+        tool = data_tool_from_source(item["source"])
         calls = [
             {
                 "arguments": event.get("arguments", {}),

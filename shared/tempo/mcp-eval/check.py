@@ -8,6 +8,7 @@ from validation import (
     evidence_summary,
     expected_answer_errors,
     has_required_tool_mix,
+    is_tempo_docs_url,
     validated_data_evidence,
 )
 
@@ -37,15 +38,8 @@ sources = answer.get("sources")
 evidence = answer.get("evidence")
 if not isinstance(text, str) or not text.strip():
     fail("answer must be a non-empty string")
-tempo_docs_prefixes = (
-    "https://docs.tempo.xyz/",
-    "https://developers.tempo.xyz/docs/",
-    "https://accounts.tempo.xyz/docs/",
-    "https://tips.sh/",
-)
 if not isinstance(sources, list) or not any(
-    isinstance(source, str) and source.startswith(tempo_docs_prefixes)
-    for source in sources
+    is_tempo_docs_url(source) for source in sources
 ):
     fail("answer must cite at least one Tempo documentation URL")
 try:
