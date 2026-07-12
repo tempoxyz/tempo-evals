@@ -1,4 +1,4 @@
-# Tip20 Transfer Memo
+# TIP-20 Transfer Memo
 
 ## Overview
 
@@ -16,6 +16,6 @@ Reconcile live account transfer activity through the injected MCP server.
 
 ## Verification
 
-- A valid /app/answer.json is produced.
+- A valid `/app/answer.json` is produced.
 - The active MCP arm calls both a data tool and a docs tool.
 - The answer cites Tempo docs and maps claim evidence to MCP data tools it used.

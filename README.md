@@ -1,335 +1,190 @@
-# Tempo Bench
+# Tempo Evals
 
-An evaluation harness for verifying the ability of coding agents to build real Tempo and MPP apps.
+Monorepo for tooling and evaluation harnesses targeting Tempo and related protocols.
 
-Powered by [Harbor](https://harborframework.com)
+Powered by [Harbor](https://harborframework.com).
 
-## Install
+## Suites
+
+| Suite | Dataset | Version | What it measures | Suite guide |
+| --- | --- | --- | --- | --- |
+| Tempo integration | `tempo/tempo-bench-v1` | `v1` | TypeScript integrations that submit and verify Tempo testnet transactions | [tasks/tempo-v1](tasks/tempo-v1/README.md) |
+| Tempo MCP efficiency | `tempo/tempo-mcp-bench-v1` | `v1` | Live Tempo data investigations using direct documentation tools or `docs_code` | [tasks/tempo-mcp-v1](tasks/tempo-mcp-v1/README.md) |
+| MPP integration | `tempo/mpp-bench-v1` | `v1` | Paid HTTP and MCP services and clients on Tempo testnet | [tasks/mpp](tasks/mpp/README.md) |
+
+Each suite README owns its task model, harness behavior, run commands, and
+implementation notes. Task-level `README.md` files are concise Harbor Hub
+descriptions; `instruction.md` files are the agent-facing contracts.
+
+## Repository Layout
+
+| Path | Purpose |
+| --- | --- |
+| `tasks/` | Authored, versioned Harbor task suites |
+| `shared/` | Reusable base image, verifiers, and suite harness assets |
+| `config/` | Dataset identities, access profiles, run variants, and generated jobs |
+| `scripts/` | Task synchronization, benchmark execution, validation, and result tools |
+
+## Key Concepts
+
+Harbor terms used throughout this repository:
+
+- **Task** — a single instruction, container environment, and test script,
+  authored as a directory (`instruction.md`, `task.toml`, `environment/`,
+  `solution/`, `tests/`). The instruction and verifier behavior form the
+  evaluation contract.
+- **Oracle** — the minimal reference solution checked in under `solution/`.
+  Oracle runs execute it in place of an agent to prove the task is solvable
+  and the verifier accepts a correct submission. It is not shown to agents.
+- **Verifier** — the independent test script under `tests/` that checks the
+  submission programmatically and writes the Harbor reward. Correctness must
+  be deterministic; RewardKit quality checks are diagnostic signals layered on
+  top, never a substitute.
+- **Dataset** — a versioned collection of tasks; each suite here is one
+  dataset (e.g. `tempo/tempo-bench-v1`) with a checked-in generated manifest
+  (`dataset.toml`). A dataset major is an immutable evaluation contract.
+- **Trial and job** — a trial is one agent attempt at a task producing a
+  reward; a job is a batch of trials. Jobs here are compiled from `config/`
+  into `config/generated/` rather than written by hand.
+- **Access profile** — run-time injection of documentation or MCP access into
+  a job, configured in `config/tasks.yaml`, so the same task artifact can be
+  evaluated under different capabilities.
+
+## Setup
+
+### Requirements
+
+* Docker
+* Node.js with `npm`
+* [uv](https://docs.astral.sh/uv/).
+
+### Instructions
 
 ```bash
 uv sync
 npm run docs:prepare
 ```
 
-Optional Harbor install:
+Install Harbor with Daytona support when you need remote runs:
 
 ```bash
 uv tool install 'harbor[daytona]'
 ```
 
-## Quick Start
-
-Validate the Tempo oracle solutions locally:
+## Global Workflows
 
 ```bash
-npm run bench:local:oracle
-```
-
-Validate both task families explicitly:
-
-```bash
-npm run bench:local:oracle -- --task-suite all
-```
-
-Fast oracle loop for one task while editing:
-
-```bash
-npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
-```
-
-Fast Tempo oracle loop:
-
-```bash
-npm run bench:local:tempo
-```
-
-Fast MPP oracle loop:
-
-```bash
-npm run bench:local:mpp -- --task-filter server-charge-pathusd
-```
-
-Run a local agent smoke test:
-
-```bash
-npm run bench:local:agent:dev
-```
-
-Run one task on Daytona with a published base image:
-
-```bash
-npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
-```
-
-Run the MPP task family with the generic runner:
-
-```bash
-npm run bench:local:oracle -- --task-suite mpp
-```
-
-Run the paired MCP efficiency suite (three attempts per arm):
-
-```bash
-npm run bench:local:mcp
-```
-
-The direct and code arms receive one shared pair ID. Export both runs before
-using `npm run results:compare`; comparisons reject exports without matching
-pair IDs.
-
-## Running Development Benchmarks
-
-Development flows are for iteration and smoke testing. They keep attempts low and
-are intended to be filtered to one or a few tasks while changing task assets,
-verifiers, or agent setup.
-
-Local Tempo smoke run:
-
-```bash
-npm run bench:local:agent:dev -- --task-filter transfer-with-memo
-```
-
-Local MPP smoke run:
-
-```bash
-npm run bench:local:agent:dev -- --task-suite mpp --task-filter server-charge-pathusd
-```
-
-Daytona Tempo smoke run:
-
-```bash
-npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
-```
-
-Daytona MPP smoke run:
-
-```bash
-npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> --task-suite mpp --task-filter server-charge-pathusd --concurrency 1 --agent-concurrency 1
-```
-
-Useful development options:
-
-| Option | Description |
-| ------ | ----------- |
-| `--task-filter GLOB` | Run only matching canonical task names, e.g. `transfer-with-memo` |
-| `--profile PROFILE` | Tempo access profile: `docs` (default) or `mcp` |
-| `--task-suite SUITE` | Select `tempo`, `tempo-mcp`, `mpp`, or `all`; default is `tempo` |
-| `--concurrency N` | Override total concurrent trials |
-| `--agent-concurrency N` | Override concurrent agent executions |
-| `--max-retries N` | Retry transient trial/setup failures |
-| `--no-sync` | Skip generated asset and dataset sync before running |
-
-## Running Production Benchmarks
-
-Production runs execute the full Tempo task matrix on Daytona across the configured
-agent/model list. Raw Harbor output is written under `runs/<run_id>/harbor-job`, with
-run metadata in `runs/<run_id>/metadata.json`.
-
-Configure the model matrix in `config/models.production.yaml`:
-
-```yaml
-models:
-  - claude-haiku-4-5
-  - agent: codex
-    model_name: gpt-5
-```
-
-Run the production matrix:
-
-```bash
-npm run bench:production
-```
-
-Run a limited production check:
-
-```bash
-npm run bench:production -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
-```
-
-View raw Harbor results:
-
-```bash
-uv run harbor view runs/<run_id>/harbor-job
-```
-
-Export CSV and JSON results for notebooks or external tools:
-
-```bash
-npm run results:export -- --job runs/<run_id>/harbor-job --run-id <run_id>
-```
-
-Compare paired direct/code exports. The command also writes per-task and
-task-weighted overall quality summaries beside the paired trial CSV:
-
-```bash
-npm run results:compare -- \
-  --direct jobs/<direct-job>/exports/trials.csv \
-  --code jobs/<code-job>/exports/trials.csv \
-  --out jobs/<paired-job>.csv
-```
-
-Compare canonical Tempo tasks across access profiles with separate runs:
-
-```bash
-npm run bench:daytona:agent:dev -- \
-  --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash> \
-  --profile all
-```
-
-Production options:
-
-| Option | Description |
-| ------ | ----------- |
-| `--models-config PATH` | Use a different production model matrix config |
-| `--task-filter GLOB` | Run a limited task subset for production validation |
-| `--concurrency N` | Override production `n_concurrent_trials` |
-| `--agent-concurrency N` | Override per-model `n_concurrent` from the model config |
-| `--max-retries N` | Override Daytona retry count, default `2` |
-| `--job-name NAME` | Use a custom production run id under `runs/` |
-
-Export outputs are written to `runs/<run_id>/exports/` by default:
-
-| File | Description |
-| ---- | ----------- |
-| `trials.csv` | One row per Harbor trial result |
-| `summary.csv` | Aggregates by model, agent, task, task family, and profile |
-| `quality_summary.csv` | Mean, median, coverage, and quality@k across attempts |
-| `summary.json` | Structured aggregate data and export metadata |
-
-## Datasets
-
-| Dataset | Path | Description |
-| ------- | ---- | ----------- |
-| `tempo/tempo-bench-v1` | `tasks/tempo-v1/` | Tempo testnet integration tasks across docs and MCP profiles |
-| `tempo/mpp-bench-v1` | `tasks/mpp/` | MPP benchmark MVP |
-| `tempo/tempo-mcp-bench-v1` | `tasks/tempo-mcp-v1/` | Live Tempo data investigations: direct docs tools vs docs code mode |
-
-Benchmark majors are immutable evaluation contracts: task set, prompts,
-fixtures, verifier behavior, and scoring rules. Compatible maintenance fixes
-are tracked in Git; changes that make results incomparable require a new
-versioned dataset (for example, `tempo-bench-v2`). Canonical benchmark IDs and
-Harbor dataset names live in `config/benchmarks.yaml`.
-
-## Profiles
-
-* **Docs**: public Tempo documentation by default; `--docs-sha` (or a checked-in default SHA) transparently serves a pinned bundle at `https://docs.tempo.xyz` and `https://tempo.xyz/developers`.
-* **MCP**: the Docs profile plus Harbor MCP config for `tempo` at `https://api.tempo.xyz/mcp`.
-* **MCP efficiency**: paired `mcp-direct` and `mcp-code` profiles connect through a local bridge. Both receive the same read-only Tempo data tools; direct receives docs search/read tools while code receives `docs_code`. The upstream defaults to `https://api.tempo.xyz/mcp` and can be overridden with `TEMPO_MCP_EVAL_URL`.
-
-## CLI
-
-```bash
-# Sync shared MPP task assets and generated job configs
+# Synchronize shared assets and generated job configurations.
 npm run sync
 
-# Create a suite-conformant task scaffold
-npm run task:new -- --suite tempo --name example-task
-
-# Validate task structure, metadata, and unique canaries
-npm run task:lint
-
-# Refresh Tempo dataset digests
-npm run dataset
-
-# Refresh MPP MVP dataset digest
-npm run dataset -- --tasks tasks/mpp
-
-# Check scripts, format, and lint
+# Validate task conventions, generated assets, scripts, tests, formatting, and lint.
 npm run check
 
-# Check generated MPP assets and job configs
-npm run check:generated
+# Create a task scaffold in a named suite.
+npm run task:new -- --suite tempo --name example-task
 
-# Print the immutable source-derived base-image tag for Daytona
-npm run base-image:ref
-
-# Open Harbor job viewer
-npm run harbor:view
-
-# Clean job/cache output
+# Remove local job output and staging caches.
 npm run clean
 ```
 
-## Daytona Base Images
+Run the dataset refresh command after changing task files. Dataset manifests are checked-in generated artifacts and must stay in sync with their suite.
 
-Local Docker runs build the shared base image from the current checkout, so they
-do not need a pushed branch or a registry image. Use a local oracle smoke run to
-test base-image changes first.
+## Shared Architecture
 
-Daytona sandboxes cannot use your local Docker daemon. If you change the shared
-base image, RewardKit library, or Tempo verifier, push the branch and wait for
-the **Build base image** PR workflow to publish its image. Copy the image
-reference from the workflow summary into the Daytona command:
+Three shared layers keep the suites consistent:
 
-```bash
-# The workflow summary provides the exact PR image reference.
-npm run bench:daytona:agent:dev -- --base-image ghcr.io/tempoxyz/tempo-bench-base:pr-<number>-source-<hash>
-```
+- **One base image.** Every task environment extends the base image configured
+  in `config/tasks.yaml`, which bundles the RewardKit environment and the
+  shared Tempo verifier.
+- **Injected access profiles.** Benchmark jobs grant documentation or MCP
+  access at run time instead of baking it into task source, so the same task
+  artifact can be evaluated under different profiles. Profiles are configured
+  centrally in `config/tasks.yaml`; see the suite guides for profile-specific
+  behavior.
+- **Immutable benchmark majors.** A dataset version fixes its task set,
+  prompts, verifier behavior, and scoring. Changes that make results
+  incomparable require a new dataset version rather than an in-place rewrite.
 
-The runner writes that reference into staged task Dockerfiles. `npm run
-base-image:ref` prints the source-derived tag for inspection, while CI adds the
-PR number used by Daytona. PR image versions are deleted when the PR closes and
-by a seven-day cleanup job.
+## Running Tasks
 
-## Jobs
+Every run is a Harbor job compiled from `config/`; the npm scripts select the
+variant. Suite READMEs cover suite-specific filters and workflows.
 
-| Command | Runtime | Description |
-| ------- | ------- | ----------- |
-| `npm run bench:local:oracle` | Docker | Validate Tempo oracle solutions locally |
-| `npm run bench:local:oracle:dev` | Docker | Fast Tempo oracle run; skips sync and reuses environment builds |
-| `npm run bench:local:tempo` | Docker | Fast Tempo oracle run; skips sync and reuses environment builds |
-| `npm run bench:local:mpp` | Docker | Fast MPP oracle run; skips sync and reuses environment builds |
-| `npm run bench:local:all` | Docker | Fast all-task oracle run; skips sync and reuses environment builds |
-| `npm run bench:local:one` | Docker | Fast one-concurrency local oracle run; pass `--task-filter` |
-| `npm run bench:local:agent:dev` | Docker | Local Tempo agent smoke run |
-| `npm run bench:local:agent` | Docker | Local Tempo agent run |
-| `npm run bench:daytona:oracle` | Daytona | Validate Tempo oracle solutions remotely |
-| `npm run bench:daytona:agent:dev` | Daytona | Remote Tempo agent smoke run |
-| `npm run bench:daytona:agent` | Daytona | Remote Tempo agent run |
-| `npm run bench:production` | Daytona | Production multi-model matrix run |
-| `npm run bench:model` | Docker | Ad hoc local model run |
+### Locally
 
-## Dev Loop
-
-Use the dev oracle commands while iterating on one Tempo task:
+Local runs use Docker and build the shared base image from the checkout, so
+they only need the API keys listed under Environment.
 
 ```bash
+# Oracle validation for one suite.
+npm run bench:local:oracle -- --task-suite tempo
+
+# Fast iteration on a single task.
 npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
+
+# Agent smoke run with the MCP profile.
+npm run bench:local:agent:dev -- --task-suite tempo --profile mcp
 ```
 
-Use `npm run bench:local:mpp` for the same fast loop over MPP tasks. Commands
-default to Tempo. Use `--task-suite all` or `npm run bench:local:all` when you
-intentionally want both Tempo and MPP tasks.
+### On Daytona
 
-These commands use `local-oracle-dev`, skip MPP asset sync, and avoid forced
-Docker rebuilds. Run `npm run sync` after changing shared MPP assets or job
-config sources, and `npm run dataset` after changing Tempo tasks. Run
-`npm run bench:local:oracle -- --task-suite all` before opening a PR for clean
-validation across both task families.
-
-Useful runner flags:
+Daytona runs execute the same jobs on remote sandboxes. They require Daytona
+credentials and an explicit CI-published base image passed with `--base-image`;
+`npm run base-image:ref` prints the immutable reference for the current
+checkout.
 
 ```bash
---no-sync               # skip sync_shared.py and harbor sync
---no-force-build        # ask Harbor to reuse Docker builds
---no-delete             # keep environments for debugging
---disable-verification  # skip verifier execution
---install-only          # run setup/install only
---debug                 # enable Harbor debug logs
+# Oracle validation on Daytona.
+npm run bench:daytona:oracle -- --base-image "$(npm run -s base-image:ref)"
+
+# Full Claude Code matrix on Daytona.
+npm run bench:daytona:agent -- --base-image "$(npm run -s base-image:ref)"
 ```
+
+## Authoring a New Task
+
+Read the suite README first; each suite has its own task model and shared
+files. The general flow:
+
+1. **Scaffold.** `npm run task:new -- --suite <suite> --name <task>` creates
+   the task directory with the suite's conventions in place.
+2. **Write the contract.** `instruction.md` is the agent-facing prompt: keep
+   it concise and unambiguous, and prefer observable outputs (files, logs,
+   onchain effects) that a verifier can check. `task.toml` declares metadata,
+   resources, and verifier configuration.
+3. **Build the environment.** `environment/Dockerfile` extends the shared
+   base image; add only what the task needs.
+4. **Write the verifier.** `tests/` must establish correctness independently
+   and deterministically — it defines what "solved" means. Follow existing
+   verifier patterns and use the smallest check set that proves the
+   integration works. RewardKit quality checks go in `tests/quality/` as
+   diagnostics on top.
+5. **Write the oracle.** `solution/` is the minimal solution that satisfies
+   the instruction. If the oracle cannot pass the verifier, the task is
+   broken; if it passes trivially without doing the work, the verifier is too
+   weak.
+6. **Validate and refresh artifacts.** Run `npm run task:lint`, then a clean
+   local oracle run (`npm run bench:local:oracle -- --task-suite <suite>`),
+   then refresh the suite's dataset manifest with `npm run dataset`. Commit
+   the manifest and any generated artifacts with the task. `npm run check`
+   runs the full repository validation.
+
+Adding a task to a released benchmark major changes the evaluation contract;
+see [AGENTS.md](AGENTS.md) for versioning and contribution rules.
 
 ## Environment
 
-| Variable | Used for |
-| -------- | -------- |
-| `ANTHROPIC_API_KEY` | Claude Code and RewardKit LLM judging |
-| `OPENAI_API_KEY` | Codex production agent auth |
-| `DAYTONA_API_KEY` | Daytona runs |
+| Variable | Purpose |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | Claude Code runs and RewardKit LLM evaluation |
+| `OPENAI_API_KEY` | Codex production runs |
+| `DAYTONA_API_KEY` | Daytona authentication; JWT variables are an alternative |
+| `DAYTONA_JWT_TOKEN` + `DAYTONA_ORGANIZATION_ID` | Daytona JWT authentication |
 | `DAYTONA_TARGET` | Optional Daytona target |
+| `TEMPO_MCP_EVAL_URL` | Optional upstream endpoint for the MCP efficiency bridge |
 
 ## References
 
-* [Harbor](https://www.harborframework.com/docs/core-concepts)
-* [Tempo docs](https://docs.tempo.xyz/)
-* [Tempo API MCP](https://developers.tempo.xyz/docs/api/mcp)
-* [MPP](https://mpp.dev/)
+* [Harbor concepts](https://www.harborframework.com/docs/core-concepts)
+* [Tempo documentation](https://docs.tempo.xyz/)
+* [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)

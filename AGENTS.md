@@ -1,256 +1,97 @@
-# Tempo Bench
+# Tempo Evals Contribution Guide
 
-Harbor benchmark workspace for Tempo and MPP agent evals.
+This file defines repository-wide rules. Read the relevant suite README before
+changing suite tasks or harnesses:
 
-## Vision
+- [Tempo integration](tasks/tempo-v1/README.md)
+- [Tempo MCP efficiency](tasks/tempo-mcp-v1/README.md)
+- [MPP integration](tasks/mpp/README.md)
 
-Tempo Bench measures whether agents can build working payment integrations, not
-just produce plausible code. Each task should provide a clear instruction,
-reproducible environment, independent verifier, oracle solution, and gradable harbor rewards.
+## Repository Contract
 
-## Core Abstractions
+Tempo Evals measures working integrations, not plausible-looking code. Every
+task needs a clear instruction, reproducible environment, independent verifier,
+minimal oracle solution, and programmatic Harbor reward. RewardKit quality
+checks are diagnostic; they must not replace deterministic correctness checks.
 
-1. **Dataset** — Harbor task collection.
-2. **Task** — `task.toml`, `instruction.md`, `environment/`, `tests/`, and
-   `solution/`.
-3. **Profile** — Access mode for Tempo tasks: docs or MCP.
-4. **Verifier** — Programmatic build/run/onchain/payment check. Writes binary
-   Harbor reward.
-5. **RewardKit checks** — Diagnostic correctness/quality dimensions. Do not
-   treat LLM quality as the primary reward.
-6. **Oracle solution** — Minimal reference app copied into `/app`.
+Benchmark majors are immutable contracts: task set, prompt, fixtures, verifier
+behavior, and scoring. Make compatible maintenance changes in place. Create a
+new major dataset version for changes that make results incomparable.
 
-## Commands
+## Documentation Ownership
 
-```bash
-npm run docs:prepare        # Build pinned Tempo docs bundle
-npm run sync                # Sync shared MPP assets and generated job configs
-npm run dataset             # Refresh Tempo task digests
-npm run check               # Compile scripts, run tests, format check, lint
-npm run check:scripts       # Python script compile check
-npm run check:dataset       # Verify Tempo dataset digest freshness
-npm run check:generated     # Verify generated MPP/job output freshness
-npm run clean               # Remove job/cache output
-```
+| Document | Owns |
+| --- | --- |
+| Root `README.md` | Global purpose, key concepts, setup, architecture, shared workflows, and the task-authoring walkthrough |
+| `AGENTS.md` | Repository-wide authoring, validation, and contribution rules |
+| Suite `README.md` | Suite purpose, measurements, harness, runs, and implementation notes |
+| Task `README.md` | Concise Harbor Hub overview of that task |
+| Task `instruction.md` | Agent-facing task contract; keep it minimal and intentional |
 
-## Jobs
+Do not move suite-specific runbooks or harness internals into root documents.
+Do not change task instructions as a documentation-only cleanup: they are part
+of the evaluation contract.
 
-```bash
-npm run bench:local:oracle       # Local Docker Tempo oracle validation
-npm run bench:local:oracle:dev   # Fast local Docker oracle iteration
-npm run bench:local:tempo        # Fast local Docker Tempo oracle iteration
-npm run bench:local:mpp          # Fast local Docker MPP oracle iteration
-npm run bench:local:all          # Fast local Docker Tempo + MPP oracle iteration
-npm run bench:local:one          # Fast single-concurrency local oracle iteration
-npm run bench:local:agent:dev    # Local Docker agent smoke
-npm run bench:local:agent        # Full local Docker agent run
-npm run bench:daytona:oracle     # Daytona oracle validation
-npm run bench:daytona:agent:dev  # Daytona agent smoke
-npm run bench:daytona:agent      # Full Daytona agent run
-```
+## Sources of Truth and Generated Files
 
-Single task:
+Task directories are authored source. The access profiles, base-image reference,
+and shared MPP synchronization rules live in `config/tasks.yaml`; benchmark
+identities live in `config/benchmarks.yaml`. Job configs in `config/generated/`
+are compiled from `config/job.yaml.j2`, `config/variants.yaml`,
+`config/datasets.yaml`, and `config/benchmarks.yaml`.
 
-```bash
-npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
-npm run bench:local:mpp -- --task-filter server-charge-pathusd
-npm run bench:daytona:agent:dev -- --profile mcp --task-filter transfer-with-memo --concurrency 1 --agent-concurrency 1
-```
+Use `npm run sync` after changing shared MPP assets or job-config sources. Do
+not hand-edit generated MPP harness copies or generated job configs. A suite
+README identifies any additional generated files and its canonical authoring
+location.
 
-Use `npm run sync` after changing shared MPP assets or job config sources. Use
-`npm run bench:local:oracle -- --task-suite all` for clean local oracle
-validation across Tempo and MPP before PRs.
+All task environments extend the shared base image in
+`shared/global/docker/base/Dockerfile`. Local runs build it from the checkout;
+Daytona runs require an explicit CI-published image. Keep the configured base
+image tag stable within a benchmark major; only bump it for a new major version.
 
-MPP MVP:
+## Authoring Rules
 
-```bash
-npm run bench:model -- --tasks tasks/mpp --task-filter tempo/mpp-server-charge-pathusd
-```
+- Follow established task and verifier patterns before adding abstractions.
+- Keep task prompts concise and user-facing. Prefer observable files or logs
+  for verifier evidence.
+- Use the smallest verifier set that establishes correctness. Do not change
+  grader weights without an explicit request.
+- Do not commit secrets, `.env` files, key material, job output, caches, or
+  logs containing credentials.
+- Use checked-in TypeScript with `tsx` for Node-side verifier helpers; do not
+  add `.mjs` helpers or large inline JavaScript strings in Python.
 
-## Environment
+Task README requirements differ by suite. Follow the suite guide and retain the
+existing Harbor Hub style. In particular, Tempo task READMEs describe the
+`viem/tempo` and onchain checks; MPP task READMEs describe user-facing behavior
+without exposing verifier internals.
 
-- `ANTHROPIC_API_KEY` for Claude/RewardKit.
-- `DAYTONA_API_KEY` for Daytona, or `DAYTONA_JWT_TOKEN` plus
-  `DAYTONA_ORGANIZATION_ID`.
-- `DAYTONA_TARGET` for optional Daytona target selection.
+## Validation
 
-Never commit `.env`, secrets, key material, logs containing credentials, job
-output, or cache output.
-
-## Generated Files
-
-Tempo task directories in `tasks/tempo-v1/` are authored source. Edit them
-directly. Benchmark jobs select the Docs or MCP access profile; MCP
-configuration is injected at the agent level.
-
-Do not hand-edit the MPP harness files synced from `shared/mpp/` into every
-`tasks/mpp/<task>/`:
-
-- `environment/Dockerfile` (generated `FROM` the pinned base image)
-- `solution/package.json`
-- `solution/solve.sh`
-- `solution/tsconfig.json`
-- `tests/reward.toml`
-- `tests/test.sh`
-- `tests/correctness/verify.sh`
-- `tests/quality/check.py`
-- `tests/quality/reward.toml`
-
-Task-specific MPP files stay in the task directory: `task.toml`,
-`instruction.md`, `solution/` sources, `tests/support/client.py` (scenario),
-task-specific `tests/support/*.ts` verifier probes,
-`tests/correctness/criteria.py`, and `tests/quality/reward.toml`.
-A task can keep a divergent copy of a synced file by listing it under
-`mpp.task_local_overrides` in `config/tasks.yaml`; sync then leaves the
-task-local copy alone.
-When MPP verifier helpers need Node-side logic, write checked-in TypeScript
-`.ts` files and run them with `tsx`; do not add `.mjs` verifier helpers or
-large inline JavaScript strings in Python.
-
-Run-time access profiles and MPP shared file lists live in
-`config/tasks.yaml`; `scripts/sync_shared.py` syncs MPP files and refreshes
-dataset manifests.
-
-All task environments build `FROM` one shared base image
-(`shared/global/docker/base/Dockerfile`, pinned as `base_image` in
-`config/tasks.yaml`). It bakes in the RewardKit venv (harbor-rewardkit,
-pympp, `shared/global/rewardkit-lib/`) and the Tempo JS verifier
-(`shared/tempo/verifier/`). Local runs build it automatically (or run
-`npm run build-base`); CI publishes it to GHCR via
-`.github/workflows/build-base-image.yml`. After changing the base image
-contents, re-run `npm run sync`.
-
-Daytona requires an explicit CI-published base image. PR base images are
-short-lived; use the image tag from the PR build workflow for Daytona
-validation.
-
-The pinned base-image tag is intentionally mutable during a Tempo Bench version.
-Only bump `base_image` when cutting a new Tempo Bench version; ordinary shared
-base-image changes should replace the image at the existing tag and re-run
-`npm run sync`.
-
-Harbor job configs are compiled artifacts: `npm run sync` renders
-`config/job.yaml.j2` with per-variant values from `config/variants.yaml`,
-injects the dataset matrix from
-`config/datasets.yaml` unless the variant declares its own `datasets`, and
-writes the results to `config/generated/job.<variant>.yaml`. Runs use those
-checked-in files; do not hand-edit them. Production runs render the same
-template at run time because they depend on the run ID and
-`config/models.production.yaml`.
-
-After changing a Tempo task, refresh its dataset manifest:
+Run the narrowest relevant validation while iterating, then run the required
+artifact refresh before committing.
 
 ```bash
-npm run dataset
+npm run task:lint          # task structure, metadata, and canaries
+npm run docs:check         # pinned Tempo documentation bundle
+npm run check:generated    # shared assets and job-config freshness
+npm run check              # full repository check
 ```
 
-After changing shared MPP task files or job config sources, run:
+Use the suite README for suite-specific dataset refresh and oracle validation
+commands. Include refreshed dataset manifests and generated artifacts in the
+same change; do not discard mechanical updates required by CI.
 
-```bash
-npm run sync
-npm run dataset -- --tasks tasks/mpp
-```
+## Contribution Workflow
 
-## Eval structure
+Start from a clean worktree. Use `git town` commands when available for routine
+branch work. Follow existing code style and test changes in proportion to risk.
 
-When writing evals, you SHOULD follow the below principles:
+Use conventional commit messages: `feat:`, `fix:`, `perf:`, `chore:`, `docs:`,
+`test:`, `refactor:`, or `ci:`. Be specific.
 
-- Keep instructions.md as simple as possible - targeting what a human end-user would prompt. Limit heavy handed scaffolding.
-- Write results to log files or static output whenever possible - this makes it easy to write verifiers.
-- Use RewardKit whenever possible to write verifiers.
-- Do not change weights of graders without explicit prompt -- in most cases the default is fine.
-- Write only the minimal set of graders/verifiers to ensure your implementation is accurate. Too many graders are hard to maintain and dilute signal.
-
-### Task README structure
-
-Each task directory should include a concise `README.md` for Harbor Hub display.
-Use this structure:
-
-```md
-# <Task Title>
-
-## Overview
-
-<One short paragraph describing what the agent must build.>
-
-## What the Task Tests
-
-- <Capability or integration being tested>
-- <Capability or integration being tested>
-
-## Verification
-
-- General file structure: <files, scripts, and source layout checked>
-- Usage of proper <domain> libraries: <library/API usage checked>
-- Correctness of the script, including:
-  - <task-specific behavior checked>
-  - <task-specific behavior checked>
-  - <observable evidence required for success>
-```
-
-For Tempo tasks, the README should follow the Harbor Hub pattern above:
-overview, capabilities tested, and verification evidence. Keep the verification
-section as direct bullet points covering general file structure, `viem/tempo`
-`Actions.*` usage, rejection of other blockchain SDKs such as Solana, Sui, and
-`ethers`, and script correctness. Pull the correctness bullets from the task's
-RewardKit criteria and onchain verifier behavior. It can name high-level verifier
-checks or onchain events, but should not include exact log paths, internal score
-schemas, environment variable tables, or difficulty sections.
-
-For MPP tasks, the README should summarize user-facing server behavior, payment
-method/currency expectations, and Tempo testnet behavior. Do not include
-implementation details such as environment variable names, `/app/out.json`
-schema, exact npm scripts, verifier internals, environment details,
-verification, or difficulty sections. Do not add extra requirements not present in
-`instruction.md` or `tests/`.
-
-## Coding Style
-
-### General guidelines
-
-- Write simple and ergonomic code
-- Leverage harbor built-in methods and functionality whenever possible
-- Do not over-abstract, be ok with a small amount of duplication if needed
-- Always lint and check your code after any substantial change
-
-### Versioning
-
-This repo is private benchmark infrastructure. Use conventional commits for any
-commit:
-
-```text
-feat:
-fix:
-test:
-docs:
-chore:
-refactor:
-ci:
-perf:
-```
-
-Prefer specific messages, e.g. `docs: scaffold benchmark runbook`.
-
-## Pull Requests
-
-### Before opening or updating a PR
-
-If your changes affect Tempo task files, shared verifier packages, synced MPP
-assets, task fixtures, or task digests, run the matching artifact sync before
-committing and include the resulting generated files in the PR:
-
-```bash
-npm run dataset                  # Tempo tasks
-npm run dataset -- --tasks tasks/mpp
-```
-
-Always sync the relevant dataset manifests before opening or updating a PR.
-Do not restore or omit generated dataset/artifact changes just because they look
-mechanical. CI expects generated artifacts and dataset digests to be fresh.
-
-### Pull request body
-
-Pull requests should all follow the same format:
+Pull requests use this concise structure:
 
 ```md
 ## Motivation
@@ -266,4 +107,5 @@ Pull requests should all follow the same format:
 - <tradeoff or notable detail>
 ```
 
-Do not include testing summaries in PR descriptions unless notable.
+Do not include routine test summaries, internal discussion, or harness details
+in pull-request descriptions.

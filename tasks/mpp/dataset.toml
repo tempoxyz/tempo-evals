@@ -11,7 +11,7 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:741e8734ca2cc9583dedab4963dd65f27b798c2824a46c43e275340f1c1fd0fd"
+digest = "sha256:fc2353c582606a8c4bfeb42d67548723f5c808d10f5f65e00b1c9e2c5a1809b2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
