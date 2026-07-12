@@ -92,6 +92,7 @@ class McpEvalValidationTest(unittest.TestCase):
             "mcp://tempo/v1_blocks_get",
             "mcp://tempo-direct/v1_blocks_get",
             "mcp://tempo-code/v1_blocks_get",
+            "mcp://tempo/v1_blocks_get?include=transactions",
         ):
             with self.subTest(source=source):
                 self.assertEqual(data_tool_from_source(source), "v1_blocks_get")

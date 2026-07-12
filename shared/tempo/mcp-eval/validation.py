@@ -47,7 +47,11 @@ def mcp_tool_from_source(source: Any) -> str:
         raise ValueError("each evidence source must be an MCP data-tool URI")
     for prefix in DATA_SOURCE_PREFIXES:
         if source.startswith(prefix):
-            tool = source.removeprefix(prefix)
+            tool = (
+                source.removeprefix(prefix)
+                .split("?", maxsplit=1)[0]
+                .split("#", maxsplit=1)[0]
+            )
             if tool:
                 return tool
     raise ValueError("each evidence source must be an MCP data-tool URI")
