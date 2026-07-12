@@ -68,8 +68,10 @@ class McpEvalValidationTest(unittest.TestCase):
                 }
             ],
         )
+        self.assertEqual(evidence["errors"], [])
+        self.assertEqual(evidence["warnings"], [])
         self.assertEqual(
-            evidence_summary(events, evidence),
+            evidence_summary(events, evidence["evidence"]),
             [
                 {
                     "source": "mcp://tempo/v1_blocks_get",
@@ -103,7 +105,16 @@ class McpEvalValidationTest(unittest.TestCase):
                             }
                         ],
                     ),
-                    [{"source": source, "claim": "The block contains the transfer."}],
+                    {
+                        "evidence": [
+                            {
+                                "source": source,
+                                "claim": "The block contains the transfer.",
+                            }
+                        ],
+                        "errors": [],
+                        "warnings": [],
+                    },
                 )
 
     def test_docs_urls_accept_bare_origins_without_matching_lookalikes(self) -> None:
@@ -117,18 +128,64 @@ class McpEvalValidationTest(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertTrue(is_tempo_docs_url(source))
         self.assertFalse(is_tempo_docs_url("https://docs.tempo.xyz.example.com"))
+        self.assertFalse(is_tempo_docs_url("https://developers.tempo.xyz/other"))
+
+    def test_docs_evidence_is_a_warning_when_data_evidence_is_trace_backed(
+        self,
+    ) -> None:
+        result = validated_data_evidence(
+            [{"allowed": True, "tool": "v1_blocks_get"}],
+            [
+                {
+                    "source": "mcp://tempo/v1_blocks_get",
+                    "claim": "The block contains the transfer.",
+                },
+                {
+                    "source": "https://docs.tempo.xyz",
+                    "claim": "Tempo documents this transaction type.",
+                },
+                {
+                    "source": "mcp://tempo/docs_search",
+                    "claim": "The MCP docs search returned the transaction guide.",
+                },
+                {
+                    "source": "mcp://tempo-code/v1_docs_read_page",
+                    "claim": "The docs page describes the transaction type.",
+                },
+                {
+                    "source": "mcp://tempo/docs/wallet-developers",
+                    "claim": "The docs route identifies the wallet guide.",
+                },
+            ],
+        )
+        self.assertEqual(len(result["evidence"]), 1)
+        self.assertEqual(result["errors"], [])
+        self.assertEqual(len(result["warnings"]), 4)
+
+    def test_docs_only_evidence_does_not_satisfy_data_provenance(self) -> None:
+        result = validated_data_evidence(
+            [{"allowed": True, "tool": "docs_code"}],
+            [{"source": "mcp://tempo/docs_code", "claim": "Documentation claim."}],
+        )
+        self.assertEqual(result["evidence"], [])
+        self.assertIn(
+            "evidence must include at least one trace-backed MCP data tool",
+            result["errors"],
+        )
 
     def test_evidence_rejects_an_exploratory_tool(self) -> None:
-        with self.assertRaisesRegex(ValueError, "was not used"):
-            validated_data_evidence(
-                [{"allowed": True, "tool": "v1_blocks_get"}],
-                [
-                    {
-                        "source": "mcp://tempo/v1_transactions_get",
-                        "claim": "Not supported by the trace.",
-                    }
-                ],
-            )
+        result = validated_data_evidence(
+            [{"allowed": True, "tool": "v1_blocks_get"}],
+            [
+                {
+                    "source": "mcp://tempo/v1_transactions_get",
+                    "claim": "Not supported by the trace.",
+                }
+            ],
+        )
+        self.assertIn(
+            "evidence source was not used: v1_transactions_get", result["errors"]
+        )
 
     def test_requires_task_specific_terms_evidence_and_tools(self) -> None:
         expected = {
