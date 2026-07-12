@@ -35,4 +35,4 @@ Write only `/app/answer.json` matching this schema:
 }
 ```
 
-Keep `answer` concise. `sources` must include Tempo documentation URLs. `evidence` must link a substantive claim to an MCP data tool you used; omit purely exploratory calls.
+Keep `answer` concise. Put Tempo documentation URLs only in `sources`. Every `evidence.source` must be an MCP data-tool URI for a call you made (for example, `mcp://tempo/v1_transactions_get`); never put an `https://` documentation URL in `evidence`. Omit purely exploratory calls.
