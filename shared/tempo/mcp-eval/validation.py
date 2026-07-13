@@ -225,6 +225,10 @@ def expected_answer_errors(
                 ):
                     errors.append(f"expected item requirement is invalid: {field}")
                     continue
+                for item_field, pattern in item_patterns.items():
+                    if not isinstance(item_field, str) or not isinstance(pattern, str):
+                        errors.append(f"expected item requirement is invalid: {field}")
+                        continue
                 for index, item in enumerate(value):
                     if not isinstance(item, dict):
                         errors.append(
@@ -250,13 +254,16 @@ def expected_answer_errors(
                             or item_value == {}
                         ):
                             errors.append(f"answer item is missing field: {item_label}")
-                any_item_patterns = [
-                    *(
-                        {"fields": [item_field], "pattern": pattern}
-                        for item_field, pattern in item_patterns.items()
-                    ),
-                    *requirement.get("any_item_patterns", []),
-                ]
+                    for item_field, pattern in item_patterns.items():
+                        item_value = item.get(item_field)
+                        if not isinstance(item_value, str) or not re.search(
+                            pattern, item_value, flags=re.IGNORECASE
+                        ):
+                            errors.append(
+                                f"answer item field must match pattern: "
+                                f"{field}[{index}].{item_field}"
+                            )
+                any_item_patterns = requirement.get("any_item_patterns", [])
                 if not isinstance(any_item_patterns, list):
                     errors.append(f"expected item requirement is invalid: {field}")
                     continue

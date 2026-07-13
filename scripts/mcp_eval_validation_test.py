@@ -250,7 +250,7 @@ class McpEvalValidationTest(unittest.TestCase):
             [],
         )
         self.assertIn(
-            "answer field needs an item matching pattern: observations",
+            "answer item field must match pattern: observations[0].subject",
             expected_answer_errors(
                 {
                     **answer,
@@ -308,6 +308,35 @@ class McpEvalValidationTest(unittest.TestCase):
             "sources": ["https://docs.tempo.xyz/"],
         }
         self.assertEqual(expected_answer_errors(answer, expected, []), [])
+
+    def test_requires_item_patterns_on_every_item(self) -> None:
+        expected = {
+            "minimum_sources": 1,
+            "required_data_tools": [],
+            "structured": {
+                "required_fields": ["summary", "observations"],
+                "array_fields": {
+                    "observations": {
+                        "min_items": 2,
+                        "item_required_fields": ["subject", "details"],
+                        "item_patterns": {"subject": "0x[a-f0-9]{64}"},
+                    }
+                },
+            },
+        }
+        answer = {
+            "summary": "Observed two access keys.",
+            "observations": [
+                {"subject": "0x" + "a" * 64, "details": "First access key."},
+                {"subject": "not-a-hash", "details": "Second access key."},
+            ],
+            "sources": ["https://docs.tempo.xyz/"],
+        }
+
+        self.assertIn(
+            "answer item field must match pattern: observations[1].subject",
+            expected_answer_errors(answer, expected, []),
+        )
 
     def test_accepts_one_tool_from_a_task_specific_group(self) -> None:
         expected = {
