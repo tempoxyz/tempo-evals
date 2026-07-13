@@ -1,25 +1,18 @@
-import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 
 async function main() {
-  const workspace = process.env.TEMPO_BENCH_WORKSPACE ?? "/app";
-  const workspaceRequire = createRequire(`${workspace}/package.json`);
-  const globalRequire = createRequire(
-    `${execFileSync("npm", ["root", "--global"], { encoding: "utf8" }).trim()}/package.json`,
-  );
+  const require = createRequire("/opt/tempo-bench/verifier/package.json");
   const { Client } = await import(
-    globalRequire.resolve("@modelcontextprotocol/sdk/client/index.js"),
+    require.resolve("@modelcontextprotocol/sdk/client/index.js"),
   );
   const { StreamableHTTPClientTransport } = await import(
-    globalRequire.resolve("@modelcontextprotocol/sdk/client/streamableHttp.js"),
+    require.resolve("@modelcontextprotocol/sdk/client/streamableHttp.js"),
   );
-  const { McpClient } = await import(workspaceRequire.resolve("mppx/mcp/client"));
-  const { tempo } = await import(workspaceRequire.resolve("mppx/client"));
-  const { createClient, http } = await import(workspaceRequire.resolve("viem"));
-  const { privateKeyToAccount } = await import(
-    workspaceRequire.resolve("viem/accounts"),
-  );
-  const { Chain } = await import(workspaceRequire.resolve("viem/tempo"));
+  const { McpClient } = await import(require.resolve("mppx/mcp/client"));
+  const { tempo } = await import(require.resolve("mppx/client"));
+  const { createClient, http } = await import(require.resolve("viem"));
+  const { privateKeyToAccount } = await import(require.resolve("viem/accounts"));
+  const { Chain } = await import(require.resolve("viem/tempo"));
 
   const client = new Client({
     name: "tempo-bench-verifier",

@@ -10,6 +10,8 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "mppx": "0.8.6",
     "viem": "^2.53.1"
   }
 }

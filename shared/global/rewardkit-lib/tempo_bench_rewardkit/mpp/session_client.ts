@@ -1,8 +1,7 @@
 import { createRequire } from "node:module";
 
 async function main() {
-  const workspace = process.env.TEMPO_BENCH_WORKSPACE ?? "/app";
-  const require = createRequire(`${workspace}/package.json`);
+  const require = createRequire("/opt/tempo-bench/verifier/package.json");
   const { tempo } = await import(require.resolve("mppx/client"));
   const { createClient, http } = await import(require.resolve("viem"));
   const { privateKeyToAccount } = await import(require.resolve("viem/accounts"));

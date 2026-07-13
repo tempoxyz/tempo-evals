@@ -1,8 +1,7 @@
 import { createRequire } from "node:module";
 
 async function main() {
-  const workspace = process.env.TEMPO_BENCH_WORKSPACE ?? "/app";
-  const require = createRequire(`${workspace}/package.json`);
+  const require = createRequire("/opt/tempo-bench/verifier/package.json");
   const { Challenge, Credential, Receipt } = await import(require.resolve("mppx"));
 
   const paidUrl = process.env.TEMPO_MPP_PAID_URL;
