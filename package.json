@@ -15,6 +15,7 @@
     "bench:model": "uv run python scripts/run_benchmark.py model",
     "bench:local:tempo": "uv run python scripts/run_benchmark.py local-oracle-dev --no-sync --task-suite tempo",
     "bench:local:mpp": "uv run python scripts/run_benchmark.py local-oracle-dev --no-sync --task-suite mpp",
+    "bench:local:privy": "uv run python scripts/run_benchmark.py local-oracle-dev --no-sync --task-suite privy",
     "bench:local:mcp": "uv run python scripts/run_benchmark.py local-agent --task-suite tempo-mcp --profile mcp-both",
     "bench:local:all": "uv run python scripts/run_benchmark.py local-oracle-dev --no-sync --task-suite all",
     "bench:local:oracle": "uv run python scripts/run_benchmark.py local-oracle",

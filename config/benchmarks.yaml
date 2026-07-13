@@ -23,3 +23,10 @@ benchmarks:
     description: Tempo MCP code-mode efficiency benchmark
     keywords: [tempo, mcp, docs, code-mode, efficiency]
     author: Tempo Labs
+  privy:
+    id: privy-bench-v1
+    dataset: tempo/privy-bench-v1
+    path: tasks/privy-v1
+    description: Privy server-wallet integration benchmark
+    keywords: [privy, server-wallets, docs, tempo, typescript]
+    author: Tempo Labs

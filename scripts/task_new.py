@@ -19,6 +19,7 @@ SUITES_BY_ID = {
     "tempo": next(suite for suite in SUITES if suite.path == "tasks/tempo-v1"),
     "mpp": next(suite for suite in SUITES if suite.path == "tasks/mpp"),
     "tempo-mcp": next(suite for suite in SUITES if suite.path == "tasks/tempo-mcp-v1"),
+    "privy": next(suite for suite in SUITES if suite.path == "tasks/privy-v1"),
 }
 
 
@@ -31,6 +32,7 @@ def task_toml(suite_id: str, suite: Suite, slug: str) -> str:
         "tempo": "tempo-bench-v1",
         "mpp": "mpp-bench-v1",
         "tempo-mcp": "tempo-mcp-bench-v1",
+        "privy": "privy-bench-v1",
     }[suite_id]
     artifacts = '["/app/answer.json"]' if suite_id == "tempo-mcp" else '["/app/src"]'
     return f'''schema_version = "1.3"

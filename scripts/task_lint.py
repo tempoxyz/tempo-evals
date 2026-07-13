@@ -51,6 +51,17 @@ SUITES = (
         ),
     ),
     Suite(
+        "tasks/privy-v1",
+        (
+            "README.md",
+            "instruction.md",
+            "task.toml",
+            "environment/Dockerfile",
+            "solution/solve.sh",
+            "tests/test.sh",
+        ),
+    ),
+    Suite(
         "tasks/tempo-mcp-v1",
         (
             "README.md",

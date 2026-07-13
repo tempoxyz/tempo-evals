@@ -99,6 +99,9 @@ class RunBenchmarkTest(unittest.TestCase):
                 {
                     "path": "tasks/tempo-mcp-v1",
                 },
+                {
+                    "path": "tasks/privy-v1",
+                },
                 {"path": "tasks/mpp", "task_names": ["server-*"]},
             ],
         )

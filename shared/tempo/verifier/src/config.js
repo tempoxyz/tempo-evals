@@ -59,6 +59,11 @@ function readConfig() {
     swapTokenOut: env("TEMPO_SWAP_TOKEN_OUT", "0x20c0000000000000000000000000000000000002"),
     swapAmountIn: env("TEMPO_SWAP_AMOUNT_IN", env("TEMPO_AMOUNT")),
     swapMinAmountOut: env("TEMPO_SWAP_MIN_AMOUNT_OUT", "0"),
+    privyApiUrl: env("PRIVY_API_URL", "https://api.privy.io"),
+    privyAppId: env("PRIVY_APP_ID"),
+    privyAppSecret: env("PRIVY_APP_SECRET"),
+    privyMessage: env("PRIVY_MESSAGE"),
+    privyAllowedRecipient: env("PRIVY_ALLOWED_RECIPIENT"),
     submissionTimeoutMs: Number(env("TEMPO_BENCH_SUBMISSION_TIMEOUT_MS", "180000")),
     rpcWaitMs: Number(env("TEMPO_BENCH_RPC_WAIT_MS", "60000")),
     logWaitMs: Number(env("TEMPO_BENCH_LOG_WAIT_MS", "30000")),
@@ -66,7 +71,8 @@ function readConfig() {
 }
 
 function redactedConfig(config) {
-  return config;
+  if (!config.privyAppSecret) return config;
+  return { ...config, privyAppSecret: "[redacted]" };
 }
 
 module.exports = {

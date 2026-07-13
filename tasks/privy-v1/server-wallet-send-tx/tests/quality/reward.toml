@@ -1,0 +1,26 @@
+[judge]
+judge = "anthropic/claude-haiku-4-5"
+mode = "individual"
+files = ["package.json", "tsconfig.json", "src/index.ts"]
+timeout = 300
+
+[[criterion]]
+name = "uses_privy_and_tempo_appropriately"
+type = "likert"
+points = 5
+description = "The submission reads Privy credentials and Tempo task values from the environment without hard-coding secrets, recipients, amounts, or token addresses, and sends the transfer from the Privy server wallet."
+
+[[criterion]]
+name = "uses_sdk_primitives_correctly"
+type = "likert"
+points = 5
+description = "The code bridges the Privy wallet into viem correctly, uses appropriate Tempo or TIP-20 transaction primitives, constructs addresses and units carefully, and waits for the submitted transaction to be accepted or confirmed."
+
+[[criterion]]
+name = "is_minimal_and_maintainable"
+type = "likert"
+points = 5
+description = "The solution is a focused TypeScript implementation with simple dependencies, readable structure, and no unrelated scaffolding or dead code. Task-required files and fixed output contracts such as /app/out.json are expected and must not be treated as hard-coding or unnecessary scaffolding."
+
+[scoring]
+aggregation = "weighted_mean"

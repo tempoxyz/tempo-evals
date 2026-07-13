@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "eval": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@privy-io/node": "^0.25.0",
+    "@types/node": "^22.15.30",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,26 @@
+[judge]
+judge = "anthropic/claude-haiku-4-5"
+mode = "individual"
+files = ["package.json", "tsconfig.json", "src/index.ts"]
+timeout = 300
+
+[[criterion]]
+name = "uses_privy_credentials_appropriately"
+type = "likert"
+points = 5
+description = "The submission reads the Privy app ID and app secret from the environment without hard-coding credentials, wallet IDs, or addresses."
+
+[[criterion]]
+name = "uses_privy_sdk_correctly"
+type = "likert"
+points = 5
+description = "The code uses the Privy Node SDK to create an Ethereum server wallet and reports the identity returned by the API rather than fabricated values."
+
+[[criterion]]
+name = "is_minimal_and_maintainable"
+type = "likert"
+points = 5
+description = "The solution is a focused TypeScript implementation with simple dependencies, readable structure, and no unrelated scaffolding or dead code. Task-required files and fixed output contracts such as /app/out.json are expected and must not be treated as hard-coding or unnecessary scaffolding."
+
+[scoring]
+aggregation = "weighted_mean"

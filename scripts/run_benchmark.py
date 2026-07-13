@@ -24,6 +24,7 @@ class BenchmarkKey(StrEnum):
     TEMPO = "tempo"
     TEMPO_MCP = "tempo-mcp"
     MPP = "mpp"
+    PRIVY = "privy"
 
 
 # All run variant data (job specs, prefixes, auth flags, Daytona runner
@@ -95,7 +96,7 @@ Options:
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and config variants
-  --task-suite SUITE      Task family: tempo, tempo-mcp, mpp, or all
+  --task-suite SUITE      Task family: tempo, tempo-mcp, mpp, privy, or all
                           (default: tempo; use all explicitly for full matrix)
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
@@ -146,7 +147,9 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument("--agent")
     parser.add_argument("--model")
     parser.add_argument("--task-filter")
-    parser.add_argument("--task-suite", choices=["tempo", "tempo-mcp", "mpp", "all"])
+    parser.add_argument(
+        "--task-suite", choices=["tempo", "tempo-mcp", "mpp", "privy", "all"]
+    )
     parser.add_argument(
         "--n-tasks", type=lambda value: read_positive_integer(value, "--n-tasks")
     )
@@ -429,7 +432,12 @@ def benchmark_key(value: str | BenchmarkKey | None) -> BenchmarkKey:
 
 def benchmark_provenance(task_suite: str | None) -> list[dict[str, str]]:
     keys = (
-        (BenchmarkKey.TEMPO, BenchmarkKey.TEMPO_MCP, BenchmarkKey.MPP)
+        (
+            BenchmarkKey.TEMPO,
+            BenchmarkKey.TEMPO_MCP,
+            BenchmarkKey.PRIVY,
+            BenchmarkKey.MPP,
+        )
         if task_suite == "all"
         else (benchmark_key(task_suite),)
     )
@@ -640,6 +648,8 @@ def datasets_for_suite(task_suite: str) -> list[dict[str, Any]]:
         return copy.deepcopy(RUN_CONFIG["mpp_only_datasets"])
     if task_suite == "tempo-mcp":
         return copy.deepcopy(RUN_CONFIG["mcp_only_datasets"])
+    if task_suite == "privy":
+        return copy.deepcopy(RUN_CONFIG["privy_only_datasets"])
     return copy.deepcopy(read_yaml("config/datasets.yaml").get("datasets", []))
 
 
@@ -662,14 +672,19 @@ def apply_task_filter(
         config["datasets"] = [{"path": "tasks/mpp", "task_names": [mpp_filter]}]
         return config
 
-    tempo_prefixes = ("tempo-v1/", "tempo-mcp-v1/", "tempo/")
+    tempo_prefixes = ("tempo-v1/", "tempo-mcp-v1/", "privy-v1/", "tempo/")
     filters = [task_filter]
     for prefix in tempo_prefixes:
         if task_filter.startswith(prefix):
             filters.append(task_filter.removeprefix(prefix))
             break
     for dataset in config.get("datasets", []):
-        if dataset.get("path") in {"tasks", "tasks/tempo-v1", "tasks/tempo-mcp-v1"}:
+        if dataset.get("path") in {
+            "tasks",
+            "tasks/tempo-v1",
+            "tasks/tempo-mcp-v1",
+            "tasks/privy-v1",
+        }:
             dataset["task_names"] = filters
             config["datasets"] = [dataset]
             return config
@@ -721,6 +736,7 @@ def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
         "tasks/mpp": str(staging_root / "tasks" / "mpp"),
         "tasks/tempo-v1": str(staging_root / "tasks" / "tempo-v1"),
         "tasks/tempo-mcp-v1": str(staging_root / "tasks" / "tempo-mcp-v1"),
+        "tasks/privy-v1": str(staging_root / "tasks" / "privy-v1"),
         "tasks": str(staging_root / "tasks" / "tempo-v1"),
     }
     changed = False
@@ -942,6 +958,8 @@ def stage_task_datasets(
             )
     if Path("tasks/mpp").exists():
         copy_tasks(Path("tasks/mpp"), staging_root / "tasks" / "mpp")
+    if Path("tasks/privy-v1").exists():
+        copy_tasks(Path("tasks/privy-v1"), staging_root / "tasks" / "privy-v1")
     if base_image is not None:
         override_staged_base_image(staging_root, base_image)
     if docs_bundle is not None:

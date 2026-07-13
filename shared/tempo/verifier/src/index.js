@@ -49,13 +49,21 @@ async function main() {
     assertSubmissionShape(config);
     fs.rmSync(config.resultPath, { force: true });
 
-    context = {
-      phase: "rpc",
-      expected: "Tempo testnet RPC is reachable",
-      logs: [],
-    };
-    const client = createTempoClient();
-    const fromBlock = await waitForRpc(client, config);
+    // Cases that only verify against external APIs (e.g. Privy) opt out of
+    // the Tempo RPC dependency with `needsChain: false`.
+    const needsChain = verifier.needsChain !== false;
+    let client = null;
+    let fromBlock = null;
+    if (needsChain) {
+      context = {
+        phase: "rpc",
+        expected: "Tempo testnet RPC is reachable",
+        logs: [],
+      };
+      client = createTempoClient();
+      fromBlock = await waitForRpc(client, config);
+    }
+    const startedAt = Date.now();
 
     context = {
       phase: "submission-npm-install",
@@ -91,7 +99,7 @@ async function main() {
       expected: `${config.caseId} verifier observes required onchain evidence`,
       logs: ["details.json"],
     };
-    const evidence = await verifier.verify({ client, config, fromBlock });
+    const evidence = await verifier.verify({ client, config, fromBlock, startedAt });
     scores.onchain = 1;
 
     writeJson(config, "details.json", {
