@@ -2,10 +2,7 @@
 
 ## Overview
 
-This one-attempt paired run evaluates Claude Sonnet 5 on the Tempo MCP benchmark
-with direct documentation tools and documentation code mode. It establishes a
-post-validator-update baseline for correctness, quality, and access-mode
-efficiency.
+Pass@1 with sonnet to establish baseline for Code mode vs. direct MCP results.
 
 | Field | Value |
 | --- | --- |
