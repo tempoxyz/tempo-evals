@@ -15,7 +15,7 @@ digest = "sha256:f5699cc7d65491f9d02a56e5a22185f5a95953c09b3360a6a48c92ec9e10b82
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:406f291b8760b3986c35e5bd4d0d02e1f2e31724f6c657527b8fb4ddf838bcf1"
+digest = "sha256:6d2ac6ebb1b70f66eef9382777de6acfa298fb3ca0a56781e4ad9bb4513b02ee"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
@@ -39,7 +39,7 @@ digest = "sha256:93df3d8a1b836b6da1c4cef0cfea514693fda2ef94d5401674d2e92186afb30
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:eee17d23bc12135263f1761033b12f12428317fad6c850eca9c69d0597697a6d"
+digest = "sha256:8a8eda85c0407c587615f4d36e8dde7b478d5bdd731bb140430ba370c09e2c4e"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
