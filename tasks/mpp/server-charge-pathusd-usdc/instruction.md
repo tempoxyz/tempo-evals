@@ -4,6 +4,7 @@
 Build an MPP server using TypeScript in `/app` that runs on Tempo testnet.
 
 Use `mppx` 0.8.6 or newer and a compatible `viem` 2.x release.
+Bind the server to `0.0.0.0` or `127.0.0.1`; do not bind only to `localhost`.
 
 Expose one free endpoint and one paid endpoint. Both endpoints should return JSON.
 Both published endpoint URLs must accept HTTP GET requests.

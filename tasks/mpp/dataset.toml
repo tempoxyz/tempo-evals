@@ -15,33 +15,33 @@ digest = "sha256:a34eb93d05d765538b1421fe5e76532dcbea7e249a546429b9ae97a640852d5
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:b74b86e40c0b032cf62b04cde34129d99b592411a990c7a4bac5fbb3d59600ee"
+digest = "sha256:04e13820cd338067efb47502a68427b72bae47bd3d8b63a57ec804ccafc4bdf1"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:e49e45b879d20b781da359df2a0aa9b7a1c8babb02f4dbd5fb8134742188ca6c"
+digest = "sha256:1307392b06943979a9a2509fcbfc5be32a1f655a63eafdba7d430b3988775ade"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:dfc1693b1a671358516b3fa1f5211d2f4eec82753f3aa3b6861e69307c9bc059"
+digest = "sha256:4d7971932a8c05bec677a91d917041dca24dd59b557f9442b59c1d6caac3f6d4"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:7fe2c58a64a766f1b9414f19591e5c65a162704c123efcf079967517c06072a8"
+digest = "sha256:951a6f8924930237dddaeabc8d25b42a679e2290bc061cc31456ae52b7be7df8"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:4fde7b682e8b6add3224f98df9685377feeb2bc02add7a8c880f3a44030e54bb"
+digest = "sha256:940c1e506b707be1efaa02d0cab7b299c1300c10d02344faf336179ec96c58c4"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:53f62b8f10d8bf406e9882261666106535a8419abca5631225c371e5b129cc0f"
+digest = "sha256:09c1921ab681598bd7c901765a3a8f2de765b98adb68ccd5635f01d809033797"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:027fd69925e87d74e7895520f52f2d47103e7d69c5ef7148ad9a767bfaf13e1c"
+digest = "sha256:dd47726bbe116b5bc2157484ac6bee934bf02140e575d431239b25ce98bf52a9"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:a356214e43fa51aac5438b95f002fe786012dcabed864f5d16cd481eb6f8a9f9"
+digest = "sha256:b942f6fc3fd82237ae476d1abba749506aa86e1acb813ccaa859dfe570f53d45"
 

@@ -5,6 +5,7 @@ Build a TypeScript server in `/app` with both an MPP charge route and an x402
 charge route.
 
 Use `mppx` 0.8.6 or newer and a compatible `viem` 2.x release.
+Bind the server to `0.0.0.0` or `127.0.0.1`; do not bind only to `localhost`.
 
 The MPP route must accept pathUSD on Tempo testnet and return JSON after
 payment. The x402 route must advertise an x402 USDC payment challenge and return
