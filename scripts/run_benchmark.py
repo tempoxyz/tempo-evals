@@ -1047,6 +1047,22 @@ def main(argv: list[str]) -> None:
     if variant_name == "check-generated":
         sync_dataset(options)
         run("git", ["diff", "--exit-code"])
+        untracked_digests = run_output(
+            "git",
+            [
+                "ls-files",
+                "--others",
+                "--exclude-standard",
+                "--",
+                ":(glob)tasks/tempo-v1/*/tests/tempo-bench-verifier.sha256",
+            ],
+        )
+        if untracked_digests:
+            print(
+                "Tempo verifier digest files are not tracked:\n" + untracked_digests,
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
         return
     if variant_name == "clean-jobs":
         shutil.rmtree("jobs", ignore_errors=True)

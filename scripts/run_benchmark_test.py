@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import io
 import json
 import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -37,6 +39,30 @@ def base_config() -> dict[str, Any]:
 
 
 class RunBenchmarkTest(unittest.TestCase):
+    def test_check_generated_rejects_untracked_verifier_digests(self) -> None:
+        with (
+            patch("scripts.run_benchmark.sync_dataset"),
+            patch("scripts.run_benchmark.run"),
+            patch(
+                "scripts.run_benchmark.run_output",
+                return_value="tasks/tempo-v1/new/tests/tempo-bench-verifier.sha256",
+            ) as run_output,
+            redirect_stderr(io.StringIO()),
+            self.assertRaises(SystemExit),
+        ):
+            main(["check-generated"])
+
+        run_output.assert_called_once_with(
+            "git",
+            [
+                "ls-files",
+                "--others",
+                "--exclude-standard",
+                "--",
+                ":(glob)tasks/tempo-v1/*/tests/tempo-bench-verifier.sha256",
+            ],
+        )
+
     def test_finalize_config_defaults_to_tempo_suite(self) -> None:
         config = finalize_config(base_config(), {})
 

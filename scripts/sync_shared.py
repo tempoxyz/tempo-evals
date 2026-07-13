@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Sync shared MPP harness files and refresh Harbor dataset manifests.
+"""Sync shared task artifacts and refresh Harbor dataset manifests.
 
-Tempo tasks under tasks/tempo-v1/ are authored directly. Benchmark jobs apply
-the Docs or MCP access profile at run time without modifying those task files.
+Tempo tasks under tasks/tempo-v1/ are authored directly. Sync pins the shared
+Tempo verifier fingerprint into each task so its digest commits to the baked
+verifier behavior. Benchmark jobs apply the Docs or MCP access profile at run
+time without otherwise modifying those task files.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import shutil
+import subprocess
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -22,6 +26,8 @@ MCP_TASKS_DIR = ROOT / "tasks" / "tempo-mcp-v1"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
 MPP_SHARED_DIR = ROOT / "shared" / "mpp"
 MCP_ORACLE = ROOT / "shared" / "tempo" / "mcp-eval" / "oracle.mjs"
+TEMPO_VERIFIER_DIR = ROOT / "shared" / "tempo" / "verifier"
+TEMPO_VERIFIER_DIGEST_FILE = Path("tests/tempo-bench-verifier.sha256")
 
 TASKS_CONFIG: dict[str, Any] = yaml.safe_load(
     (ROOT / "config" / "tasks.yaml").read_text()
@@ -103,6 +109,27 @@ def tempo_task_names() -> list[str]:
     if len(names) != len(set(names)):
         raise RuntimeError("Tempo task names must be unique")
     return names
+
+
+def tempo_verifier_digest() -> str:
+    result = subprocess.run(
+        ["node", str(TEMPO_VERIFIER_DIR / "src" / "digest.js")],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    digest = result.stdout.strip()
+    if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
+        raise RuntimeError(f"Invalid Tempo verifier digest: {digest!r}")
+    return digest
+
+
+def sync_tempo_verifier_digests() -> int:
+    tasks = tempo_task_dirs()
+    digest = tempo_verifier_digest()
+    for task_dir in tasks:
+        write_file(task_dir / TEMPO_VERIFIER_DIGEST_FILE, f"{digest}\n")
+    return len(tasks)
 
 
 def read_manifest_digests(dataset_path: Path) -> dict[str, str]:
@@ -246,15 +273,16 @@ def write_mpp_dataset_manifest() -> None:
 
 
 def main() -> None:
-    task_count = len(tempo_task_names())
+    task_count = sync_tempo_verifier_digests()
     write_dataset_manifest()
     write_mcp_dataset_manifest()
     mcp_task_count = sync_mcp_oracles()
     mpp_task_count = sync_mpp_tasks()
     write_mpp_dataset_manifest()
     print(
-        "Validated "
-        f"{task_count} authored Tempo task(s) and {mcp_task_count} MCP task(s); "
+        "Pinned the verifier digest in "
+        f"{task_count} authored Tempo task(s), validated {mcp_task_count} MCP task(s), "
+        "and "
         f"synced MPP harness into {mpp_task_count} task(s).",
     )
 

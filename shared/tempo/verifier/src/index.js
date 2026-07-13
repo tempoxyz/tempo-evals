@@ -4,7 +4,7 @@ const { readConfig, redactedConfig } = require("./config");
 const { writeException, writeJson, writeReward } = require("./logs");
 const { assertSubmissionShape, runStep } = require("./submission");
 const { createTempoClient, waitForRpc } = require("./tempo");
-const cases = require("./cases");
+const { assertVerifierDigest } = require("./digest");
 
 function errorValue(error, key) {
   return error && typeof error === "object" && key in error ? error[key] : null;
@@ -30,7 +30,6 @@ function failureDetails(config, error, context, scores) {
 
 async function main() {
   const config = readConfig();
-  const verifier = cases[config.caseId];
   const scores = { build: 0, run: 0, onchain: 0 };
   let context = {
     phase: "case-selection",
@@ -39,6 +38,14 @@ async function main() {
   };
 
   try {
+    context = {
+      phase: "verifier-integrity",
+      expected: "baked Tempo verifier matches the task digest",
+      logs: [],
+    };
+    assertVerifierDigest();
+
+    const verifier = require("./cases")[config.caseId];
     if (!verifier) throw new Error(`unsupported Tempo bench case: ${config.caseId}`);
 
     context = {

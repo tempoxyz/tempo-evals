@@ -102,10 +102,12 @@ change is ready for review. Daytona runs require a CI-published base image via
 
 ## Implementation Notes
 
-Edit task directories directly. `npm run sync` does not rewrite Tempo task
-files; it only refreshes shared MPP assets and generated job configurations.
+Edit task directories directly. `npm run sync` pins the shared verifier
+fingerprint into each Tempo task and refreshes shared MPP assets and generated
+job configurations.
 
 The shared Tempo verifier is installed in the base image and selects the case
-named by `TEMPO_BENCH_CASE`. Keep task-specific correctness criteria and
+named by `TEMPO_BENCH_CASE`. Before grading, it must match the fingerprint
+committed to the task digest. Keep task-specific correctness criteria and
 onchain checks in the task directory. Refresh `dataset.toml` after a task
 change; the manifest is a required checked-in artifact.
