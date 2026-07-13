@@ -302,12 +302,12 @@ def expected_answer_errors(
         errors.append("expected required_data_tool_any_of must be an array")
     else:
         for group in required_tool_groups:
-            if not isinstance(group, list) or not group or not all(
-                isinstance(tool, str) for tool in group
+            if (
+                not isinstance(group, list)
+                or not group
+                or not all(isinstance(tool, str) for tool in group)
             ):
                 errors.append("expected data tool group is invalid")
             elif not actual_tools.intersection(group):
-                errors.append(
-                    "answer must use one data tool from: " + ", ".join(group)
-                )
+                errors.append("answer must use one data tool from: " + ", ".join(group))
     return errors

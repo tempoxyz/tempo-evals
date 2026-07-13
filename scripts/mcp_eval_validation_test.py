@@ -28,6 +28,7 @@ class McpEvalValidationTest(unittest.TestCase):
             "task_requirements_valid": 0,
         }
         self.assertEqual(component_reward(components), 0.6)
+
     def test_requires_docs_and_data_calls(self) -> None:
         self.assertTrue(
             has_required_tool_mix(
