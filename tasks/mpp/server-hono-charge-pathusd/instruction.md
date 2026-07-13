@@ -9,6 +9,7 @@ Use the Hono integration from `mppx/hono` for the paid route.
 Create the MPPX instance with its Tempo testnet `charge` method and let the
 returned Hono handler generate the standard payment challenge and receipt.
 Use pathUSD currency address `0x20c0000000000000000000000000000000000000`.
+Set `testnet: true` on the Tempo method (chain ID 42431).
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.
 

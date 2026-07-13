@@ -14,6 +14,7 @@ Use `Mppx.create` from `mppx/server` for the paid route and use
 `mppx/discovery` to generate the OpenAPI document from that route's payment
 definition. Do not implement payment verification or payment metadata by hand.
 Use pathUSD currency address `0x20c0000000000000000000000000000000000000`.
+Set `testnet: true` on the Tempo method (chain ID 42431).
 
 ## Parameters
 

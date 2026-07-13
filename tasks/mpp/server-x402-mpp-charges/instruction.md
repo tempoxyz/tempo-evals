@@ -17,6 +17,7 @@ or its headers yourself.
 Use pathUSD currency address `0x20c0000000000000000000000000000000000000`
 for MPP and Base Sepolia USDC address `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
 for x402.
+Set `testnet: true` on the Tempo method (chain ID 42431).
 
 ## Parameters
 

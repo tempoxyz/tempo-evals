@@ -17,6 +17,7 @@ for the paid route. Let MPPX publish the standard challenge and receipt; do
 not implement payment verification or a custom currency header.
 Use pathUSD currency address `0x20c0000000000000000000000000000000000000`
 and Tempo USDC currency address `0x20C000000000000000000000b9537d11c60E8b50`.
+Set `testnet: true` on both Tempo methods (chain ID 42431).
 
 ## Parameters
 
