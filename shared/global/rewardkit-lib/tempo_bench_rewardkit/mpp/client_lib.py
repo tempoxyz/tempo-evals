@@ -196,6 +196,14 @@ def read_out_json(
 
 
 def start_server() -> subprocess.Popen[str]:
+    # Agent self-tests sometimes leave a development server on the task's
+    # documented default port. The verifier owns that port for its scenario.
+    subprocess.run(
+        ["fuser", "-k", "3000/tcp"],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     log_event(
         "start_server",
         recipient=RECIPIENT,
