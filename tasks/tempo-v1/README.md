@@ -35,7 +35,8 @@ tasks/tempo-v1/<task>/
 └── tests/
     ├── test.sh              # Verifier entry point
     ├── correctness/         # Task criteria and independent onchain verification
-    └── quality/             # RewardKit quality checks and weights
+    ├── quality/             # RewardKit quality checks and weights
+    └── tempo-bench-verifier # Generated verifier source attached after the agent
 ```
 
 The task test script first runs the independent onchain verifier. A failed
@@ -102,10 +103,13 @@ change is ready for review. Daytona runs require a CI-published base image via
 
 ## Implementation Notes
 
-Edit task directories directly. `npm run sync` does not rewrite Tempo task
-files; it only refreshes shared MPP assets and generated job configurations.
+Edit task contracts directly. `npm run sync` refreshes each task's generated
+`tests/tempo-bench-verifier` attachment, shared MPP assets, dataset manifests,
+and generated job configurations.
 
-The shared Tempo verifier is installed in the base image and selects the case
-named by `TEMPO_BENCH_CASE`. Keep task-specific correctness criteria and
-onchain checks in the task directory. Refresh `dataset.toml` after a task
-change; the manifest is a required checked-in artifact.
+The base image caches Tempo verifier dependencies but does not contain its
+source. Harbor uploads the generated verifier attachment with `tests/` only
+after the agent phase; it selects the case named by `TEMPO_BENCH_CASE`. Keep
+task-specific correctness criteria and onchain checks in the task directory.
+Refresh `dataset.toml` after a task change; the manifest is a required
+checked-in artifact.

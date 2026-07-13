@@ -1047,6 +1047,10 @@ def main(argv: list[str]) -> None:
     if variant_name == "check-generated":
         sync_dataset(options)
         run("git", ["diff", "--exit-code"])
+        untracked = run_output("git", ["ls-files", "--others", "--exclude-standard"])
+        if untracked:
+            print("Generated files are not tracked:\n" + untracked, file=sys.stderr)
+            raise SystemExit(1)
         return
     if variant_name == "clean-jobs":
         shutil.rmtree("jobs", ignore_errors=True)

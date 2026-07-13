@@ -3,9 +3,11 @@ set -u
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
 ARTIFACT_DIR="${TEMPO_BENCH_ARTIFACT_DIR:-/logs/artifacts}"
+TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
 INTERNAL_REWARD="$LOG_DIR/tempo-bench-reward.json"
 SCORES_FILE="$LOG_DIR/tempo-bench-scores.json"
-VERIFIER="${TEMPO_BENCH_VERIFIER:-/opt/tempo-bench/verifier/bin/tempo-bench-verify.js}"
+VERIFIER="${TEMPO_BENCH_VERIFIER:-$TESTS_DIR/tempo-bench-verifier/bin/tempo-bench-verify.js}"
+VERIFIER_NODE_MODULES="${TEMPO_BENCH_VERIFIER_NODE_MODULES:-/opt/tempo-bench-verifier-deps/node_modules}"
 
 mkdir -p "$LOG_DIR" "$ARTIFACT_DIR"
 rm -f "$INTERNAL_REWARD" "$SCORES_FILE"
@@ -30,12 +32,13 @@ write_exception_artifact() {
 if [ ! -f "$VERIFIER" ]; then
   write_exception_artifact \
     "grader" \
-    "missing baked Tempo verifier: $VERIFIER (rebuild the tempo-bench base image)"
+    "missing attached Tempo verifier: $VERIFIER (run npm run sync)"
   exit 1
 fi
 
 cd /app || exit 1
-TEMPO_BENCH_INTERNAL_REWARD_FILE="$INTERNAL_REWARD" node "$VERIFIER" \
+NODE_PATH="$VERIFIER_NODE_MODULES${NODE_PATH:+:$NODE_PATH}" \
+  TEMPO_BENCH_INTERNAL_REWARD_FILE="$INTERNAL_REWARD" node "$VERIFIER" \
   > "$LOG_DIR/grader.stdout.txt" \
   2> "$LOG_DIR/grader.stderr.txt"
 GRADER_STATUS=$?

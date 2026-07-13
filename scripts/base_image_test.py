@@ -9,6 +9,20 @@ from scripts.run_benchmark import base_image_ref, override_staged_base_image
 
 
 class BaseImageTest(unittest.TestCase):
+    def test_base_image_caches_verifier_dependencies_without_source(self) -> None:
+        dockerfile = (
+            Path(__file__).parents[1]
+            / "shared"
+            / "global"
+            / "docker"
+            / "base"
+            / "Dockerfile"
+        ).read_text()
+
+        self.assertIn("/opt/tempo-bench-verifier-deps", dockerfile)
+        self.assertNotIn("COPY shared/tempo/verifier /opt", dockerfile)
+        self.assertNotIn("/opt/tempo-bench/verifier", dockerfile)
+
     def test_source_image_ref_uses_a_stable_content_hash(self) -> None:
         self.assertRegex(source_hash(), r"^[0-9a-f]{16}$")
         self.assertEqual(

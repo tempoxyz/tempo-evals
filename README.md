@@ -95,8 +95,9 @@ Run the dataset refresh command after changing task files. Dataset manifests are
 Three shared layers keep the suites consistent:
 
 - **One base image.** Every task environment extends the base image configured
-  in `config/tasks.yaml`, which bundles the RewardKit environment and the
-  shared Tempo verifier.
+  in `config/tasks.yaml`, which bundles the RewardKit environment and cached
+  Tempo verifier dependencies. Harbor attaches task-specific verifier source
+  from `tests/` only after the agent phase.
 - **Injected access profiles.** Benchmark jobs grant pinned documentation
   alone or pinned documentation plus MCP access at run time instead of baking
   it into task source, so the same task artifact can be evaluated under

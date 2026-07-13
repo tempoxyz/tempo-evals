@@ -1,8 +1,9 @@
 # Runtime access profiles and shared MPP task synchronization data.
 
-# Shared base image for every task environment. It bakes in the RewardKit
-# venv (harbor-rewardkit, pympp[tempo], tempo-bench-rewardkit) and the Tempo
-# JS verifier; see shared/global/docker/base/Dockerfile. CI publishes it via
+# Shared base image for every task environment. It bakes in the RewardKit venv
+# (harbor-rewardkit, pympp[tempo], tempo-bench-rewardkit) and cached Tempo
+# verifier dependencies, but not task-specific verifier source; see
+# shared/global/docker/base/Dockerfile. CI publishes it via
 # .github/workflows/build-base-image.yml; local runs build it automatically.
 # This tag is intentionally mutable during a Tempo Bench version. Only bump it
 # when cutting a new Tempo Bench version; ordinary shared-base changes replace

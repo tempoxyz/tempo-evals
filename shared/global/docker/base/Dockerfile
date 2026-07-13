@@ -1,11 +1,14 @@
 # Shared base image for all tempo-bench task environments (Tempo and MPP).
 #
-# Bakes in everything the verifiers need so per-task Dockerfiles are just
+# Bakes in shared verifier dependencies so per-task Dockerfiles are just
 # `FROM <this image>`:
 #   - /opt/tempo-bench-rewardkit-venv: harbor-rewardkit, pympp[tempo], and the
 #     tempo-bench-rewardkit package (RewardKit criteria + MPP verifier harness)
-#   - /opt/tempo-bench/verifier: the Tempo JS onchain verifier with all cases;
-#     the active case is selected at run time via TEMPO_BENCH_CASE
+#   - /opt/tempo-bench-verifier-deps: cached Node dependencies used by the Tempo
+#     verifier after Harbor uploads its task-specific source under /tests
+#
+# The Tempo JS verifier source must not be copied into this image. Harbor adds
+# tests/ only after the agent phase, keeping the verifier unavailable to agents.
 #
 # The image reference is pinned as `base_image` in config/tasks.yaml.
 # CI publishes it via .github/workflows/build-base-image.yml; local runs
@@ -37,10 +40,8 @@ RUN /opt/tempo-bench-rewardkit-venv/bin/python -m pip install --no-cache-dir \
 
 ENV tempo_bench_rewardkit_VENV=/opt/tempo-bench-rewardkit-venv
 
-COPY shared/tempo/verifier/package.json shared/tempo/verifier/package-lock.json /opt/tempo-bench/verifier/
+COPY shared/tempo/verifier/package.json shared/tempo/verifier/package-lock.json /opt/tempo-bench-verifier-deps/
 
-RUN npm ci --prefix /opt/tempo-bench/verifier --no-audit --no-fund
-
-COPY shared/tempo/verifier /opt/tempo-bench/verifier
+RUN npm ci --prefix /opt/tempo-bench-verifier-deps --no-audit --no-fund
 
 WORKDIR /app
