@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:3eb6779657aa83db44ac31c2b21ed87472cc9c95285e8eccfdf1b817e487f1f7"
+digest = "sha256:a34eb93d05d765538b1421fe5e76532dcbea7e249a546429b9ae97a640852d54"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:e56ad42b31e89f1cb9baa66670a757b0e7b56277439d4d2d86291a75902610ee"
+digest = "sha256:b74b86e40c0b032cf62b04cde34129d99b592411a990c7a4bac5fbb3d59600ee"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:06b0c4e9d1dacface00e4c15fb2f04216cdce6ae5b6bd279eaaf30341a81711f"
+digest = "sha256:e49e45b879d20b781da359df2a0aa9b7a1c8babb02f4dbd5fb8134742188ca6c"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:8b2b7523a4f896bc86891b937e46828163d36d4e6b84d6ec6e73ec2f86a2e73c"
+digest = "sha256:dfc1693b1a671358516b3fa1f5211d2f4eec82753f3aa3b6861e69307c9bc059"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:fb6d8e7b9082cda47ba81ebd75e3e7e57523e006162522afe153e9a9062a8294"
+digest = "sha256:7fe2c58a64a766f1b9414f19591e5c65a162704c123efcf079967517c06072a8"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:23fda196e6c1653e124636b37e4041af4a19a03213320f71820b86f6278565be"
+digest = "sha256:4fde7b682e8b6add3224f98df9685377feeb2bc02add7a8c880f3a44030e54bb"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:dc3b5fadf6fac1a4c22d83c6410919a591275f914936f372394272c3aa62f34b"
+digest = "sha256:53f62b8f10d8bf406e9882261666106535a8419abca5631225c371e5b129cc0f"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:31e171210871432e646fd4e32314cd95cd7125e935a0c192f7b0c4744afaa6ad"
+digest = "sha256:027fd69925e87d74e7895520f52f2d47103e7d69c5ef7148ad9a767bfaf13e1c"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:7350c282b09a4583e9c8df26dba2cb11b3f545b25da8aa901586c1c3126f25ea"
+digest = "sha256:a356214e43fa51aac5438b95f002fe786012dcabed864f5d16cd481eb6f8a9f9"
 

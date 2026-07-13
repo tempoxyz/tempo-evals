@@ -3,6 +3,8 @@
 
 Build an MPP client using TypeScript in `/app` that calls a paid JSON endpoint.
 
+Use `mppx` 0.8.6 or newer and a compatible `viem` 2.x release.
+
 Add npm scripts named `build` and `run`. `npm run run` must call the paid
 endpoint once and write the result.
 

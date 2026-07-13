@@ -3,6 +3,8 @@
 
 Build an MCP server using TypeScript in `/app` that runs on Tempo testnet.
 
+Use `mppx` 0.8.6 or newer and a compatible `viem` 2.x release.
+
 Expose one free MCP tool and one paid MCP tool. The paid tool must be protected
 by an MPP pathUSD charge on Tempo testnet and return MCP content after payment.
 
