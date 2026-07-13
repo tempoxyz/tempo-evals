@@ -236,20 +236,13 @@ def expected_answer_errors(
                             or item_value == {}
                         ):
                             errors.append(f"answer item is missing field: {item_label}")
-                    for item_field, pattern in item_patterns.items():
-                        item_value = item.get(item_field)
-                        item_label = f"{field}[{index}].{item_field}"
-                        if not isinstance(pattern, str) or not isinstance(
-                            item_value, str
-                        ):
-                            errors.append(
-                                f"answer item has invalid patterned field: {item_label}"
-                            )
-                        elif not re.search(pattern, item_value, flags=re.IGNORECASE):
-                            errors.append(
-                                f"answer item has invalid value: {item_label}"
-                            )
-                any_item_patterns = requirement.get("any_item_patterns", [])
+                any_item_patterns = [
+                    *(
+                        {"fields": [item_field], "pattern": pattern}
+                        for item_field, pattern in item_patterns.items()
+                    ),
+                    *requirement.get("any_item_patterns", []),
+                ]
                 if not isinstance(any_item_patterns, list):
                     errors.append(f"expected item requirement is invalid: {field}")
                     continue
@@ -283,4 +276,17 @@ def expected_answer_errors(
     for tool in required_tools:
         if not isinstance(tool, str) or tool not in actual_tools:
             errors.append(f"answer must use data tool: {tool}")
+    required_tool_groups = expected.get("required_data_tool_any_of", [])
+    if not isinstance(required_tool_groups, list):
+        errors.append("expected required_data_tool_any_of must be an array")
+    else:
+        for group in required_tool_groups:
+            if not isinstance(group, list) or not group or not all(
+                isinstance(tool, str) for tool in group
+            ):
+                errors.append("expected data tool group is invalid")
+            elif not actual_tools.intersection(group):
+                errors.append(
+                    "answer must use one data tool from: " + ", ".join(group)
+                )
     return errors

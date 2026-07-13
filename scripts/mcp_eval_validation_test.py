@@ -240,7 +240,7 @@ class McpEvalValidationTest(unittest.TestCase):
             [],
         )
         self.assertIn(
-            "answer item has invalid value: observations[0].subject",
+            "answer field needs an item matching pattern: observations",
             expected_answer_errors(
                 {
                     **answer,
@@ -298,6 +298,25 @@ class McpEvalValidationTest(unittest.TestCase):
             "sources": ["https://docs.tempo.xyz/"],
         }
         self.assertEqual(expected_answer_errors(answer, expected, []), [])
+
+    def test_accepts_one_tool_from_a_task_specific_group(self) -> None:
+        expected = {
+            "minimum_sources": 1,
+            "required_data_tools": [],
+            "required_data_tool_any_of": [
+                ["v1_transactions_get", "v1_transactions_transactionHash_get"]
+            ],
+            "structured": {"required_fields": [], "array_fields": {}},
+        }
+        answer = {"sources": ["https://docs.tempo.xyz/"]}
+        self.assertEqual(
+            expected_answer_errors(
+                answer,
+                expected,
+                [{"allowed": True, "tool": "v1_transactions_transactionHash_get"}],
+            ),
+            [],
+        )
 
 
 if __name__ == "__main__":

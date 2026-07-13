@@ -1,6 +1,7 @@
 {
-  "minimum_sources": 2,
-  "required_data_tools": ["v1_transactions_get"],
+  "minimum_sources": 1,
+  "required_data_tools": [],
+  "required_data_tool_any_of": [["v1_transactions_get", "v1_transactions_transactionHash_get", "v1_transactions_transactionHash_receipt", "v1_transfers"]],
   "structured": {
     "required_fields": ["summary", "observations", "inferences"],
     "array_fields": {
