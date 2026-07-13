@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared/tempo/mcp-eval"))
 
 from validation import (  # noqa: E402
+    component_reward,
     data_tool_from_source,
     evidence_summary,
     expected_answer_errors,
@@ -18,6 +19,15 @@ from validation import (  # noqa: E402
 
 
 class McpEvalValidationTest(unittest.TestCase):
+    def test_component_reward_is_equal_weighted(self) -> None:
+        components = {
+            "schema_valid": 1,
+            "docs_source_valid": 0,
+            "mcp_tool_mix_valid": 1,
+            "data_evidence_valid": 1,
+            "task_requirements_valid": 0,
+        }
+        self.assertEqual(component_reward(components), 0.6)
     def test_requires_docs_and_data_calls(self) -> None:
         self.assertTrue(
             has_required_tool_mix(

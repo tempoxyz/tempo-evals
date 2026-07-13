@@ -19,6 +19,20 @@ TEMPO_DOCS_ORIGINS = (
     ("accounts.tempo.xyz", "/docs"),
     ("tips.sh", "/"),
 )
+REWARD_COMPONENTS = (
+    "schema_valid",
+    "docs_source_valid",
+    "mcp_tool_mix_valid",
+    "data_evidence_valid",
+    "task_requirements_valid",
+)
+
+
+def component_reward(components: dict[str, int]) -> float:
+    """Return the equal-weight deterministic correctness score."""
+    return sum(int(bool(components.get(key))) for key in REWARD_COMPONENTS) / len(
+        REWARD_COMPONENTS
+    )
 
 
 def is_tempo_docs_url(source: Any) -> bool:

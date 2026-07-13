@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.request import urlopen
 
 from validation import (
+    component_reward,
     evidence_summary,
     expected_answer_errors,
     has_required_tool_mix,
@@ -22,6 +23,7 @@ def write_result(
     log_dir = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
     log_dir.mkdir(parents=True, exist_ok=True)
     valid_answer = int(not errors)
+    reward = component_reward(components)
     (log_dir / "validation.json").write_text(
         json.dumps(
             {
@@ -34,7 +36,7 @@ def write_result(
         + "\n"
     )
     (log_dir / "reward.json").write_text(
-        json.dumps({"reward": valid_answer, "valid_answer": valid_answer, **components})
+        json.dumps({"reward": reward, "valid_answer": valid_answer, **components})
         + "\n"
     )
     if evidence:
