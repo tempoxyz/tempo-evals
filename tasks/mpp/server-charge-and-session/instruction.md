@@ -48,6 +48,9 @@ const session = tempo.session({ account, currency: pathUsd,
 // mppx.session({ amount, unitType: "request" }) for the session route.
 ```
 
+For the session endpoint, `recipient` must be that generated `account.address`;
+do not reuse `RECIPIENT_ADDRESS`, which applies only to the charge endpoint.
+
 Use the human `MPP_CHARGE_AMOUNT` string (such as `"0.01"`) for both handlers;
 do not convert it with `parseUnits`.
 
