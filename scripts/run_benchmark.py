@@ -86,6 +86,8 @@ Options:
   --job-name NAME          Override generated job name
   --models-config PATH     Production model matrix config
                            (default: config/models.production.yaml)
+  --n-attempts N          Override production attempts per task and model
+                          (default: 3)
   --concurrency N         Override n_concurrent_trials
   --agent-concurrency N   Override per-agent n_concurrent
   --max-retries N         Retry transient trial/setup failures
@@ -125,6 +127,10 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument("--env-file", default=".env" if Path(".env").exists() else None)
     parser.add_argument("--job-name")
     parser.add_argument("--models-config")
+    parser.add_argument(
+        "--n-attempts",
+        type=lambda value: read_positive_integer(value, "--n-attempts"),
+    )
     parser.add_argument(
         "--concurrency",
         type=lambda value: read_positive_integer(value, "--concurrency"),
@@ -543,7 +549,7 @@ def production_job(
     return {
         "job_name": "harbor-job",
         "jobs_dir": str(production_run_root(run_id)),
-        "n_attempts": 3,
+        "n_attempts": int(options.get("n_attempts") or "3"),
         "n_concurrent_trials": int(options.get("concurrency") or "32"),
         "environment_type": "daytona",
         "force_build": False,
