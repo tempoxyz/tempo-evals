@@ -11,7 +11,7 @@ const {
 } = require("viem");
 const { Actions, Addresses, ReceivePolicyReceipt } = require("viem/tempo");
 
-const { verify } = require("../src/cases/receive-policy-bounced-transfer");
+const { verify } = require("../src/cases/receive-policy-held-transfer");
 
 const payer = "0x1111111111111111111111111111111111111111";
 const recipient = "0x2222222222222222222222222222222222222222";
