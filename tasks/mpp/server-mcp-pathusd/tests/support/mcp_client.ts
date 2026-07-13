@@ -41,7 +41,6 @@ async function main() {
   } catch (error) {
     unpaid = {
       paymentRequired: McpClient.isPaymentRequiredError(error),
-      code: error.code,
       httpStatus: error.data?.httpStatus,
       challengeCount: error.data?.challenges?.length ?? 0,
       method: error.data?.challenges?.[0]?.method,

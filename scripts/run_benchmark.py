@@ -650,7 +650,7 @@ def mpp_task_filter(task_filter: str) -> str | None:
     for prefix in prefixes:
         if task_filter.startswith(prefix):
             return task_filter.removeprefix(prefix)
-    return task_filter if task_filter.startswith("server-") else None
+    return task_filter if task_filter.startswith(("server-", "client-")) else None
 
 
 def datasets_for_suite(task_suite: str) -> list[dict[str, Any]]:

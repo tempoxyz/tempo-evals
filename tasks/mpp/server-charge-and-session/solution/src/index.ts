@@ -58,7 +58,7 @@ const server = http.createServer(async (request, response) => {
     );
   }
 
-  if (request.method === "GET" && url.pathname === sessionPath) {
+  if (url.pathname === sessionPath) {
     const result = await mppx.session({
       amount: chargeAmount,
       unitType: "request",

@@ -10,18 +10,23 @@ from tempo_bench_rewardkit.mpp import client_lib as lib
 
 
 async def run_task(process: subprocess.Popen[str]) -> dict:
-    out = lib.read_out_json(process, ["freeUrl", "paidUrl"])
+    out = lib.read_out_json(
+        process,
+        {"freeUrl": str, "paidUrl": str},
+        {"freeUrl", "paidUrl"},
+    )
     return {
         "out": out,
         "free": lib.free_request(out["freeUrl"]),
-        "offer": lib.challenge_request(
-            out["paidUrl"],
-            {
-                "pathUsdAdvertised": lib.TOKEN,
-                "usdcAdvertised": lib.USDC,
+        "currencyOptions": lib.run_node_script(
+            "currency-options-client",
+            "currency_options_client.ts",
+            env={
+                "MPPX_RPC_URL": lib.RPC_URL,
+                "TEMPO_MPP_PAID_URL": out["paidUrl"],
+                "TEMPO_MPP_PAYER_PRIVATE_KEY": lib.PAYER_PRIVATE_KEY,
             },
         ),
-        "paid": await lib.paid_request(out["paidUrl"]),
     }
 
 

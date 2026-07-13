@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:905778fa4647508fc87f04a461ac8a80100d19f0f6305ea8c4600dca65c85ca4"
+digest = "sha256:4a2cf2ab0f66b5c5ffa96d8f59fdf6ec1bd3692c51b1543762ad776167b51cae"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:e24512c661d6a2c5ab8ef991ad223402afb8787e7249d9bea6c236411f02e28d"
+digest = "sha256:2b786eaf215dc5a7b018f411ac731a2d3ee6ec22ab6e23a7b6eafb8e704a96a6"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:20cdee44aff260589dab5913e28e86ea2fcf36635e0dc07d8f7f9dbd05c2cf2b"
+digest = "sha256:b2cd152aa1121b5e44d09f9b10050e72d726abb7ef654605f6a4d61bc18b1251"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:597243d24a5bbc6ecc6a13dd9bfaf74232b8251e8a4828228128a60d2fc1f38c"
+digest = "sha256:1a93c76af52efb807a57b4e0faaac8e321938adb4ef4cc66c9d220efbbf22676"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b5f8a8fff768eafb40bbae825b8536cb93be5cfdaeaa30a7663fb6fec062b88c"
+digest = "sha256:4633346aecf5d496dd820aed0f09ce531f0e7379236ef306ba474fb1af4603de"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:877b49530eecad21e517a6fcf66723ff5f089d59eafea37749b8300819ba8b4e"
+digest = "sha256:f53d5e15914adccc91da3b0d69c6aba63c02ca3a08fd6b0518bb3fd4dd545190"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:eac9da04c471819a91fab6240e940be12e2cb82674fa05627c15b537bc933c14"
+digest = "sha256:7a8e3b9d2c5f2d75463f3e40ff16d1400eed167dbc6461e4423ff6ebcc42c25e"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:eeb731f1c63af08bece8084d64d9ead31df15e8d723d165515eeb2358ef84987"
+digest = "sha256:d698da01f1aef788a2524bfd665040e5c0a0894d3529d94f2c5033eb1a87917a"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:6c7b08255474476e3f598267a41a79b76d1c7e35d9d25d0daa3ba06ad7747cb0"
+digest = "sha256:48faf6b1aca5df2051d44670c90dde5c79c8c938141b9315fda00bb68dd2d665"
 

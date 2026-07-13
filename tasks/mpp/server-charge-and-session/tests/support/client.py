@@ -10,16 +10,20 @@ from tempo_bench_rewardkit.mpp import client_lib as lib
 
 
 async def run_task(process: subprocess.Popen[str]) -> dict:
-    out = lib.read_out_json(process, ["chargeUrl", "sessionUrl"])
+    out = lib.read_out_json(
+        process,
+        {"chargeUrl": str, "sessionUrl": str},
+        {"chargeUrl", "sessionUrl"},
+    )
     return {
         "out": out,
         "chargeOffer": lib.challenge_request(
             out["chargeUrl"],
-            {"pathUsdAdvertised": lib.TOKEN, "chargeAdvertised": "charge"},
+            {"method": "tempo", "intent": "charge", "currency": lib.TOKEN},
         ),
         "sessionOffer": lib.challenge_request(
             out["sessionUrl"],
-            {"pathUsdAdvertised": lib.TOKEN, "sessionAdvertised": "session"},
+            {"method": "tempo", "intent": "session", "currency": lib.TOKEN},
         ),
         "charge": await lib.paid_request(out["chargeUrl"]),
         "session": lib.session_request(out["sessionUrl"]),

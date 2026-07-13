@@ -7,6 +7,7 @@ import rewardkit as rk
 import tempo_bench_rewardkit  # noqa: F401
 from tempo_bench_rewardkit.common.constants import (
     DEFAULT_TOKEN_EFFICIENCY_THRESHOLDS,
+    ScorePath,
     SourcePattern,
     TokenEfficiencyThreshold,
     WorkspaceFile,
@@ -33,6 +34,12 @@ def register_tempo_eval_contract() -> None:
         r"process\.env",
         name="source_uses_environment_variables",
     )
+
+
+def register_mpp_result() -> None:
+    """Require the result written by the independent MPP scenario verifier."""
+    rk.file_exists(WorkspaceFile.SCORES_JSON)
+    rk.json_path_equals(WorkspaceFile.SCORES_JSON, ScorePath.REWARD, 1)
 
 
 def register_source_patterns(patterns: list[dict]) -> None:

@@ -2,6 +2,7 @@ import http from "node:http";
 import { writeFileSync } from "node:fs";
 import { generate } from "mppx/discovery";
 import { Mppx, NodeListener, Request as ServerRequest, tempo } from "mppx/server";
+import { parseUnits } from "viem";
 
 const port = Number(process.env.PORT ?? "3000");
 const paidPath = "/paid";
@@ -9,6 +10,7 @@ const openapiPath = "/openapi.json";
 const pathUsd = "0x20c0000000000000000000000000000000000000";
 const recipient = (process.env.RECIPIENT_ADDRESS ?? "0x1111111111111111111111111111111111111111") as `0x${string}`;
 const chargeAmount = process.env.MPP_CHARGE_AMOUNT ?? "0.01";
+const chargeAmountAtomic = parseUnits(chargeAmount, 6).toString();
 
 const mppx = Mppx.create({
   methods: [
@@ -27,7 +29,7 @@ const openapi = generate(mppx, {
     {
       intent: "charge",
       method: "GET",
-      options: { amount: "10000", currency: pathUsd, description: "Paid JSON" },
+      options: { amount: chargeAmountAtomic, currency: pathUsd, description: "Paid JSON" },
       path: paidPath,
       summary: "Paid JSON endpoint",
     },
