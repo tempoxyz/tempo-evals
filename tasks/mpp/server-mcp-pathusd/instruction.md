@@ -40,7 +40,17 @@ const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefi
 ```
 
 Connect the server to that transport and call `transport.handleRequest` from
-the `/mcp` POST route.
+the `/mcp` POST route. Create a server and transport for each request; the
+route must use the Express request and response objects, not `req.body` alone:
+
+```ts
+app.post("/mcp", async (request, response) => {
+  const server = createServer();
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+  await server.connect(transport);
+  await transport.handleRequest(request, response, request.body);
+});
+```
 
 ## Parameters
 
