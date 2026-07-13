@@ -3,6 +3,7 @@ module.exports = {
   "access-key-transfer": require("./access-key-transfer"),
   "transfer-batched": require("./transfer-batched"),
   "create-stablecoin-with-policy": require("./create-stablecoin-with-policy"),
+  "receive-policy-bounced-transfer": require("./receive-policy-bounced-transfer"),
   "faucet-funded-transfer": require("./faucet-funded-transfer"),
   "set-fee-token": require("./set-fee-token"),
   "stablecoin-dex-swap": require("./stablecoin-dex-swap"),

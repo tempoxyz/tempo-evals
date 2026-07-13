@@ -22,6 +22,10 @@ name = "tempo-v1/faucet-funded-transfer"
 digest = "sha256:22cf474b1ead6304a02da0bf315797bc4f7383f6743fc4568192d0a73ca65f0b"
 
 [[tasks]]
+name = "tempo-v1/receive-policy-bounced-transfer"
+digest = "sha256:d70999941518d8dcbf02e8851e4dca8c9a985d5a6f74f888b57886d58546293f"
+
+[[tasks]]
 name = "tempo-v1/set-fee-token"
 digest = "sha256:b61b88a42c946972a49a99e1f4441734273d784b6462355c570771bf58ff44df"
 
