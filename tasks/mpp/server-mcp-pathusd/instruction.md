@@ -12,6 +12,7 @@ Use an HTTP Streamable MCP server, not stdio: `mcpUrl` must be a local `http`
 URL that accepts MCP requests. Register MPPX's MCP transport from
 `mppx/mcp/server` and use an `Mppx.create` Tempo charge handler for the paid
 tool; do not manually verify a transaction or request a transaction hash.
+Use pathUSD currency address `0x20c0000000000000000000000000000000000000`.
 
 ## Parameters
 

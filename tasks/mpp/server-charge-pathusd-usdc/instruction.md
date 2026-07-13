@@ -15,6 +15,8 @@ Add npm scripts named `build` and `serve`. `npm run serve` must start the server
 Use `Mppx.create` from `mppx/server` and compose two Tempo `charge` handlers
 for the paid route. Let MPPX publish the standard challenge and receipt; do
 not implement payment verification or a custom currency header.
+Use pathUSD currency address `0x20c0000000000000000000000000000000000000`
+and Tempo USDC currency address `0x20C000000000000000000000b9537d11c60E8b50`.
 
 ## Parameters
 

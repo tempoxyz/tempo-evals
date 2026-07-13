@@ -10,6 +10,7 @@ Add npm scripts named `build` and `serve`. `npm run serve` must start the server
 Use `Mppx.create` from `mppx/server` with a Tempo testnet `charge` method and
 use its returned handler for the paid route. It must emit the standard MPP
 challenge and receipt; do not implement payment verification yourself.
+Use pathUSD currency address `0x20c0000000000000000000000000000000000000`.
 
 ## Parameters
 
