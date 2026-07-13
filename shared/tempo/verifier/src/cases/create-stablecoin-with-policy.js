@@ -1,4 +1,5 @@
 const { parseAbiItem } = require("viem");
+const { Abis } = require("viem/tempo");
 const {
   expectAddress,
   expectHash,
@@ -137,6 +138,28 @@ async function verify({ client, config, fromBlock }) {
       sameAddress(args.updater, output.payer) && args.newPolicyId.toString() === output.policyId,
     );
     if (!link) throw new Error("reported policy-link transaction does not link the output policy");
+
+    const linkedPolicyId = await client.readContract({
+      address: output.stablecoin.address,
+      abi: Abis.tip20,
+      functionName: "transferPolicyId",
+    });
+    if (linkedPolicyId.toString() !== output.policyId) {
+      throw new Error("output stablecoin is not currently linked to the output policy");
+    }
+
+    const accountAuthorized = await client.readContract({
+      address: config.tip403Registry,
+      abi: Abis.tip403Registry,
+      functionName: "isAuthorized",
+      args: [BigInt(output.policyId), config.policyAccount],
+    });
+    const expectedAuthorized = config.policyType === "whitelist";
+    if (accountAuthorized !== expectedAuthorized) {
+      throw new Error(
+        `required account is not currently ${expectedAuthorized ? "allowed" : "restricted"} by the output policy`,
+      );
+    }
 
     return {
       blockNumber: linkReceipt.blockNumber.toString(),
