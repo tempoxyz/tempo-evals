@@ -10,15 +10,14 @@
 base_image: ghcr.io/tempoxyz/tempo-bench-base:v1
 
 # Run-time access profiles. Tempo tasks are authored directly; benchmark jobs
-# inject the MCP server for the MCP profile. A pinned docs SHA transparently
-# routes docs.tempo.xyz to the staged bundle at run time.
+# either route docs.tempo.xyz to the pinned bundle or inject the live docs MCP.
 profiles:
   - id: docs
   - id: mcp
     mcp_servers:
       - name: tempo
         transport: streamable-http
-        url: https://api.tempo.xyz/mcp
+        url: https://mcp.tempo.xyz/
   - id: mcp-direct
     mcp_servers:
       - name: tempo-direct

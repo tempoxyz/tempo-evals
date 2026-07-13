@@ -11,16 +11,17 @@ from unittest.mock import patch
 from scripts.run_benchmark import (
     MCP_CODE_PROFILE,
     MCP_DIRECT_PROFILE,
-    MCP_PROFILE,
     BenchmarkKey,
     apply_pair_id,
     apply_profile,
     benchmark_provenance,
     daytona_base_image,
+    docs_source_label,
     finalize_config,
     main,
     parse_args,
     parse_model_config,
+    prepare_docs_access,
     prepare_production_profiles,
     production_job,
     run_benchmark_key,
@@ -67,6 +68,27 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertTrue(uses_live_mcp_eval({"task_suite": "tempo-mcp"}))
         self.assertFalse(uses_live_mcp_eval({"task_suite": "tempo"}))
 
+    def test_tempo_profiles_prepare_distinct_docs_access(self) -> None:
+        pinned = {"mode": "pinned", "repo": "tempo/docs", "sha": "docs123"}
+        with (
+            patch("scripts.run_benchmark.docs_source", return_value=pinned),
+            patch(
+                "scripts.run_benchmark.ensure_docs_bundle", return_value="docs-bundle"
+            ) as ensure_bundle,
+        ):
+            self.assertEqual(
+                prepare_docs_access({"task_suite": "tempo", "profile": "docs"}),
+                (pinned, "docs-bundle"),
+            )
+            self.assertEqual(
+                prepare_docs_access({"task_suite": "tempo", "profile": "mcp"}),
+                ({"mode": "live"}, None),
+            )
+
+        ensure_bundle.assert_called_once_with(pinned)
+        self.assertEqual(docs_source_label(pinned), "docs123")
+        self.assertEqual(docs_source_label({"mode": "live"}), "live")
+
     def test_live_mcp_eval_skips_pinned_docs_preparation(self) -> None:
         options = {
             "profile": "mcp-direct",
@@ -102,14 +124,18 @@ class RunBenchmarkTest(unittest.TestCase):
             patch("scripts.run_benchmark.load_env_file"),
             patch("scripts.run_benchmark.preflight"),
             patch("scripts.run_benchmark.preflight_mcp_target"),
-            patch("scripts.run_benchmark.docs_source", return_value={"mode": "public"}),
-            patch("scripts.run_benchmark.ensure_docs_bundle", return_value=None),
+            patch("scripts.run_benchmark.docs_source") as docs_source,
+            patch("scripts.run_benchmark.ensure_docs_bundle") as ensure_bundle,
             patch("scripts.run_benchmark.run_production_variant") as run_production,
             patch("scripts.run_benchmark.run") as run,
         ):
             run_benchmark_variant("production-daytona", options)
 
-        run_production.assert_called_once()
+        docs_source.assert_not_called()
+        ensure_bundle.assert_not_called()
+        run_production.assert_called_once_with(
+            "production-mcp-test", options, {"mode": "live"}, None
+        )
         run.assert_not_called()
 
     def test_production_all_profile_runs_docs_and_mcp_jobs(self) -> None:
@@ -171,6 +197,7 @@ class RunBenchmarkTest(unittest.TestCase):
             "agent_concurrency": None,
             "env_file": None,
             "models_config": "config/models.dev.yaml",
+            "profile": "all",
             "sync": True,
             "task_suite": "tempo",
         }
@@ -278,13 +305,29 @@ class RunBenchmarkTest(unittest.TestCase):
         )
 
     def test_mcp_profile_is_injected_at_job_level(self) -> None:
-        config = {"agents": [{"name": "claude-code"}, {"name": "oracle"}]}
+        config = {
+            "agents": [
+                {"name": "claude-code"},
+                {"name": "codex"},
+                {"name": "oracle"},
+            ]
+        }
+
+        agents = apply_profile(config, "mcp")["agents"]
+        expected_server = [
+            {
+                "name": "tempo",
+                "transport": "streamable-http",
+                "url": "https://mcp.tempo.xyz/",
+            }
+        ]
 
         self.assertEqual(
-            apply_profile(config, "mcp")["agents"],
+            [(agent["name"], agent.get("mcp_servers")) for agent in agents],
             [
-                {"name": "claude-code", "mcp_servers": MCP_PROFILE["mcp_servers"]},
-                {"name": "oracle"},
+                ("claude-code", expected_server),
+                ("codex", expected_server),
+                ("oracle", None),
             ],
         )
 

@@ -256,6 +256,10 @@ def uses_live_mcp_eval(options: dict[str, Any]) -> bool:
     return options.get("task_suite") == "tempo-mcp"
 
 
+def docs_source_label(source: dict[str, str]) -> str:
+    return source.get("sha", source["mode"])
+
+
 def ensure_docs_bundle(source: dict[str, str]) -> str | None:
     if source["mode"] == "public":
         return None
@@ -266,6 +270,18 @@ def ensure_docs_bundle(source: dict[str, str]) -> str | None:
         msg = f"Pinned Tempo docs bundle was not created at {bundle_path}"
         raise RuntimeError(msg)
     return str(bundle_path)
+
+
+def prepare_docs_access(
+    options: dict[str, Any],
+) -> tuple[dict[str, str], str | None]:
+    source = (
+        {"mode": "live"}
+        if uses_live_mcp_eval(options) or options.get("profile") == MCP_PROFILE["id"]
+        else docs_source(options)
+    )
+    bundle = None if source["mode"] == "live" else ensure_docs_bundle(source)
+    return source, bundle
 
 
 def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
@@ -597,7 +613,7 @@ def run_production_variant(
         "n_attempts": job["n_attempts"],
         "n_concurrent_trials": str(job["n_concurrent_trials"]),
         "max_retries": max_retries,
-        "docs_source": source.get("sha", "public"),
+        "docs_source": docs_source_label(source),
         "docs_bundle": docs_bundle,
         "profile": options["profile"],
         "git_sha": run_output("git", ["rev-parse", "HEAD"]),
@@ -640,9 +656,7 @@ def prepare_production_profiles(
     preflight_production_agents(model_config)
     if options.get("sync"):
         sync_dataset(options)
-    source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
-    if source["mode"] != "live":
-        ensure_docs_bundle(source)
+    prepare_docs_access(options)
 
 
 def mpp_task_filter(task_filter: str) -> str | None:
@@ -1123,7 +1137,6 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
             "The MCP profile requires a job-backed or production benchmark variant."
         )
 
-    source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
     load_env_file(options.get("env_file"))
     preflight(variant, options)
     preflight_mcp_target(options)
@@ -1131,7 +1144,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         sync_dataset(options)
     if not variant.get("needs_daytona_auth"):
         build_base_image()
-    docs_bundle = None if source["mode"] == "live" else ensure_docs_bundle(source)
+    source, docs_bundle = prepare_docs_access(options)
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))
     default_run_name = versioned_name(benchmark, variant["prefix"])

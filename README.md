@@ -46,8 +46,8 @@ Harbor terms used throughout this repository:
 - **Trial and job** — a trial is one agent attempt at a task producing a
   reward; a job is a batch of trials. Jobs here are compiled from `config/`
   into `config/generated/` rather than written by hand.
-- **Access profile** — run-time injection of pinned documentation alone or
-  pinned documentation plus MCP access into a job, configured in
+- **Access profile** — run-time injection of either the pinned documentation
+  website or the live Tempo docs MCP into a job, configured in
   `config/tasks.yaml`, so the same task artifact can be evaluated under
   different capabilities.
 
@@ -97,10 +97,10 @@ Three shared layers keep the suites consistent:
 - **One base image.** Every task environment extends the base image configured
   in `config/tasks.yaml`, which bundles the RewardKit environment and the
   shared Tempo verifier.
-- **Injected access profiles.** Benchmark jobs grant pinned documentation
-  alone or pinned documentation plus MCP access at run time instead of baking
-  it into task source, so the same task artifact can be evaluated under
-  different profiles. Profiles are configured centrally in
+- **Injected access profiles.** Benchmark jobs grant either the pinned
+  documentation website or the live Tempo docs MCP at run time instead of
+  baking access into task source, so the same task artifact can be evaluated
+  under different profiles. Profiles are configured centrally in
   `config/tasks.yaml`; see the suite guides for profile-specific behavior.
 - **Immutable benchmark majors.** A dataset version fixes its task set,
   prompts, verifier behavior, and scoring. Changes that make results
@@ -151,7 +151,7 @@ npm run bench:matrix:dev -- \
 npm run bench:matrix:dev -- \
   --task-suite tempo --profile docs --base-image "$BASE_IMAGE"
 
-# Haiku, one attempt, all Tempo tasks, pinned Docs plus Tempo MCP.
+# Haiku, one attempt, all Tempo tasks, live Tempo docs MCP only.
 npm run bench:matrix:dev -- \
   --task-suite tempo --profile mcp --base-image "$BASE_IMAGE"
 
@@ -163,18 +163,19 @@ npm run bench:matrix:production -- \
 npm run bench:matrix:production -- \
   --task-suite tempo --profile docs --base-image "$BASE_IMAGE"
 
-# All production models, three attempts, pinned Docs plus Tempo MCP.
+# All production models, three attempts, live Tempo docs MCP only.
 npm run bench:matrix:production -- \
   --task-suite tempo --profile mcp --base-image "$BASE_IMAGE"
 ```
 
 `bench:matrix:dev` reads `config/models.dev.yaml`; the production command reads
 `config/models.production.yaml`. Both commands include every matching task
-unless `--task-filter` is provided. The `docs` profile provides pinned Docs;
-the `mcp` profile provides the same pinned Docs plus the Tempo MCP server.
+unless `--task-filter` is provided. The `docs` profile provides the pinned
+website. The `mcp` profile provides the live Tempo docs MCP server at
+`https://mcp.tempo.xyz/` and does not stage the pinned website.
 
 `--concurrency` is the concurrent-trial limit for each profile job, not a
-combined limit. `--profile all` runs the Docs and Docs-plus-MCP jobs in
+combined limit. `--profile all` runs the Docs and MCP jobs in
 parallel, so `--concurrency 32` permits up to 32 trials in each job, or 64
 across the pair. The model configs cap agent phases at 16 per provider and
 profile; `--agent-concurrency` overrides those caps.

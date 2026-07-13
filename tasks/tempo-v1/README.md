@@ -14,8 +14,8 @@ that performs a variety of operations on the Tempo blockchain.
 - Reading task-specific configuration from the environment and producing the
   required output artifact.
 - Submitting valid transactions whose onchain effects match the task contract.
-- Working effectively with pinned documentation, with or without the Tempo MCP
-  server.
+- Working effectively with either the pinned documentation website or the live
+  Tempo docs MCP server.
 
 Current tasks cover access-key authorization, batched, memo, and
 receive-policy-held transfers, fee payment, stablecoin and transfer-policy
@@ -46,7 +46,8 @@ primary reward.
 The benchmark job injects access rather than changing task source:
 
 - `docs` serves the revision pinned in `config/tempo-docs.lock.json`.
-- `mcp` serves the same pinned revision and also adds the Tempo API MCP server.
+- `mcp` adds the live Tempo docs MCP server at `https://mcp.tempo.xyz/` and does
+  not stage the pinned website.
 
 Use `--profile all` to launch paired Docs and MCP jobs. Use `--profile docs` or
 `--profile mcp` when only one access profile is needed; each profile remains an
@@ -84,7 +85,7 @@ npm run bench:matrix:dev -- --task-suite tempo --profile all \
 npm run bench:matrix:dev -- --task-suite tempo --profile docs \
   --task-filter transfer-with-memo --base-image "$BASE_IMAGE"
 
-# One-task Haiku smoke with pinned Docs plus Tempo MCP.
+# One-task Haiku smoke with the live Tempo docs MCP only.
 npm run bench:matrix:dev -- --task-suite tempo --profile mcp \
   --task-filter transfer-with-memo --base-image "$BASE_IMAGE"
 
