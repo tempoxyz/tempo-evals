@@ -199,7 +199,7 @@ def start_server() -> subprocess.Popen[str]:
     # Agent self-tests sometimes leave a development server on the task's
     # documented default port. The verifier owns that port for its scenario.
     subprocess.run(
-        ["fuser", "-k", "3000/tcp"],
+        ["sh", "-c", "command -v fuser >/dev/null && fuser -k 3000/tcp || true"],
         check=False,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
