@@ -68,7 +68,7 @@ function runStep(config, name, command, args, env = {}) {
 function defaultRuntimeEnv(config) {
   return {
     TEMPO_TOKEN: config.token,
-    TEMPO_RECIPIENT: config.recipient,
+    ...(config.recipient ? { TEMPO_RECIPIENT: config.recipient } : {}),
     ...(config.recipients.length > 0 ? { TEMPO_RECIPIENTS: JSON.stringify(config.recipients) } : {}),
     TEMPO_AMOUNT: config.amount,
     TEMPO_MEMO: config.memo,

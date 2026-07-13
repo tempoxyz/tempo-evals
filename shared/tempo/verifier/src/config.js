@@ -47,7 +47,7 @@ function readConfig() {
     tip20Factory: env("TEMPO_TIP20_FACTORY", "0x20fc000000000000000000000000000000000000"),
     tip403Registry: env("TEMPO_TIP403_REGISTRY", "0x403c000000000000000000000000000000000000"),
     stablecoinDex: env("TEMPO_STABLECOIN_DEX", "0xdec0000000000000000000000000000000000000"),
-    recipient: requiredEnv("TEMPO_RECIPIENT"),
+    recipient: env("TEMPO_RECIPIENT"),
     recipients: env("TEMPO_RECIPIENTS") ? addressArrayEnv("TEMPO_RECIPIENTS") : [],
     amount: requiredEnv("TEMPO_AMOUNT"),
     memo: env("TEMPO_MEMO"),
