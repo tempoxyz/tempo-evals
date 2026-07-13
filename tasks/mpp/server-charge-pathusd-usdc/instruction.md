@@ -34,6 +34,11 @@ if (result.status === 402) return NodeListener.sendResponse(response, result.cha
 return NodeListener.sendResponse(response, result.withReceipt(Response.json(body)));
 ```
 
+Register one `tempo.charge({ recipient, testnet: true })` method. Do not
+register two `tempo` methods: both have the same `tempo/charge` identifier and
+the latter would replace the pathUSD offer. The currencies belong in the two
+`mppx.compose` entries above.
+
 ## Parameters
 
 * Use the payment recipient address from `RECIPIENT_ADDRESS` when that environment variable is set.

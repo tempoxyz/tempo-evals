@@ -18,6 +18,8 @@ then configure the client method as
 with `tsc` and run JavaScript or `tsx`; do not use `ts-node`.
 `TEMPO_MPP_PAYER_PRIVATE_KEY` is already a `0x`-prefixed 32-byte hex key; pass
 it directly to `privateKeyToAccount` without adding another prefix.
+`expectedChainId` only validates a challenge: the viem client itself must set
+`chain: Chain.testnet` (chain ID 42431), or MPPX will sign for Tempo mainnet.
 
 ## Parameters
 
