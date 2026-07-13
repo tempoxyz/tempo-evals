@@ -71,6 +71,9 @@ function defaultRuntimeEnv(config) {
     TEMPO_RECIPIENT: config.recipient,
     ...(config.recipients.length > 0 ? { TEMPO_RECIPIENTS: JSON.stringify(config.recipients) } : {}),
     TEMPO_AMOUNT: config.amount,
+    ...(config.spendingLimit ? { TEMPO_SPENDING_LIMIT: config.spendingLimit } : {}),
+    ...(config.spendingPeriod ? { TEMPO_SPENDING_PERIOD: config.spendingPeriod } : {}),
+    ...(config.overLimitAmount ? { TEMPO_OVER_LIMIT_AMOUNT: config.overLimitAmount } : {}),
     TEMPO_MEMO: config.memo,
     TEMPO_DECIMALS: String(config.decimals),
   };

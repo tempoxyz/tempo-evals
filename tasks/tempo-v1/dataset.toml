@@ -10,6 +10,10 @@ name = "Tempo Labs"
 
 
 [[tasks]]
+name = "tempo-v1/access-key-spending-limit"
+digest = "sha256:6e811b7fa5f0e45a83086162392c775d4b9f4f87cc9652d5b583c2b0dbdf4899"
+
+[[tasks]]
 name = "tempo-v1/access-key-transfer"
 digest = "sha256:0061b51fb4f12f77c46e58abafcfe4c81dd4868402ff537e73ab419c2b5ba4c7"
 

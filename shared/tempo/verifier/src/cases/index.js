@@ -1,5 +1,6 @@
 // SYNCED FROM shared/tempo/verifier/src/cases/index.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 module.exports = {
+  "access-key-spending-limit": require("./access-key-spending-limit"),
   "access-key-transfer": require("./access-key-transfer"),
   "transfer-batched": require("./transfer-batched"),
   "create-stablecoin-with-policy": require("./create-stablecoin-with-policy"),
