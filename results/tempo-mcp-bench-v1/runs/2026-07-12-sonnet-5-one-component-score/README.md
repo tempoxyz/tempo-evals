@@ -29,7 +29,3 @@ Pass@1 with sonnet to establish baseline for Code mode vs. direct MCP results.
 | MCP calls | 252 | 235 | -17 (-6.7%) |
 | MCP latency | 462.7s | 405.9s | -56.7s (-12.3%) |
 | Cost | $13.94 | $13.46 | -$0.48 (-3.4%) |
-
-Both arms completed all tasks with full deterministic correctness. The code arm
-was modestly more efficient in this single paired attempt; repeat the paired run
-before drawing a stable access-mode conclusion.
