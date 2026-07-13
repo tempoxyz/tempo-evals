@@ -58,6 +58,10 @@ forwards them to the verifier, which supplies them to the submission at
 execution time. Use a dedicated Privy app for benchmark runs: tasks create
 wallets and policies in the app on every run.
 
+Privy tasks must run in a Privy-only job. Mixed-suite runs intentionally fail
+before execution so the Privy credentials are never supplied to unrelated
+task submissions.
+
 ## Running the Suite
 
 ```bash

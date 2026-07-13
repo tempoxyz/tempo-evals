@@ -33,6 +33,10 @@ function randomRecipient(config) {
   }
 }
 
+function randomAllowedRecipient() {
+  return `0x${randomBytes(20).toString("hex")}`;
+}
+
 function signTransactionProbe(to) {
   return {
     method: "eth_signTransaction",
@@ -65,7 +69,8 @@ async function checkSignedTransaction(config, serializedTransaction, address) {
 }
 
 function runtimeEnv(config) {
-  return { PRIVY_ALLOWED_RECIPIENT: allowedRecipient(config) };
+  config.privyAllowedRecipient = randomAllowedRecipient();
+  return { PRIVY_ALLOWED_RECIPIENT: config.privyAllowedRecipient };
 }
 
 async function verify({ config }) {
@@ -94,13 +99,21 @@ async function verify({ config }) {
   // Independently probe the live policy: a non-allowlisted recipient must be
   // denied, and the allowed recipient must be signable. Privy reports policy
   // denials as a 4xx response with code "policy_violation".
-  const denied = await walletRpc(config, walletId, signTransactionProbe(randomRecipient(config)));
-  const deniedByPolicy =
-    denied.status >= 400 && denied.status < 500 && denied.body?.code === "policy_violation";
-  if (!deniedByPolicy) {
-    throw new Error(
-      `policy did not deny a non-allowlisted recipient (status ${denied.status})`,
+  for (let index = 0; index < 2; index += 1) {
+    const denied = await walletRpc(
+      config,
+      walletId,
+      signTransactionProbe(randomRecipient(config)),
     );
+    const deniedByPolicy =
+      denied.status >= 400 &&
+      denied.status < 500 &&
+      denied.body?.code === "policy_violation";
+    if (!deniedByPolicy) {
+      throw new Error(
+        `policy did not deny a non-allowlisted recipient (status ${denied.status})`,
+      );
+    }
   }
 
   const compliant = await walletRpc(config, walletId, signTransactionProbe(allowed));
@@ -120,7 +133,7 @@ async function verify({ config }) {
     address,
     policyId,
     allowedRecipient: allowed,
-    deniedStatus: denied.status,
+    deniedProbeCount: 2,
   };
 }
 

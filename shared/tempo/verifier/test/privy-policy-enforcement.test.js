@@ -74,6 +74,18 @@ async function baseConfig() {
   };
 }
 
+test("replaces the configured recipient with a per-run recipient", () => {
+  const { runtimeEnv } = loadCase({ requirePrivyAuth() {}, async getWallet() {} });
+  const config = {
+    privyAllowedRecipient: allowedRecipient,
+  };
+
+  const env = runtimeEnv(config);
+  assert.match(env.PRIVY_ALLOWED_RECIPIENT, /^0x[0-9a-f]{40}$/);
+  assert.equal(config.privyAllowedRecipient, env.PRIVY_ALLOWED_RECIPIENT);
+  assert.notEqual(env.PRIVY_ALLOWED_RECIPIENT, allowedRecipient);
+});
+
 test("rejects a policy that does not deny a non-allowlisted recipient", async () => {
   const { verify } = loadCase(
     privyMock(async () => ({ status: 200, body: { data: { signed_transaction: "0x" } } })),
@@ -119,7 +131,7 @@ test("accepts a policy that denies violations and allows the approved recipient"
   const evidence = await verify({ config: await baseConfig() });
   assert.equal(evidence.walletId, walletId);
   assert.equal(evidence.policyId, policyId);
-  assert.equal(evidence.deniedStatus, 400);
+  assert.equal(evidence.deniedProbeCount, 2);
 });
 
 test("rejects a 4xx denial that is not a policy violation", async () => {

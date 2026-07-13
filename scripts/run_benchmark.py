@@ -692,19 +692,25 @@ def apply_task_filter(
         config["datasets"] = [{"path": "tasks/mpp", "task_names": [mpp_filter]}]
         return config
 
-    tempo_prefixes = ("tempo-v1/", "tempo-mcp-v1/", "privy-v1/", "tempo/")
+    dataset_prefixes = (
+        ("tempo-v1/", "tasks/tempo-v1"),
+        ("tempo-mcp-v1/", "tasks/tempo-mcp-v1"),
+        ("privy-v1/", "tasks/privy-v1"),
+        ("tempo/", "tasks/tempo-v1"),
+    )
+    dataset_path = None
     filters = [task_filter]
-    for prefix in tempo_prefixes:
+    for prefix, path in dataset_prefixes:
         if task_filter.startswith(prefix):
+            dataset_path = path
             filters.append(task_filter.removeprefix(prefix))
             break
     for dataset in config.get("datasets", []):
-        if dataset.get("path") in {
-            "tasks",
-            "tasks/tempo-v1",
-            "tasks/tempo-mcp-v1",
-            "tasks/privy-v1",
-        }:
+        if dataset.get("path") == dataset_path or (
+            dataset_path is None
+            and dataset.get("path")
+            in {"tasks", "tasks/tempo-v1", "tasks/tempo-mcp-v1", "tasks/privy-v1"}
+        ):
             dataset["task_names"] = filters
             config["datasets"] = [dataset]
             return config
@@ -748,6 +754,27 @@ def apply_pair_id(config: dict[str, Any], pair_id: str | None) -> dict[str, Any]
     for agent in config.get("agents", []):
         if agent.get("name") != "oracle":
             agent.setdefault("env", {})["TEMPO_BENCH_PAIR_ID"] = pair_id
+    return config
+
+
+def apply_privy_verifier_env(config: dict[str, Any]) -> dict[str, Any]:
+    datasets = config.get("datasets", [])
+    privy_datasets = [
+        dataset for dataset in datasets if dataset.get("path") == "tasks/privy-v1"
+    ]
+    if not privy_datasets:
+        return config
+    if len(datasets) != 1 or len(privy_datasets) != 1:
+        raise RuntimeError(
+            "Privy tasks must run in a Privy-only job so their credentials are not "
+            "available to other task suites."
+        )
+    config.setdefault("verifier", {}).setdefault("env", {}).update(
+        {
+            "PRIVY_APP_ID": "${PRIVY_APP_ID:-}",
+            "PRIVY_APP_SECRET": "${PRIVY_APP_SECRET:-}",
+        }
+    )
     return config
 
 
@@ -1011,7 +1038,10 @@ def stage_daytona_config(
     stage_task_datasets(staging_root, docs_bundle, daytona_base_image(options))
 
     config = apply_pair_id(
-        apply_profile(finalize_config(config, options), options["profile"]),
+        apply_profile(
+            apply_privy_verifier_env(finalize_config(config, options)),
+            options["profile"],
+        ),
         options.get("pair_id"),
     )
     redirect_dataset_paths(config, staging_root)
@@ -1030,7 +1060,10 @@ def stage_filtered_config(
     shutil.rmtree(staging_root, ignore_errors=True)
     staging_root.mkdir(parents=True, exist_ok=True)
     config = apply_pair_id(
-        apply_profile(finalize_config(config, options), options["profile"]),
+        apply_profile(
+            apply_privy_verifier_env(finalize_config(config, options)),
+            options["profile"],
+        ),
         options.get("pair_id"),
     )
     if (

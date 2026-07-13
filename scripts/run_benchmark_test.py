@@ -14,6 +14,7 @@ from scripts.run_benchmark import (
     MCP_PROFILE,
     BenchmarkKey,
     apply_pair_id,
+    apply_privy_verifier_env,
     apply_profile,
     benchmark_provenance,
     daytona_base_image,
@@ -231,6 +232,57 @@ class RunBenchmarkTest(unittest.TestCase):
             ],
         )
 
+    def test_finalize_config_routes_versioned_privy_task_filter(self) -> None:
+        config = finalize_config(
+            base_config(),
+            {
+                "task_suite": "all",
+                "task_filter": "privy-v1/server-wallet-create",
+            },
+        )
+
+        self.assertEqual(
+            config["datasets"],
+            [
+                {
+                    "path": "tasks/privy-v1",
+                    "task_names": [
+                        "privy-v1/server-wallet-create",
+                        "server-wallet-create",
+                    ],
+                }
+            ],
+        )
+
+    def test_privy_verifier_env_is_limited_to_privy_only_jobs(self) -> None:
+        config = apply_privy_verifier_env(
+            {
+                "verifier": {"env": {"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}"}},
+                "datasets": [{"path": "tasks/privy-v1"}],
+            }
+        )
+
+        self.assertEqual(
+            config["verifier"]["env"],
+            {
+                "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}",
+                "PRIVY_APP_ID": "${PRIVY_APP_ID:-}",
+                "PRIVY_APP_SECRET": "${PRIVY_APP_SECRET:-}",
+            },
+        )
+
+    def test_privy_verifier_env_rejects_mixed_suite_jobs(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "Privy-only job"):
+            apply_privy_verifier_env(
+                {
+                    "verifier": {"env": {}},
+                    "datasets": [
+                        {"path": "tasks/tempo-v1"},
+                        {"path": "tasks/privy-v1"},
+                    ],
+                }
+            )
+
     def test_benchmark_provenance_uses_versioned_dataset_identity(self) -> None:
         self.assertEqual(
             benchmark_provenance("tempo"),
@@ -329,9 +381,9 @@ class RunBenchmarkTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "requires --base-image"):
             daytona_base_image({})
 
-    def test_all_suite_stages_mcp_tasks_without_a_pinned_docs_bundle(self) -> None:
+    def test_tempo_mcp_suite_stages_tasks_without_a_pinned_docs_bundle(self) -> None:
         config = {"agents": [{"name": "oracle"}], "datasets": []}
-        options = {"profile": "docs", "task_suite": "all"}
+        options = {"profile": "docs", "task_suite": "tempo-mcp"}
         with (
             patch("scripts.run_benchmark.stage_task_datasets") as stage_tasks,
             patch("scripts.run_benchmark.redirect_dataset_paths") as redirect,

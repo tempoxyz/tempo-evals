@@ -11,17 +11,17 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "privy-v1/server-wallet-create"
-digest = "sha256:52f026c55a696be30356daeee4e23d1b6cf25988fcbc0b6d4fea54f5184017d2"
+digest = "sha256:1a29db8f57e11ffd318a5da92f73d8569097c1a59cee50c64fd65b6ce354dadc"
 
 [[tasks]]
 name = "privy-v1/server-wallet-send-tx"
-digest = "sha256:eeb6a4b9f26f8fdfe33cef7d6cfd12c693d384185e7a08cccfd81edfe947598b"
+digest = "sha256:9a17f0ee2dac5cc04f0b957bd30a74a7d5021e2ddb709381d45bd634435bb5f2"
 
 [[tasks]]
 name = "privy-v1/server-wallet-sign"
-digest = "sha256:b55bdc51ef23a1e8c95ee82089806c46343c8f540ebf3bc92c71e78015e4145f"
+digest = "sha256:fa4009934a2af7b6eba3e4c83f2082e5faec599476051d7d4d3899c798b2a357"
 
 [[tasks]]
 name = "privy-v1/wallet-policy-enforcement"
-digest = "sha256:6d600e97f597910f06b015fd243f1f26555d343c5a39b02b10eb46fdb39585e3"
+digest = "sha256:0087e34862a63422a58e41ad2cf71e9b8cbe98780c0b9e5c533db5f27303d37f"
 
