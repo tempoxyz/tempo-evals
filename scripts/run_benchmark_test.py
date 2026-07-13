@@ -18,7 +18,10 @@ from scripts.run_benchmark import (
     benchmark_provenance,
     daytona_base_image,
     finalize_config,
+    main,
     parse_args,
+    parse_model_config,
+    prepare_production_profiles,
     production_job,
     run_benchmark_key,
     run_benchmark_variant,
@@ -86,6 +89,110 @@ class RunBenchmarkTest(unittest.TestCase):
         ensure_bundle.assert_not_called()
         self.assertIsNone(stage.call_args.args[2])
         run.assert_called_once()
+
+    def test_production_variant_accepts_explicit_mcp_profile(self) -> None:
+        options = {
+            "env_file": None,
+            "job_name": "production-mcp-test",
+            "profile": "mcp",
+            "sync": False,
+            "task_suite": "tempo",
+        }
+        with (
+            patch("scripts.run_benchmark.load_env_file"),
+            patch("scripts.run_benchmark.preflight"),
+            patch("scripts.run_benchmark.preflight_mcp_target"),
+            patch("scripts.run_benchmark.docs_source", return_value={"mode": "public"}),
+            patch("scripts.run_benchmark.ensure_docs_bundle", return_value=None),
+            patch("scripts.run_benchmark.run_production_variant") as run_production,
+            patch("scripts.run_benchmark.run") as run,
+        ):
+            run_benchmark_variant("production-daytona", options)
+
+        run_production.assert_called_once()
+        run.assert_not_called()
+
+    def test_production_all_profile_runs_docs_and_mcp_jobs(self) -> None:
+        with (
+            patch("scripts.run_benchmark.prepare_production_profiles") as prepare,
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+        ):
+            main(
+                [
+                    "production-daytona",
+                    "--profile",
+                    "all",
+                    "--models-config",
+                    "config/models.dev.yaml",
+                    "--job-name",
+                    "paired-run",
+                ]
+            )
+
+        prepare.assert_called_once()
+        profiles = {
+            invocation.args[1]["profile"]: invocation.args[1]
+            for invocation in run_variant.call_args_list
+        }
+        self.assertEqual(set(profiles), {"docs", "mcp"})
+        self.assertEqual(profiles["docs"]["job_name"], "paired-run-docs")
+        self.assertEqual(profiles["mcp"]["job_name"], "paired-run-mcp")
+        self.assertTrue(all(not options["sync"] for options in profiles.values()))
+        self.assertTrue(
+            all(options["pair_id"] == "paired-run" for options in profiles.values())
+        )
+
+    def test_dev_and_production_model_configs_are_distinct(self) -> None:
+        dev = parse_model_config("config/models.dev.yaml", None)
+        production = parse_model_config("config/models.production.yaml", None)
+
+        self.assertEqual(
+            [model["model_name"] for model in dev["models"]],
+            ["claude-haiku-4-5-20251001"],
+        )
+        self.assertEqual(
+            [model["model_name"] for model in production["models"]],
+            [
+                "claude-haiku-4-5-20251001",
+                "claude-sonnet-5",
+                "gpt-5.4-mini-2026-03-17",
+                "gpt-5.4-2026-03-05",
+            ],
+        )
+        self.assertEqual([model["n_concurrent"] for model in dev["models"]], ["16"])
+        self.assertEqual(
+            [model["n_concurrent"] for model in production["models"]],
+            ["16", "16", "16", "16"],
+        )
+
+    def test_production_profiles_prepare_shared_inputs_once(self) -> None:
+        source = {"mode": "pinned", "repo": "tempo/docs", "sha": "docs123"}
+        options = {
+            "agent_concurrency": None,
+            "env_file": None,
+            "models_config": "config/models.dev.yaml",
+            "sync": True,
+            "task_suite": "tempo",
+        }
+        variant = {"production": True}
+        with (
+            patch("scripts.run_benchmark.load_env_file") as load_env,
+            patch("scripts.run_benchmark.preflight") as preflight,
+            patch("scripts.run_benchmark.preflight_production_agents") as agents,
+            patch("scripts.run_benchmark.sync_dataset") as sync_dataset,
+            patch("scripts.run_benchmark.docs_source", return_value=source),
+            patch("scripts.run_benchmark.ensure_docs_bundle") as ensure_bundle,
+        ):
+            prepare_production_profiles(variant, options)
+
+        load_env.assert_called_once_with(None)
+        preflight.assert_called_once_with(variant, options)
+        self.assertEqual(
+            [model["model_name"] for model in agents.call_args.args[0]["models"]],
+            ["claude-haiku-4-5-20251001"],
+        )
+        sync_dataset.assert_called_once_with(options)
+        ensure_bundle.assert_called_once_with(source)
 
     def test_finalize_config_requires_all_suite_for_full_matrix(self) -> None:
         config = finalize_config(base_config(), {"task_suite": "all"})

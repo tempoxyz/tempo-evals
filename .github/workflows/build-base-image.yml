@@ -50,6 +50,7 @@ jobs:
             tag="main-$source_tag"
           fi
           echo "ref=$repository:$tag" >> "$GITHUB_OUTPUT"
+          echo "source_ref=$repository:$source_tag" >> "$GITHUB_OUTPUT"
           echo "release_ref=$(sed -nE 's/^[[:space:]]*base_image:[[:space:]]*([^[:space:]#]+).*/\1/p' config/tasks.yaml)" >> "$GITHUB_OUTPUT"
 
       - uses: docker/login-action@v3
@@ -65,7 +66,9 @@ jobs:
         with:
           context: .
           file: shared/global/docker/base/Dockerfile
-          tags: ${{ steps.image.outputs.ref }}
+          tags: |
+            ${{ steps.image.outputs.ref }}
+            ${{ steps.image.outputs.source_ref }}
           push: true
           cache-from: type=gha,scope=tempo-bench-base
           cache-to: type=gha,mode=max,scope=tempo-bench-base
@@ -80,3 +83,4 @@ jobs:
       - name: Publish image reference
         run: |
           echo "Base image: \`${{ steps.image.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Immutable source image: \`${{ steps.image.outputs.source_ref }}\`" >> "$GITHUB_STEP_SUMMARY"

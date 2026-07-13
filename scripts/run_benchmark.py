@@ -85,12 +85,13 @@ Options:
   --env-file PATH          Load env file for Harbor and preflight checks
                            (default: .env when present)
   --job-name NAME          Override generated job name
-  --models-config PATH     Production model matrix config
+  --models-config PATH     Model matrix config
                            (default: config/models.production.yaml)
   --n-attempts N          Override production attempts per task and model
                           (default: 3)
-  --concurrency N         Override n_concurrent_trials
-  --agent-concurrency N   Override per-agent n_concurrent
+  --concurrency N         Override n_concurrent_trials per profile job
+                          (default: 32 for production runs)
+  --agent-concurrency N   Override per-profile agent concurrency pools
   --max-retries N         Retry transient trial/setup failures
                           (default: 2 for Daytona runs)
   --agent NAME            Agent for the model variant (default: claude-code)
@@ -356,7 +357,7 @@ def sync_dataset(options: dict[str, Any]) -> None:
 def parse_model_config(file_path: str, agent_concurrency: str | None) -> dict[str, Any]:
     path = Path(file_path)
     if not path.exists():
-        msg = f"Production model config not found: {file_path}"
+        msg = f"Model config not found: {file_path}"
         raise RuntimeError(msg)
     parsed = yaml.safe_load(path.read_text()) or {}
     raw_models = parsed.get("models") if isinstance(parsed, dict) else []
@@ -367,7 +368,7 @@ def parse_model_config(file_path: str, agent_concurrency: str | None) -> dict[st
         )
     ]
     if not models:
-        msg = f"No production models configured in {file_path}"
+        msg = f"No models configured in {file_path}"
         raise RuntimeError(msg)
     return {"models": models}
 
@@ -630,7 +631,26 @@ def run_production_variant(
             "exit_status": status,
         },
     )
-    raise SystemExit(status)
+    if status != 0:
+        raise RuntimeError(f"Production benchmark {run_id} failed with status {status}")
+
+
+def prepare_production_profiles(
+    variant: dict[str, Any], options: dict[str, Any]
+) -> None:
+    """Validate and stage shared inputs before profile jobs run in parallel."""
+    load_env_file(options.get("env_file"))
+    preflight(variant, options)
+    models_config_path = options.get("models_config") or "config/models.production.yaml"
+    model_config = parse_model_config(
+        models_config_path, options.get("agent_concurrency")
+    )
+    preflight_production_agents(model_config)
+    if options.get("sync"):
+        sync_dataset(options)
+    source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
+    if source["mode"] != "live":
+        ensure_docs_bundle(source)
 
 
 def mpp_task_filter(task_filter: str) -> str | None:
@@ -1063,10 +1083,13 @@ def main(argv: list[str]) -> None:
         if not variant:
             usage()
             raise RuntimeError(f"Unknown variant: {variant_name}")
-        if not variant.get("job"):
+        if not variant.get("job") and not variant.get("production"):
             raise RuntimeError(
-                "The all profile requires a job-backed benchmark variant."
+                "The all profile requires a job-backed or production benchmark variant."
             )
+        if variant.get("production"):
+            prepare_production_profiles(variant, options)
+        first_profile_sync = False if variant.get("production") else options["sync"]
         benchmark = run_benchmark_key(variant, options.get("task_suite"))
         prefix = versioned_name(benchmark, variant["prefix"])
         pair_id = options.get("job_name") or f"{prefix}-mcp-pair-{timestamp()}"
@@ -1076,7 +1099,7 @@ def main(argv: list[str]) -> None:
                 "profile": profile_id,
                 "job_name": f"{pair_id}-{profile_id}",
                 "pair_id": pair_id,
-                "sync": options["sync"] if index == 0 else False,
+                "sync": first_profile_sync if index == 0 else False,
             }
             for index, profile_id in enumerate(
                 (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"])
@@ -1104,12 +1127,19 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         msg = f"Unknown variant: {variant_name}"
         raise RuntimeError(msg)
 
-    if options["profile"] in {
-        MCP_PROFILE["id"],
-        MCP_DIRECT_PROFILE["id"],
-        MCP_CODE_PROFILE["id"],
-    } and not variant.get("job"):
-        raise RuntimeError("The MCP profile requires a job-backed benchmark variant.")
+    if (
+        options["profile"]
+        in {
+            MCP_PROFILE["id"],
+            MCP_DIRECT_PROFILE["id"],
+            MCP_CODE_PROFILE["id"],
+        }
+        and not variant.get("job")
+        and not variant.get("production")
+    ):
+        raise RuntimeError(
+            "The MCP profile requires a job-backed or production benchmark variant."
+        )
 
     source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
     load_env_file(options.get("env_file"))
@@ -1129,6 +1159,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     args = ["run", "harbor", "run"]
     if variant.get("production"):
         run_production_variant(run_id, options, source, docs_bundle)
+        return
 
     if variant.get("job"):
         job_config = load_compiled_config(variant_name)

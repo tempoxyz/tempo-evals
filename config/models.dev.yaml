@@ -1,0 +1,7 @@
+# Development model matrix for the `bench:matrix:dev` script.
+# `n_concurrent` is a per-profile agent cap; `--agent-concurrency` overrides it.
+models:
+  - agent: claude-code
+    model_name: claude-haiku-4-5-20251001
+    n_concurrent: 16
+    concurrency_group: anthropic

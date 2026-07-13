@@ -33,6 +33,7 @@ function runtimeEnv(config) {
 async function verify({ client, config, fromBlock }) {
   const { taker, transactionHash } = result(config);
   const amount = parseUnits(config.swapAmountIn, config.decimals);
+  const minimumAmountOut = parseUnits(config.swapMinAmountOut, config.decimals);
 
   return waitForEvidence(config, async () => {
     const receipt = await receiptAfter(
@@ -54,8 +55,15 @@ async function verify({ client, config, fromBlock }) {
     );
     if (!spent) throw new Error("reported transaction does not spend the requested swap input");
 
-    const received = findEvent(receipt, config.swapTokenOut, TRANSFER, (args) =>
-      sameAddress(args.from, config.stablecoinDex) && sameAddress(args.to, taker) && args.value > 0n,
+    const received = findEvent(
+      receipt,
+      config.swapTokenOut,
+      TRANSFER,
+      (args) =>
+        sameAddress(args.from, config.stablecoinDex) &&
+        sameAddress(args.to, taker) &&
+        args.value > 0n &&
+        args.value >= minimumAmountOut,
     );
     if (!received) throw new Error("reported transaction does not receive the requested swap output");
 

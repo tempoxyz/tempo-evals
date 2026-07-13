@@ -14,7 +14,8 @@ that performs a variety of operations on the Tempo blockchain.
 - Reading task-specific configuration from the environment and producing the
   required output artifact.
 - Submitting valid transactions whose onchain effects match the task contract.
-- Working effectively with either pinned documentation or the Tempo MCP server.
+- Working effectively with pinned documentation, with or without the Tempo MCP
+  server.
 
 Current tasks cover access-key authorization, batched, memo, and
 receive-policy-held transfers, fee payment, stablecoin and transfer-policy
@@ -45,10 +46,22 @@ primary reward.
 The benchmark job injects access rather than changing task source:
 
 - `docs` serves the revision pinned in `config/tempo-docs.lock.json`.
-- `mcp` adds the Tempo API MCP server.
-- `--profile all` runs paired Docs and MCP jobs over the same task artifact.
+- `mcp` serves the same pinned revision and also adds the Tempo API MCP server.
+
+Use `--profile all` to launch paired Docs and MCP jobs. Use `--profile docs` or
+`--profile mcp` when only one access profile is needed; each profile remains an
+independent Harbor job that can be retried and published separately.
 
 ## Running the Suite
+
+`bench:matrix:dev` reads `config/models.dev.yaml` and runs Haiku 4.5 once over
+every matching task. `bench:matrix:production` reads
+`config/models.production.yaml` and runs Haiku 4.5, Sonnet 5, GPT-5.4 mini, and
+GPT-5.4 three times per task. Both commands run the full Tempo suite unless
+`--task-filter` is provided. `--concurrency` applies independently to each
+profile job. Because `--profile all` runs the two profile jobs in parallel,
+`--concurrency 32` allows up to 32 trials in each job, or 64 across the pair.
+The model configs use a per-provider, per-profile agent concurrency cap of 16.
 
 ```bash
 # Clean local oracle validation for the suite.
@@ -60,6 +73,24 @@ npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 # Agent smoke run with the MCP profile.
 npm run bench:local:agent:dev -- --task-suite tempo --profile mcp \
   --task-filter transfer-with-memo
+
+BASE_IMAGE="$(npm run -s base-image:ref)"
+
+# Haiku over every Tempo task with both access profiles.
+npm run bench:matrix:dev -- --task-suite tempo --profile all \
+  --base-image "$BASE_IMAGE"
+
+# One-task Haiku smoke with pinned Docs only.
+npm run bench:matrix:dev -- --task-suite tempo --profile docs \
+  --task-filter transfer-with-memo --base-image "$BASE_IMAGE"
+
+# One-task Haiku smoke with pinned Docs plus Tempo MCP.
+npm run bench:matrix:dev -- --task-suite tempo --profile mcp \
+  --task-filter transfer-with-memo --base-image "$BASE_IMAGE"
+
+# Full four-model, three-attempt production suite with both profiles.
+npm run bench:matrix:production -- --task-suite tempo --profile all \
+  --base-image "$BASE_IMAGE"
 
 # Refresh this suite's manifest after task changes.
 npm run dataset
