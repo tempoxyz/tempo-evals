@@ -140,11 +140,11 @@ npm run bench:daytona:oracle -- --base-image "$(npm run -s base-image:ref)"
 # Full Claude Code matrix on Daytona.
 npm run bench:daytona:agent -- --base-image "$(npm run -s base-image:ref)"
 
-# One-attempt run over the configured production model matrix.
-npm run bench:matrix:dev -- --task-suite tempo --base-image "$(npm run -s base-image:ref)"
+# One-attempt Docs/MCP run over the configured production model matrix.
+npm run bench:matrix:dev -- --task-suite tempo --profile all --base-image "$(npm run -s base-image:ref)"
 
-# Three-attempt run over the configured production model matrix.
-npm run bench:matrix:production -- --task-suite tempo --base-image "$(npm run -s base-image:ref)"
+# Three-attempt Docs/MCP run over the configured production model matrix.
+npm run bench:matrix:production -- --task-suite tempo --profile all --base-image "$(npm run -s base-image:ref)"
 ```
 
 ## Authoring a New Task

@@ -18,10 +18,13 @@ from scripts.run_benchmark import (
     benchmark_provenance,
     daytona_base_image,
     finalize_config,
+    main,
     parse_args,
+    prepare_profile_pair,
     production_job,
     run_benchmark_key,
     run_benchmark_variant,
+    run_production_variant,
     stage_filtered_config,
     stage_pinned_docs_task,
     uses_live_mcp_eval,
@@ -143,6 +146,132 @@ class RunBenchmarkTest(unittest.TestCase):
         _, options = parse_args(["daytona-agent", "--profile", "all"])
 
         self.assertEqual(options["profile"], "all")
+
+    def test_production_all_profile_runs_paired_docs_and_mcp_jobs(self) -> None:
+        with (
+            patch("scripts.run_benchmark.prepare_profile_pair") as prepare_pair,
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+        ):
+            main(
+                [
+                    "production-daytona",
+                    "--profile",
+                    "all",
+                    "--job-name",
+                    "paired-run",
+                ]
+            )
+
+        prepare_pair.assert_called_once()
+        profiles = {
+            call.args[1]["profile"]: call.args[1] for call in run_variant.call_args_list
+        }
+        self.assertEqual(set(profiles), {"docs", "mcp"})
+        self.assertEqual(profiles["docs"]["job_name"], "paired-run-docs")
+        self.assertEqual(profiles["mcp"]["job_name"], "paired-run-mcp")
+        self.assertTrue(all(not options["sync"] for options in profiles.values()))
+        self.assertTrue(
+            all(options["pair_id"] == "paired-run" for options in profiles.values())
+        )
+
+    def test_profile_pair_prepares_shared_inputs_once(self) -> None:
+        source = {"mode": "pinned", "repo": "tempo/docs", "sha": "docs123"}
+        model_config = {"models": []}
+        options = {
+            "agent_concurrency": None,
+            "env_file": None,
+            "models_config": None,
+            "sync": True,
+            "task_suite": "tempo",
+        }
+        variant = {"production": True}
+        with (
+            patch("scripts.run_benchmark.load_env_file") as load_env,
+            patch("scripts.run_benchmark.preflight") as preflight,
+            patch(
+                "scripts.run_benchmark.parse_model_config",
+                return_value=model_config,
+            ) as parse_models,
+            patch(
+                "scripts.run_benchmark.preflight_production_agents"
+            ) as preflight_models,
+            patch("scripts.run_benchmark.sync_dataset") as sync_dataset,
+            patch("scripts.run_benchmark.docs_source", return_value=source),
+            patch("scripts.run_benchmark.ensure_docs_bundle") as ensure_bundle,
+        ):
+            prepare_profile_pair(variant, options)
+
+        load_env.assert_called_once_with(None)
+        preflight.assert_called_once_with(variant, options)
+        parse_models.assert_called_once_with("config/models.production.yaml", None)
+        preflight_models.assert_called_once_with(model_config)
+        sync_dataset.assert_called_once_with(options)
+        ensure_bundle.assert_called_once_with(source)
+
+    def test_production_failure_is_reported_to_profile_pair(self) -> None:
+        model_config = {
+            "models": [
+                {
+                    "agent": "claude-code",
+                    "model_name": "claude-haiku-4-5",
+                    "n_concurrent": None,
+                    "concurrency_group": None,
+                }
+            ]
+        }
+        job = {"n_attempts": 1, "n_concurrent_trials": 1}
+        options = {
+            "agent_concurrency": None,
+            "env_file": None,
+            "max_retries": None,
+            "models_config": None,
+            "profile": "docs",
+            "task_filter": None,
+            "task_suite": "tempo",
+        }
+        with (
+            patch(
+                "scripts.run_benchmark.parse_model_config", return_value=model_config
+            ),
+            patch("scripts.run_benchmark.preflight_production_agents"),
+            patch("scripts.run_benchmark.production_job", return_value=job),
+            patch("scripts.run_benchmark.render_job_config", return_value={}),
+            patch(
+                "scripts.run_benchmark.stage_daytona_config", return_value="job.yaml"
+            ),
+            patch("scripts.run_benchmark.write_production_metadata"),
+            patch("scripts.run_benchmark.run_output", return_value="test"),
+            patch("scripts.run_benchmark.run_status", return_value=7),
+            self.assertRaisesRegex(RuntimeError, "failed with status 7"),
+        ):
+            run_production_variant(
+                "failed-run",
+                options,
+                {"mode": "pinned", "sha": "docs123"},
+                "/tmp/docs",
+            )
+
+    def test_successful_production_run_does_not_fall_through(self) -> None:
+        options = {
+            "env_file": None,
+            "job_name": "production-run",
+            "profile": "mcp",
+            "sync": False,
+            "task_suite": "tempo",
+        }
+        with (
+            patch("scripts.run_benchmark.load_env_file"),
+            patch("scripts.run_benchmark.preflight"),
+            patch("scripts.run_benchmark.preflight_mcp_target"),
+            patch("scripts.run_benchmark.docs_source", return_value={"mode": "public"}),
+            patch("scripts.run_benchmark.ensure_docs_bundle", return_value=None),
+            patch("scripts.run_benchmark.run_production_variant") as run_production,
+            patch("scripts.run_benchmark.run") as run,
+        ):
+            run_benchmark_variant("production-daytona", options)
+
+        run_production.assert_called_once()
+        run.assert_not_called()
 
     def test_parse_args_accepts_production_attempts(self) -> None:
         _, options = parse_args(["production-daytona", "--n-attempts", "1"])

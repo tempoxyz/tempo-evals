@@ -622,7 +622,27 @@ def run_production_variant(
             "exit_status": status,
         },
     )
-    raise SystemExit(status)
+    if status != 0:
+        raise RuntimeError(f"Production benchmark {run_id} failed with status {status}")
+
+
+def prepare_profile_pair(variant: dict[str, Any], options: dict[str, Any]) -> None:
+    """Validate and stage shared inputs before profile workers run in parallel."""
+    load_env_file(options.get("env_file"))
+    preflight(variant, options)
+    if variant.get("production"):
+        models_config_path = (
+            options.get("models_config") or "config/models.production.yaml"
+        )
+        model_config = parse_model_config(
+            models_config_path, options.get("agent_concurrency")
+        )
+        preflight_production_agents(model_config)
+    if options.get("sync"):
+        sync_dataset(options)
+    source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
+    if source["mode"] != "live":
+        ensure_docs_bundle(source)
 
 
 def mpp_task_filter(task_filter: str) -> str | None:
@@ -1045,10 +1065,11 @@ def main(argv: list[str]) -> None:
         if not variant:
             usage()
             raise RuntimeError(f"Unknown variant: {variant_name}")
-        if not variant.get("job"):
+        if not variant.get("job") and not variant.get("production"):
             raise RuntimeError(
-                "The all profile requires a job-backed benchmark variant."
+                "The all profile requires a job-backed or production benchmark variant."
             )
+        prepare_profile_pair(variant, options)
         benchmark = run_benchmark_key(variant, options.get("task_suite"))
         prefix = versioned_name(benchmark, variant["prefix"])
         pair_id = options.get("job_name") or f"{prefix}-mcp-pair-{timestamp()}"
@@ -1058,9 +1079,9 @@ def main(argv: list[str]) -> None:
                 "profile": profile_id,
                 "job_name": f"{pair_id}-{profile_id}",
                 "pair_id": pair_id,
-                "sync": options["sync"] if index == 0 else False,
+                "sync": False,
             }
-            for index, profile_id in enumerate(
+            for profile_id in (
                 (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"])
                 if options["profile"] == "mcp-both"
                 else DEFAULT_PROFILE_IDS
@@ -1086,12 +1107,19 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         msg = f"Unknown variant: {variant_name}"
         raise RuntimeError(msg)
 
-    if options["profile"] in {
-        MCP_PROFILE["id"],
-        MCP_DIRECT_PROFILE["id"],
-        MCP_CODE_PROFILE["id"],
-    } and not variant.get("job"):
-        raise RuntimeError("The MCP profile requires a job-backed benchmark variant.")
+    if (
+        options["profile"]
+        in {
+            MCP_PROFILE["id"],
+            MCP_DIRECT_PROFILE["id"],
+            MCP_CODE_PROFILE["id"],
+        }
+        and not variant.get("job")
+        and not variant.get("production")
+    ):
+        raise RuntimeError(
+            "The MCP profile requires a job-backed or production benchmark variant."
+        )
 
     source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
     load_env_file(options.get("env_file"))
@@ -1111,6 +1139,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     args = ["run", "harbor", "run"]
     if variant.get("production"):
         run_production_variant(run_id, options, source, docs_bundle)
+        return
 
     if variant.get("job"):
         job_config = load_compiled_config(variant_name)
