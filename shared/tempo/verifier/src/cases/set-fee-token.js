@@ -37,15 +37,24 @@ async function verify({ client, config, fromBlock }) {
     if (!receipt) return null;
 
     const transaction = await client.getTransaction({ hash: transactionHash });
-    if (!sameAddress(transaction.to, config.feeManager)) {
+    const calls = transaction.calls ?? [{ data: transaction.input, to: transaction.to }];
+    const feeManagerCalls = calls.filter((call) => sameAddress(call.to, config.feeManager));
+    if (feeManagerCalls.length === 0) {
       throw new Error("reported transaction did not call the Fee Manager");
     }
-    try {
-      const call = decodeFunctionData({ abi: FEE_MANAGER, data: transaction.input });
-      if (call.functionName !== "setUserToken" || !sameAddress(call.args[0], config.feeToken)) {
-        throw new Error();
+
+    const requestedExpectedToken = feeManagerCalls.some((call) => {
+      try {
+        const decoded = decodeFunctionData({ abi: FEE_MANAGER, data: call.data });
+        return (
+          decoded.functionName === "setUserToken" &&
+          sameAddress(decoded.args[0], config.feeToken)
+        );
+      } catch {
+        return false;
       }
-    } catch {
+    });
+    if (!requestedExpectedToken) {
       throw new Error("reported transaction did not request the expected fee token");
     }
 

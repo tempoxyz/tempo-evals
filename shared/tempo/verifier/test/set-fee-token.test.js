@@ -14,9 +14,14 @@ const otherToken = "0x4444444444444444444444444444444444444444";
 const transactionHash = `0x${"01".repeat(32)}`;
 const feeManagerAbi = parseAbi(["function setUserToken(address token)"]);
 
-function fixture(token = feeToken) {
+function fixture({ tempo = false, token = feeToken } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "tempo-verifier-"));
   const resultPath = path.join(dir, "out.json");
+  const data = encodeFunctionData({
+    abi: feeManagerAbi,
+    functionName: "setUserToken",
+    args: [token],
+  });
   fs.writeFileSync(
     resultPath,
     JSON.stringify({
@@ -26,10 +31,14 @@ function fixture(token = feeToken) {
   );
   return {
     client: {
-      getTransaction: async () => ({
-        input: encodeFunctionData({ abi: feeManagerAbi, functionName: "setUserToken", args: [token] }),
-        to: feeManager,
-      }),
+      getTransaction: async () =>
+        tempo
+          ? {
+              calls: [{ data, to: feeManager, value: 0n }],
+              type: "tempo",
+              typeHex: "0x76",
+            }
+          : { input: data, to: feeManager },
       getTransactionReceipt: async () => ({
         blockNumber: 2n,
         from: payer,
@@ -42,7 +51,7 @@ function fixture(token = feeToken) {
   };
 }
 
-test("accepts a successful idempotent fee-token call without an event", async () => {
+test("accepts a legacy fee-token call", async () => {
   const evidence = await verify(fixture());
 
   assert.equal(evidence.payer, payer);
@@ -50,6 +59,17 @@ test("accepts a successful idempotent fee-token call without an event", async ()
   assert.equal(evidence.transactionHash, transactionHash);
 });
 
-test("rejects a fee-token call with the wrong token", async () => {
-  await assert.rejects(verify(fixture(otherToken)), /did not request the expected fee token/);
+test("accepts a Tempo fee-token call", async () => {
+  const evidence = await verify(fixture({ tempo: true }));
+
+  assert.equal(evidence.payer, payer);
+  assert.equal(evidence.token, feeToken);
+  assert.equal(evidence.transactionHash, transactionHash);
+});
+
+test("rejects a Tempo fee-token call with the wrong token", async () => {
+  await assert.rejects(
+    verify(fixture({ tempo: true, token: otherToken })),
+    /did not request the expected fee token/,
+  );
 });
