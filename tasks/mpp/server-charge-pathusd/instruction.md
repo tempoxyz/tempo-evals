@@ -27,6 +27,8 @@ return NodeListener.sendResponse(response, result.withReceipt(Response.json(body
 ```
 
 Import `NodeListener` and `Request as ServerRequest` from `mppx/server`.
+Pass `MPP_CHARGE_AMOUNT` directly as the MPPX `amount` string (for example,
+`"0.01"`); do not call `parseUnits` or pass raw token units.
 
 ## Parameters
 

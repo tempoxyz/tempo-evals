@@ -48,6 +48,9 @@ const session = tempo.session({ account, currency: pathUsd,
 // mppx.session({ amount, unitType: "request" }) for the session route.
 ```
 
+Use the human `MPP_CHARGE_AMOUNT` string (such as `"0.01"`) for both handlers;
+do not convert it with `parseUnits`.
+
 ## Parameters
 
 * Use the payment recipient address from `RECIPIENT_ADDRESS` when that environment variable is set for the charge endpoint. The session endpoint may use its own funded settlement account.
