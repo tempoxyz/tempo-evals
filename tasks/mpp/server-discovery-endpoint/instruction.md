@@ -9,6 +9,10 @@ payment metadata for that route.
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.
 
+Use `Mppx.create` from `mppx/server` for the paid route and use
+`mppx/discovery` to generate the OpenAPI document from that route's payment
+definition. Do not implement payment verification or payment metadata by hand.
+
 ## Parameters
 
 * Use the payment recipient address from `RECIPIENT_ADDRESS` when that environment variable is set.

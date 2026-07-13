@@ -6,6 +6,9 @@ Build an MPP client using TypeScript in `/app` that calls a paid JSON endpoint.
 Add npm scripts named `build` and `run`. `npm run run` must call the paid
 endpoint once and write the result.
 
+Use `Mppx.create` and the Tempo client method from `mppx/client` to make the
+payment. Do not construct a payment header or receipt yourself.
+
 ## Parameters
 
 * Use the paid endpoint URL from `PAID_URL`.

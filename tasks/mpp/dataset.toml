@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:4a2cf2ab0f66b5c5ffa96d8f59fdf6ec1bd3692c51b1543762ad776167b51cae"
+digest = "sha256:3eb6779657aa83db44ac31c2b21ed87472cc9c95285e8eccfdf1b817e487f1f7"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:2b786eaf215dc5a7b018f411ac731a2d3ee6ec22ab6e23a7b6eafb8e704a96a6"
+digest = "sha256:83fc3a5b04c9cf7333b3270ee670608e200386959d265d1beefaedd41df79f39"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:b2cd152aa1121b5e44d09f9b10050e72d726abb7ef654605f6a4d61bc18b1251"
+digest = "sha256:e4a77fa42a5583e77c270491c430f0cf6c7295e8f2740b5be746991bfc31a0fd"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:1a93c76af52efb807a57b4e0faaac8e321938adb4ef4cc66c9d220efbbf22676"
+digest = "sha256:999f3246a96bfd4505246140f966c928f7cf838641351e8d8d7ed2281bbd0eb1"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:4633346aecf5d496dd820aed0f09ce531f0e7379236ef306ba474fb1af4603de"
+digest = "sha256:2b4e33f070f4d266add816b9276d0b7a8545ac0c7ed74fe1e94b44d210ea414a"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:f53d5e15914adccc91da3b0d69c6aba63c02ca3a08fd6b0518bb3fd4dd545190"
+digest = "sha256:f0e9bdd7b90837c90469cc5e0ac5170de61326258ea261dd9bfc54b15a83ded5"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:7a8e3b9d2c5f2d75463f3e40ff16d1400eed167dbc6461e4423ff6ebcc42c25e"
+digest = "sha256:3c043a35bf9080acf1cd4121148daef2112428e39d8700c0a055651e14d63683"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:d698da01f1aef788a2524bfd665040e5c0a0894d3529d94f2c5033eb1a87917a"
+digest = "sha256:a71d7d152713674b8f861190b0b4bcf4cdea6a7de81d00dcef989d1f76f9e232"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:48faf6b1aca5df2051d44670c90dde5c79c8c938141b9315fda00bb68dd2d665"
+digest = "sha256:e3822b65f84cecc89e275eed82fef95480585c60223138275e442e396001eec6"
 

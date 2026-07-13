@@ -8,6 +8,10 @@ an MPP session payment. Both endpoints should return JSON after payment.
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.
 
+Use `Mppx.create` from `mppx/server` with Tempo testnet `charge` and `session`
+methods. Use the returned MPP handlers to generate the standard payment
+challenge and receipt; do not implement payment verification yourself.
+
 ## Parameters
 
 * Use the payment recipient address from `RECIPIENT_ADDRESS` when that environment variable is set for the charge endpoint. The session endpoint may use its own funded settlement account.
