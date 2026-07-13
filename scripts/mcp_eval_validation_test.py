@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared/tempo/mcp-eval"))
 
 from validation import (  # noqa: E402
+    component_reward,
     data_tool_from_source,
     evidence_summary,
     expected_answer_errors,
@@ -18,6 +19,16 @@ from validation import (  # noqa: E402
 
 
 class McpEvalValidationTest(unittest.TestCase):
+    def test_component_reward_is_equal_weighted(self) -> None:
+        components = {
+            "schema_valid": 1,
+            "docs_source_valid": 0,
+            "mcp_tool_mix_valid": 1,
+            "data_evidence_valid": 1,
+            "task_requirements_valid": 0,
+        }
+        self.assertEqual(component_reward(components), 0.6)
+
     def test_requires_docs_and_data_calls(self) -> None:
         self.assertTrue(
             has_required_tool_mix(
@@ -240,7 +251,7 @@ class McpEvalValidationTest(unittest.TestCase):
             [],
         )
         self.assertIn(
-            "answer item has invalid value: observations[0].subject",
+            "answer item field must match pattern: observations[0].subject",
             expected_answer_errors(
                 {
                     **answer,
@@ -259,6 +270,92 @@ class McpEvalValidationTest(unittest.TestCase):
                 expected,
                 events,
             ),
+        )
+
+    def test_allows_empty_evidence_refs_and_flexible_hash_location(self) -> None:
+        expected = {
+            "minimum_sources": 1,
+            "required_data_tools": [],
+            "structured": {
+                "required_fields": ["summary", "observations"],
+                "array_fields": {
+                    "observations": {
+                        "min_items": 1,
+                        "item_required_fields": [
+                            "subject",
+                            "details",
+                            "evidence_refs",
+                        ],
+                        "item_patterns": {},
+                        "any_item_patterns": [
+                            {
+                                "fields": ["subject", "details"],
+                                "pattern": "0x[a-f0-9]{64}",
+                            }
+                        ],
+                    }
+                },
+            },
+        }
+        answer = {
+            "summary": "Observed transfer.",
+            "observations": [
+                {
+                    "subject": "Token and account roles",
+                    "details": "Transaction 0x" + "a" * 64 + " transferred funds.",
+                    "evidence_refs": [],
+                }
+            ],
+            "sources": ["https://docs.tempo.xyz/"],
+        }
+        self.assertEqual(expected_answer_errors(answer, expected, []), [])
+
+    def test_requires_item_patterns_on_every_item(self) -> None:
+        expected = {
+            "minimum_sources": 1,
+            "required_data_tools": [],
+            "structured": {
+                "required_fields": ["summary", "observations"],
+                "array_fields": {
+                    "observations": {
+                        "min_items": 2,
+                        "item_required_fields": ["subject", "details"],
+                        "item_patterns": {"subject": "0x[a-f0-9]{64}"},
+                    }
+                },
+            },
+        }
+        answer = {
+            "summary": "Observed two access keys.",
+            "observations": [
+                {"subject": "0x" + "a" * 64, "details": "First access key."},
+                {"subject": "not-a-hash", "details": "Second access key."},
+            ],
+            "sources": ["https://docs.tempo.xyz/"],
+        }
+
+        self.assertIn(
+            "answer item field must match pattern: observations[1].subject",
+            expected_answer_errors(answer, expected, []),
+        )
+
+    def test_accepts_one_tool_from_a_task_specific_group(self) -> None:
+        expected = {
+            "minimum_sources": 1,
+            "required_data_tools": [],
+            "required_data_tool_any_of": [
+                ["v1_transactions_get", "v1_transactions_transactionHash_get"]
+            ],
+            "structured": {"required_fields": [], "array_fields": {}},
+        }
+        answer = {"sources": ["https://docs.tempo.xyz/"]}
+        self.assertEqual(
+            expected_answer_errors(
+                answer,
+                expected,
+                [{"allowed": True, "tool": "v1_transactions_transactionHash_get"}],
+            ),
+            [],
         )
 
 

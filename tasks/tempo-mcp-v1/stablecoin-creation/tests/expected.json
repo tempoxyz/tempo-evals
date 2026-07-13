@@ -1,5 +1,5 @@
 {
-  "minimum_sources": 3,
+  "minimum_sources": 1,
   "required_data_tools": ["v1_tokens_get", "v1_tokens_token_transactions"],
   "structured": {
     "required_fields": ["summary", "observations", "inferences"],

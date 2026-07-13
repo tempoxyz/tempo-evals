@@ -141,6 +141,20 @@ npm run bench:daytona:oracle -- --base-image "$(npm run -s base-image:ref)"
 npm run bench:daytona:agent -- --base-image "$(npm run -s base-image:ref)"
 ```
 
+## Cataloging Production Runs
+
+After a production run completes, upload its full Harbor job to Harbor Hub and
+add a small, Git-tracked run record under `results/<benchmark>/runs/<run-id>/`.
+The Harbor Hub job is the canonical archive for raw results, logs, artifacts,
+and configuration; the local record is a human-readable index and place for
+optional derived analysis.
+
+Start each run record from
+[`results/RUN_TEMPLATE.md`](results/RUN_TEMPLATE.md). Keep the published
+dataset digest, Harbor Hub job link, run configuration, and headline metrics in
+the record. Do not add run records beneath `tasks/`, because production history
+must not change a benchmark dataset's digest.
+
 ## Authoring a New Task
 
 Read the suite README first; each suite has its own task model and shared

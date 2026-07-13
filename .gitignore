@@ -1,6 +1,6 @@
 # Harbor outputs
-jobs/
-runs/
+/jobs/
+/runs/
 
 # OS/editor noise
 .DS_Store
