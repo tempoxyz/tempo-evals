@@ -46,9 +46,10 @@ Harbor terms used throughout this repository:
 - **Trial and job** — a trial is one agent attempt at a task producing a
   reward; a job is a batch of trials. Jobs here are compiled from `config/`
   into `config/generated/` rather than written by hand.
-- **Access profile** — run-time injection of documentation or MCP access into
-  a job, configured in `config/tasks.yaml`, so the same task artifact can be
-  evaluated under different capabilities.
+- **Access profile** — run-time injection of pinned documentation alone or
+  pinned documentation plus MCP access into a job, configured in
+  `config/tasks.yaml`, so the same task artifact can be evaluated under
+  different capabilities.
 
 ## Setup
 
@@ -96,11 +97,11 @@ Three shared layers keep the suites consistent:
 - **One base image.** Every task environment extends the base image configured
   in `config/tasks.yaml`, which bundles the RewardKit environment and the
   shared Tempo verifier.
-- **Injected access profiles.** Benchmark jobs grant documentation or MCP
-  access at run time instead of baking it into task source, so the same task
-  artifact can be evaluated under different profiles. Profiles are configured
-  centrally in `config/tasks.yaml`; see the suite guides for profile-specific
-  behavior.
+- **Injected access profiles.** Benchmark jobs grant pinned documentation
+  alone or pinned documentation plus MCP access at run time instead of baking
+  it into task source, so the same task artifact can be evaluated under
+  different profiles. Profiles are configured centrally in
+  `config/tasks.yaml`; see the suite guides for profile-specific behavior.
 - **Immutable benchmark majors.** A dataset version fixes its task set,
   prompts, verifier behavior, and scoring. Changes that make results
   incomparable require a new dataset version rather than an in-place rewrite.
@@ -140,12 +141,43 @@ npm run bench:daytona:oracle -- --base-image "$(npm run -s base-image:ref)"
 # Full Claude Code matrix on Daytona.
 npm run bench:daytona:agent -- --base-image "$(npm run -s base-image:ref)"
 
-# One-attempt run over the configured production model matrix.
-npm run bench:matrix:dev -- --task-suite tempo --base-image "$(npm run -s base-image:ref)"
+BASE_IMAGE="$(npm run -s base-image:ref)"
 
-# Three-attempt run over the configured production model matrix.
-npm run bench:matrix:production -- --task-suite tempo --base-image "$(npm run -s base-image:ref)"
+# Haiku, one attempt, all Tempo tasks, both Docs and MCP profiles.
+npm run bench:matrix:dev -- \
+  --task-suite tempo --profile all --base-image "$BASE_IMAGE"
+
+# Haiku, one attempt, all Tempo tasks, pinned Docs only.
+npm run bench:matrix:dev -- \
+  --task-suite tempo --profile docs --base-image "$BASE_IMAGE"
+
+# Haiku, one attempt, all Tempo tasks, pinned Docs plus Tempo MCP.
+npm run bench:matrix:dev -- \
+  --task-suite tempo --profile mcp --base-image "$BASE_IMAGE"
+
+# All production models, three attempts, both profiles.
+npm run bench:matrix:production -- \
+  --task-suite tempo --profile all --base-image "$BASE_IMAGE"
+
+# All production models, three attempts, pinned Docs only.
+npm run bench:matrix:production -- \
+  --task-suite tempo --profile docs --base-image "$BASE_IMAGE"
+
+# All production models, three attempts, pinned Docs plus Tempo MCP.
+npm run bench:matrix:production -- \
+  --task-suite tempo --profile mcp --base-image "$BASE_IMAGE"
 ```
+
+`bench:matrix:dev` reads `config/models.dev.yaml`; the production command reads
+`config/models.production.yaml`. Both commands include every matching task
+unless `--task-filter` is provided. The `docs` profile provides pinned Docs;
+the `mcp` profile provides the same pinned Docs plus the Tempo MCP server.
+
+`--concurrency` is the concurrent-trial limit for each profile job, not a
+combined limit. `--profile all` runs the Docs and Docs-plus-MCP jobs in
+parallel, so `--concurrency 32` permits up to 32 trials in each job, or 64
+across the pair. The model configs cap agent phases at 16 per provider and
+profile; `--agent-concurrency` overrides those caps.
 
 ## Cataloging Production Runs
 

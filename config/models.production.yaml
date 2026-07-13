@@ -1,23 +1,24 @@
-# Production model matrix for `npm run bench:production`.
+# Production model matrix for the `bench:matrix:production` script.
 #
-# `--agent-concurrency N` overrides per-entry n_concurrent for the run.
+# Models from one provider share a per-profile `n_concurrent` pool.
+# `--agent-concurrency N` overrides these limits for the run.
 models:
   - agent: claude-code
     model_name: claude-haiku-4-5-20251001
-    n_concurrent: 8
+    n_concurrent: 16
     concurrency_group: anthropic
 
   - agent: claude-code
     model_name: claude-sonnet-5
-    n_concurrent: 8
+    n_concurrent: 16
     concurrency_group: anthropic
 
   - agent: codex
     model_name: gpt-5.4-mini-2026-03-17
-    n_concurrent: 8
+    n_concurrent: 16
     concurrency_group: openai
 
   - agent: codex
     model_name: gpt-5.4-2026-03-05
-    n_concurrent: 8
+    n_concurrent: 16
     concurrency_group: openai
