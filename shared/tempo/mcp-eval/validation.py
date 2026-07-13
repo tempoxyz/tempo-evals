@@ -224,6 +224,12 @@ def expected_answer_errors(
                             else None
                         )
                         item_label = f"{field}[{index}].{item_field}"
+                        if item_field == "evidence_refs":
+                            if not isinstance(item_value, list):
+                                errors.append(
+                                    f"answer item has invalid field: {item_label}"
+                                )
+                            continue
                         if (
                             item_value in (None, "")
                             or item_value == []
@@ -243,6 +249,32 @@ def expected_answer_errors(
                             errors.append(
                                 f"answer item has invalid value: {item_label}"
                             )
+                any_item_patterns = requirement.get("any_item_patterns", [])
+                if not isinstance(any_item_patterns, list):
+                    errors.append(f"expected item requirement is invalid: {field}")
+                    continue
+                for pattern_requirement in any_item_patterns:
+                    if not isinstance(pattern_requirement, dict):
+                        errors.append(f"expected item requirement is invalid: {field}")
+                        continue
+                    fields = pattern_requirement.get("fields")
+                    pattern = pattern_requirement.get("pattern")
+                    if not isinstance(fields, list) or not isinstance(pattern, str):
+                        errors.append(f"expected item requirement is invalid: {field}")
+                        continue
+                    if not any(
+                        isinstance(item, dict)
+                        and any(
+                            isinstance(item.get(candidate), str)
+                            and re.search(pattern, item[candidate], flags=re.IGNORECASE)
+                            for candidate in fields
+                            if isinstance(candidate, str)
+                        )
+                        for item in value
+                    ):
+                        errors.append(
+                            f"answer field needs an item matching pattern: {field}"
+                        )
     minimum_sources = expected.get("minimum_sources", 1)
     if not isinstance(minimum_sources, int) or len(sources) < minimum_sources:
         errors.append(f"answer must provide at least {minimum_sources} sources")

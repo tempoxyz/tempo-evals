@@ -4,7 +4,7 @@
   "structured": {
     "required_fields": ["summary", "observations", "inferences"],
     "array_fields": {
-      "observations": {"min_items": 1, "item_required_fields": ["subject", "details", "evidence_refs"], "item_patterns": {"subject": "0x[a-fA-F0-9]{64}"}},
+      "observations": {"min_items": 1, "item_required_fields": ["subject", "details", "evidence_refs"], "item_patterns": {}, "any_item_patterns": [{"fields": ["subject", "details"], "pattern": "0x[a-fA-F0-9]{64}"}]},
       "inferences": {"min_items": 1, "item_required_fields": ["claim", "basis", "evidence_refs"], "item_patterns": {}}
     }
   }

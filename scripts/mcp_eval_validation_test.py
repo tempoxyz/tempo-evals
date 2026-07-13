@@ -261,6 +261,44 @@ class McpEvalValidationTest(unittest.TestCase):
             ),
         )
 
+    def test_allows_empty_evidence_refs_and_flexible_hash_location(self) -> None:
+        expected = {
+            "minimum_sources": 1,
+            "required_data_tools": [],
+            "structured": {
+                "required_fields": ["summary", "observations"],
+                "array_fields": {
+                    "observations": {
+                        "min_items": 1,
+                        "item_required_fields": [
+                            "subject",
+                            "details",
+                            "evidence_refs",
+                        ],
+                        "item_patterns": {},
+                        "any_item_patterns": [
+                            {
+                                "fields": ["subject", "details"],
+                                "pattern": "0x[a-f0-9]{64}",
+                            }
+                        ],
+                    }
+                },
+            },
+        }
+        answer = {
+            "summary": "Observed transfer.",
+            "observations": [
+                {
+                    "subject": "Token and account roles",
+                    "details": "Transaction 0x" + "a" * 64 + " transferred funds.",
+                    "evidence_refs": [],
+                }
+            ],
+            "sources": ["https://docs.tempo.xyz/"],
+        }
+        self.assertEqual(expected_answer_errors(answer, expected, []), [])
+
 
 if __name__ == "__main__":
     unittest.main()
