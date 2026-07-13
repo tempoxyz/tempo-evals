@@ -607,7 +607,7 @@ def run_typescript_script(
     timeout: int = 120,
 ) -> dict:
     result = subprocess.run(
-        ["npx", "--no-install", "tsx", str(script)],
+        ["tsx", str(script)],
         cwd=WORKSPACE,
         env={**os.environ, **(env or {})},
         text=True,
@@ -646,7 +646,7 @@ def start_oracle_paid_server() -> tuple[subprocess.Popen[str], dict]:
     stdout = (LOG_DIR / "oracle-server.stdout.txt").open("w", encoding="utf-8")
     stderr = (LOG_DIR / "oracle-server.stderr.txt").open("w", encoding="utf-8")
     process = subprocess.Popen(
-        ["npx", "--no-install", "tsx", str(script)],
+        ["tsx", str(script)],
         cwd=WORKSPACE,
         env={
             **os.environ,

@@ -23,7 +23,10 @@ RUN apt-get update \
     python3 \
     python3-pip \
     python3-venv \
+    psmisc \
   && rm -rf /var/lib/apt/lists/*
+
+RUN npm install --global tsx@4.23.1 --no-audit --no-fund
 
 COPY shared/global/rewardkit-lib/pyproject.toml /tmp/tempo-bench-rewardkit/pyproject.toml
 
