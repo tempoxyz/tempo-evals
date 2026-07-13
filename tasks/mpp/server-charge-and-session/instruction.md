@@ -50,6 +50,9 @@ const session = tempo.session({ account, currency: pathUsd,
 
 For the session endpoint, `recipient` must be that generated `account.address`;
 do not reuse `RECIPIENT_ADDRESS`, which applies only to the charge endpoint.
+The published URL must accept GET for the initial session request and also pass
+the session manager's close request on the same path to the MPPX session
+handler (do not return 404 merely because that close request is not GET).
 
 Use the human `MPP_CHARGE_AMOUNT` string (such as `"0.01"`) for both handlers;
 do not convert it with `parseUnits`.
