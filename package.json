@@ -25,6 +25,8 @@
     "bench:daytona:oracle": "uv run python scripts/run_benchmark.py daytona-oracle",
     "bench:daytona:agent": "uv run python scripts/run_benchmark.py daytona-agent",
     "bench:daytona:agent:dev": "uv run python scripts/run_benchmark.py daytona-agent-dev",
+    "bench:matrix:dev": "uv run python scripts/run_benchmark.py production-daytona --n-attempts 1",
+    "bench:matrix:production": "uv run python scripts/run_benchmark.py production-daytona --n-attempts 3",
     "bench:production": "uv run python scripts/run_benchmark.py production-daytona",
     "results:export": "uv run python scripts/export_results.py",
     "results:compare": "uv run python scripts/compare_mcp_results.py",
