@@ -31,7 +31,7 @@ digest = "sha256:86df44e755df5b754e997df12acfe5189926c8884af1718006222ddbe774de8
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:fde98b0710d05631612b1d6f8e5ae65203dcf6901a8ef1039f5e8f1a79bea8aa"
+digest = "sha256:589babcd2c9495ae42fabdb709f1d6f55213a2d4ec36609078bf7f90f2e99c37"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
