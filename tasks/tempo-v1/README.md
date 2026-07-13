@@ -16,9 +16,9 @@ that performs a variety of operations on the Tempo blockchain.
 - Submitting valid transactions whose onchain effects match the task contract.
 - Working effectively with either pinned documentation or the Tempo MCP server.
 
-Current tasks cover batched and memo transfers, fee payment, stablecoin and
-transfer-policy creation, faucet funding, fee-token configuration, and
-Stablecoin DEX swaps.
+Current tasks cover access-key authorization, batched and memo transfers, fee
+payment, stablecoin and transfer-policy creation, faucet funding, fee-token
+configuration, and Stablecoin DEX swaps.
 
 ## Harness
 
