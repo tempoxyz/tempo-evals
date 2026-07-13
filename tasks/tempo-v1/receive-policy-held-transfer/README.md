@@ -1,4 +1,4 @@
-# Tempo Receive Policy Bounced Transfer
+# Tempo Receive Policy Held Transfer
 
 ## Overview
 
