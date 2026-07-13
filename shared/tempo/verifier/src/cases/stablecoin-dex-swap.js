@@ -1,4 +1,4 @@
-const { parseAbiItem, parseUnits } = require("viem");
+const { decodeFunctionData, parseAbi, parseAbiItem, parseUnits } = require("viem");
 const { expectAddress, expectHash, expectObject, readResult } = require("../result");
 const { defaultRuntimeEnv } = require("../submission");
 const { findEvent, receiptAfter, sameAddress, waitForEvidence } = require("../tempo");
@@ -6,6 +6,9 @@ const { findEvent, receiptAfter, sameAddress, waitForEvidence } = require("../te
 const ORDER_FILLED = parseAbiItem(
   "event OrderFilled(uint128 indexed orderId, address indexed maker, address indexed taker, uint128 amountFilled, bool partialFill)",
 );
+const SWAP = parseAbi([
+  "function swapExactAmountIn(address tokenIn, address tokenOut, uint128 amountIn, uint128 minAmountOut) returns (uint128 amountOut)",
+]);
 const TRANSFER = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
 function result(config) {
@@ -45,13 +48,34 @@ async function verify({ client, config, fromBlock }) {
     );
     if (!receipt) return null;
 
+    const transaction = await client.getTransaction({ hash: transactionHash });
+    const calls = transaction.calls ?? [{ data: transaction.input, to: transaction.to }];
+    const requestedSwap = calls.some((call) => {
+      if (!sameAddress(call.to, config.stablecoinDex)) return false;
+      try {
+        const decoded = decodeFunctionData({ abi: SWAP, data: call.data });
+        return (
+          decoded.functionName === "swapExactAmountIn" &&
+          sameAddress(decoded.args[0], config.swapTokenIn) &&
+          sameAddress(decoded.args[1], config.swapTokenOut) &&
+          decoded.args[2] === amount &&
+          decoded.args[3] >= minimumAmountOut
+        );
+      } catch {
+        return false;
+      }
+    });
+    if (!requestedSwap) throw new Error("reported transaction does not request the configured swap");
+
     const fill = findEvent(receipt, config.stablecoinDex, ORDER_FILLED, (args) =>
-      sameAddress(args.taker, taker),
+      sameAddress(args.taker, taker) && args.amountFilled > 0n,
     );
     if (!fill) throw new Error("reported transaction does not fill a DEX order");
 
     const spent = findEvent(receipt, config.swapTokenIn, TRANSFER, (args) =>
-      sameAddress(args.from, taker) && args.value === amount,
+      sameAddress(args.from, taker) &&
+      sameAddress(args.to, config.stablecoinDex) &&
+      args.value === amount,
     );
     if (!spent) throw new Error("reported transaction does not spend the requested swap input");
 
