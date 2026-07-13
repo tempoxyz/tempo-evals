@@ -1,5 +1,12 @@
 # Claude Sonnet 5 paired MCP run — 2026-07-12
 
+## Overview
+
+This one-attempt paired run evaluates Claude Sonnet 5 on the Tempo MCP benchmark
+with direct documentation tools and documentation code mode. It establishes a
+post-validator-update baseline for correctness, quality, and access-mode
+efficiency.
+
 | Field | Value |
 | --- | --- |
 | Benchmark | `tempo/tempo-mcp-bench-v1` |
