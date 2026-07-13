@@ -19,6 +19,7 @@ from scripts.run_benchmark import (
     daytona_base_image,
     finalize_config,
     parse_args,
+    production_job,
     run_benchmark_key,
     run_benchmark_variant,
     stage_filtered_config,
@@ -142,6 +143,32 @@ class RunBenchmarkTest(unittest.TestCase):
         _, options = parse_args(["daytona-agent", "--profile", "all"])
 
         self.assertEqual(options["profile"], "all")
+
+    def test_parse_args_accepts_production_attempts(self) -> None:
+        _, options = parse_args(["production-daytona", "--n-attempts", "1"])
+
+        self.assertEqual(options["n_attempts"], "1")
+
+    def test_production_job_uses_requested_attempts(self) -> None:
+        model_config = {
+            "models": [
+                {
+                    "agent": "claude-code",
+                    "model_name": "claude-haiku-4-5",
+                    "n_concurrent": None,
+                    "concurrency_group": None,
+                }
+            ]
+        }
+
+        self.assertEqual(
+            production_job("test-run", model_config, {"n_attempts": "1"})["n_attempts"],
+            1,
+        )
+        self.assertEqual(
+            production_job("test-run", model_config, {})["n_attempts"],
+            3,
+        )
 
     def test_mcp_profile_is_injected_at_job_level(self) -> None:
         config = {"agents": [{"name": "claude-code"}, {"name": "oracle"}]}
