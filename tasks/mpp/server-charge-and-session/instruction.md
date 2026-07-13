@@ -30,6 +30,9 @@ return NodeListener.sendResponse(response, result.withReceipt(Response.json(body
 
 Register `tempo.charge(...)` and `tempo.session(...)` in `Mppx.create`; the
 session method needs its own Tempo testnet account/client for settlement.
+The server must start using only the listed parameters plus `MPP_SECRET_KEY`;
+generate any session settlement key in-process rather than requiring another
+environment variable.
 
 ## Parameters
 

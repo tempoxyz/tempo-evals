@@ -11,11 +11,11 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:64077fa82321e56a08f6eec7bdfa06b941e005e22bc590faf458c376b0edb84e"
+digest = "sha256:f5699cc7d65491f9d02a56e5a22185f5a95953c09b3360a6a48c92ec9e10b820"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:fdba8a0d1c5f0d562ec43013a9c0880f5a088cc2ff54c21246f5b2d6dd4e2eb5"
+digest = "sha256:406f291b8760b3986c35e5bd4d0d02e1f2e31724f6c657527b8fb4ddf838bcf1"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
@@ -27,11 +27,11 @@ digest = "sha256:17d651b624f0bd0de9c12a193c77ffae0b7baeb4374296ba67f9231c9f94309
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:462b8948b23d4e86dcd901aa6181a73d8a76c10c3502c55266a5b0005b1edbed"
+digest = "sha256:86df44e755df5b754e997df12acfe5189926c8884af1718006222ddbe774de87"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:940c1e506b707be1efaa02d0cab7b299c1300c10d02344faf336179ec96c58c4"
+digest = "sha256:fde98b0710d05631612b1d6f8e5ae65203dcf6901a8ef1039f5e8f1a79bea8aa"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
@@ -39,9 +39,9 @@ digest = "sha256:93df3d8a1b836b6da1c4cef0cfea514693fda2ef94d5401674d2e92186afb30
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:8c3a724a1d5a4d9bcef8c7d847c74dfbbfbc6375c274da0ce7c5383c19dba143"
+digest = "sha256:eee17d23bc12135263f1761033b12f12428317fad6c850eca9c69d0597697a6d"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:662a0d72066ce5637c652078da4236fd4ab3cfcf5e2a3129f531850175ea4fce"
+digest = "sha256:78629a4d9857e6f629846687c3a59b9ae38545a4025b9a12fb4a0f3049ef9183"
 

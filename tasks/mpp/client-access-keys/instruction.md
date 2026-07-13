@@ -16,6 +16,8 @@ then configure the client method as
 `tempo({ account, expectedChainId: 42431, getClient: () => client })`. Call
 `mppx.fetch(PAID_URL)` and read `payment-receipt` from the response. Compile
 with `tsc` and run JavaScript or `tsx`; do not use `ts-node`.
+`TEMPO_MPP_PAYER_PRIVATE_KEY` is already a `0x`-prefixed 32-byte hex key; pass
+it directly to `privateKeyToAccount` without adding another prefix.
 
 ## Parameters
 

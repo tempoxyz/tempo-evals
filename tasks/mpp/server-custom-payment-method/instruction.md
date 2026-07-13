@@ -20,6 +20,9 @@ For the Node HTTP paid route, pass the native request through
 `ServerRequest.fromNodeListener`. Send `result.challenge` for a 402 and
 `result.withReceipt(Response.json(...))` for an accepted credential via
 `NodeListener.sendResponse`; do not use `res.json` for either MPP result.
+Name the method exactly `bench-key`. Its verifier must return
+`Receipt.from({ method: "bench-key", status: "success", reference, timestamp })`
+for the configured access key, rather than an application-specific status object.
 
 ## Parameters
 

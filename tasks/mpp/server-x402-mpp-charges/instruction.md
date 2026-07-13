@@ -28,6 +28,8 @@ then send `result.challenge` for 402 or
 `result.withReceipt(Response.json(...))` through `NodeListener.sendResponse`.
 Do not call `res.json` after an accepted MPP or x402 payment, because it drops
 the receipt and settlement headers.
+Amounts are human-denominated token values: configure the x402 USDC charge as
+`"0.01"`, not its `1000000` raw six-decimal base units.
 
 ## Parameters
 
