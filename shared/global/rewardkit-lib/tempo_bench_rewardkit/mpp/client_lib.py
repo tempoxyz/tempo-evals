@@ -293,10 +293,21 @@ def challenge_request(url: str, expected: dict[str, str]) -> dict:
         "intent": challenge.intent,
         **challenge.request,
     }
+
+    def matches(key: str, expected_value: str) -> bool:
+        actual_value = actual.get(key)
+        if (
+            isinstance(actual_value, str)
+            and expected_value.startswith("0x")
+            and len(expected_value) == 42
+        ):
+            return actual_value.lower() == expected_value.lower()
+        return actual_value == expected_value
+
     mismatches = {
         key: {"expected": expected_value, "actual": actual.get(key)}
         for key, expected_value in expected.items()
-        if actual.get(key) != expected_value
+        if not matches(key, expected_value)
     }
     if mismatches:
         raise RuntimeError(f"payment challenge did not match contract: {mismatches}")

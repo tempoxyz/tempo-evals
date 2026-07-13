@@ -26,7 +26,10 @@ RUN apt-get update \
     psmisc \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install --global tsx@4.23.1 --no-audit --no-fund
+RUN npm install --global \
+    tsx@4.23.1 \
+    @modelcontextprotocol/sdk@1.29.0 \
+    --no-audit --no-fund
 
 COPY shared/global/rewardkit-lib/pyproject.toml /tmp/tempo-bench-rewardkit/pyproject.toml
 
