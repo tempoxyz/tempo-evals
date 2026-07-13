@@ -6,8 +6,8 @@ import {
   readFileSync,
   statSync,
 } from "node:fs";
-import { createServer as createHttpServer } from "node:http";
-import { createServer as createHttpsServer } from "node:https";
+import { createServer as createHttpServer, request as createHttpRequest } from "node:http";
+import { createServer as createHttpsServer, request as createHttpsRequest } from "node:https";
 import path from "node:path";
 
 const port = Number(process.env.PORT ?? "3000");
@@ -16,6 +16,18 @@ const docsRoot = path.resolve(process.env.TEMPO_DOCS_ROOT ?? "/tempo-docs");
 const tlsCertFile = process.env.TLS_CERT_FILE ?? "/tls/docs.crt";
 const tlsKeyFile = process.env.TLS_KEY_FILE ?? "/tls/docs.key";
 const accessLogPath = process.env.ACCESS_LOG_PATH ?? "/var/log/tempo-docs/access.log";
+const apiUpstreamOrigin = process.env.TEMPO_API_UPSTREAM_ORIGIN ?? "https://developers.tempo.xyz";
+const apiPrefix = "/developers/api/";
+const hopByHopHeaders = new Set([
+  "connection",
+  "keep-alive",
+  "proxy-authenticate",
+  "proxy-authorization",
+  "te",
+  "trailer",
+  "transfer-encoding",
+  "upgrade",
+]);
 
 const contentTypes = new Map([
   [".html", "text/html; charset=utf-8"],
@@ -95,10 +107,55 @@ function logRequest(request, url) {
   );
 }
 
+function proxyHeaders(headers, { omitHost = false } = {}) {
+  const forwarded = {};
+  for (const [name, value] of Object.entries(headers)) {
+    if (hopByHopHeaders.has(name) || (omitHost && name === "host") || value === undefined) continue;
+    forwarded[name] = value;
+  }
+  return forwarded;
+}
+
+export function apiUpstreamUrl(url) {
+  const upstreamPath = url.pathname.slice("/developers".length);
+  return new URL(`${upstreamPath}${url.search}`, `${apiUpstreamOrigin}/`);
+}
+
+export function proxyApiRequest(request, response, url) {
+  const upstreamUrl = apiUpstreamUrl(url);
+  const send = upstreamUrl.protocol === "https:" ? createHttpsRequest : createHttpRequest;
+  const upstreamRequest = send(
+    upstreamUrl,
+    {
+      method: request.method,
+      headers: proxyHeaders(request.headers, { omitHost: true }),
+    },
+    (upstreamResponse) => {
+      response.writeHead(
+        upstreamResponse.statusCode ?? 502,
+        proxyHeaders(upstreamResponse.headers),
+      );
+      upstreamResponse.on("error", (error) => response.destroy(error));
+      upstreamResponse.pipe(response);
+    },
+  );
+  upstreamRequest.on("error", (error) => {
+    console.error("Tempo API proxy error:", error);
+    if (response.headersSent) {
+      response.destroy(error);
+      return;
+    }
+    response.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Tempo API upstream unavailable\n");
+  });
+  request.on("aborted", () => upstreamRequest.destroy());
+  request.pipe(upstreamRequest);
+}
+
 mkdirSync(path.dirname(accessLogPath), { recursive: true });
 appendFileSync(accessLogPath, "");
 
-function serveDocs(request, response) {
+export function serveDocs(request, response) {
   const url = new URL(request.url ?? "/", "https://docs.tempo.xyz");
 
   if (url.pathname === "/health") {
@@ -113,6 +170,11 @@ function serveDocs(request, response) {
   }
 
   logRequest(request, url);
+
+  if (url.pathname.startsWith(apiPrefix)) {
+    proxyApiRequest(request, response, url);
+    return;
+  }
 
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.writeHead(405, { "content-type": "text/plain; charset=utf-8" });
@@ -136,33 +198,35 @@ function serveDocs(request, response) {
   createReadStream(filePath).pipe(response);
 }
 
-const httpServer = createHttpServer((request, response) => {
-  if (new URL(request.url ?? "/", "http://docs.tempo.xyz").pathname === "/health") {
-    serveDocs(request, response);
-    return;
-  }
-  const host = (request.headers.host ?? "docs.tempo.xyz").replace(/:80$/, "");
-  response.writeHead(308, { location: `https://${host}${request.url ?? "/"}` });
-  response.end();
-});
+if (process.env.NODE_ENV !== "test") {
+  const httpServer = createHttpServer((request, response) => {
+    if (new URL(request.url ?? "/", "http://docs.tempo.xyz").pathname === "/health") {
+      serveDocs(request, response);
+      return;
+    }
+    const host = (request.headers.host ?? "docs.tempo.xyz").replace(/:80$/, "");
+    response.writeHead(308, { location: `https://${host}${request.url ?? "/"}` });
+    response.end();
+  });
 
-const httpsServer = createHttpsServer(
-  { cert: readFileSync(tlsCertFile), key: readFileSync(tlsKeyFile) },
-  serveDocs,
-);
+  const httpsServer = createHttpsServer(
+    { cert: readFileSync(tlsCertFile), key: readFileSync(tlsKeyFile) },
+    serveDocs,
+  );
 
-httpServer.listen(port, (error) => {
-  if (error) {
-    console.error("Failed to start Tempo docs HTTP server:", error);
-    process.exit(1);
-  }
-  console.log(`Tempo docs HTTP server serving ${docsRoot} on port ${port}`);
-});
+  httpServer.listen(port, (error) => {
+    if (error) {
+      console.error("Failed to start Tempo docs HTTP server:", error);
+      process.exit(1);
+    }
+    console.log(`Tempo docs HTTP server serving ${docsRoot} on port ${port}`);
+  });
 
-httpsServer.listen(httpsPort, (error) => {
-  if (error) {
-    console.error("Failed to start Tempo docs HTTPS server:", error);
-    process.exit(1);
-  }
-  console.log(`Tempo docs HTTPS server serving ${docsRoot} on port ${httpsPort}`);
-});
+  httpsServer.listen(httpsPort, (error) => {
+    if (error) {
+      console.error("Failed to start Tempo docs HTTPS server:", error);
+      process.exit(1);
+    }
+    console.log(`Tempo docs HTTPS server serving ${docsRoot} on port ${httpsPort}`);
+  });
+}
