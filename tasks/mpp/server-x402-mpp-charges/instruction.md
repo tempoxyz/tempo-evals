@@ -6,7 +6,7 @@ charge route.
 
 The MPP route must accept pathUSD on Tempo testnet and return JSON after
 payment. The x402 route must advertise an x402 USDC payment challenge and return
-JSON after payment.
+JSON after payment. Both published URLs must accept HTTP GET requests.
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.
 

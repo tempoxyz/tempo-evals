@@ -6,6 +6,7 @@ Build an MPP server using TypeScript in `/app` that runs on Tempo testnet.
 Expose one paid JSON endpoint protected by an MPP charge. Also expose an
 OpenAPI discovery document that describes the paid endpoint and includes MPP
 payment metadata for that route.
+Both published URLs must accept HTTP GET requests.
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.
 

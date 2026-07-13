@@ -5,6 +5,7 @@ Build an MPP server using TypeScript in `/app` that runs on Tempo testnet.
 
 Expose one paid endpoint that uses an MPP charge and one paid endpoint that uses
 an MPP session payment. Both endpoints should return JSON after payment.
+Both published endpoint URLs must accept HTTP GET requests.
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.
 
