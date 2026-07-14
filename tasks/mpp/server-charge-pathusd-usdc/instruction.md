@@ -34,6 +34,9 @@ if (result.status === 402) return NodeListener.sendResponse(response, result.cha
 return NodeListener.sendResponse(response, result.withReceipt(Response.json(body)));
 ```
 
+`result.withReceipt` takes a Web `Response`, not a plain JSON object. Pass
+`Response.json(body)` exactly as shown.
+
 Register one `tempo.charge({ recipient, testnet: true })` method. Do not
 register two `tempo` methods: both have the same `tempo/charge` identifier and
 the latter would replace the pathUSD offer. The currencies belong in the two
