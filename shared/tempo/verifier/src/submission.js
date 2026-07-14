@@ -76,8 +76,19 @@ function defaultRuntimeEnv(config) {
   };
 }
 
+function withRpcRetryEnv(env) {
+  const retryPreload = `--require=${path.join(__dirname, "rpc-retry-preload.js")}`;
+  return {
+    ...env,
+    NODE_OPTIONS: [env.NODE_OPTIONS ?? process.env.NODE_OPTIONS, retryPreload]
+      .filter(Boolean)
+      .join(" "),
+  };
+}
+
 module.exports = {
   assertSubmissionShape,
   defaultRuntimeEnv,
   runStep,
+  withRpcRetryEnv,
 };

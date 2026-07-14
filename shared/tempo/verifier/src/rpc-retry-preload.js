@@ -1,0 +1,1 @@
+require("./rpc-retry").installRpcRetry();

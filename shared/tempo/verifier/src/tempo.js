@@ -1,6 +1,7 @@
 // SYNCED FROM shared/tempo/verifier/src/tempo.js BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 const { createPublicClient, decodeEventLog, http, pad, stringToHex } = require("viem");
 const { tempoTestnet } = require("viem/tempo/chains");
+const { isRpcRetryExhausted } = require("./rpc-retry");
 
 function createTempoClient() {
   return createPublicClient({ chain: tempoTestnet, transport: http() });
@@ -51,7 +52,8 @@ async function receiptAfter(client, fromBlock, hash, from, label) {
   let receipt;
   try {
     receipt = await client.getTransactionReceipt({ hash });
-  } catch {
+  } catch (error) {
+    if (isRpcRetryExhausted(error)) throw error;
     return null;
   }
   if (receipt.status !== "success") throw new Error(`${label} did not succeed`);

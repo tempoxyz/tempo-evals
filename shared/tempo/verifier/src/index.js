@@ -2,7 +2,8 @@
 const fs = require("node:fs");
 const { readConfig, redactedConfig } = require("./config");
 const { writeException, writeJson, writeReward } = require("./logs");
-const { assertSubmissionShape, runStep } = require("./submission");
+const { isRpcRetryExhausted } = require("./rpc-retry");
+const { assertSubmissionShape, runStep, withRpcRetryEnv } = require("./submission");
 const { createTempoClient, waitForRpc } = require("./tempo");
 const cases = require("./cases");
 
@@ -26,6 +27,10 @@ function failureDetails(config, error, context, scores) {
     scores,
     fixture: redactedConfig(config),
   };
+}
+
+function isRetryableVerifierFailure(error, details) {
+  return details.phase === "rpc" || isRpcRetryExhausted(error);
 }
 
 async function main() {
@@ -81,7 +86,7 @@ async function main() {
       "submission-eval",
       "npm",
       ["run", "eval"],
-      verifier.runtimeEnv(config),
+      withRpcRetryEnv(verifier.runtimeEnv(config)),
     );
     scores.build = 1;
     scores.run = 1;
@@ -105,10 +110,12 @@ async function main() {
     const details = failureDetails(config, error, context, scores);
     writeJson(config, "details.json", details);
     writeException(config, details);
+    if (isRetryableVerifierFailure(error, details)) throw error;
     writeReward(config, { reward: 0, ...scores });
   }
 }
 
 module.exports = {
+  isRetryableVerifierFailure,
   main,
 };
