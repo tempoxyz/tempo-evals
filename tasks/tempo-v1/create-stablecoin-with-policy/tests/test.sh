@@ -13,7 +13,7 @@ rm -f "$LOG_DIR/reward.json" "$LOG_DIR/reward-details.json"
 trap 'rm -rf "$REWARDKIT_WORKSPACE"' EXIT
 
 write_zero_reward() {
-  printf '{"reward":0}\n' > "$LOG_DIR/reward.json"
+  printf '{"correctness":0,"quality":0,"reward":0}\n' > "$LOG_DIR/reward.json"
 }
 
 if ! cp -R "$WORKSPACE/." "$REWARDKIT_WORKSPACE"; then
