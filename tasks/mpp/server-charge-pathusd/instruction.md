@@ -50,6 +50,12 @@ Pass `MPP_CHARGE_AMOUNT` directly as the MPPX `amount` string (for example,
 
 When the server starts, write exactly one JSON file at `/app/out.json` matching this schema:
 
+```ts
+writeFileSync("/app/out.json", `${JSON.stringify({ freeUrl, paidUrl })}\n`);
+```
+
+Do not create an `/app/out/` directory or write `/app/out/out.json`.
+
 ```json
 {
   "type": "object",
