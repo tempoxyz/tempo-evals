@@ -6,6 +6,8 @@ testnet and accepts pathUSD.
 
 Use `mppx` 0.8.6 or newer and a compatible `viem` 2.x release.
 Bind the server to `0.0.0.0` or `127.0.0.1`; do not bind only to `localhost`.
+If binding to `0.0.0.0`, publish `127.0.0.1` in `out.json` URLs; `0.0.0.0` is
+a bind address, not a URL clients can call.
 
 Expose one free endpoint and one paid endpoint. Both endpoints should return JSON and accept HTTP GET requests.
 Use the Hono integration from `mppx/hono` for the paid route.
