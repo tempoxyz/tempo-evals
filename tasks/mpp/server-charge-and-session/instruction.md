@@ -18,7 +18,8 @@ challenge and receipt; do not implement payment verification yourself.
 Use pathUSD currency address `0x20c0000000000000000000000000000000000000`.
 Set `testnet: true` on the Tempo method (chain ID 42431).
 In particular, import `Chain` from `viem/tempo` and use `chain: Chain.testnet`;
-do not use `tempoTestnet` from `viem/chains`. The charge registration must be
+do not import anything from `viem/chains` (including aliases such as
+`tempoModerato`). The charge registration must be
 `tempo.charge({ currency: pathUsd, recipient, testnet: true })`, or its
 challenge will target chain ID 4217 instead of Tempo testnet.
 

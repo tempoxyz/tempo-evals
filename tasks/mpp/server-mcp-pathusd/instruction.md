@@ -21,7 +21,9 @@ Set `testnet: true` on the Tempo method (chain ID 42431).
 Use the MCP SDK's `McpServer`, `createMcpExpressApp`, and
 `StreamableHTTPServerTransport`; do not implement JSON-RPC methods yourself.
 Declare `@modelcontextprotocol/sdk` version 1.29.0 or newer as a direct
-dependency in `package.json`.
+dependency in `package.json`. The runtime dependencies must include
+`mppx` (0.8.6+), `viem` (2.x), `express`, and
+`@modelcontextprotocol/sdk` (1.29.0+); do not rely on transitive packages.
 Configure MPPX with `transport: MppMcpTransport.mcpSdk()`. In the paid tool,
 call `mppx.charge(...)(extra)`, throw `result.challenge` for a 402, and return
 `result.withReceipt({ content: [...] })` after payment.
