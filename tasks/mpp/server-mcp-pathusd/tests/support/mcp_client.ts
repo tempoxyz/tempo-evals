@@ -44,6 +44,14 @@ async function main() {
       intent: error.data?.challenges?.[0]?.intent,
     };
   }
+  if (
+    unpaid.paymentRequired !== true ||
+    unpaid.httpStatus !== 402 ||
+    unpaid.method !== "tempo" ||
+    unpaid.intent !== "charge"
+  ) {
+    throw new Error(`unpaid tool call did not require a Tempo charge: ${JSON.stringify(unpaid)}`);
+  }
 
   const account = privateKeyToAccount(process.env.TEMPO_MPP_PAYER_PRIVATE_KEY);
   const viemClient = createClient({
@@ -68,6 +76,15 @@ async function main() {
     arguments: {},
   });
   await client.close();
+  if (
+    !Array.isArray(paid.content) ||
+    paid.content.length === 0 ||
+    !paid.receipt ||
+    paid.receipt.method !== "tempo" ||
+    paid.receipt.status !== "success"
+  ) {
+    throw new Error("paid tool call did not return a successful Tempo receipt");
+  }
 
   console.log(
     JSON.stringify({

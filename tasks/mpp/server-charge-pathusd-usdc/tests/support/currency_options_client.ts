@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 
 async function main() {
   const require = createRequire("/opt/tempo-bench/verifier/package.json");
-  const { Challenge } = await import(require.resolve("mppx"));
+  const { Challenge, Receipt } = await import(require.resolve("mppx"));
   const { Mppx, tempo } = await import(require.resolve("mppx/client"));
   const { createClient, http } = await import(require.resolve("viem"));
   const { privateKeyToAccount } = await import(require.resolve("viem/accounts"));
@@ -29,9 +29,21 @@ async function main() {
   });
   const paid = await payer.fetch(paidUrl, { headers: { accept: "application/json" } });
   if (!paid.ok) throw new Error(`pathUSD payment returned ${paid.status}`);
-  if (!paid.headers.get("payment-receipt")) throw new Error("pathUSD response had no receipt");
+  const receiptHeader = paid.headers.get("payment-receipt");
+  if (!receiptHeader) throw new Error("pathUSD response had no receipt");
+  const receipt = Receipt.deserialize(receiptHeader);
   await paid.json();
-  console.log(JSON.stringify({ currencies, paid: { hasReceipt: true, status: paid.status } }));
+  console.log(
+    JSON.stringify({
+      currencies,
+      payer: account.address,
+      paid: {
+        hasReceipt: true,
+        receiptReference: receipt.reference,
+        status: paid.status,
+      },
+    }),
+  );
 }
 
 main();
