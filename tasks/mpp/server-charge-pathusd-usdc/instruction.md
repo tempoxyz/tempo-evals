@@ -38,6 +38,17 @@ Register one `tempo.charge({ recipient, testnet: true })` method. Do not
 register two `tempo` methods: both have the same `tempo/charge` identifier and
 the latter would replace the pathUSD offer. The currencies belong in the two
 `mppx.compose` entries above.
+Use this initialization; do not call `mppx.register`, `mppx.tempo`, or
+`Mppx.create()` without its methods:
+
+```ts
+import { Mppx, NodeListener, Request as ServerRequest, tempo } from "mppx/server";
+
+const mppx = Mppx.create({
+  secretKey: process.env.MPP_SECRET_KEY,
+  methods: [tempo.charge({ recipient, testnet: true })],
+});
+```
 Both compose entries take the human `MPP_CHARGE_AMOUNT` string such as `"0.01"`;
 do not convert it to raw token units.
 
