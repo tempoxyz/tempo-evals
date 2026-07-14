@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:a9c8d704400ed4cdebbbc962ae7467bf2cfda0f34cafe0f7f3cb077a99796b30"
+digest = "sha256:4ad8df6f0b6680a4aa500677e277eb1b39d023365c0eabba7f6ac9b2c8a8a21e"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:acf448c96f3d9c15d11c9c52fa67893cc44e7ad3310a89f3f97c1c1d4e3acc3e"
+digest = "sha256:b18adeb827f6c64579ab6c8858ea4688a8c66fc0ce7737153fb5c132e3810440"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:f0421ea0a5d0f74e9e154c2b1165206c256ce5dcb5f3a5a714c0ab95f4c1e5a2"
+digest = "sha256:93e072266112af4ab852cca65eb4349c72be18b2817ac866f9db07ac736ca8bc"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:9fc0b56a72067889fb992654f365bf3b2551cf7a3d508b6ce935798c55814de3"
+digest = "sha256:9711d684c2c5962276f8ca7f711f105baf05d2314f58401ac41379997260a2de"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:d5270b3715ccb64411a3c36442baffc7fa653181b21963cde88c0c71475fa087"
+digest = "sha256:c8a9154a704bf3e531aecbf7a6a854d42250aab01b290be150e2862ca7f3ef29"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:1f0a69f3b79477a233efbda416d98fb4eaeee0724ba64a64ff10f19f79d7fa4e"
+digest = "sha256:651dd9b63f5df99d6ce2245d10701e8e41f453cc4891d336de681d91767346b4"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:bad2d76719757e298c950b7b82559a2e8ef655aacdc700285dd7d936d3cabb8b"
+digest = "sha256:e4a3f5283454f01978d6832669cfec47aaede77766ec295ee8d0c260aed150e8"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:b245158038f36e2c00d8a0ebc84ae8fcecb535acfb6e9cf71741b83fd12b746b"
+digest = "sha256:bb882b0db7f60f3009efe02e6d4f3b23bab5d4681827325656c28211f3d8c3d0"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:c2e23a63bd44cf73a1e90b53558bfa1421453dd25db537d8ab8baab82ec77640"
+digest = "sha256:4ab58ba45814b498d1c1277e0d20ad5d953bde20381d0d1dcc0f0d52a328ebff"
 

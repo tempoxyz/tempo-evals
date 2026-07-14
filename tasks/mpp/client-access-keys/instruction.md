@@ -11,35 +11,14 @@ endpoint once and write the result.
 Use `Mppx.create` and the Tempo client method from `mppx/client` to make the
 payment. Do not construct a payment header or receipt yourself.
 
-Use these imports and client setup (do not use `createPublicClient` or a
-`tempoModerato` chain):
-
-```ts
-import { Receipt } from "mppx";
-import { Mppx, tempo } from "mppx/client";
-import { createClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { Chain } from "viem/tempo";
-
-const account = privateKeyToAccount(privateKey);
-const client = createClient({
-  account,
-  chain: Chain.testnet,
-  transport: http(process.env.MPPX_RPC_URL),
-});
-const mppx = Mppx.create({
-  methods: [tempo({ account, expectedChainId: 42431, getClient: () => client })],
-});
-```
-
 Call `mppx.fetch(PAID_URL)`, then deserialize the response's
 `payment-receipt` as `Receipt.deserialize(receiptHeader)`. Write that
 receipt's `method` and `status` to `out.json`, rather than using placeholder
 values. Compile with `tsc` and run JavaScript or `tsx`; do not use `ts-node`.
 `TEMPO_MPP_PAYER_PRIVATE_KEY` is already a `0x`-prefixed 32-byte hex key; pass
-it directly to `privateKeyToAccount` without adding another prefix.
-`expectedChainId` only validates a challenge: the viem client itself must set
-`chain: Chain.testnet` (chain ID 42431), or MPPX will sign for Tempo mainnet.
+it directly to your account helper without adding another prefix. Configure
+the signing client for Tempo testnet (chain ID 42431); validating only the
+challenge chain is insufficient.
 
 ## Parameters
 

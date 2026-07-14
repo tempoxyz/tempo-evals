@@ -27,35 +27,8 @@ Declare `@modelcontextprotocol/sdk` version 1.29.0 or newer as a direct
 dependency in `package.json`. The runtime dependencies must include
 `mppx` (0.8.6+), `viem` (2.x), `express`, and
 `@modelcontextprotocol/sdk` (1.29.0+); do not rely on transitive packages.
-Configure MPPX with `transport: MppMcpTransport.mcpSdk()`. In the paid tool,
-call `mppx.charge(...)(extra)`, throw `result.challenge` for a 402, and return
-`result.withReceipt({ content: [...] })` after payment.
-
-The required setup uses these imports and objects; a hand-written JSON-RPC
-endpoint is not an MCP implementation for this task:
-
-```ts
-import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { Transport as MppMcpTransport } from "mppx/mcp/server";
-const app = createMcpExpressApp({ host: "0.0.0.0" });
-const server = new McpServer({ name: "mpp-tools", version: "1.0.0" });
-const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-```
-
-Connect the server to that transport and call `transport.handleRequest` from
-the `/mcp` POST route. Create a server and transport for each request; the
-route must use the Express request and response objects, not `req.body` alone:
-
-```ts
-app.post("/mcp", async (request, response) => {
-  const server = createServer();
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-  await server.connect(transport);
-  await transport.handleRequest(request, response, request.body);
-});
-```
+Use MPPX's MCP transport for the paid tool so an unpaid invocation receives a
+standard payment challenge and an accepted invocation includes its receipt.
 
 ## Parameters
 

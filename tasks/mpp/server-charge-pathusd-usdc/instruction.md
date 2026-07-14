@@ -22,36 +22,9 @@ Use pathUSD currency address `0x20c0000000000000000000000000000000000000`
 and Tempo USDC currency address `0x20C000000000000000000000b9537d11c60E8b50`.
 Set `testnet: true` on both Tempo methods (chain ID 42431).
 
-For the paid route, use `mppx.compose` directly with both offers, then preserve
-the returned challenge or receipt through `NodeListener.sendResponse`:
-
-```ts
-const result = await mppx.compose(
-  ["tempo/charge", { amount, currency: pathUsd }],
-  ["tempo/charge", { amount, currency: usdc }],
-)(ServerRequest.fromNodeListener(request, response));
-if (result.status === 402) return NodeListener.sendResponse(response, result.challenge);
-return NodeListener.sendResponse(response, result.withReceipt(Response.json(body)));
-```
-
-`result.withReceipt` takes a Web `Response`, not a plain JSON object. Pass
-`Response.json(body)` exactly as shown.
-
-Register one `tempo.charge({ recipient, testnet: true })` method. Do not
-register two `tempo` methods: both have the same `tempo/charge` identifier and
-the latter would replace the pathUSD offer. The currencies belong in the two
-`mppx.compose` entries above.
-Use this initialization; do not call `mppx.register`, `mppx.tempo`, or
-`Mppx.create()` without its methods:
-
-```ts
-import { Mppx, NodeListener, Request as ServerRequest, tempo } from "mppx/server";
-
-const mppx = Mppx.create({
-  secretKey: process.env.MPP_SECRET_KEY,
-  methods: [tempo.charge({ recipient, testnet: true })],
-});
-```
+Compose the two offers through MPPX and preserve its standard challenge and
+receipt headers. Register the Tempo charge method once; the individual offers
+select their currencies.
 Both compose entries take the human `MPP_CHARGE_AMOUNT` string such as `"0.01"`;
 do not convert it to raw token units.
 
