@@ -39,11 +39,11 @@ agents:
 {% if agent.get("concurrency_group") %}
     concurrency_group: {{ agent.concurrency_group | tojson }}
 {% endif %}
-{% if agent.name != "oracle" %}
+{% if agent.name == "claude-code" %}
     env:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-{% if agent.name == "codex" %}
+{% elif agent.name == "codex" %}
+    env:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-{% endif %}
 {% endif %}
 {% endfor %}
