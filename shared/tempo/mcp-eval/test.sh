@@ -21,6 +21,7 @@ reward = json.loads(reward_path.read_text()) if reward_path.exists() else {}
 reward.update(
     {
         "reward": 0,
+        "quality": 0,
         "valid_answer": 0,
         "quality_judge_available": 0,
         "quality_judge_unavailable": sys.argv[2],

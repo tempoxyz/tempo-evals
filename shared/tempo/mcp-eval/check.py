@@ -36,7 +36,14 @@ def write_result(
         + "\n"
     )
     (log_dir / "reward.json").write_text(
-        json.dumps({"reward": reward, "valid_answer": valid_answer, **components})
+        json.dumps(
+            {
+                "reward": reward,
+                "quality": 0,
+                "valid_answer": valid_answer,
+                **components,
+            }
+        )
         + "\n"
     )
     if evidence:

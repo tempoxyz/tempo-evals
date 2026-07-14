@@ -109,6 +109,7 @@ class McpEvalCheckTest(unittest.TestCase):
             self.events,
         )
         self.assertEqual(result["reward"]["reward"], 1)
+        self.assertEqual(result["reward"]["quality"], 0)
         self.assertEqual(result["validation"]["errors"], [])
         self.assertEqual(len(result["validation"]["warnings"]), 1)
         self.assertEqual(result["reward"]["data_evidence_valid"], 1)
@@ -131,6 +132,7 @@ class McpEvalCheckTest(unittest.TestCase):
             self.events,
         )
         self.assertEqual(result["reward"]["reward"], 0.4)
+        self.assertEqual(result["reward"]["quality"], 0)
         self.assertEqual(result["reward"]["valid_answer"], 0)
         self.assertEqual(result["reward"]["mcp_tool_mix_valid"], 1)
         self.assertEqual(result["reward"]["data_evidence_valid"], 0)

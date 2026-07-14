@@ -65,7 +65,8 @@ def redact(text: str) -> str:
 def write_binary_reward(args: list[str]) -> int:
     details_path = Path(args[0])
     scores_path = Path(args[1])
-    reward_path = Path(args[2])
+    rewardkit_output_path = Path(args[2])
+    reward_path = Path(args[3])
     reward = 0
 
     scores = read_json(scores_path)
@@ -76,7 +77,20 @@ def write_binary_reward(args: list[str]) -> int:
         if isinstance(details, dict):
             reward = 1 if score_of(details.get("correctness", 0)) == 1.0 else 0
 
-    write_json(reward_path, {"reward": reward})
+    rewardkit_output = read_json(rewardkit_output_path)
+    rewardkit_output = rewardkit_output if isinstance(rewardkit_output, dict) else {}
+    correctness = rewardkit_output.get("correctness", reward)
+    quality = rewardkit_output.get("quality", 0)
+    write_json(
+        reward_path,
+        {
+            "correctness": correctness
+            if isinstance(correctness, int | float)
+            else reward,
+            "quality": quality if isinstance(quality, int | float) else 0,
+            "reward": reward,
+        },
+    )
     return 0
 
 
@@ -173,7 +187,7 @@ COMMANDS = {
     "check-reward": (check_reward, 1),
     "cleanup-server": (cleanup_server, 1),
     "emit-logs": (emit_logs, 2),
-    "write-binary-reward": (write_binary_reward, 3),
+    "write-binary-reward": (write_binary_reward, 4),
     "write-failure-score": (write_failure_score, 4),
 }
 
