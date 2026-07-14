@@ -11,14 +11,18 @@ from tempo_bench_rewardkit.mpp import client_lib as lib
 
 
 async def run_task(process: subprocess.Popen[str]) -> dict:
-    out = lib.read_out_json(process, ["paidUrl", "openapiUrl"])
+    out = lib.read_out_json(
+        process,
+        {"paidUrl": str, "openapiUrl": str},
+        {"paidUrl", "openapiUrl"},
+    )
     paid_path = urlparse(out["paidUrl"]).path
     return {
         "out": out,
         "discovery": lib.discovery_request(out["openapiUrl"], paid_path),
         "offer": lib.challenge_request(
             out["paidUrl"],
-            {"pathUsdAdvertised": lib.TOKEN, "chargeAdvertised": "charge"},
+            {"method": "tempo", "intent": "charge", "currency": lib.TOKEN},
         ),
         "paid": await lib.paid_request(out["paidUrl"]),
     }

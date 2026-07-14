@@ -10,7 +10,11 @@ from tempo_bench_rewardkit.mpp import client_lib as lib
 
 
 async def run_task(process: subprocess.Popen[str]) -> dict:
-    out = lib.read_out_json(process, ["freeUrl", "paidUrl"])
+    out = lib.read_out_json(
+        process,
+        {"freeUrl": str, "paidUrl": str},
+        {"freeUrl", "paidUrl"},
+    )
     custom = lib.run_node_script(
         "custom-method-client",
         "custom_method_client.ts",

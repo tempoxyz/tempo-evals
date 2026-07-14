@@ -45,7 +45,18 @@ def main() -> None:
         if not lib.OUT_PATH.exists():
             raise RuntimeError("client did not write out.json")
 
-        out = json.loads(lib.OUT_PATH.read_text(encoding="utf-8"))
+        out = lib.validate_out_json(
+            json.loads(lib.OUT_PATH.read_text(encoding="utf-8")),
+            {
+                "paidUrl": str,
+                "status": int,
+                "json": bool,
+                "hasReceipt": bool,
+                "receiptMethod": str,
+                "receiptStatus": str,
+            },
+            {"paidUrl"},
+        )
         if out.get("paidUrl") != oracle["paidUrl"]:
             raise RuntimeError("out.json paidUrl did not match verifier endpoint")
         if out.get("status") != 200:

@@ -1,8 +1,7 @@
 import { createRequire } from "node:module";
 
 async function main() {
-  const workspace = process.env.TEMPO_BENCH_WORKSPACE ?? "/app";
-  const require = createRequire(`${workspace}/package.json`);
+  const require = createRequire("/opt/tempo-bench/verifier/package.json");
   const { Client } = await import(
     require.resolve("@modelcontextprotocol/sdk/client/index.js"),
   );
@@ -12,9 +11,7 @@ async function main() {
   const { McpClient } = await import(require.resolve("mppx/mcp/client"));
   const { tempo } = await import(require.resolve("mppx/client"));
   const { createClient, http } = await import(require.resolve("viem"));
-  const { privateKeyToAccount } = await import(
-    require.resolve("viem/accounts"),
-  );
+  const { privateKeyToAccount } = await import(require.resolve("viem/accounts"));
   const { Chain } = await import(require.resolve("viem/tempo"));
 
   const client = new Client({
@@ -41,12 +38,19 @@ async function main() {
   } catch (error) {
     unpaid = {
       paymentRequired: McpClient.isPaymentRequiredError(error),
-      code: error.code,
       httpStatus: error.data?.httpStatus,
       challengeCount: error.data?.challenges?.length ?? 0,
       method: error.data?.challenges?.[0]?.method,
       intent: error.data?.challenges?.[0]?.intent,
     };
+  }
+  if (
+    unpaid.paymentRequired !== true ||
+    unpaid.httpStatus !== 402 ||
+    unpaid.method !== "tempo" ||
+    unpaid.intent !== "charge"
+  ) {
+    throw new Error(`unpaid tool call did not require a Tempo charge: ${JSON.stringify(unpaid)}`);
   }
 
   const account = privateKeyToAccount(process.env.TEMPO_MPP_PAYER_PRIVATE_KEY);
@@ -72,6 +76,15 @@ async function main() {
     arguments: {},
   });
   await client.close();
+  if (
+    !Array.isArray(paid.content) ||
+    paid.content.length === 0 ||
+    !paid.receipt ||
+    paid.receipt.method !== "tempo" ||
+    paid.receipt.status !== "success"
+  ) {
+    throw new Error("paid tool call did not return a successful Tempo receipt");
+  }
 
   console.log(
     JSON.stringify({

@@ -13,7 +13,6 @@ import secrets
 import signal
 import subprocess
 import tempfile
-import textwrap
 import time
 from collections.abc import Awaitable, Callable
 from decimal import Decimal
@@ -21,7 +20,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
-from mpp import Receipt
+from mpp import Challenge, Receipt
 from mpp.client import get as mpp_get
 from mpp.methods.tempo import ChargeIntent, TempoAccount, tempo
 
@@ -34,7 +33,7 @@ MODULE_DIR = Path(__file__).resolve().parent
 OUT_PATH = WORKSPACE / "out.json"
 SCORES_PATH = WORKSPACE / "scores.json"
 LOG_SCORES_PATH = LOG_DIR / "scores.json"
-RPC_URL = "https://rpc.moderato.tempo.xyz"
+RPC_URL = os.environ.get("MPPX_RPC_URL", "https://rpc.moderato.tempo.xyz")
 CHAIN_ID = 42431
 CHAIN_ID_HEX = hex(CHAIN_ID)
 TOKEN = "0x20c0000000000000000000000000000000000000"
@@ -149,15 +148,44 @@ def validate_url(name: str, value: object) -> str:
     return value
 
 
-def read_out_json(process: subprocess.Popen[str], keys: list[str]) -> dict:
+def validate_out_json(
+    value: object,
+    schema: dict[str, type[object]],
+    url_keys: set[str],
+) -> dict:
+    if not isinstance(value, dict):
+        raise RuntimeError("out.json must contain an object")
+    expected_keys = set(schema)
+    actual_keys = set(value)
+    if actual_keys != expected_keys:
+        missing = sorted(expected_keys - actual_keys)
+        unexpected = sorted(actual_keys - expected_keys)
+        raise RuntimeError(
+            "out.json keys did not match schema: "
+            f"missing={missing}, unexpected={unexpected}"
+        )
+    for key, expected_type in schema.items():
+        if type(value[key]) is not expected_type:
+            raise RuntimeError(f"out.json {key} must be a {expected_type.__name__}")
+        if key in url_keys:
+            value[key] = validate_url(key, value[key])
+    return value
+
+
+def read_out_json(
+    process: subprocess.Popen[str],
+    schema: dict[str, type[object]],
+    url_keys: set[str],
+) -> dict:
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         if OUT_PATH.exists():
             try:
-                out = json.loads(OUT_PATH.read_text(encoding="utf-8"))
-                urls = {key: validate_url(key, out.get(key)) for key in keys}
-                log_event("out_json", **urls)
-                return urls
+                out = validate_out_json(
+                    json.loads(OUT_PATH.read_text(encoding="utf-8")), schema, url_keys
+                )
+                log_event("out_json", **out)
+                return out
             except ValueError:
                 if process.poll() is not None:
                     raise
@@ -168,6 +196,14 @@ def read_out_json(process: subprocess.Popen[str], keys: list[str]) -> dict:
 
 
 def start_server() -> subprocess.Popen[str]:
+    # Agent self-tests sometimes leave a development server on the task's
+    # documented default port. The verifier owns that port for its scenario.
+    subprocess.run(
+        ["sh", "-c", "command -v fuser >/dev/null && fuser -k 3000/tcp || true"],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     log_event(
         "start_server",
         recipient=RECIPIENT,
@@ -181,6 +217,7 @@ def start_server() -> subprocess.Popen[str]:
     )
     stdout = (LOG_DIR / "server.stdout.txt").open("w", encoding="utf-8")
     stderr = (LOG_DIR / "server.stderr.txt").open("w", encoding="utf-8")
+    x402_facilitator_url = os.environ.get("TEMPO_MPP_X402_FACILITATOR_URL")
     return subprocess.Popen(
         ["npm", "run", "--silent", "serve"],
         cwd=WORKSPACE,
@@ -194,6 +231,11 @@ def start_server() -> subprocess.Popen[str]:
             "PAYMENT_AMOUNT": str(CHARGE_AMOUNT),
             "PAYMENT_RECIPIENT_ADDRESS": RECIPIENT,
             "RECIPIENT_ADDRESS": RECIPIENT,
+            **(
+                {"X402_FACILITATOR_URL": x402_facilitator_url}
+                if x402_facilitator_url
+                else {}
+            ),
         },
         stderr=stderr,
         stdout=stdout,
@@ -236,19 +278,40 @@ def challenge_request(url: str, expected: dict[str, str]) -> dict:
             {"reason": "unexpected status", "url": url, **response_snapshot(response)},
         )
         raise RuntimeError(f"challenge request returned {response.status_code}")
-    raw = "\n".join(
-        [
-            str(response.status_code),
-            response.text,
-            json.dumps(dict(response.headers), sort_keys=True),
-        ]
-    )
-    lowered = raw.lower()
-    return {
-        "status": response.status_code,
-        "hasPaymentChallenge": "payment" in lowered or "www-authenticate" in lowered,
-        **{name: needle.lower() in lowered for name, needle in expected.items()},
+    header = response.headers.get("www-authenticate")
+    if not header:
+        raise RuntimeError("payment challenge did not include WWW-Authenticate")
+    try:
+        challenge = Challenge.from_www_authenticate(header)
+    except Exception as exc:
+        raise RuntimeError(
+            "payment challenge was not valid Payment authentication"
+        ) from exc
+
+    actual = {
+        "method": challenge.method,
+        "intent": challenge.intent,
+        **challenge.request,
     }
+
+    def matches(key: str, expected_value: str) -> bool:
+        actual_value = actual.get(key)
+        if (
+            isinstance(actual_value, str)
+            and expected_value.startswith("0x")
+            and len(expected_value) == 42
+        ):
+            return actual_value.lower() == expected_value.lower()
+        return actual_value == expected_value
+
+    mismatches = {
+        key: {"expected": expected_value, "actual": actual.get(key)}
+        for key, expected_value in expected.items()
+        if not matches(key, expected_value)
+    }
+    if mismatches:
+        raise RuntimeError(f"payment challenge did not match contract: {mismatches}")
+    return {"status": response.status_code, "challenge": actual}
 
 
 def discovery_request(url: str, paid_path: str) -> dict:
@@ -510,90 +573,18 @@ async def paid_request(url: str) -> dict:
 
 def session_request(url: str) -> dict:
     log_event("session_request_start", url=url)
-    script = Path(tempfile.mkdtemp(prefix="tempo-mpp-session-")) / "session-client.mjs"
-    script.write_text(
-        textwrap.dedent(
-            """
-            import { createRequire } from 'node:module'
-
-            const workspace = process.env.TEMPO_BENCH_WORKSPACE ?? '/app'
-            const require = createRequire(`${workspace}/package.json`)
-            const { tempo } = await import(require.resolve('mppx/client'))
-            const { createClient, http } = await import(require.resolve('viem'))
-            const { privateKeyToAccount } = await import(
-              require.resolve('viem/accounts')
-            )
-            const { Actions, Chain } = await import(require.resolve('viem/tempo'))
-
-            const account = privateKeyToAccount(process.env.TEMPO_MPP_PAYER_PRIVATE_KEY)
-            const client = createClient({
-              account,
-              chain: Chain.testnet,
-              pollingInterval: 1_000,
-              transport: http(process.env.MPPX_RPC_URL),
-            })
-
-            await Actions.faucet.fundSync(client, { account, timeout: 60_000 })
-            const session = tempo.session.manager({ client, maxDeposit: '0.02' })
-            const response = await session.fetch(process.env.TEMPO_MPP_SESSION_URL, {
-              headers: { accept: 'application/json' },
-            })
-            const receiptHeader = response.headers.get('payment-receipt')
-            if (!response.ok)
-              throw new Error(`session request returned ${response.status}`)
-            if (!receiptHeader)
-              throw new Error('session response did not include Payment-Receipt')
-            await response.json()
-            let closeReceipt = null
-            try {
-              closeReceipt = await session.close()
-            } catch (error) {
-              closeReceipt = {
-                error: error instanceof Error ? error.message : String(error),
-              }
-            }
-            console.log(JSON.stringify({
-              status: response.status,
-              json: true,
-              hasReceipt: true,
-              receiptHeader,
-              closeReceipt,
-            }))
-            """
-        ),
-        encoding="utf-8",
-    )
-    result = subprocess.run(
-        ["node", str(script)],
-        cwd=WORKSPACE,
+    result = run_bundled_node_script(
+        "session-client",
+        "session_client.ts",
         env={
-            **os.environ,
-            "MPPX_RPC_URL": os.environ.get("MPPX_RPC_URL", RPC_URL),
+            "MPPX_RPC_URL": RPC_URL,
             "TEMPO_MPP_PAYER_PRIVATE_KEY": PAYER_PRIVATE_KEY,
             "TEMPO_MPP_SESSION_URL": url,
         },
-        text=True,
-        capture_output=True,
-        timeout=120,
-        check=False,
     )
-    write_json(
-        LOG_DIR / "session-client.json",
-        {
-            "returncode": result.returncode,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-        },
-    )
-    log_event(
-        "session_client_exit",
-        returncode=result.returncode,
-        stderrTail=result.stderr[-1000:],
-        stdoutTail=result.stdout[-1000:],
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"session client failed: {result.stderr.strip()}")
-    return json.loads(result.stdout)
+    if result.get("closeSucceeded") is not True:
+        raise RuntimeError("session client did not close the payment session")
+    return result
 
 
 def run_node_script(
@@ -605,8 +596,29 @@ def run_node_script(
     script = SUPPORT_DIR / script_name
     if not script.exists():
         raise RuntimeError(f"missing verifier node script: {script}")
+    return run_typescript_script(name, script, env=env, timeout=timeout)
+
+
+def run_bundled_node_script(
+    name: str,
+    script_name: str,
+    env: dict[str, str] | None = None,
+    timeout: int = 120,
+) -> dict:
+    script = MODULE_DIR / script_name
+    if not script.exists():
+        raise RuntimeError(f"missing bundled verifier node script: {script}")
+    return run_typescript_script(name, script, env=env, timeout=timeout)
+
+
+def run_typescript_script(
+    name: str,
+    script: Path,
+    env: dict[str, str] | None = None,
+    timeout: int = 120,
+) -> dict:
     result = subprocess.run(
-        ["npx", "--no-install", "tsx", str(script)],
+        ["tsx", str(script)],
         cwd=WORKSPACE,
         env={**os.environ, **(env or {})},
         text=True,
@@ -645,7 +657,7 @@ def start_oracle_paid_server() -> tuple[subprocess.Popen[str], dict]:
     stdout = (LOG_DIR / "oracle-server.stdout.txt").open("w", encoding="utf-8")
     stderr = (LOG_DIR / "oracle-server.stderr.txt").open("w", encoding="utf-8")
     process = subprocess.Popen(
-        ["npx", "--no-install", "tsx", str(script)],
+        ["tsx", str(script)],
         cwd=WORKSPACE,
         env={
             **os.environ,

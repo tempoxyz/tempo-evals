@@ -13,7 +13,6 @@ const usdc = "0x20C000000000000000000000b9537d11c60E8b50";
 const mppx = Mppx.create({
   methods: [
     tempo.charge({
-      currency: pathUsd,
       recipient,
       testnet: true,
     }),
@@ -33,18 +32,19 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === "GET" && url.pathname === paidPath) {
-    const result = await mppx.charge({
-      amount: chargeAmount,
-      description: "Paid JSON with pathUSD and USDC support",
-    })(ServerRequest.fromNodeListener(request, response));
-    if (result.status === 402) {
-      const headers = new Headers(result.challenge.headers);
-      headers.set("x-tempo-accepted-currencies", `${pathUsd},${usdc}`);
-      return NodeListener.sendResponse(
-        response,
-        new Response(await result.challenge.text(), { status: 402, headers }),
-      );
-    }
+    const result = await mppx.compose(
+      ["tempo/charge", {
+        amount: chargeAmount,
+        currency: pathUsd,
+        description: "Paid JSON with pathUSD",
+      }],
+      ["tempo/charge", {
+        amount: chargeAmount,
+        currency: usdc,
+        description: "Paid JSON with USDC",
+      }],
+    )(ServerRequest.fromNodeListener(request, response));
+    if (result.status === 402) return NodeListener.sendResponse(response, result.challenge);
     return NodeListener.sendResponse(
       response,
       result.withReceipt(jsonResponse({ ok: true, endpoint: "paid" })),

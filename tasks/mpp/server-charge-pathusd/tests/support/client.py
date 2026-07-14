@@ -10,7 +10,11 @@ from tempo_bench_rewardkit.mpp import client_lib as lib
 
 
 async def run_task(process: subprocess.Popen[str]) -> dict:
-    out = lib.read_out_json(process, ["freeUrl", "paidUrl"])
+    out = lib.read_out_json(
+        process,
+        {"freeUrl": str, "paidUrl": str},
+        {"freeUrl", "paidUrl"},
+    )
     return {
         "out": out,
         "free": lib.free_request(out["freeUrl"]),
