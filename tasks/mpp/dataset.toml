@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:4ad8df6f0b6680a4aa500677e277eb1b39d023365c0eabba7f6ac9b2c8a8a21e"
+digest = "sha256:6b2635fe042d4b1920c112591a299ce9d29bb5c42970916f5b0666c8cf7dd39b"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:b18adeb827f6c64579ab6c8858ea4688a8c66fc0ce7737153fb5c132e3810440"
+digest = "sha256:d787435be7f69da60f15635e9f503c185c97687341e84a9891cf1f2b42adc80f"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:93e072266112af4ab852cca65eb4349c72be18b2817ac866f9db07ac736ca8bc"
+digest = "sha256:4b80dbd99b96fe9d833b98ad58a304e66049c0aeaf61791a92c7984d691bcb22"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:9711d684c2c5962276f8ca7f711f105baf05d2314f58401ac41379997260a2de"
+digest = "sha256:6dba25ae3e664c6af631ed582ba8788f7c6b3ccc4644c5e64c284304e1c22d4a"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:c8a9154a704bf3e531aecbf7a6a854d42250aab01b290be150e2862ca7f3ef29"
+digest = "sha256:b9aad061942634c8e2db33fb50e0d6459ab88dca150d0da3d30b2a66e4188c7e"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:651dd9b63f5df99d6ce2245d10701e8e41f453cc4891d336de681d91767346b4"
+digest = "sha256:9c647113d14a0828dc05f2959bada054a3f368498e708d201a841b6ad74e3de9"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:e4a3f5283454f01978d6832669cfec47aaede77766ec295ee8d0c260aed150e8"
+digest = "sha256:012f279e9ebfb79635f4bda029a93c64a34c7f5f73183dc92846477eb45e2365"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:bb882b0db7f60f3009efe02e6d4f3b23bab5d4681827325656c28211f3d8c3d0"
+digest = "sha256:d8c44e01c7b01c2f4d049fbcdde24d89678ede13f21a05b0e2e87ec168d06c02"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:4ab58ba45814b498d1c1277e0d20ad5d953bde20381d0d1dcc0f0d52a328ebff"
+digest = "sha256:8caf62573823bb3a2241b7adc9f14dda79c301c51527adc43b29d5386cf60dc6"
 
