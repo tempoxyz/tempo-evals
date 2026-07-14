@@ -54,7 +54,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
         self.assertEqual(
             config["datasets"],
-            [{"path": "tasks/mpp", "task_names": ["server-*"]}],
+            [{"path": "tasks/mpp"}],
         )
 
     def test_finalize_config_selects_tempo_mcp_suite(self) -> None:
@@ -206,7 +206,7 @@ class RunBenchmarkTest(unittest.TestCase):
                 {
                     "path": "tasks/tempo-mcp-v1",
                 },
-                {"path": "tasks/mpp", "task_names": ["server-*"]},
+                {"path": "tasks/mpp"},
             ],
         )
 
