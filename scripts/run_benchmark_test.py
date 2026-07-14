@@ -23,6 +23,7 @@ from scripts.run_benchmark import (
     parse_model_config,
     prepare_production_profiles,
     production_job,
+    render_job_config,
     run_benchmark_key,
     run_benchmark_variant,
     stage_filtered_config,
@@ -276,6 +277,35 @@ class RunBenchmarkTest(unittest.TestCase):
             production_job("test-run", model_config, {})["n_attempts"],
             3,
         )
+
+    def test_job_config_scopes_api_keys_to_each_agent_provider(self) -> None:
+        config = render_job_config(
+            {
+                "job_name": "auth-test",
+                "n_attempts": 1,
+                "n_concurrent_trials": 2,
+                "environment_type": "docker",
+                "force_build": False,
+                "agents": [
+                    {"name": "claude-code", "model_name": "claude-test"},
+                    {"name": "codex", "model_name": "gpt-test"},
+                    {"name": "oracle"},
+                ],
+                "datasets": [],
+            }
+        )
+        agents = {agent["name"]: agent for agent in config["agents"]}
+
+        self.assertEqual(
+            agents["claude-code"]["env"],
+            {"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}"},
+        )
+        self.assertEqual(
+            agents["codex"]["env"],
+            {"OPENAI_API_KEY": "${OPENAI_API_KEY:-}"},
+        )
+        self.assertNotIn("env", agents["oracle"])
+        self.assertIn("ANTHROPIC_API_KEY", config["verifier"]["env"])
 
     def test_mcp_profile_is_injected_at_job_level(self) -> None:
         config = {"agents": [{"name": "claude-code"}, {"name": "oracle"}]}
