@@ -38,10 +38,14 @@ tasks/tempo-v1/<task>/
     └── quality/             # RewardKit quality checks and weights
 ```
 
-The task test script first runs the independent onchain verifier. A failed
-onchain check writes a zero Harbor reward and skips RewardKit. On success,
-RewardKit aggregates the available static and LLM quality criteria into the
-primary reward.
+The task test script first runs the independent onchain verifier. A scored
+onchain failure writes a zero Harbor reward and skips RewardKit. On success,
+RewardKit's static correctness criteria run first and must all pass or the
+complete reward is zero without invoking the quality judge. The published
+`correctness` is therefore binary. Passing submissions receive 50% correctness
+plus 50% of RewardKit's aggregate `quality` score, which includes the LLM rubric
+and trajectory diagnostics. Missing quality configuration or a RewardKit
+execution/configuration error produces no reward.
 
 The benchmark job injects access rather than changing task source:
 
@@ -106,6 +110,6 @@ Edit task directories directly. `npm run sync` does not rewrite Tempo task
 files; it only refreshes shared MPP assets and generated job configurations.
 
 The shared Tempo verifier is installed in the base image and selects the case
-named by `TEMPO_BENCH_CASE`. Keep task-specific correctness criteria and
-onchain checks in the task directory. Refresh `dataset.toml` after a task
-change; the manifest is a required checked-in artifact.
+named by `TEMPO_BENCH_CASE`. Keep task-specific correctness criteria and onchain
+checks in the task directory. Refresh `dataset.toml` after a task change; the
+manifest is a required checked-in artifact.

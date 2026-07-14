@@ -38,8 +38,8 @@ Harbor terms used throughout this repository:
   and the verifier accepts a correct submission. It is not shown to agents.
 - **Verifier** — the independent test script under `tests/` that checks the
   submission programmatically and writes the Harbor reward. Correctness must
-  be deterministic; RewardKit quality checks are diagnostic signals layered on
-  top, never a substitute.
+  be deterministic. Where RewardKit quality contributes to a reward, it is
+  gated by correctness and remains a separately reported score.
 - **Dataset** — a versioned collection of tasks; each suite here is one
   dataset (e.g. `tempo/tempo-bench-v1`) with a checked-in generated manifest
   (`dataset.toml`). A dataset major is an immutable evaluation contract.
