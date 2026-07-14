@@ -52,6 +52,10 @@ const session = tempo.session({ account, currency: pathUsd,
 // mppx.session({ amount, unitType: "request" }) for the session route.
 ```
 
+`await Actions.faucet.fundSync(...)` is required before creating or serving the
+session method. Without it, the initial request can succeed but the verifier's
+close request will receive another 402 instead of a settlement receipt.
+
 For the session endpoint, `recipient` must be that generated `account.address`;
 do not reuse `RECIPIENT_ADDRESS`, which applies only to the charge endpoint.
 The published URL must accept GET for the initial session request and also pass

@@ -15,6 +15,9 @@ use its returned handler for the paid route. It must emit the standard MPP
 challenge and receipt; do not implement payment verification yourself.
 Use pathUSD currency address `0x20c0000000000000000000000000000000000000`.
 Set `testnet: true` on the Tempo method (chain ID 42431).
+Register it exactly as
+`tempo.charge({ currency: pathUsd, recipient, testnet: true })`; `chainId:
+42431` is not a substitute and leaves the challenge on chain ID 4217.
 
 For a Node HTTP server, adapt the paid request through MPPX instead of manually
 copying response headers:
