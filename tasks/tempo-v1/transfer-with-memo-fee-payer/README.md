@@ -14,5 +14,5 @@ delegating transaction fees to a separate fee payer.
 ## Verification
 
 - General file structure: a runnable `/app` TypeScript project with `src/index.ts` and an `npm run eval` entry point.
-- Usage of proper Tempo libraries: the project must depend on `viem` and import `viem/tempo`; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
+- Usage of proper Tempo libraries: the project must depend on `viem` and import `viem/tempo`, `viem/tempo/actions`, `viem/tempo/chains`, or `viem/tempo/zones`; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
 - Correctness of the script, including a memo transfer with the configured amount and a sponsored Tempo envelope for the reported fee payer and configured fee token.

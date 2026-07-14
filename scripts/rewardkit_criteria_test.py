@@ -28,6 +28,35 @@ class ViemTempoCriterionTests(unittest.TestCase):
 
         self.assertTrue(criteria._uses_viem_tempo(workspace))
 
+    def test_accepts_supported_tempo_modules_in_all_import_forms(self) -> None:
+        for module in (
+            "viem/tempo",
+            "viem/tempo/actions",
+            "viem/tempo/chains",
+            "viem/tempo/zones",
+        ):
+            for source in (
+                f'import {{ value }} from "{module}";\n',
+                f'const tempo = await import("{module}");\n',
+                f'const tempo = require("{module}");\n',
+            ):
+                with self.subTest(module=module, source=source):
+                    workspace = self.workspace(source)
+
+                    self.assertTrue(criteria._uses_viem_tempo(workspace))
+
+    def test_rejects_unsupported_tempo_module_prefixes(self) -> None:
+        for module in ("viem/tempography", "viem/tempo/not-real"):
+            for source in (
+                f'import {{ value }} from "{module}";\n',
+                f'const tempo = await import("{module}");\n',
+                f'const tempo = require("{module}");\n',
+            ):
+                with self.subTest(module=module, source=source):
+                    workspace = self.workspace(source)
+
+                    self.assertFalse(criteria._uses_viem_tempo(workspace))
+
     def test_rejects_missing_tempo_import(self) -> None:
         workspace = self.workspace('import { createPublicClient } from "viem";\n')
 

@@ -8,7 +8,7 @@ timeout = 300
 name = "uses_tempo_testnet_appropriately"
 type = "likert"
 points = 5
-description = "The submission uses the Tempo testnet and the provided task values without hard-coding task-specific secrets, recipients, amounts, or token addresses."
+description = "The submission uses the Tempo testnet and reads task values from the environment when provided. Prompt-documented defaults are allowed; private keys and unspecified task values must not be hard-coded."
 
 [[criterion]]
 name = "uses_tempo_primitives_correctly"

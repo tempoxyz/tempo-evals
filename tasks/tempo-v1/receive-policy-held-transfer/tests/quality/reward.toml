@@ -8,7 +8,7 @@ timeout = 300
 name = "uses_tempo_testnet_appropriately"
 type = "likert"
 points = 5
-description = "The submission uses the Tempo testnet and provided task values, creates fresh payer and recipient accounts, and funds them without hard-coding secrets or account addresses."
+description = "The submission uses the Tempo testnet and environment-provided values, creates and funds fresh payer and recipient accounts, and does not hard-code private keys or account addresses. Prompt-documented defaults are allowed."
 
 [[criterion]]
 name = "uses_receive_policy_primitives_correctly"

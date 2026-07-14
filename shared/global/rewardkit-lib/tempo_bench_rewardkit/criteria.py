@@ -275,6 +275,9 @@ def tempo_rejects_other_blockchains(workspace: Path) -> bool:
     return all(result["passed"] for result in results)
 
 
+VIEM_TEMPO_MODULE_PATTERN = r"viem/tempo(?:/(?:actions|chains|zones))?"
+
+
 def _uses_viem_tempo(workspace: Path) -> bool:
     patterns = [
         {
@@ -285,9 +288,9 @@ def _uses_viem_tempo(workspace: Path) -> bool:
         {
             "name": "source_imports_viem_tempo",
             "pattern": (
-                r"from\s+['\"]viem/tempo(?:/chains)?['\"]|"
-                r"require\(\s*['\"]viem/tempo|"
-                r"import\(\s*['\"]viem/tempo"
+                rf"from\s+['\"]{VIEM_TEMPO_MODULE_PATTERN}['\"]|"
+                rf"require\(\s*['\"]{VIEM_TEMPO_MODULE_PATTERN}['\"]|"
+                rf"import\(\s*['\"]{VIEM_TEMPO_MODULE_PATTERN}['\"]"
             ),
         },
     ]
