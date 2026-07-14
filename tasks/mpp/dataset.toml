@@ -19,7 +19,7 @@ digest = "sha256:a04683efb834554db45a66bc0f4d2289e73d8b748e80c4581045fcae0cc8590
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:65b4b6006ce84693bcb6728445522414c3129c0150c026fe873ef3543a5dabbc"
+digest = "sha256:c1de05f5cfecdc86dccebda243c727a8d9958639d4c1f235fec370b52e4e11ec"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"

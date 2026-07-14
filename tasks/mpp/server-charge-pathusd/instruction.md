@@ -18,6 +18,16 @@ Set `testnet: true` on the Tempo method (chain ID 42431).
 Register it exactly as
 `tempo.charge({ currency: pathUsd, recipient, testnet: true })`; `chainId:
 42431` is not a substitute and leaves the challenge on chain ID 4217.
+Use this initialization; `Mppx.create({ tempo: ... })` is not an MPPX API:
+
+```ts
+import { Mppx, NodeListener, Request as ServerRequest, tempo } from "mppx/server";
+
+const mppx = Mppx.create({
+  secretKey: process.env.MPP_SECRET_KEY,
+  methods: [tempo.charge({ currency: pathUsd, recipient, testnet: true })],
+});
+```
 
 For a Node HTTP server, adapt the paid request through MPPX instead of manually
 copying response headers:
