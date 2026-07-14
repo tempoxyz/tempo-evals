@@ -38,11 +38,11 @@ verifier_utils() {
 
 write_binary_reward() {
   verifier_utils write-binary-reward \
-    "$DETAILS_FILE" "$SCORES_FILE" "$REWARD_FILE"
+    "$DETAILS_FILE" "$SCORES_FILE" "$REWARDKIT_OUTPUT_FILE" "$REWARD_FILE"
 }
 
 write_zero_reward() {
-  printf '{"reward":0}\n' > "$REWARD_FILE"
+  printf '{"correctness":0,"quality":0,"reward":0}\n' > "$REWARD_FILE"
 }
 
 cleanup_mpp_server() {

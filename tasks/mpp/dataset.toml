@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:fc2353c582606a8c4bfeb42d67548723f5c808d10f5f65e00b1c9e2c5a1809b2"
+digest = "sha256:905778fa4647508fc87f04a461ac8a80100d19f0f6305ea8c4600dca65c85ca4"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:1252a93c63bb447fca26be55afd2d7192b4f7431ed808506cd9592ee012a5ee5"
+digest = "sha256:e24512c661d6a2c5ab8ef991ad223402afb8787e7249d9bea6c236411f02e28d"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:b580a64399cdc4a95bc9daaa47c129221957c8ff18cad74f462a209f7535ab20"
+digest = "sha256:20cdee44aff260589dab5913e28e86ea2fcf36635e0dc07d8f7f9dbd05c2cf2b"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:6348f8e252ea055a67c3b4524f1c859b2a45c0c96f721c91c996b3a3385ba7d5"
+digest = "sha256:597243d24a5bbc6ecc6a13dd9bfaf74232b8251e8a4828228128a60d2fc1f38c"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:1b5c0d34a441f8a11f5497c97346ab795e42c5cb86dbec4b45a7d634fff746de"
+digest = "sha256:b5f8a8fff768eafb40bbae825b8536cb93be5cfdaeaa30a7663fb6fec062b88c"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:55dc33d5fb73bcb54083f128e2377a2e13625590962853098cdd916673813dd6"
+digest = "sha256:877b49530eecad21e517a6fcf66723ff5f089d59eafea37749b8300819ba8b4e"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:2b8bb0ba7abb7bf7a7e0c88f1417cdfb33d6eab65e3917babd612c5b295b2c48"
+digest = "sha256:eac9da04c471819a91fab6240e940be12e2cb82674fa05627c15b537bc933c14"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:000865523832576e6654d2f86d0babc927a730c5fa6bbf9cc3568425b905907f"
+digest = "sha256:eeb731f1c63af08bece8084d64d9ead31df15e8d723d165515eeb2358ef84987"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:4ac5942be93bb57655e07e0d99bc9e79bed971b14917d2c252a5f7adc2dc9d8e"
+digest = "sha256:6c7b08255474476e3f598267a41a79b76d1c7e35d9d25d0daa3ba06ad7747cb0"
 
