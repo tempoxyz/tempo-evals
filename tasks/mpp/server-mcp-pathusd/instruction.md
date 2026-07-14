@@ -20,6 +20,9 @@ Set `testnet: true` on the Tempo method (chain ID 42431).
 
 Use the MCP SDK's `McpServer`, `createMcpExpressApp`, and
 `StreamableHTTPServerTransport`; do not implement JSON-RPC methods yourself.
+Use `server.registerTool`, with `inputSchema: z.object(...)` from `zod`, for
+both tools. Do not pass a raw JSON Schema object to `server.tool`: SDK 1.29
+rejects it at request time and the MCP endpoint returns 500.
 Declare `@modelcontextprotocol/sdk` version 1.29.0 or newer as a direct
 dependency in `package.json`. The runtime dependencies must include
 `mppx` (0.8.6+), `viem` (2.x), `express`, and
