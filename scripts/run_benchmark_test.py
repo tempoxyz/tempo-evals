@@ -433,12 +433,12 @@ class RunBenchmarkTest(unittest.TestCase):
                 text=True,
             )
             self.assertIn("DNS:docs.tempo.xyz", certificate.stdout)
-            self.assertIn("DNS:tempo.xyz", certificate.stdout)
+            self.assertNotIn("DNS:tempo.xyz", certificate.stdout)
             self.assertIn(
                 "- docs.tempo.xyz",
                 (environment_dir / "docker-compose.yaml").read_text(),
             )
-            self.assertIn(
+            self.assertNotIn(
                 "- tempo.xyz",
                 (environment_dir / "docker-compose.yaml").read_text(),
             )

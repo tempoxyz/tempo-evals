@@ -821,14 +821,14 @@ def generate_docs_tls_assets(environment_dir: Path) -> Path:
             "-out",
             str(leaf_csr),
             "-subj",
-            "/CN=tempo.xyz",
+            "/CN=docs.tempo.xyz",
         ]
     )
     extensions.write_text(
         "basicConstraints=critical,CA:FALSE\n"
         "keyUsage=critical,digitalSignature,keyEncipherment\n"
         "extendedKeyUsage=serverAuth\n"
-        "subjectAltName=DNS:docs.tempo.xyz,DNS:tempo.xyz\n"
+        "subjectAltName=DNS:docs.tempo.xyz\n"
     )
     run_openssl(
         [
