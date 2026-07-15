@@ -48,8 +48,8 @@ location.
 Agent environments extend `shared/global/docker/agent/Dockerfile`; verifier
 environments extend `shared/global/docker/verifier/Dockerfile`. Local runs build
 both from the checkout. Daytona runs require both CI-published image refs, built
-under the same source tag. Registry publishing is restricted to trusted pushes
-to `main`; PR validation uses locally built images.
+under the same source tag. Trusted same-repository pull requests and `main`
+publish write-once image pairs; fork pull requests only build them locally.
 
 ## Authoring Rules
 

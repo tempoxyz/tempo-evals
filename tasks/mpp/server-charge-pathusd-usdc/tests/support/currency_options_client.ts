@@ -21,7 +21,11 @@ async function main() {
     throw new Error(`missing expected currency options: ${JSON.stringify(currencies)}`);
   }
   const account = privateKeyToAccount(process.env.TEMPO_MPP_PAYER_PRIVATE_KEY as `0x${string}`);
-  const client = createClient({ account, chain: Chain.testnet, transport: http(process.env.MPPX_RPC_URL) });
+  const client = createClient({
+    account,
+    chain: Chain.testnet,
+    transport: http(process.env.MPPX_RPC_URL, { retryCount: 0, timeout: 65_000 }),
+  });
   await Actions.faucet.fundSync(client, { account, timeout: 60_000 });
   const payer = Mppx.create({
     methods: [tempo({ account, expectedChainId: 42431, getClient: () => client })],

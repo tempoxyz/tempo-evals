@@ -12,7 +12,7 @@ async function main() {
     account,
     chain: Chain.testnet,
     pollingInterval: 1_000,
-    transport: http(process.env.MPPX_RPC_URL),
+    transport: http(process.env.MPPX_RPC_URL, { retryCount: 0, timeout: 65_000 }),
   });
 
   await Actions.faucet.fundSync(client, { account, timeout: 60_000 });

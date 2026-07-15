@@ -1,9 +1,10 @@
 import http from "node:http";
 import { writeFileSync } from "node:fs";
 import { Mppx, NodeListener, Request as ServerRequest, tempo } from "mppx/server";
-import { createClient, http as viemHttp } from "viem";
+import { createClient } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { Actions, Chain } from "viem/tempo";
+import { tempoRpcTransport } from "./tempo-rpc.js";
 
 const port = Number(process.env.PORT ?? "3000");
 const chargePath = "/charge";
@@ -16,7 +17,7 @@ const client = createClient({
   account,
   chain: Chain.testnet,
   pollingInterval: 1_000,
-  transport: viemHttp(process.env.MPPX_RPC_URL),
+  transport: tempoRpcTransport,
 });
 
 await Actions.faucet.fundSync(client, { account, timeout: 60_000 });
@@ -25,6 +26,7 @@ const mppx = Mppx.create({
   methods: [
     tempo.charge({
       currency: pathUsd,
+      getClient: () => client,
       recipient,
       testnet: true,
     }),

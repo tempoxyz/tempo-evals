@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:8d4c9da1e99b93bd27e35ebd4027ea6e92e4abdb4e3b2ce501027dee7478984c"
+digest = "sha256:5a9377fcba6850654a929929213378f1d82fdf21203ebdb0d628ffe44af1d5b2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:38cea5fd6a47eada09baf321131a9ab765d5178372965b6608deeb0dacc89a69"
+digest = "sha256:9646a14cddf93f3eb4595db54738281f9c07edf65438ffc5c26a95d21ec5a4df"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:00e97ceb02b808559a814ac1f57230165fd5d87523297cdc44c5d8f1298e1c52"
+digest = "sha256:c7aabaa60ce41de3ef481e52d451e3efc5d2f3605094101943104f141278296d"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:1b68ee0cd5a333f0848975878941c4f75ce713a352c59cc127c1424612ae0375"
+digest = "sha256:47efb7264bd6b39833f0ccda3c03aab8350b6b60ca81e370f5d6bb1598db42c3"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b368608172e9ecf5aeaecc800a3a47023cd64a0a2013b2a50d82811b041e9017"
+digest = "sha256:981b9700bdc8a68da0d51da1bae26dc5fb89c391f5b935ea2dcf09e26b5ae1f9"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:69ee2aa697e731556a7c8de7f6633f9234ad5e3dbbeac1602525a31f1d9ad2ce"
+digest = "sha256:b5c46b119012619b69d65c27bf007a803e93cf4598f32a98507c39ee29d3e9df"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:d13167ac831448b8f8179e9f0b4be07abd987da3064ce117bf254c02b8ed2f16"
+digest = "sha256:c72e32ab76963bff7ed6f6cc5ba64fecfa6e485bbba03420847c32d37cbd8a78"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:226f352bc59e2576ff468ded5685a5d10e89935a3f3a11f58c26d21e3c036952"
+digest = "sha256:be2fa8768fed7a9ca81ac24124321fd03f802541d48dd8d76403af6c9593f325"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:56c3a444389f79328343ec9015a88e2b15fa5759f2db1932fda97a97da9aa676"
+digest = "sha256:b7dc7264e3e717cafb1bce859e78ef48379f8b2a842fb490fcdd8464d29256de"
 

@@ -4,6 +4,7 @@ tasks/*/*/environment/Dockerfile linguist-generated=true
 tasks/*/*/tests/Dockerfile linguist-generated=true
 tasks/tempo-mcp-v1/*/solution/oracle.mjs linguist-generated=true
 tasks/mpp/*/solution/solve.sh linguist-generated=true
+tasks/mpp/*/solution/src/tempo-rpc.ts linguist-generated=true
 tasks/mpp/*/solution/tsconfig.json linguist-generated=true
 tasks/mpp/*/tests/correctness/verify.sh linguist-generated=true
 tasks/mpp/*/tests/quality/check.py linguist-generated=true

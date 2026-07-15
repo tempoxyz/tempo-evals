@@ -23,6 +23,7 @@ async def run_task(process: subprocess.Popen[str]) -> dict:
             "TEMPO_MPP_PAID_URL": out["paidUrl"],
             "TEMPO_MPP_PAYER_PRIVATE_KEY": lib.PAYER_PRIVATE_KEY,
         },
+        timeout=180,
     )
     payer = currency_options.get("payer")
     paid = currency_options.get("paid")

@@ -3,8 +3,8 @@
 # Both roles use write-once tags in the existing public GHCR package. Local
 # runs build those tags from the checkout; Daytona resolves them to digests.
 images:
-  agent: ghcr.io/tempoxyz/tempo-bench-base:agent-source-49f5882afdd92e21819e8e82fd232bab2c6b3eebb171c08b0c2f8b2a428f75e6
-  verifier: ghcr.io/tempoxyz/tempo-bench-base:verifier-source-49f5882afdd92e21819e8e82fd232bab2c6b3eebb171c08b0c2f8b2a428f75e6
+  agent: ghcr.io/tempoxyz/tempo-bench-base:agent-source-826931fcf668b9797c04683490ee7fdd71961a4819646934bd77dbef72c8b913
+  verifier: ghcr.io/tempoxyz/tempo-bench-base:verifier-source-826931fcf668b9797c04683490ee7fdd71961a4819646934bd77dbef72c8b913
 
 # Run-time access profiles. Tempo tasks are authored directly; benchmark jobs
 # inject the MCP server for the MCP profile. A pinned docs SHA transparently
@@ -33,6 +33,7 @@ mpp:
     - path: solution/package.json
     - path: solution/solve.sh
       executable: true
+    - path: solution/src/tempo-rpc.ts
     - path: solution/tsconfig.json
     - path: tests/reward.toml
     - path: tests/test.sh
