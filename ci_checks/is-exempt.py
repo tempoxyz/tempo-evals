@@ -13,12 +13,12 @@ import sys
 from pathlib import Path
 
 
-def parse_registry(path: Path) -> tuple[dict[str, list[str]], dict[str, str]]:
+def parse_registry(path: Path) -> dict[str, dict[str, list[str]]]:
     """Parse the constrained exceptions.yml schema."""
-    sets: dict[str, list[str]] = {}
-    exceptions: dict[str, str] = {}
+    exceptions: dict[str, dict[str, list[str]]] = {}
     section: str | None = None
-    current_set: str | None = None
+    current_case: str | None = None
+    current_list: str | None = None
 
     for number, raw_line in enumerate(
         path.read_text(encoding="utf-8").splitlines(), start=1
@@ -26,40 +26,43 @@ def parse_registry(path: Path) -> tuple[dict[str, list[str]], dict[str, str]]:
         line = raw_line.split("#", maxsplit=1)[0].rstrip()
         if not line or re.fullmatch(r"version: [1-9][0-9]*", line):
             continue
-        if line == "task_sets:":
-            section = "task_sets"
-            current_set = None
-            continue
         if line == "exceptions:":
             section = "exceptions"
-            current_set = None
+            current_case = None
+            current_list = None
             continue
-        if section == "task_sets":
+        if section == "exceptions":
             if match := re.fullmatch(r"  ([A-Za-z0-9][A-Za-z0-9_-]*):", line):
-                current_set = match.group(1)
-                sets[current_set] = []
+                current_case = match.group(1)
+                exceptions[current_case] = {"checks": [], "files": []}
+                current_list = None
                 continue
-            if (
-                match := re.fullmatch(r"    - (tasks/[A-Za-z0-9._/-]+)", line)
-            ) and current_set:
-                sets[current_set].append(match.group(1))
+            if line in {"    checks:", "    files:"} and current_case:
+                current_list = line.strip(": ")
                 continue
-        elif section == "exceptions":
-            if match := re.fullmatch(
-                r"  ([A-Za-z0-9._-]+): ([A-Za-z0-9][A-Za-z0-9_-]*)", line
+            if current_list == "checks" and (
+                match := re.fullmatch(r"      - ([A-Za-z0-9._-]+)", line)
             ):
-                exceptions[match.group(1)] = match.group(2)
+                exceptions[current_case][current_list].append(match.group(1))
+                continue
+            if current_list == "files" and (
+                match := re.fullmatch(r"      - (tasks/[A-Za-z0-9._/-]+)", line)
+            ):
+                exceptions[current_case][current_list].append(match.group(1))
                 continue
         raise ValueError(f"invalid exceptions.yml at line {number}: {raw_line}")
 
-    if not sets or not exceptions:
-        raise ValueError("exceptions.yml must define task_sets and exceptions")
-    unknown_sets = sorted(set(exceptions.values()) - set(sets))
-    if unknown_sets:
-        raise ValueError(
-            f"exceptions.yml references unknown task set(s): {', '.join(unknown_sets)}"
-        )
-    return sets, exceptions
+    if not exceptions:
+        raise ValueError("exceptions.yml must define at least one exception case")
+    incomplete_cases = sorted(
+        name
+        for name, exception in exceptions.items()
+        if not exception["checks"] or not exception["files"]
+    )
+    if incomplete_cases:
+        cases = ", ".join(incomplete_cases)
+        raise ValueError(f"exception case(s) must define checks and files: {cases}")
+    return exceptions
 
 
 def main() -> int:
@@ -72,12 +75,19 @@ def main() -> int:
 
     registry_path, check, task_dir = sys.argv[1:]
     try:
-        sets, exceptions = parse_registry(Path(registry_path))
+        exceptions = parse_registry(Path(registry_path))
     except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 2
 
-    return 0 if task_dir in sets.get(exceptions.get(check, ""), []) else 1
+    return (
+        0
+        if any(
+            check in exception["checks"] and task_dir in exception["files"]
+            for exception in exceptions.values()
+        )
+        else 1
+    )
 
 
 if __name__ == "__main__":

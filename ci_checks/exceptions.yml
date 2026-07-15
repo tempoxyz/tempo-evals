@@ -2,19 +2,19 @@
 # checks. This is a temporary compatibility registry, not a way to relax the
 # policy for new work.
 #
-# The workflow applies an exception only when both the check script and task
-# directory match exactly. Do not add globs, suite-level paths, or newly created
-# tasks: they must satisfy every upstream check. Remove a task path from a set
-# after its task has been migrated and validated without the exception.
+# Each case combines exact check scripts with exact existing task directories.
+# Do not add globs, suite-level paths, or newly created tasks: they must
+# satisfy every upstream check. Remove a task path after it has been migrated
+# and validated without the exception.
 #
 # The constrained structure below is valid YAML and intentionally dependency
-# free in CI. `task_sets` names explicit task directories; `exceptions` maps a
-# check script to one task set.
+# free in CI. The lightweight reader supports only named cases with `checks`
+# and `files` lists, keeping exception scope obvious in review.
 
 version: 1
 
-task_sets:
-  # Every existing task predates four upstream conventions:
+exceptions:
+  # Existing tasks predate these upstream conventions:
   # - a canary in every task source file, rather than Tempo's prompt canary;
   # - benchmark-template metadata fields rather than Tempo task metadata;
   # - the generated timeout/anti-cheat prompt suffix; and
@@ -22,86 +22,86 @@ task_sets:
   #
   # Changing those contracts in place would invalidate historical benchmark
   # comparisons, so each current task is explicitly grandfathered instead.
-  legacy-all:
-    - tasks/mpp/client-access-keys
-    - tasks/mpp/server-charge-and-session
-    - tasks/mpp/server-charge-pathusd
-    - tasks/mpp/server-charge-pathusd-usdc
-    - tasks/mpp/server-custom-payment-method
-    - tasks/mpp/server-discovery-endpoint
-    - tasks/mpp/server-hono-charge-pathusd
-    - tasks/mpp/server-mcp-pathusd
-    - tasks/mpp/server-x402-mpp-charges
-    - tasks/tempo-mcp-v1/access-keys
-    - tasks/tempo-mcp-v1/batched-transfers
-    - tasks/tempo-mcp-v1/dex-swap
-    - tasks/tempo-mcp-v1/faucet-funding
-    - tasks/tempo-mcp-v1/fee-token-and-payer
-    - tasks/tempo-mcp-v1/fee-token-configuration
-    - tasks/tempo-mcp-v1/passkey-account
-    - tasks/tempo-mcp-v1/policy-authorization
-    - tasks/tempo-mcp-v1/stablecoin-creation
-    - tasks/tempo-mcp-v1/tip20-transfer-memo
-    - tasks/tempo-mcp-v1/transaction-status
-    - tasks/tempo-mcp-v1/wallet-client
-    - tasks/tempo-v1/access-key-transfer
-    - tasks/tempo-v1/create-stablecoin-with-policy
-    - tasks/tempo-v1/faucet-funded-transfer
-    - tasks/tempo-v1/receive-policy-held-transfer
-    - tasks/tempo-v1/set-fee-token
-    - tasks/tempo-v1/stablecoin-dex-swap
-    - tasks/tempo-v1/transfer-batched
-    - tasks/tempo-v1/transfer-with-memo
-    - tasks/tempo-v1/transfer-with-memo-fee-payer
+  legacy-task-contracts:
+    checks:
+      - check-canary.sh
+      - check-instruction-suffix.sh
+      - check-separate-verifier.sh
+      - check-task-fields.sh
+    files:
+      - tasks/mpp/client-access-keys
+      - tasks/mpp/server-charge-and-session
+      - tasks/mpp/server-charge-pathusd
+      - tasks/mpp/server-charge-pathusd-usdc
+      - tasks/mpp/server-custom-payment-method
+      - tasks/mpp/server-discovery-endpoint
+      - tasks/mpp/server-hono-charge-pathusd
+      - tasks/mpp/server-mcp-pathusd
+      - tasks/mpp/server-x402-mpp-charges
+      - tasks/tempo-mcp-v1/access-keys
+      - tasks/tempo-mcp-v1/batched-transfers
+      - tasks/tempo-mcp-v1/dex-swap
+      - tasks/tempo-mcp-v1/faucet-funding
+      - tasks/tempo-mcp-v1/fee-token-and-payer
+      - tasks/tempo-mcp-v1/fee-token-configuration
+      - tasks/tempo-mcp-v1/passkey-account
+      - tasks/tempo-mcp-v1/policy-authorization
+      - tasks/tempo-mcp-v1/stablecoin-creation
+      - tasks/tempo-mcp-v1/tip20-transfer-memo
+      - tasks/tempo-mcp-v1/transaction-status
+      - tasks/tempo-mcp-v1/wallet-client
+      - tasks/tempo-v1/access-key-transfer
+      - tasks/tempo-v1/create-stablecoin-with-policy
+      - tasks/tempo-v1/faucet-funded-transfer
+      - tasks/tempo-v1/receive-policy-held-transfer
+      - tasks/tempo-v1/set-fee-token
+      - tasks/tempo-v1/stablecoin-dex-swap
+      - tasks/tempo-v1/transfer-batched
+      - tasks/tempo-v1/transfer-with-memo
+      - tasks/tempo-v1/transfer-with-memo-fee-payer
+
   # Tempo and Tempo MCP verifier scripts rely on dependencies supplied by the
   # shared verifier base image. Their direct interpreter calls fail upstream's
   # package-manager heuristic, although they are valid in the shared harness.
   # MPP scripts already satisfy that heuristic and are deliberately omitted.
-  legacy-test-sh-sanity:
-    - tasks/tempo-mcp-v1/access-keys
-    - tasks/tempo-mcp-v1/batched-transfers
-    - tasks/tempo-mcp-v1/dex-swap
-    - tasks/tempo-mcp-v1/faucet-funding
-    - tasks/tempo-mcp-v1/fee-token-and-payer
-    - tasks/tempo-mcp-v1/fee-token-configuration
-    - tasks/tempo-mcp-v1/passkey-account
-    - tasks/tempo-mcp-v1/policy-authorization
-    - tasks/tempo-mcp-v1/stablecoin-creation
-    - tasks/tempo-mcp-v1/tip20-transfer-memo
-    - tasks/tempo-mcp-v1/transaction-status
-    - tasks/tempo-mcp-v1/wallet-client
-    - tasks/tempo-v1/access-key-transfer
-    - tasks/tempo-v1/create-stablecoin-with-policy
-    - tasks/tempo-v1/faucet-funded-transfer
-    - tasks/tempo-v1/receive-policy-held-transfer
-    - tasks/tempo-v1/set-fee-token
-    - tasks/tempo-v1/stablecoin-dex-swap
-    - tasks/tempo-v1/transfer-batched
-    - tasks/tempo-v1/transfer-with-memo
-    - tasks/tempo-v1/transfer-with-memo-fee-payer
+  legacy-shared-test-runtime:
+    checks:
+      - check-test-sh-sanity.sh
+    files:
+      - tasks/tempo-mcp-v1/access-keys
+      - tasks/tempo-mcp-v1/batched-transfers
+      - tasks/tempo-mcp-v1/dex-swap
+      - tasks/tempo-mcp-v1/faucet-funding
+      - tasks/tempo-mcp-v1/fee-token-and-payer
+      - tasks/tempo-mcp-v1/fee-token-configuration
+      - tasks/tempo-mcp-v1/passkey-account
+      - tasks/tempo-mcp-v1/policy-authorization
+      - tasks/tempo-mcp-v1/stablecoin-creation
+      - tasks/tempo-mcp-v1/tip20-transfer-memo
+      - tasks/tempo-mcp-v1/transaction-status
+      - tasks/tempo-mcp-v1/wallet-client
+      - tasks/tempo-v1/access-key-transfer
+      - tasks/tempo-v1/create-stablecoin-with-policy
+      - tasks/tempo-v1/faucet-funded-transfer
+      - tasks/tempo-v1/receive-policy-held-transfer
+      - tasks/tempo-v1/set-fee-token
+      - tasks/tempo-v1/stablecoin-dex-swap
+      - tasks/tempo-v1/transfer-batched
+      - tasks/tempo-v1/transfer-with-memo
+      - tasks/tempo-v1/transfer-with-memo-fee-payer
+
   # These established task IDs exceed upstream's three-token slug limit.
   # Renaming them would change benchmark identities and dataset references.
-  legacy-long-slugs:
-    - tasks/mpp/server-charge-and-session
-    - tasks/mpp/server-charge-pathusd-usdc
-    - tasks/mpp/server-custom-payment-method
-    - tasks/mpp/server-hono-charge-pathusd
-    - tasks/mpp/server-x402-mpp-charges
-    - tasks/tempo-mcp-v1/fee-token-and-payer
-    - tasks/tempo-v1/create-stablecoin-with-policy
-    - tasks/tempo-v1/receive-policy-held-transfer
-    - tasks/tempo-v1/transfer-with-memo-fee-payer
-
-exceptions:
-  # Existing tasks use one Tempo-specific canary in instruction.md.
-  check-canary.sh: legacy-all
-  # Existing prompts are immutable and lack the generated upstream suffix.
-  check-instruction-suffix.sh: legacy-all
-  # Existing suites intentionally run their verifier in the shared harness.
-  check-separate-verifier.sh: legacy-all
-  # Existing task TOML files use Tempo Bench's metadata schema.
-  check-task-fields.sh: legacy-all
-  # Only the explicitly listed legacy task IDs exceed the slug limit.
-  check-task-slug.sh: legacy-long-slugs
-  # Only the listed shared-harness test scripts need this exception.
-  check-test-sh-sanity.sh: legacy-test-sh-sanity
+  legacy-task-identifiers:
+    checks:
+      - check-task-slug.sh
+    files:
+      - tasks/mpp/server-charge-and-session
+      - tasks/mpp/server-charge-pathusd-usdc
+      - tasks/mpp/server-custom-payment-method
+      - tasks/mpp/server-hono-charge-pathusd
+      - tasks/mpp/server-x402-mpp-charges
+      - tasks/tempo-mcp-v1/fee-token-and-payer
+      - tasks/tempo-v1/create-stablecoin-with-policy
+      - tasks/tempo-v1/receive-policy-held-transfer
+      - tasks/tempo-v1/transfer-with-memo-fee-payer
