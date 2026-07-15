@@ -10,7 +10,7 @@ import shutil
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -83,7 +83,8 @@ Variants:
 Options:
   --env-file PATH          Load env file for Harbor and preflight checks
                            (default: .env when present)
-  --job-name NAME          Override generated job name
+  --job-name NAME          Override generated job name; production runs use it
+                           as the run group and include the profile suffix
   --models-config PATH     Model matrix config
                            (default: config/models.production.yaml)
   --n-attempts N          Override production attempts per task and model
@@ -191,6 +192,10 @@ def timestamp() -> str:
     return datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
+def production_timestamp() -> str:
+    return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+
+
 def run(command: str, args: list[str]) -> None:
     result = subprocess.run([command, *args], env=os.environ, check=False)
     if result.returncode != 0:
@@ -199,19 +204,6 @@ def run(command: str, args: list[str]) -> None:
 
 def run_status(command: str, args: list[str]) -> int:
     return subprocess.run([command, *args], env=os.environ, check=False).returncode
-
-
-def run_output(command: str, args: list[str]) -> str | None:
-    result = subprocess.run(
-        [command, *args],
-        env=os.environ,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        return None
-    return result.stdout.strip() or None
 
 
 def run_python(script: str, args: list[str] | None = None) -> None:
@@ -410,34 +402,14 @@ def validate_optional_positive_integer(value: str | None, option: str) -> str | 
     return None if value is None else read_positive_integer(value, option)
 
 
-def production_run_root(run_id: str) -> Path:
-    return Path("runs") / run_id
-
-
-def production_job_dir(run_id: str) -> Path:
-    return production_run_root(run_id) / "harbor-job"
-
-
-def write_production_metadata(run_id: str, metadata: dict[str, Any]) -> None:
-    run_root = production_run_root(run_id)
-    run_root.mkdir(parents=True, exist_ok=True)
-    (run_root / "metadata.json").write_text(f"{json.dumps(metadata, indent=2)}\n")
+def production_job_dir(job_name: str) -> Path:
+    if job_name in {"", ".", ".."} or Path(job_name).name != job_name:
+        raise RuntimeError("Production job name must be one path component")
+    return Path("jobs") / job_name
 
 
 def benchmark_key(value: str | BenchmarkKey | None) -> BenchmarkKey:
     return BenchmarkKey(value or BenchmarkKey.TEMPO)
-
-
-def benchmark_provenance(task_suite: str | None) -> list[dict[str, str]]:
-    keys = (
-        (BenchmarkKey.TEMPO, BenchmarkKey.TEMPO_MCP, BenchmarkKey.MPP)
-        if task_suite == "all"
-        else (benchmark_key(task_suite),)
-    )
-    return [
-        {"id": BENCHMARKS[key]["id"], "dataset": BENCHMARKS[key]["dataset"]}
-        for key in keys
-    ]
 
 
 def run_benchmark_key(variant: dict[str, Any], task_suite: str | None) -> BenchmarkKey:
@@ -501,7 +473,7 @@ def versioned_name(benchmark: BenchmarkKey, suffix: str) -> str:
 
 
 def render_job_config(
-    job: dict[str, Any], benchmark: BenchmarkKey = BenchmarkKey.TEMPO
+    job: dict[str, Any], benchmark: BenchmarkKey | None = BenchmarkKey.TEMPO
 ) -> dict[str, Any]:
     environment = jinja2.Environment(
         loader=jinja2.FileSystemLoader("config"),
@@ -511,7 +483,11 @@ def render_job_config(
         keep_trailing_newline=True,
     )
     rendered = environment.get_template("job.yaml.j2").render(
-        job_name=versioned_name(benchmark, job["job_name"]),
+        job_name=(
+            versioned_name(benchmark, job["job_name"])
+            if benchmark is not None
+            else job["job_name"]
+        ),
         jobs_dir=job.get("jobs_dir", "jobs"),
         n_attempts=job["n_attempts"],
         n_concurrent_trials=job["n_concurrent_trials"],
@@ -547,9 +523,10 @@ def production_job(
     model_config: dict[str, Any],
     options: dict[str, Any],
 ) -> dict[str, Any]:
+    job_dir = production_job_dir(run_id)
     return {
-        "job_name": "harbor-job",
-        "jobs_dir": str(production_run_root(run_id)),
+        "job_name": job_dir.name,
+        "jobs_dir": str(job_dir.parent),
         "n_attempts": int(options.get("n_attempts") or "3"),
         "n_concurrent_trials": int(options.get("concurrency") or "32"),
         "environment_type": "daytona",
@@ -562,7 +539,6 @@ def production_job(
 def run_production_variant(
     run_id: str,
     options: dict[str, Any],
-    source: dict[str, str],
     docs_bundle: str | None,
 ) -> None:
     models_config_path = options.get("models_config") or "config/models.production.yaml"
@@ -571,58 +547,17 @@ def run_production_variant(
     )
     preflight_production_agents(model_config)
     job = production_job(run_id, model_config, options)
-    config = stage_daytona_config(render_job_config(job), run_id, docs_bundle, options)
+    config = stage_daytona_config(
+        render_job_config(job, benchmark=None), run_id, docs_bundle, options
+    )
     max_retries = options.get("max_retries") or "2"
-    started_at = datetime.now().astimezone().isoformat()
-    metadata = {
-        "schema_version": 1,
-        "run_id": run_id,
-        "started_at": started_at,
-        "finished_at": None,
-        "status": "running",
-        "harbor_job_dir": str(production_job_dir(run_id)),
-        "models_config": models_config_path,
-        "models": [
-            {
-                "agent": model["agent"],
-                "model_name": model["model_name"],
-                "n_concurrent": model.get("n_concurrent"),
-                "concurrency_group": model.get("concurrency_group"),
-            }
-            for model in model_config["models"]
-        ],
-        "benchmarks": benchmark_provenance(options.get("task_suite")),
-        "task_suite": options.get("task_suite") or "tempo",
-        "task_filter": options.get("task_filter"),
-        "n_attempts": job["n_attempts"],
-        "n_concurrent_trials": str(job["n_concurrent_trials"]),
-        "max_retries": max_retries,
-        "docs_source": source.get("sha", "public"),
-        "docs_bundle": docs_bundle,
-        "profile": options["profile"],
-        "git_sha": run_output("git", ["rev-parse", "HEAD"]),
-        "git_branch": run_output("git", ["branch", "--show-current"]),
-        "harbor_version": run_output("uv", ["run", "harbor", "--version"]),
-    }
-
-    write_production_metadata(run_id, metadata)
     args = ["run", "harbor", "run", "-c", config]
     if options.get("env_file"):
         args.extend(["--env-file", options["env_file"]])
     args.extend(["--max-retries", max_retries])
     os.environ["TEMPO_DOCS_BUNDLE_PATH"] = ""
     args.append("-y")
-
     status = run_status("uv", args)
-    write_production_metadata(
-        run_id,
-        {
-            **metadata,
-            "finished_at": datetime.now().astimezone().isoformat(),
-            "status": "completed" if status == 0 else "failed",
-            "exit_status": status,
-        },
-    )
     if status != 0:
         raise RuntimeError(f"Production benchmark {run_id} failed with status {status}")
 
@@ -1074,12 +1009,18 @@ def main(argv: list[str]) -> None:
         first_profile_sync = False if variant.get("production") else options["sync"]
         benchmark = run_benchmark_key(variant, options.get("task_suite"))
         prefix = versioned_name(benchmark, variant["prefix"])
-        pair_id = options.get("job_name") or f"{prefix}-mcp-pair-{timestamp()}"
+        pair_id = options.get("job_name") or (
+            f"{prefix}-{production_timestamp()}"
+            if variant.get("production")
+            else f"{prefix}-mcp-pair-{timestamp()}"
+        )
         profile_options = [
             options
             | {
                 "profile": profile_id,
-                "job_name": f"{pair_id}-{profile_id}",
+                "job_name": (
+                    pair_id if variant.get("production") else f"{pair_id}-{profile_id}"
+                ),
                 "pair_id": pair_id,
                 "sync": first_profile_sync if index == 0 else False,
             }
@@ -1135,12 +1076,15 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))
     default_run_name = versioned_name(benchmark, variant["prefix"])
-    run_id = options.get("job_name") or (
-        f"{default_run_name}-{options['profile']}-{timestamp()}"
-    )
+    run_group = options.get("job_name")
+    if variant.get("production"):
+        run_group = run_group or f"{default_run_name}-{production_timestamp()}"
+        run_id = f"{run_group}-{options['profile']}"
+    else:
+        run_id = run_group or f"{default_run_name}-{options['profile']}-{timestamp()}"
     args = ["run", "harbor", "run"]
     if variant.get("production"):
-        run_production_variant(run_id, options, source, docs_bundle)
+        run_production_variant(run_id, options, docs_bundle)
         return
 
     if variant.get("job"):

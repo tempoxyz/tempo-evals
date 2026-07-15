@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -125,22 +124,11 @@ def read_json(file_path: Path) -> JsonObject | None:
 
 
 def read_metadata(job_dir: Path) -> JsonObject:
-    return read_json(job_dir.parent / "metadata.json") or {}
-
-
-def command_output(command: str, args: list[str]) -> str:
-    result = subprocess.run(
-        [command, *args],
-        check=False,
-        capture_output=True,
-        text=True,
+    return (
+        read_json(job_dir / "metadata.json")
+        or read_json(job_dir.parent / "metadata.json")
+        or {}
     )
-    return result.stdout.strip() if result.returncode == 0 else ""
-
-
-def default_docs_source() -> str:
-    sha = (read_json(Path("config/tempo-docs.lock.json")) or {}).get("sha")
-    return str(sha) if sha else "public"
 
 
 def default_run_id(job_dir: Path, metadata: JsonObject) -> str:
@@ -158,15 +146,11 @@ def default_out_dir(job_dir: Path) -> Path:
 
 
 def build_context(job_dir: Path, run_id: str, metadata: JsonObject) -> JsonObject:
-    source = metadata.get("docs_source")
     return {
         "run_id": run_id,
         "job_name": job_dir.name,
-        "git_sha": metadata.get("git_sha")
-        or command_output("git", ["rev-parse", "HEAD"]),
-        "docs_source": source
-        if isinstance(source, str) and source
-        else default_docs_source(),
+        "git_sha": as_string(metadata.get("git_sha")),
+        "docs_source": as_string(metadata.get("docs_source")),
         "mcp_target_id": metadata.get("mcp_target_id", ""),
     }
 
@@ -692,7 +676,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--job",
         required=True,
-        help="Harbor job directory, for example runs/<run_id>/harbor-job",
+        help="Harbor job directory, for example jobs/<job-name>",
     )
     parser.add_argument("--run-id", help="Run id to write into exports")
     parser.add_argument("--out-dir", help="Output directory")

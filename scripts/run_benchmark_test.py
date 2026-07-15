@@ -15,7 +15,6 @@ from scripts.run_benchmark import (
     BenchmarkKey,
     apply_pair_id,
     apply_profile,
-    benchmark_provenance,
     daytona_base_image,
     finalize_config,
     main,
@@ -26,6 +25,7 @@ from scripts.run_benchmark import (
     render_job_config,
     run_benchmark_key,
     run_benchmark_variant,
+    run_production_variant,
     stage_filtered_config,
     stage_pinned_docs_task,
     uses_live_mcp_eval,
@@ -35,6 +35,10 @@ from scripts.run_benchmark import (
 
 def base_config() -> dict[str, Any]:
     return {"agents": [{"name": "oracle"}], "datasets": []}
+
+
+def production_model_config() -> dict[str, Any]:
+    return {"models": [{"agent": "claude-code", "model_name": "claude-haiku-4-5"}]}
 
 
 class RunBenchmarkTest(unittest.TestCase):
@@ -91,10 +95,10 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertIsNone(stage.call_args.args[2])
         run.assert_called_once()
 
-    def test_production_variant_accepts_explicit_mcp_profile(self) -> None:
+    def test_production_profile_appends_to_explicit_run_group(self) -> None:
         options = {
             "env_file": None,
-            "job_name": "production-mcp-test",
+            "job_name": "production-mcp",
             "profile": "mcp",
             "sync": False,
             "task_suite": "tempo",
@@ -111,10 +115,42 @@ class RunBenchmarkTest(unittest.TestCase):
             run_benchmark_variant("production-daytona", options)
 
         run_production.assert_called_once()
+        self.assertEqual(run_production.call_args.args[0], "production-mcp-mcp")
         run.assert_not_called()
 
-    def test_production_all_profile_runs_docs_and_mcp_jobs(self) -> None:
+    def test_production_single_profile_uses_timestamped_run_name(self) -> None:
+        options = {
+            "env_file": None,
+            "job_name": None,
+            "profile": "docs",
+            "sync": False,
+            "task_suite": "tempo",
+        }
         with (
+            patch("scripts.run_benchmark.load_env_file"),
+            patch("scripts.run_benchmark.preflight"),
+            patch("scripts.run_benchmark.preflight_mcp_target"),
+            patch("scripts.run_benchmark.docs_source", return_value={"mode": "public"}),
+            patch("scripts.run_benchmark.ensure_docs_bundle", return_value=None),
+            patch(
+                "scripts.run_benchmark.production_timestamp",
+                return_value="20260714T202823Z",
+            ),
+            patch("scripts.run_benchmark.run_production_variant") as run_production,
+        ):
+            run_benchmark_variant("production-daytona", options)
+
+        self.assertEqual(
+            run_production.call_args.args[0],
+            "tempo-bench-v1-production-20260714T202823Z-docs",
+        )
+
+    def test_production_profiles_share_one_timestamped_run_group(self) -> None:
+        with (
+            patch(
+                "scripts.run_benchmark.production_timestamp",
+                return_value="20260714T202823Z",
+            ),
             patch("scripts.run_benchmark.prepare_production_profiles") as prepare,
             patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
         ):
@@ -125,8 +161,6 @@ class RunBenchmarkTest(unittest.TestCase):
                     "all",
                     "--models-config",
                     "config/models.dev.yaml",
-                    "--job-name",
-                    "paired-run",
                 ]
             )
 
@@ -135,13 +169,15 @@ class RunBenchmarkTest(unittest.TestCase):
             invocation.args[1]["profile"]: invocation.args[1]
             for invocation in run_variant.call_args_list
         }
+        run_group = "tempo-bench-v1-production-20260714T202823Z"
         self.assertEqual(set(profiles), {"docs", "mcp"})
-        self.assertEqual(profiles["docs"]["job_name"], "paired-run-docs")
-        self.assertEqual(profiles["mcp"]["job_name"], "paired-run-mcp")
-        self.assertTrue(all(not options["sync"] for options in profiles.values()))
         self.assertTrue(
-            all(options["pair_id"] == "paired-run" for options in profiles.values())
+            all(options["job_name"] == run_group for options in profiles.values())
         )
+        self.assertTrue(
+            all(options["pair_id"] == run_group for options in profiles.values())
+        )
+        self.assertTrue(all(not options["sync"] for options in profiles.values()))
 
     def test_dev_and_production_model_configs_are_distinct(self) -> None:
         dev = parse_model_config("config/models.dev.yaml", None)
@@ -229,12 +265,6 @@ class RunBenchmarkTest(unittest.TestCase):
             ],
         )
 
-    def test_benchmark_provenance_uses_versioned_dataset_identity(self) -> None:
-        self.assertEqual(
-            benchmark_provenance("tempo"),
-            [{"id": "tempo-bench-v1", "dataset": "tempo/tempo-bench-v1"}],
-        )
-
     def test_run_names_resolve_from_catalog(self) -> None:
         self.assertEqual(
             versioned_name(BenchmarkKey.TEMPO, "oracle-local"),
@@ -242,6 +272,10 @@ class RunBenchmarkTest(unittest.TestCase):
         )
         self.assertEqual(
             run_benchmark_key({"benchmark": "tempo"}, "mpp"), BenchmarkKey.MPP
+        )
+        self.assertEqual(
+            run_benchmark_key({"benchmark": "tempo"}, "tempo-mcp"),
+            BenchmarkKey.TEMPO_MCP,
         )
         self.assertEqual(
             run_benchmark_key({"benchmark": "tempo"}, "all"), BenchmarkKey.TEMPO
@@ -257,26 +291,44 @@ class RunBenchmarkTest(unittest.TestCase):
 
         self.assertEqual(options["n_attempts"], "1")
 
-    def test_production_job_uses_requested_attempts(self) -> None:
-        model_config = {
-            "models": [
-                {
-                    "agent": "claude-code",
-                    "model_name": "claude-haiku-4-5",
-                    "n_concurrent": None,
-                    "concurrency_group": None,
-                }
-            ]
-        }
-
-        self.assertEqual(
-            production_job("test-run", model_config, {"n_attempts": "1"})["n_attempts"],
-            1,
+    def test_production_job_uses_native_name_and_requested_attempts(self) -> None:
+        run_id = "mpp-bench-v1-production-20260714T202823Z-docs"
+        job = production_job(
+            run_id,
+            production_model_config(),
+            {"n_attempts": "1", "task_suite": "mpp"},
         )
+        config = render_job_config(job, benchmark=None)
+
+        self.assertEqual(job["job_name"], run_id)
+        self.assertEqual(job["jobs_dir"], "jobs")
+        self.assertEqual(config["job_name"], run_id)
         self.assertEqual(
-            production_job("test-run", model_config, {})["n_attempts"],
+            Path(config["jobs_dir"]) / config["job_name"], Path("jobs") / run_id
+        )
+        self.assertEqual(job["n_attempts"], 1)
+        self.assertEqual(
+            production_job("test-run", production_model_config(), {})["n_attempts"],
             3,
         )
+        with (
+            patch(
+                "scripts.run_benchmark.parse_model_config",
+                return_value=production_model_config(),
+            ),
+            patch("scripts.run_benchmark.preflight_production_agents"),
+            patch(
+                "scripts.run_benchmark.stage_daytona_config", return_value="job.yaml"
+            ) as stage,
+            patch("scripts.run_benchmark.run_status", return_value=0),
+        ):
+            run_production_variant(run_id, {"task_suite": "mpp"}, None)
+
+        self.assertEqual(stage.call_args.args[0]["job_name"], run_id)
+
+    def test_production_job_rejects_run_id_paths(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "one path component"):
+            production_job("nested/run", production_model_config(), {})
 
     def test_job_config_scopes_api_keys_to_each_agent_provider(self) -> None:
         config = render_job_config(
