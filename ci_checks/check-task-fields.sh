@@ -1,80 +1,72 @@
 #!/bin/bash
 
-# Validate the common Tempo Bench task.toml contract. Suite-specific optional
-# fields are intentionally not required here because the MCP suite has a
-# different runtime configuration from the integration suites.
-
+# Exit on error
 set -e
 
+# CUSTOMIZE VALIDATION PIPELINE — add or remove required task.toml fields
+# Required fields in task.toml files
+REQUIRED_FIELDS=(
+    "author_name"
+    "author_email"
+    "difficulty_explanation"
+    "solution_explanation"
+    "verification_explanation"
+    "category"
+    "tags"
+    "expert_time_estimate_hours"
+    "relevant_experience"
+)
+
+# Get list of files to check
+# Arguments: task directories (e.g., tasks/my-task) or no args to check all
 if [ $# -eq 0 ]; then
-    TASK_DIRS=$(find tasks -mindepth 2 -maxdepth 2 -type d)
+    FILES_TO_CHECK=$(find tasks -type f -name "task.toml")
 else
-    TASK_DIRS="$*"
+    FILES_TO_CHECK=""
+    for task_dir in "$@"; do
+        if [ -d "$task_dir" ] && [ -f "$task_dir/task.toml" ]; then
+            FILES_TO_CHECK="$FILES_TO_CHECK $task_dir/task.toml"
+        fi
+    done
 fi
 
-if [ -z "$TASK_DIRS" ]; then
-    echo "No task directories to check"
+if [ -z "$FILES_TO_CHECK" ]; then
+    echo "No task.toml files to check"
     exit 0
 fi
 
 FAILED=0
-for task_dir in $TASK_DIRS; do
-    task_toml="$task_dir/task.toml"
-    if [ ! -f "$task_toml" ]; then
-        echo "FAIL $task_dir: missing task.toml"
-        FAILED=1
+for file in $FILES_TO_CHECK; do
+    if [ ! -f "$file" ]; then
+        echo "File $file does not exist, skipping"
         continue
     fi
 
-    RESULT=$(python3 - "$task_toml" <<'PYEOF'
-import sys
+    echo "Checking $file..."
 
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib  # type: ignore
+    # Check each required field
+    for field in "${REQUIRED_FIELDS[@]}"; do
+        field_found=false
+        # Check at top level
+        if grep -q "^${field}" "$file"; then
+            field_found=true
+        # Check under [metadata] if it exists
+        elif grep -q "^\[metadata\]" "$file" && grep -A 20 "^\[metadata\]" "$file" | grep -q "^${field}"; then
+            field_found=true
+        fi
 
-path = sys.argv[1]
-try:
-    with open(path, "rb") as f:
-        data = tomllib.load(f)
-except Exception as error:
-    print(f"invalid TOML: {error}")
-    sys.exit(1)
-
-required = (
-    ("schema_version",),
-    ("task", "name"),
-    ("task", "description"),
-    ("task", "keywords"),
-    ("metadata", "category"),
-    ("metadata", "benchmark"),
-    ("verifier", "timeout_sec"),
-    ("verifier", "environment_mode"),
-    ("agent", "timeout_sec"),
-)
-
-for parts in required:
-    value = data
-    for part in parts:
-        if not isinstance(value, dict) or part not in value:
-            print("missing " + ".".join(parts))
-            break
-        value = value[part]
-    else:
-        if value in (None, "", []):
-            print("empty " + ".".join(parts))
-PYEOF
-    ) || true
-
-    if [ -n "$RESULT" ]; then
-        while IFS= read -r line; do
-            [ -n "$line" ] && echo "FAIL $task_toml: $line"
-        done <<EOF
-$RESULT
-EOF
-        FAILED=1
-    fi
+        if [ "$field_found" = false ]; then
+            echo "FAIL $file: missing required field $field"
+            FAILED=1
+        fi
+    done
 done
 
-exit "$FAILED"
+if [ $FAILED -eq 1 ]; then
+    echo ""
+    echo "Some task.toml files are missing required fields or have invalid values"
+    echo "Required fields: ${REQUIRED_FIELDS[*]}"
+    exit 1
+fi
+
+echo "All task.toml files contain the required fields with valid values"

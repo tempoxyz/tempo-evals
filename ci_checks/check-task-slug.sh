@@ -3,8 +3,7 @@
 # Enforce a maximum number of hyphen-separated tokens in the task folder name.
 # Long slugs become unwieldy in CLI output, CI logs, and artifact paths.
 
-# Existing Tempo Bench task identifiers use up to five descriptive tokens.
-MAX_TOKENS=5
+MAX_TOKENS=3
 
 if [ $# -lt 1 ]; then
     echo "Usage: $0 <task-dir> [task-dir ...]" >&2

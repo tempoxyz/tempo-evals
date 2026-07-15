@@ -1,0 +1,78 @@
+# Exceptions for benchmark-major contracts that predate the upstream static
+# checks. Paths are explicit so tasks added after this registry remain subject
+# to every check. Remove a path when its task has been migrated.
+
+version: 1
+
+task_sets:
+  legacy-all:
+    - tasks/mpp/client-access-keys
+    - tasks/mpp/server-charge-and-session
+    - tasks/mpp/server-charge-pathusd
+    - tasks/mpp/server-charge-pathusd-usdc
+    - tasks/mpp/server-custom-payment-method
+    - tasks/mpp/server-discovery-endpoint
+    - tasks/mpp/server-hono-charge-pathusd
+    - tasks/mpp/server-mcp-pathusd
+    - tasks/mpp/server-x402-mpp-charges
+    - tasks/tempo-mcp-v1/access-keys
+    - tasks/tempo-mcp-v1/batched-transfers
+    - tasks/tempo-mcp-v1/dex-swap
+    - tasks/tempo-mcp-v1/faucet-funding
+    - tasks/tempo-mcp-v1/fee-token-and-payer
+    - tasks/tempo-mcp-v1/fee-token-configuration
+    - tasks/tempo-mcp-v1/passkey-account
+    - tasks/tempo-mcp-v1/policy-authorization
+    - tasks/tempo-mcp-v1/stablecoin-creation
+    - tasks/tempo-mcp-v1/tip20-transfer-memo
+    - tasks/tempo-mcp-v1/transaction-status
+    - tasks/tempo-mcp-v1/wallet-client
+    - tasks/tempo-v1/access-key-transfer
+    - tasks/tempo-v1/create-stablecoin-with-policy
+    - tasks/tempo-v1/faucet-funded-transfer
+    - tasks/tempo-v1/receive-policy-held-transfer
+    - tasks/tempo-v1/set-fee-token
+    - tasks/tempo-v1/stablecoin-dex-swap
+    - tasks/tempo-v1/transfer-batched
+    - tasks/tempo-v1/transfer-with-memo
+    - tasks/tempo-v1/transfer-with-memo-fee-payer
+  legacy-test-sh-sanity:
+    - tasks/tempo-mcp-v1/access-keys
+    - tasks/tempo-mcp-v1/batched-transfers
+    - tasks/tempo-mcp-v1/dex-swap
+    - tasks/tempo-mcp-v1/faucet-funding
+    - tasks/tempo-mcp-v1/fee-token-and-payer
+    - tasks/tempo-mcp-v1/fee-token-configuration
+    - tasks/tempo-mcp-v1/passkey-account
+    - tasks/tempo-mcp-v1/policy-authorization
+    - tasks/tempo-mcp-v1/stablecoin-creation
+    - tasks/tempo-mcp-v1/tip20-transfer-memo
+    - tasks/tempo-mcp-v1/transaction-status
+    - tasks/tempo-mcp-v1/wallet-client
+    - tasks/tempo-v1/access-key-transfer
+    - tasks/tempo-v1/create-stablecoin-with-policy
+    - tasks/tempo-v1/faucet-funded-transfer
+    - tasks/tempo-v1/receive-policy-held-transfer
+    - tasks/tempo-v1/set-fee-token
+    - tasks/tempo-v1/stablecoin-dex-swap
+    - tasks/tempo-v1/transfer-batched
+    - tasks/tempo-v1/transfer-with-memo
+    - tasks/tempo-v1/transfer-with-memo-fee-payer
+  legacy-long-slugs:
+    - tasks/mpp/server-charge-and-session
+    - tasks/mpp/server-charge-pathusd-usdc
+    - tasks/mpp/server-custom-payment-method
+    - tasks/mpp/server-hono-charge-pathusd
+    - tasks/mpp/server-x402-mpp-charges
+    - tasks/tempo-mcp-v1/fee-token-and-payer
+    - tasks/tempo-v1/create-stablecoin-with-policy
+    - tasks/tempo-v1/receive-policy-held-transfer
+    - tasks/tempo-v1/transfer-with-memo-fee-payer
+
+exceptions:
+  check-canary.sh: legacy-all
+  check-instruction-suffix.sh: legacy-all
+  check-separate-verifier.sh: legacy-all
+  check-task-fields.sh: legacy-all
+  check-task-slug.sh: legacy-long-slugs
+  check-test-sh-sanity.sh: legacy-test-sh-sanity

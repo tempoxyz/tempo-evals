@@ -124,7 +124,7 @@ jobs:
             "GPU types|check-gpu-types.sh"
             "Allow internet|check-allow-internet.sh"
             "Task slug length|check-task-slug.sh"
-            "Verifier layout|check-separate-verifier.sh"
+            "Separate verifier|check-separate-verifier.sh"
             "Trial network fetch|check-trial-network-fetch.sh"
             "Pip pinning|check-pip-pinning.sh"
             "Nproc usage|check-nproc.sh"
@@ -133,6 +133,8 @@ jobs:
             "Verifier tooling baked|check-verifier-tooling-baked.sh"
             "Compose host binds|check-compose-host-binds.sh"
           )
+          EXCEPTIONS_PATH="$GITHUB_WORKSPACE/base/ci_checks/exceptions.yml"
+          EXEMPTION_CHECK="$GITHUB_WORKSPACE/base/ci_checks/is-exempt.sh"
 
           FAILED_ROWS=""
           PASSED_ROWS=""
@@ -149,9 +151,23 @@ jobs:
             if [ ! -f "$SCRIPT_PATH" ]; then
               echo "Static check script not found: $SCRIPT_PATH"
               FAIL_DETAILS="Script not found"
+            elif [ ! -f "$EXCEPTIONS_PATH" ] || [ ! -x "$EXEMPTION_CHECK" ]; then
+              echo "Static check exception registry is unavailable"
+              FAIL_DETAILS="Exception registry unavailable"
             else
               for task_dir in $TASK_DIRS; do
                 [ -d "$task_dir" ] || continue
+                if "$EXEMPTION_CHECK" "$EXCEPTIONS_PATH" "$SCRIPT" "$task_dir"; then
+                  echo "SKIP $task_dir: listed in ci_checks/exceptions.yml"
+                  continue
+                else
+                  EXEMPTION_STATUS=$?
+                  if [ "$EXEMPTION_STATUS" -ne 1 ]; then
+                    echo "Invalid exception registry"
+                    FAIL_DETAILS="Invalid exception registry"
+                    break
+                  fi
+                fi
                 if ! OUT=$(bash "$SCRIPT_PATH" "$task_dir" 2>&1); then
                   echo "$OUT"
                   CLEAN=$(printf '%s\n' "$OUT" | sed -E $'s/\x1b\\[[0-9;]*[A-Za-z]//g')
