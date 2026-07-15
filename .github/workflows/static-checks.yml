@@ -1,0 +1,235 @@
+name: Static Checks
+
+# Ported from https://github.com/harbor-framework/benchmark-template/blob/main/.github/workflows/static-checks.yml
+# Keep checks from the trusted base revision separate from untrusted PR task files.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "tasks/**"
+
+concurrency:
+  group: static-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # Set to error once existing task violations have been remediated.
+  STATIC_CHECKS_MODE: warning
+  UPSTREAM_STATIC_CHECKS_URL: https://github.com/harbor-framework/benchmark-template/blob/main/.github/workflows/static-checks.yml
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check out trusted static checks
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: Check out pull request tasks
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          sparse-checkout: |
+            tasks
+          sparse-checkout-cone-mode: true
+
+      - name: Detect changed task directories
+        id: detect
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          TASK_DIRS=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/files" --paginate --jq '.[].filename' | \
+            awk -F/ '$1 == "tasks" && NF >= 4 { print $1 "/" $2 "/" $3 }' | \
+            sort -u)
+
+          VALID_TASK_DIRS=""
+          while IFS= read -r task_dir; do
+            [ -n "$task_dir" ] || continue
+            [ -f "pr/$task_dir/task.toml" ] || continue
+            VALID_TASK_DIRS="${VALID_TASK_DIRS}${VALID_TASK_DIRS:+$'\n'}${task_dir}"
+          done <<< "$TASK_DIRS"
+
+          if [ -z "$VALID_TASK_DIRS" ]; then
+            echo "has_tasks=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "has_tasks=true"
+            echo "task_dirs<<EOF"
+            echo "$VALID_TASK_DIRS"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Detected task directories:"
+          echo "$VALID_TASK_DIRS"
+
+      - name: Write placeholder comment
+        if: steps.detect.outputs.has_tasks == 'true'
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          SHORT_SHA="${HEAD_SHA:0:7}"
+          SHA_LINK="${{ github.server_url }}/${{ github.repository }}/commit/${HEAD_SHA}"
+          printf '### Static Checks ⏳\nRunning in %s mode...\n\n<sub><a href="%s">Ran</a> on <a href="%s"><code>%s</code></a>. Source: <a href="%s">upstream workflow</a>.</sub>\n' \
+            "$STATIC_CHECKS_MODE" "$RUN_URL" "$SHA_LINK" "$SHORT_SHA" "$UPSTREAM_STATIC_CHECKS_URL" \
+            > /tmp/static-checks-comment.md
+
+      - name: Post placeholder sticky comment
+        if: steps.detect.outputs.has_tasks == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: static-checks
+          number: ${{ github.event.pull_request.number }}
+          path: /tmp/static-checks-comment.md
+
+      - name: Run all static checks
+        if: steps.detect.outputs.has_tasks == 'true'
+        id: checks
+        working-directory: pr
+        env:
+          TASK_DIRS: ${{ steps.detect.outputs.task_dirs }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          case "$STATIC_CHECKS_MODE" in
+            warning|error) ;;
+            *)
+              echo "STATIC_CHECKS_MODE must be warning or error, got: $STATIC_CHECKS_MODE" >&2
+              exit 1
+              ;;
+          esac
+
+          CHECKS=(
+            "Canary strings|check-canary.sh"
+            "Dockerfile refs|check-dockerfile-references.sh"
+            "Dockerfile sanity|check-dockerfile-sanity.sh"
+            "Dockerfile platform|check-dockerfile-platform.sh"
+            "Absolute paths|check-task-absolute-path.sh"
+            "Test refs|check-test-file-references.sh"
+            "test.sh sanity|check-test-sh-sanity.sh"
+            "Task fields|check-task-fields.sh"
+            "Task timeout cap|check-task-timeout.sh"
+            "Instruction suffix|check-instruction-suffix.sh"
+            "GPU types|check-gpu-types.sh"
+            "Allow internet|check-allow-internet.sh"
+            "Task slug length|check-task-slug.sh"
+            "Separate verifier|check-separate-verifier.sh"
+            "Trial network fetch|check-trial-network-fetch.sh"
+            "Pip pinning|check-pip-pinning.sh"
+            "Nproc usage|check-nproc.sh"
+            "No internet opt-in|check-no-allow-internet-true.sh"
+            "Pytest version pin|check-pytest-version.sh"
+            "Verifier tooling baked|check-verifier-tooling-baked.sh"
+            "Compose host binds|check-compose-host-binds.sh"
+          )
+
+          FAILED_ROWS=""
+          PASSED_ROWS=""
+          FAILED_COUNT=0
+          PASSED_COUNT=0
+
+          for entry in "${CHECKS[@]}"; do
+            NAME="${entry%%|*}"
+            SCRIPT="${entry##*|}"
+            SCRIPT_PATH="$GITHUB_WORKSPACE/base/ci_checks/$SCRIPT"
+            FAIL_DETAILS=""
+
+            echo "::group::Running $NAME"
+            if [ ! -f "$SCRIPT_PATH" ]; then
+              echo "Static check script not found: $SCRIPT_PATH"
+              FAIL_DETAILS="Script not found"
+            else
+              for task_dir in $TASK_DIRS; do
+                [ -d "$task_dir" ] || continue
+                if ! OUT=$(bash "$SCRIPT_PATH" "$task_dir" 2>&1); then
+                  echo "$OUT"
+                  CLEAN=$(printf '%s\n' "$OUT" | sed -E $'s/\x1b\\[[0-9;]*[A-Za-z]//g')
+                  MSG=$(printf '%s\n' "$CLEAN" | grep '^FAIL ' | sed 's/^FAIL //' | sed 's/|/\\|/g')
+                  [ -z "$MSG" ] && MSG="(see workflow log)"
+                  while IFS= read -r line; do
+                    [ -n "$line" ] && FAIL_DETAILS="${FAIL_DETAILS}${FAIL_DETAILS:+<br>}${line}"
+                  done <<< "$MSG"
+                else
+                  echo "$OUT"
+                fi
+              done
+            fi
+            echo "::endgroup::"
+
+            if [ -n "$FAIL_DETAILS" ]; then
+              FAILED_COUNT=$((FAILED_COUNT + 1))
+              FAILED_ROWS="${FAILED_ROWS}| ${NAME} | ${FAIL_DETAILS} |"$'\n'
+            else
+              PASSED_COUNT=$((PASSED_COUNT + 1))
+              PASSED_ROWS="${PASSED_ROWS}| ${NAME} |"$'\n'
+            fi
+          done
+
+          SHORT_SHA="${HEAD_SHA:0:7}"
+          SHA_LINK="${{ github.server_url }}/${{ github.repository }}/commit/${HEAD_SHA}"
+          {
+            if [ "$FAILED_COUNT" -eq 0 ]; then
+              echo "### Static Checks ✅"
+            elif [ "$STATIC_CHECKS_MODE" = "warning" ]; then
+              echo "### Static Checks ⚠️"
+            else
+              echo "### Static Checks ❌"
+            fi
+            echo
+            echo "Mode: \`$STATIC_CHECKS_MODE\`"
+            echo
+            if [ "$FAILED_COUNT" -gt 0 ]; then
+              echo "<details open>"
+              echo "<summary><b>${FAILED_COUNT} failed</b></summary>"
+              echo
+              echo "| Check | Details |"
+              echo "|-------|---------|"
+              printf '%s' "$FAILED_ROWS"
+              echo
+              echo "</details>"
+              echo
+            fi
+            if [ "$PASSED_COUNT" -gt 0 ]; then
+              echo "<details>"
+              echo "<summary><b>${PASSED_COUNT} passed</b></summary>"
+              echo
+              echo "| Check |"
+              echo "|-------|"
+              printf '%s' "$PASSED_ROWS"
+              echo
+              echo "</details>"
+              echo
+            fi
+            printf '<sub><a href="%s">Ran</a> on <a href="%s"><code>%s</code></a>. Source: <a href="%s">upstream workflow</a>.</sub>\n' \
+              "$RUN_URL" "$SHA_LINK" "$SHORT_SHA" "$UPSTREAM_STATIC_CHECKS_URL"
+          } > /tmp/static-checks-comment.md
+
+          cat /tmp/static-checks-comment.md >> "$GITHUB_STEP_SUMMARY"
+          echo "all_passed=$([ "$FAILED_COUNT" -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+          if [ "$FAILED_COUNT" -gt 0 ] && [ "$STATIC_CHECKS_MODE" = "warning" ]; then
+            echo "::warning::${FAILED_COUNT} static checks failed in warning mode"
+          fi
+
+      - name: Post sticky comment
+        if: steps.detect.outputs.has_tasks == 'true'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: static-checks
+          number: ${{ github.event.pull_request.number }}
+          path: /tmp/static-checks-comment.md
+
+      - name: Fail if static checks failed
+        if: steps.detect.outputs.has_tasks == 'true' && env.STATIC_CHECKS_MODE == 'error' && steps.checks.outputs.all_passed != 'true'
+        run: exit 1
