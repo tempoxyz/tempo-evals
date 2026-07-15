@@ -44,7 +44,6 @@ services:
       default:
         aliases:
           - docs.tempo.xyz
-          - tempo.xyz
     expose:
       - "80"
       - "443"

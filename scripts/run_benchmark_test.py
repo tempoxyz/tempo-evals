@@ -368,7 +368,7 @@ class RunBenchmarkTest(unittest.TestCase):
         stage_tasks.assert_called_once()
         redirect.assert_called_once()
 
-    def test_staged_pinned_docs_keep_the_public_hostname(self) -> None:
+    def test_staged_pinned_docs_proxy_only_docs_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             task_dir = Path(directory) / "transfer-with-memo"
             environment_dir = task_dir / "environment"
@@ -433,12 +433,12 @@ class RunBenchmarkTest(unittest.TestCase):
                 text=True,
             )
             self.assertIn("DNS:docs.tempo.xyz", certificate.stdout)
-            self.assertIn("DNS:tempo.xyz", certificate.stdout)
+            self.assertNotIn("DNS:tempo.xyz", certificate.stdout)
             self.assertIn(
                 "- docs.tempo.xyz",
                 (environment_dir / "docker-compose.yaml").read_text(),
             )
-            self.assertIn(
+            self.assertNotIn(
                 "- tempo.xyz",
                 (environment_dir / "docker-compose.yaml").read_text(),
             )
