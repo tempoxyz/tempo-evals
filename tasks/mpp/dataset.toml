@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:6b2635fe042d4b1920c112591a299ce9d29bb5c42970916f5b0666c8cf7dd39b"
+digest = "sha256:3e41d6d11e815014e4ddf438385a8c0aba4f53a09d40237efc6abcec17a262d3"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:d787435be7f69da60f15635e9f503c185c97687341e84a9891cf1f2b42adc80f"
+digest = "sha256:df3c604c791c0ee048a5b36ca1c109c4206280100f4dd4b37ad81a712486c5ff"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:4b80dbd99b96fe9d833b98ad58a304e66049c0aeaf61791a92c7984d691bcb22"
+digest = "sha256:f7386dd23f7a0c0db4d7ae36d042ca9ebf09a29f777ca19260ceb7ccc56569f7"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:6dba25ae3e664c6af631ed582ba8788f7c6b3ccc4644c5e64c284304e1c22d4a"
+digest = "sha256:8aa41d83a6eb3ac66d984a281d6c210b288186c04e535e4cdd3a7e571221d3d5"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b9aad061942634c8e2db33fb50e0d6459ab88dca150d0da3d30b2a66e4188c7e"
+digest = "sha256:6625ab54a54586a42ad370bcd8fe9d0912a1e9c5486300faf0740ec63d1fde01"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:9c647113d14a0828dc05f2959bada054a3f368498e708d201a841b6ad74e3de9"
+digest = "sha256:6db84c0ea0ce57abb0c44d7fd3478a5d3e8798760d669e361aee966bb1b9f043"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:012f279e9ebfb79635f4bda029a93c64a34c7f5f73183dc92846477eb45e2365"
+digest = "sha256:a245f38b695f5b0434990b97989d51a1d0b23bc31986a610afb6ff8e3999b832"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:d8c44e01c7b01c2f4d049fbcdde24d89678ede13f21a05b0e2e87ec168d06c02"
+digest = "sha256:afacb93db1013659e0b2513040bef2b7da33ebd42e3f2e5ea0a98409801edaef"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:8caf62573823bb3a2241b7adc9f14dda79c301c51527adc43b29d5386cf60dc6"
+digest = "sha256:6cac4b66e6eaa3fcd0568d85ad7311cebf6e8be474a33b35c7bab2fe5060d554"
 

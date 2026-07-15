@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
+from threading import Lock
 from typing import Any
 
 import jinja2
@@ -55,6 +56,8 @@ MCP_DIRECT_PROFILE = tempo_profile("mcp-direct")
 MCP_CODE_PROFILE = tempo_profile("mcp-code")
 PROFILE_IDS = tuple(profile["id"] for profile in TEMPO_PROFILES)
 DEFAULT_PROFILE_IDS = (DOCS_PROFILE["id"], MCP_PROFILE["id"])
+_IMAGE_BUILD_LOCK = Lock()
+_images_built = False
 
 
 def usage() -> None:
@@ -74,7 +77,7 @@ Variants:
   production-daytona Production Daytona run over configured models
   sync               Sync shared MPP assets and compiled job configs
   dataset            Sync shared assets and Harbor dataset digests
-  build-base         Build the shared task base image locally
+  build-images       Build the agent and verifier images locally
   check-dataset      Verify dataset digests are fresh
   check-generated    Verify sync leaves no generated diff
   clean-jobs         Remove local Harbor job outputs
@@ -105,7 +108,8 @@ Options:
   --docs-sha SHA          Override the pinned documentation revision for a run
   --profile PROFILE       Access profile: docs, mcp, mcp-direct, mcp-code,
                           mcp-both, or all (default: docs)
-  --base-image REF        Immutable Daytona base image tag or digest (required)
+  --agent-image REF       Immutable Daytona agent image tag or digest (required)
+  --verifier-image REF    Immutable Daytona verifier image tag or digest (required)
   --no-force-build        Ask Harbor to reuse Docker environment builds
   --no-delete             Keep Harbor environments after the run for debugging
   --disable-verification  Skip verifier execution
@@ -159,7 +163,8 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
         choices=(*PROFILE_IDS, "mcp-both", "all"),
         default=DOCS_PROFILE["id"],
     )
-    parser.add_argument("--base-image")
+    parser.add_argument("--agent-image")
+    parser.add_argument("--verifier-image")
     parser.add_argument("--no-sync", action="store_false", dest="sync", default=True)
     parser.add_argument("--no-force-build", action="store_true")
     parser.add_argument("--no-delete", action="store_true")
@@ -301,8 +306,16 @@ def preflight_production_agents(model_config: dict[str, Any]) -> None:
         raise RuntimeError("Missing Codex auth: set OPENAI_API_KEY.")
 
 
-def task_path(options: dict[str, Any]) -> str:
-    return options.get("tasks") or "tasks/tempo-v1"
+def task_paths(options: dict[str, Any]) -> list[str]:
+    if options.get("tasks"):
+        return [options["tasks"]]
+    paths = {
+        "tempo": "tasks/tempo-v1",
+        "tempo-mcp": "tasks/tempo-mcp-v1",
+        "mpp": "tasks/mpp",
+    }
+    suite = options.get("task_suite") or "tempo"
+    return list(paths.values()) if suite == "all" else [paths[suite]]
 
 
 def sync_generated() -> None:
@@ -310,40 +323,59 @@ def sync_generated() -> None:
     compile_job_configs()
 
 
-def base_image_ref() -> str:
-    return str(read_yaml("config/tasks.yaml")["base_image"])
+def image_ref(image: str) -> str:
+    return str(TASKS_CONFIG["images"][image])
 
 
-def build_base_image() -> None:
-    """Build the shared task base image locally so task Dockerfiles can
-    resolve their FROM without pulling. Docker layer caching makes repeat
-    builds cheap. Daytona runs pull the published image instead."""
-    run(
-        "docker",
-        [
-            "build",
-            "-t",
-            base_image_ref(),
-            "-f",
-            "shared/global/docker/base/Dockerfile",
-            ".",
-        ],
-    )
-
-
-def daytona_base_image(options: dict[str, Any]) -> str:
-    image = options.get("base_image")
-    if not image:
-        raise RuntimeError(
-            "Daytona requires --base-image. Publish a branch image in CI and use its "
-            "tag or digest."
+def build_images() -> None:
+    """Build the paired local images once, including concurrent profile runs."""
+    global _images_built
+    with _IMAGE_BUILD_LOCK:
+        if _images_built:
+            return
+        agent = image_ref("agent")
+        run(
+            "docker",
+            [
+                "build",
+                "-t",
+                agent,
+                "-f",
+                "shared/global/docker/agent/Dockerfile",
+                ".",
+            ],
         )
-    return image
+        run(
+            "docker",
+            [
+                "build",
+                "--build-arg",
+                f"AGENT_IMAGE={agent}",
+                "-t",
+                image_ref("verifier"),
+                "-f",
+                "shared/global/docker/verifier/Dockerfile",
+                ".",
+            ],
+        )
+        _images_built = True
+
+
+def daytona_images(options: dict[str, Any]) -> dict[str, str]:
+    images = {image: options.get(f"{image}_image") for image in ("agent", "verifier")}
+    missing = [f"--{image}-image" for image, ref in images.items() if not ref]
+    if missing:
+        raise RuntimeError(
+            f"Daytona requires {' and '.join(missing)}. Use the paired main source "
+            "refs after validating image changes locally."
+        )
+    return {image: str(ref) for image, ref in images.items()}
 
 
 def sync_dataset(options: dict[str, Any]) -> None:
     sync_generated()
-    run("uv", ["run", "harbor", "sync", task_path(options)])
+    for path in task_paths(options):
+        run("uv", ["run", "harbor", "sync", path])
 
 
 def parse_model_config(file_path: str, agent_concurrency: str | None) -> dict[str, Any]:
@@ -866,19 +898,26 @@ def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
     trust_docs_ca(environment_dir, generate_docs_tls_assets(environment_dir))
 
 
-def override_staged_base_image(staging_root: Path, image: str) -> None:
-    expected = f"FROM {base_image_ref()}"
-    for dockerfile in staging_root.glob("tasks/*/*/environment/Dockerfile"):
-        content = dockerfile.read_text()
-        if expected not in content:
-            raise RuntimeError(f"Unexpected base image in staged task: {dockerfile}")
-        dockerfile.write_text(content.replace(expected, f"FROM {image}", count=1))
+def override_staged_images(staging_root: Path, images: dict[str, str]) -> None:
+    dockerfiles = {"agent": "environment", "verifier": "tests"}
+    for task_config in staging_root.glob("tasks/*/*/task.toml"):
+        for image, directory in dockerfiles.items():
+            dockerfile = task_config.parent / directory / "Dockerfile"
+            if not dockerfile.exists():
+                raise RuntimeError(f"Missing staged {image} Dockerfile: {dockerfile}")
+            expected = f"FROM {image_ref(image)}"
+            content = dockerfile.read_text()
+            if expected not in content:
+                raise RuntimeError(f"Unexpected {image} image in {dockerfile}")
+            dockerfile.write_text(
+                content.replace(expected, f"FROM {images[image]}", count=1)
+            )
 
 
 def stage_task_datasets(
     staging_root: Path,
     docs_bundle: str | None,
-    base_image: str | None = None,
+    images: dict[str, str] | None = None,
 ) -> None:
     staged_tasks = staging_root / "tasks" / "tempo-v1"
     staged_tasks.parent.mkdir(parents=True, exist_ok=True)
@@ -929,8 +968,8 @@ def stage_task_datasets(
             )
     if Path("tasks/mpp").exists():
         copy_tasks(Path("tasks/mpp"), staging_root / "tasks" / "mpp")
-    if base_image is not None:
-        override_staged_base_image(staging_root, base_image)
+    if images is not None:
+        override_staged_images(staging_root, images)
     if docs_bundle is not None:
         for task_dir in staged_tasks.iterdir():
             if task_dir.is_dir() and (task_dir / "task.toml").exists():
@@ -957,7 +996,7 @@ def stage_daytona_config(
     staged_config = staging_root / "job.yaml"
 
     shutil.rmtree(staging_root, ignore_errors=True)
-    stage_task_datasets(staging_root, docs_bundle, daytona_base_image(options))
+    stage_task_datasets(staging_root, docs_bundle, daytona_images(options))
 
     config = apply_pair_id(
         apply_profile(finalize_config(config, options), options["profile"]),
@@ -1004,12 +1043,13 @@ def main(argv: list[str]) -> None:
     if variant_name == "dataset":
         sync_dataset(options)
         return
-    if variant_name == "build-base":
-        build_base_image()
+    if variant_name == "build-images":
+        build_images()
         return
     if variant_name == "check-dataset":
         sync_dataset(options)
-        run("git", ["diff", "--exit-code", f"{task_path(options)}/dataset.toml"])
+        for path in task_paths(options):
+            run("git", ["diff", "--exit-code", f"{path}/dataset.toml"])
         return
     if variant_name == "check-generated":
         sync_dataset(options)
@@ -1038,7 +1078,8 @@ def main(argv: list[str]) -> None:
             )
         if variant.get("production"):
             prepare_production_profiles(variant, options)
-        first_profile_sync = False if variant.get("production") else options["sync"]
+        elif options["sync"]:
+            sync_dataset(options)
         benchmark = run_benchmark_key(variant, options.get("task_suite"))
         prefix = versioned_name(benchmark, variant["prefix"])
         pair_id = options.get("job_name") or (
@@ -1054,7 +1095,7 @@ def main(argv: list[str]) -> None:
                     pair_id if variant.get("production") else f"{pair_id}-{profile_id}"
                 ),
                 "pair_id": pair_id,
-                "sync": first_profile_sync if index == 0 else False,
+                "sync": False,
             }
             for index, profile_id in enumerate(
                 (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"])
@@ -1103,7 +1144,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     if options.get("sync"):
         sync_dataset(options)
     if not variant.get("needs_daytona_auth"):
-        build_base_image()
+        build_images()
     docs_bundle = None if source["mode"] == "live" else ensure_docs_bundle(source)
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))

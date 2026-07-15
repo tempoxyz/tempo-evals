@@ -1,6 +1,6 @@
 """SHARED MPP VERIFIER HARNESS.
 
-Baked into the tempo-bench base image as part of the tempo-bench-rewardkit
+Installed in the verifier image as part of the tempo-bench-rewardkit
 package. Task-specific checks live in each task's tests/support/client.py,
 which imports this module and calls run(run_task).
 """

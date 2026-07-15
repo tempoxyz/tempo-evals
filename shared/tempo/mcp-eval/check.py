@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import json
 import os
 import sys
 from pathlib import Path
-from urllib.request import urlopen
 
 from validation import (
     component_reward,
@@ -12,6 +13,33 @@ from validation import (
     is_tempo_docs_url,
     validated_data_evidence,
 )
+
+TRACE_PATHS = {
+    "direct": Path("/var/log/tempo-mcp/direct-trace.jsonl"),
+    "code": Path("/var/log/tempo-mcp/code-trace.jsonl"),
+}
+
+
+def read_trace(arm: str, path: Path) -> tuple[list[dict], str | None]:
+    try:
+        lines = path.read_text().splitlines()
+    except FileNotFoundError:
+        return [], f"missing {arm} MCP trace artifact: {path}"
+    except OSError:
+        return [], f"could not read {arm} MCP trace artifact: {path}"
+
+    events = []
+    for line_number, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            return [], f"malformed {arm} MCP trace JSONL at line {line_number}"
+        if not isinstance(event, dict):
+            return [], f"malformed {arm} MCP trace JSONL at line {line_number}"
+        events.append(event)
+    return events, None
 
 
 def write_result(
@@ -56,95 +84,98 @@ def write_result(
         print(f"warning: {warning}", file=sys.stderr)
 
 
-workspace = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
-tests_dir = Path(os.environ.get("TEMPO_BENCH_TESTS_DIR", "/tests"))
-components = {
-    "schema_valid": 0,
-    "docs_source_valid": 0,
-    "mcp_tool_mix_valid": 0,
-    "data_evidence_valid": 0,
-    "task_requirements_valid": 0,
-    "quality_judge_available": 0,
-}
-errors: list[str] = []
-warnings: list[str] = []
-validated_evidence: list[dict] = []
-try:
-    answer = json.loads((workspace / "answer.json").read_text())
-except (OSError, json.JSONDecodeError):
-    answer = {}
-    errors.append("answer.json must be valid JSON")
-if not isinstance(answer, dict):
-    answer = {}
-    errors.append("answer.json must be a JSON object")
-try:
-    expected = json.loads((tests_dir / "expected.json").read_text())
-except (OSError, json.JSONDecodeError):
-    expected = {}
-    errors.append("expected.json must be valid JSON")
-if not isinstance(expected, dict):
-    expected = {}
-    errors.append("expected.json must be a JSON object")
+def main() -> None:
+    workspace = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
+    tests_dir = Path(os.environ.get("TEMPO_BENCH_TESTS_DIR", "/tests"))
+    components = {
+        "schema_valid": 0,
+        "docs_source_valid": 0,
+        "mcp_tool_mix_valid": 0,
+        "data_evidence_valid": 0,
+        "task_requirements_valid": 0,
+        "quality_judge_available": 0,
+    }
+    errors: list[str] = []
+    warnings: list[str] = []
+    validated_evidence: list[dict] = []
+    try:
+        answer = json.loads((workspace / "answer.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        answer = {}
+        errors.append("answer.json must be valid JSON")
+    if not isinstance(answer, dict):
+        answer = {}
+        errors.append("answer.json must be a JSON object")
+    try:
+        expected = json.loads((tests_dir / "expected.json").read_text())
+    except (OSError, json.JSONDecodeError):
+        expected = {}
+        errors.append("expected.json must be valid JSON")
+    if not isinstance(expected, dict):
+        expected = {}
+        errors.append("expected.json must be a JSON object")
 
-summary = answer.get("summary")
-sources = answer.get("sources")
-evidence = answer.get("evidence")
-if not isinstance(summary, str) or not summary.strip():
-    errors.append("summary must be a non-empty string")
-if (
-    isinstance(summary, str)
-    and summary.strip()
-    and isinstance(sources, list)
-    and isinstance(evidence, list)
-):
-    components["schema_valid"] = 1
-if isinstance(sources, list) and any(is_tempo_docs_url(source) for source in sources):
-    components["docs_source_valid"] = 1
-else:
-    errors.append("answer must cite at least one Tempo documentation URL")
-try:
-    trace_path = os.environ.get("TEMPO_BENCH_TRACE_PATH")
-    if trace_path:
-        payload = json.loads(Path(trace_path).read_text())
-        events = payload.get("events")
-        traces = [events] if isinstance(events, list) and events else []
+    summary = answer.get("summary")
+    sources = answer.get("sources")
+    evidence = answer.get("evidence")
+    if not isinstance(summary, str) or not summary.strip():
+        errors.append("summary must be a non-empty string")
+    if (
+        isinstance(summary, str)
+        and summary.strip()
+        and isinstance(sources, list)
+        and isinstance(evidence, list)
+    ):
+        components["schema_valid"] = 1
+    if isinstance(sources, list) and any(
+        is_tempo_docs_url(source) for source in sources
+    ):
+        components["docs_source_valid"] = 1
     else:
-        traces = []
-        for host in ("tempo-mcp-direct", "tempo-mcp-code"):
-            with urlopen(f"http://{host}:8787/trace", timeout=5) as response:  # noqa: S310 -- local task service
-                payload = json.loads(response.read())
-            events = payload.get("events")
-            if isinstance(events, list) and events:
-                traces.append(events)
-except (OSError, TimeoutError, json.JSONDecodeError):
+        errors.append("answer must cite at least one Tempo documentation URL")
+
     traces = []
-    errors.append("could not read MCP bridge traces")
+    trace_errors = []
+    for arm, path in TRACE_PATHS.items():
+        events, error = read_trace(arm, path)
+        if error:
+            trace_errors.append(error)
+        elif events:
+            traces.append(events)
+    errors.extend(trace_errors)
 
-if len(traces) == 1:
-    trace = traces[0]
-    if has_required_tool_mix(trace):
-        components["mcp_tool_mix_valid"] = 1
-    else:
-        errors.append(
-            "the active MCP arm must use both a Tempo data tool and a Tempo docs tool"
-        )
-    evidence_result = validated_data_evidence(trace, evidence)
-    validated_evidence = evidence_result["evidence"]
-    errors.extend(evidence_result["errors"])
-    warnings.extend(evidence_result["warnings"])
-    if validated_evidence:
-        components["data_evidence_valid"] = 1
-    task_errors = expected_answer_errors(answer, expected, trace)
-    if task_errors:
-        errors.extend(task_errors)
-    else:
-        components["task_requirements_valid"] = 1
-else:
-    errors.append("exactly one active MCP arm must provide a trace")
+    if not trace_errors and not traces:
+        errors.append("neither MCP arm provided a trace; exactly one must be active")
+    elif not trace_errors and len(traces) > 1:
+        errors.append("both MCP arms provided traces; exactly one must be active")
+    elif not trace_errors and len(traces) == 1:
+        trace = traces[0]
+        if has_required_tool_mix(trace):
+            components["mcp_tool_mix_valid"] = 1
+        else:
+            errors.append(
+                "the active MCP arm must use both a Tempo data tool "
+                "and a Tempo docs tool"
+            )
+        evidence_result = validated_data_evidence(trace, evidence)
+        validated_evidence = evidence_result["evidence"]
+        errors.extend(evidence_result["errors"])
+        warnings.extend(evidence_result["warnings"])
+        if validated_evidence:
+            components["data_evidence_valid"] = 1
+        task_errors = expected_answer_errors(answer, expected, trace)
+        if task_errors:
+            errors.extend(task_errors)
+        else:
+            components["task_requirements_valid"] = 1
 
-write_result(
-    components,
-    errors,
-    warnings,
-    evidence_summary(traces[0], validated_evidence) if len(traces) == 1 else [],
-)
+    write_result(
+        components,
+        errors,
+        warnings,
+        evidence_summary(traces[0], validated_evidence) if len(traces) == 1 else [],
+    )
+
+
+if __name__ == "__main__":
+    main()

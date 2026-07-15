@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scripts.verify_tempo_mcp import parse_mcp_response, verify_tools
+from scripts.verify_tempo_mcp import json_text_content, parse_mcp_response, verify_tools
 
 
 class VerifyTempoMcpTest(unittest.TestCase):
@@ -20,6 +20,14 @@ class VerifyTempoMcpTest(unittest.TestCase):
         self.assertEqual(
             parse_mcp_response(b'event: message\ndata: {"jsonrpc":"2.0","id":1}\n\n'),
             {"jsonrpc": "2.0", "id": 1},
+        )
+
+    def test_parses_json_tool_content(self) -> None:
+        self.assertEqual(
+            json_text_content(
+                {"result": {"content": [{"text": '{"tools":[],"nextOffset":20}'}]}}
+            ),
+            {"tools": [], "nextOffset": 20},
         )
 
 

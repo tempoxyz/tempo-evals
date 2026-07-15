@@ -100,7 +100,9 @@ def has_required_tool_mix(events: list[dict[str, Any]]) -> bool:
     tools = {
         event.get("tool")
         for event in events
-        if event.get("allowed") is True and isinstance(event.get("tool"), str)
+        if event.get("allowed") is True
+        and event.get("succeeded") is True
+        and isinstance(event.get("tool"), str)
     }
     return any(tool.startswith(DOCS_PREFIX) for tool in tools) and any(
         tool.startswith(DATA_PREFIXES) for tool in tools
@@ -112,6 +114,7 @@ def used_data_tools(events: list[dict[str, Any]]) -> set[str]:
         tool
         for event in events
         if event.get("allowed") is True
+        and event.get("succeeded") is True
         and isinstance((tool := event.get("tool")), str)
         and tool.startswith(DATA_PREFIXES)
     }
@@ -171,7 +174,9 @@ def evidence_summary(
                 "response_sha256": event.get("response_sha256", ""),
             }
             for event in events
-            if event.get("allowed") is True and event.get("tool") == tool
+            if event.get("allowed") is True
+            and event.get("succeeded") is True
+            and event.get("tool") == tool
         ]
         summary.append({**item, "calls": calls})
     return summary

@@ -20,6 +20,8 @@ CANARY_PATTERN = re.compile(
 class Suite:
     path: str
     required_files: tuple[str, ...]
+    artifacts: tuple[str, ...]
+    sidecar_artifacts: tuple[tuple[str, str], ...] = ()
 
     def task_name(self, slug: str) -> str:
         if self.path == "tasks/mpp":
@@ -36,7 +38,14 @@ SUITES = (
             "task.toml",
             "environment/Dockerfile",
             "solution/solve.sh",
+            "tests/Dockerfile",
             "tests/test.sh",
+        ),
+        (
+            "/app/package.json",
+            "/app/tsconfig.json",
+            "/app/src",
+            "/logs/agent/trajectory.json",
         ),
     ),
     Suite(
@@ -47,7 +56,14 @@ SUITES = (
             "task.toml",
             "environment/Dockerfile",
             "solution/solve.sh",
+            "tests/Dockerfile",
             "tests/test.sh",
+        ),
+        (
+            "/app/package.json",
+            "/app/tsconfig.json",
+            "/app/src",
+            "/logs/agent/trajectory.json",
         ),
     ),
     Suite(
@@ -58,8 +74,14 @@ SUITES = (
             "task.toml",
             "environment/Dockerfile",
             "solution/solve.sh",
+            "tests/Dockerfile",
             "tests/test.sh",
             "tests/expected.json",
+        ),
+        ("/app/answer.json",),
+        (
+            ("/var/log/tempo-mcp/direct-trace.jsonl", "tempo-mcp-direct"),
+            ("/var/log/tempo-mcp/code-trace.jsonl", "tempo-mcp-code"),
         ),
     ),
 )
@@ -99,6 +121,16 @@ def lint_task(root: Path, suite: Suite, task_dir: Path) -> list[str]:
         errors.append(
             f"{metadata_path}: task.name must be {expected_name!r}, got {actual_name!r}"
         )
+    expected_artifacts: list[object] = [*suite.artifacts]
+    expected_artifacts.extend(
+        {"source": source, "service": service}
+        for source, service in suite.sidecar_artifacts
+    )
+    if metadata.get("artifacts") != expected_artifacts:
+        errors.append(f"{metadata_path}: artifacts must be {expected_artifacts!r}")
+    verifier = metadata.get("verifier")
+    if not isinstance(verifier, dict) or verifier.get("environment_mode") != "separate":
+        errors.append(f'{metadata_path}: verifier.environment_mode must be "separate"')
     return errors
 
 

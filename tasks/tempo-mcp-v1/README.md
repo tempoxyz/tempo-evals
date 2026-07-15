@@ -23,7 +23,9 @@ with protocol documentation.
 
 Tasks write `/app/answer.json` rather than submitting a transaction. At run
 time, the runner stages the shared MCP bridge, compose configuration, and MCP
-evaluator into each task environment.
+evaluator into each task environment. The direct and code bridges write their
+tool calls to separate JSONL trace files. Agents use Tempo's native progressive
+tool discovery; the bridge filters the underlying tools for each arm.
 
 The paired profiles receive the same read-only Tempo data API:
 
@@ -35,7 +37,8 @@ The paired profiles receive the same read-only Tempo data API:
 Both arms receive one shared pair ID. The evaluator checks the answer structure,
 required data and documentation calls, and cited claim evidence. RewardKit then
 assesses answer quality. Trace artifacts make the observed tool use available to
-the verifier.
+the separate verifier after the agent environment and its MCP sidecars stop. The
+verifier reads the restored files directly instead of contacting those services.
 
 ## Running the Suite
 
@@ -62,6 +65,7 @@ transaction remains available. Grade the grounding and provenance of the
 reported answer instead.
 
 Task directories own their prompts, expected-answer requirements, oracle
-solutions, and metadata. The runner injects `shared/tempo/mcp-bridge` and
-`shared/tempo/mcp-eval` at staging time, so make shared evaluator changes there
-rather than copying them into individual tasks.
+solutions, and metadata. `npm run sync` writes their agent and verifier
+Dockerfiles from the image configuration. The runner injects
+`shared/tempo/mcp-bridge` and `shared/tempo/mcp-eval` at staging time, so make
+shared evaluator changes there rather than copying them into individual tasks.

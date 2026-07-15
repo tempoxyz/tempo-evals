@@ -51,3 +51,6 @@ jobs:
 
       - name: Verify MPP dataset freshness
         run: npm run check:dataset -- --tasks tasks/mpp
+
+      - name: Verify Tempo MCP dataset freshness
+        run: npm run check:dataset -- --tasks tasks/tempo-mcp-v1

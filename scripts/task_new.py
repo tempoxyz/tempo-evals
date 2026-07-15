@@ -10,8 +10,10 @@ import uuid
 from pathlib import Path
 
 if __package__:
+    from .sync_shared import ENVIRONMENT_DOCKERFILE, VERIFIER_DOCKERFILE
     from .task_lint import ROOT, SUITES, Suite
 else:
+    from sync_shared import ENVIRONMENT_DOCKERFILE, VERIFIER_DOCKERFILE
     from task_lint import ROOT, SUITES, Suite
 
 SLUG_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -32,10 +34,15 @@ def task_toml(suite_id: str, suite: Suite, slug: str) -> str:
         "mpp": "mpp-bench-v1",
         "tempo-mcp": "tempo-mcp-bench-v1",
     }[suite_id]
-    artifacts = '["/app/answer.json"]' if suite_id == "tempo-mcp" else '["/app/src"]'
+    artifacts = [json.dumps(artifact) for artifact in suite.artifacts]
+    artifacts.extend(
+        f"{{ source = {json.dumps(source)}, service = {json.dumps(service)} }}"
+        for source, service in suite.sidecar_artifacts
+    )
+    artifact_toml = "[\n  " + ",\n  ".join(artifacts) + ",\n]"
     return f'''schema_version = "1.3"
 
-artifacts = {artifacts}
+artifacts = {artifact_toml}
 
 [task]
 name = "{suite.task_name(slug)}"
@@ -51,7 +58,7 @@ timeout_sec = {300 if suite_id == "tempo-mcp" else 900}.0
 
 [verifier]
 timeout_sec = {90 if suite_id == "tempo-mcp" else 300}.0
-environment_mode = "shared"
+environment_mode = "separate"
 
 [environment]
 cpus = {1 if suite_id == "tempo-mcp" else 2}
@@ -93,7 +100,7 @@ def files_for(suite_id: str, suite: Suite, slug: str, canary: str) -> dict[str, 
         "task.toml": task_toml(suite_id, suite, slug),
         "instruction.md": instruction(suite_id, slug, canary),
         "README.md": readme(suite_id, slug),
-        "environment/Dockerfile": "FROM ghcr.io/tempoxyz/tempo-bench-base:v1\n",
+        "environment/Dockerfile": ENVIRONMENT_DOCKERFILE,
         "solution/solve.sh": (
             "#!/usr/bin/env bash\nset -euo pipefail\n"
             "# TODO: implement the oracle solution.\nexit 1\n"
@@ -102,6 +109,7 @@ def files_for(suite_id: str, suite: Suite, slug: str, canary: str) -> dict[str, 
             "#!/usr/bin/env bash\nset -euo pipefail\n"
             "# TODO: implement verifier entrypoint.\nexit 1\n"
         ),
+        "tests/Dockerfile": VERIFIER_DOCKERFILE,
     }
     if suite_id == "tempo-mcp":
         files["tests/expected.json"] = (

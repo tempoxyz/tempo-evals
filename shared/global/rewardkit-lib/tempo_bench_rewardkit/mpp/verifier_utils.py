@@ -1,4 +1,4 @@
-# Baked into the tempo-bench base image as part of the tempo-bench-rewardkit
+# Installed in the verifier image as part of the tempo-bench-rewardkit
 # package. Invoked as `python -m tempo_bench_rewardkit.mpp.verifier_utils`.
 import json
 import os

@@ -17,8 +17,7 @@ exceptions:
   # Existing tasks predate these upstream conventions:
   # - a canary in every task source file, rather than Tempo's prompt canary;
   # - benchmark-template metadata fields rather than Tempo task metadata;
-  # - the generated timeout/anti-cheat prompt suffix; and
-  # - a separate verifier container rather than the established shared harness.
+  # - the generated timeout/anti-cheat prompt suffix.
   #
   # Changing those contracts in place would invalidate historical benchmark
   # comparisons, so each current task is explicitly grandfathered instead.
@@ -26,7 +25,6 @@ exceptions:
     checks:
       - check-canary.sh
       - check-instruction-suffix.sh
-      - check-separate-verifier.sh
       - check-task-fields.sh
     files:
       - tasks/mpp/client-access-keys
@@ -38,36 +36,6 @@ exceptions:
       - tasks/mpp/server-hono-charge-pathusd
       - tasks/mpp/server-mcp-pathusd
       - tasks/mpp/server-x402-mpp-charges
-      - tasks/tempo-mcp-v1/access-keys
-      - tasks/tempo-mcp-v1/batched-transfers
-      - tasks/tempo-mcp-v1/dex-swap
-      - tasks/tempo-mcp-v1/faucet-funding
-      - tasks/tempo-mcp-v1/fee-token-and-payer
-      - tasks/tempo-mcp-v1/fee-token-configuration
-      - tasks/tempo-mcp-v1/passkey-account
-      - tasks/tempo-mcp-v1/policy-authorization
-      - tasks/tempo-mcp-v1/stablecoin-creation
-      - tasks/tempo-mcp-v1/tip20-transfer-memo
-      - tasks/tempo-mcp-v1/transaction-status
-      - tasks/tempo-mcp-v1/wallet-client
-      - tasks/tempo-v1/access-key-transfer
-      - tasks/tempo-v1/create-stablecoin-with-policy
-      - tasks/tempo-v1/faucet-funded-transfer
-      - tasks/tempo-v1/receive-policy-held-transfer
-      - tasks/tempo-v1/set-fee-token
-      - tasks/tempo-v1/stablecoin-dex-swap
-      - tasks/tempo-v1/transfer-batched
-      - tasks/tempo-v1/transfer-with-memo
-      - tasks/tempo-v1/transfer-with-memo-fee-payer
-
-  # Tempo and Tempo MCP verifier scripts rely on dependencies supplied by the
-  # shared verifier base image. Their direct interpreter calls fail upstream's
-  # package-manager heuristic, although they are valid in the shared harness.
-  # MPP scripts already satisfy that heuristic and are deliberately omitted.
-  legacy-shared-test-runtime:
-    checks:
-      - check-test-sh-sanity.sh
-    files:
       - tasks/tempo-mcp-v1/access-keys
       - tasks/tempo-mcp-v1/batched-transfers
       - tasks/tempo-mcp-v1/dex-swap

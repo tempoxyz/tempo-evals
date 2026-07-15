@@ -5,8 +5,8 @@ set -u
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
 TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
 WORKSPACE="${TEMPO_BENCH_WORKSPACE:-/app}"
-# The venv (pympp + tempo-bench-rewardkit) is baked into the tempo-bench base
-# image; see shared/global/docker/base/Dockerfile.
+# The venv (pympp + tempo-bench-rewardkit) is installed in the tempo-bench
+# verifier image; see shared/global/docker/verifier/Dockerfile.
 VERIFIER_VENV="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}"
 VERIFIER_PYTHON="$VERIFIER_VENV/bin/python"
 SCORES_FILE="$LOG_DIR/scores.json"
@@ -28,7 +28,7 @@ write_failure_score() {
 }
 
 if [ ! -x "$VERIFIER_PYTHON" ]; then
-  printf 'missing baked verifier venv: %s (rebuild the tempo-bench base image)\n' \
+  printf 'missing verifier venv: %s (rebuild the tempo-bench verifier image)\n' \
     "$VERIFIER_VENV" >&2
   exit 1
 fi

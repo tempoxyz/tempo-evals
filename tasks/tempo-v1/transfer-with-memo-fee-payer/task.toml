@@ -1,6 +1,6 @@
 schema_version = "1.3"
 
-artifacts = ["/app/package.json", "/app/src"]
+artifacts = ["/app/package.json", "/app/tsconfig.json", "/app/src", "/logs/agent/trajectory.json"]
 
 [task]
 name = "tempo-v1/transfer-with-memo-fee-payer"
@@ -14,7 +14,7 @@ feature = "transfer-with-memo-fee-payer"
 benchmark = "tempo-bench-v1"
 [verifier]
 timeout_sec = 300.0
-environment_mode = "shared"
+environment_mode = "separate"
 
 
 [agent]

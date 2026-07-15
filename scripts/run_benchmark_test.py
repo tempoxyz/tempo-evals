@@ -4,6 +4,7 @@ import json
 import subprocess
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
@@ -15,7 +16,8 @@ from scripts.run_benchmark import (
     BenchmarkKey,
     apply_pair_id,
     apply_profile,
-    daytona_base_image,
+    build_images,
+    daytona_images,
     finalize_config,
     main,
     parse_args,
@@ -29,6 +31,7 @@ from scripts.run_benchmark import (
     run_production_variant,
     stage_filtered_config,
     stage_pinned_docs_task,
+    sync_dataset,
     uses_live_mcp_eval,
     versioned_name,
 )
@@ -46,6 +49,16 @@ def production_model_config() -> dict[str, Any]:
 
 
 class RunBenchmarkTest(unittest.TestCase):
+    def test_concurrent_profiles_build_the_image_pair_once(self) -> None:
+        with (
+            patch("scripts.run_benchmark.run") as run,
+            patch("scripts.run_benchmark._images_built", False),
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
+            list(executor.map(lambda _: build_images(), range(2)))
+
+        self.assertEqual(run.call_count, 2)
+
     def test_finalize_config_defaults_to_tempo_suite(self) -> None:
         config = finalize_config(base_config(), {})
 
@@ -182,6 +195,52 @@ class RunBenchmarkTest(unittest.TestCase):
             all(options["pair_id"] == run_group for options in profiles.values())
         )
         self.assertTrue(all(not options["sync"] for options in profiles.values()))
+
+    def test_local_profiles_sync_once_before_running_in_parallel(self) -> None:
+        with (
+            patch("scripts.run_benchmark.sync_dataset") as sync_dataset,
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+        ):
+            main(["local-agent-dev", "--profile", "all"])
+
+        sync_dataset.assert_called_once()
+        self.assertEqual(run_variant.call_count, 2)
+        self.assertTrue(
+            all(not call.args[1]["sync"] for call in run_variant.call_args_list)
+        )
+
+    def test_mcp_profiles_refresh_the_mcp_dataset_before_running(self) -> None:
+        with (
+            patch("scripts.run_benchmark.sync_generated") as sync_generated,
+            patch("scripts.run_benchmark.run") as run,
+            patch("scripts.run_benchmark.run_benchmark_variant"),
+        ):
+            main(
+                [
+                    "local-agent",
+                    "--task-suite",
+                    "tempo-mcp",
+                    "--profile",
+                    "mcp-both",
+                ]
+            )
+
+        sync_generated.assert_called_once()
+        run.assert_called_once_with(
+            "uv", ["run", "harbor", "sync", "tasks/tempo-mcp-v1"]
+        )
+
+    def test_all_suite_refreshes_each_dataset(self) -> None:
+        with (
+            patch("scripts.run_benchmark.sync_generated"),
+            patch("scripts.run_benchmark.run") as run,
+        ):
+            sync_dataset({"task_suite": "all"})
+
+        self.assertEqual(
+            [call.args[1][-1] for call in run.call_args_list],
+            ["tasks/tempo-v1", "tasks/tempo-mcp-v1", "tasks/mpp"],
+        )
 
     def test_dev_and_production_model_configs_are_distinct(self) -> None:
         dev = parse_model_config("config/models.dev.yaml", None)
@@ -451,15 +510,25 @@ class RunBenchmarkTest(unittest.TestCase):
             },
         )
 
-    def test_daytona_base_image_uses_the_supplied_image(self) -> None:
+    def test_daytona_images_use_the_supplied_refs(self) -> None:
         self.assertEqual(
-            daytona_base_image({"base_image": "ghcr.io/tempoxyz/base:source-test"}),
-            "ghcr.io/tempoxyz/base:source-test",
+            daytona_images(
+                {
+                    "agent_image": "ghcr.io/tempoxyz/agent:source-test",
+                    "verifier_image": "ghcr.io/tempoxyz/verifier:source-test",
+                }
+            ),
+            {
+                "agent": "ghcr.io/tempoxyz/agent:source-test",
+                "verifier": "ghcr.io/tempoxyz/verifier:source-test",
+            },
         )
 
-    def test_daytona_base_image_requires_an_explicit_image(self) -> None:
-        with self.assertRaisesRegex(RuntimeError, "requires --base-image"):
-            daytona_base_image({})
+    def test_daytona_images_require_both_refs(self) -> None:
+        with self.assertRaisesRegex(
+            RuntimeError, "requires --agent-image and --verifier-image"
+        ):
+            daytona_images({})
 
     def test_all_suite_stages_mcp_tasks_without_a_pinned_docs_bundle(self) -> None:
         config = {"agents": [{"name": "oracle"}], "datasets": []}

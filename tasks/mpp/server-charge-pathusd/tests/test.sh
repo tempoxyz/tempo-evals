@@ -3,8 +3,8 @@
 set -u
 
 LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
-# The venv is baked into the tempo-bench base image; see
-# shared/global/docker/base/Dockerfile.
+# The venv is installed in the tempo-bench verifier image; see
+# shared/global/docker/verifier/Dockerfile.
 REWARDKIT_VENV="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}"
 REWARDKIT_PYTHON="$REWARDKIT_VENV/bin/python"
 REWARD_FILE="$LOG_DIR/reward.json"
@@ -64,7 +64,7 @@ finish() {
 trap finish EXIT
 
 if [ ! -x "$REWARDKIT_PYTHON" ]; then
-  printf 'missing baked RewardKit venv: %s (rebuild the tempo-bench base image)\n' \
+  printf 'missing RewardKit venv: %s (rebuild the tempo-bench verifier image)\n' \
     "$REWARDKIT_VENV" >&2
   write_zero_reward
   exit 0

@@ -1,7 +1,7 @@
 """Verifier scenario for tempo/mpp-client-access-keys.
 
 The shared MPP verifier harness lives in tempo_bench_rewardkit.mpp.client_lib
-(baked into the base image); this file holds only the task-specific checks.
+(installed in the verifier image); this file holds only the task-specific checks.
 """
 
 import json
