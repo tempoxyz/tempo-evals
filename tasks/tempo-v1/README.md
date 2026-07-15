@@ -47,10 +47,15 @@ plus 50% of RewardKit's aggregate `quality` score, which includes the LLM rubric
 and trajectory diagnostics. Missing quality configuration or a RewardKit
 execution/configuration error produces no reward.
 
-The benchmark job injects access rather than changing task source:
+The benchmark job injects access rather than changing task source. For requests
+made from within the task sandbox:
 
 - `docs` serves the revision pinned in `config/tempo-docs.lock.json`.
 - `mcp` serves the same pinned revision and also adds the Tempo API MCP server.
+
+OpenAI models are an exception: Codex's hosted web fetch reads the live public
+docs outside the sandbox and therefore does not honor the pinned docs SHA. See
+[Access Profiles](../../README.md#access-profiles) for details.
 
 Use `--profile all` to launch paired Docs and MCP jobs. Use `--profile docs` or
 `--profile mcp` when only one access profile is needed; each profile remains an
