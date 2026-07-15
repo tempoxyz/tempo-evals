@@ -14,5 +14,5 @@ bash ci_checks/check-task-timeout.sh tasks/tempo-v1/set-fee-token
 
 The workflow's committed `STATIC_CHECKS_MODE` setting controls enforcement:
 `warning` reports violations without failing the job, while `error` makes them
-blocking. The port starts in `warning` mode so existing benchmark contracts are
-not changed by this addition.
+blocking. Tempo Bench uses `error` mode after aligning the ported checks with
+its task contracts.

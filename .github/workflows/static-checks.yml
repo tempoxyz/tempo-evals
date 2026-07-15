@@ -14,8 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Set to error once existing task violations have been remediated.
-  STATIC_CHECKS_MODE: warning
+  STATIC_CHECKS_MODE: error
   UPSTREAM_STATIC_CHECKS_URL: https://github.com/harbor-framework/benchmark-template/blob/main/.github/workflows/static-checks.yml
 
 jobs:
@@ -125,7 +124,7 @@ jobs:
             "GPU types|check-gpu-types.sh"
             "Allow internet|check-allow-internet.sh"
             "Task slug length|check-task-slug.sh"
-            "Separate verifier|check-separate-verifier.sh"
+            "Verifier layout|check-separate-verifier.sh"
             "Trial network fetch|check-trial-network-fetch.sh"
             "Pip pinning|check-pip-pinning.sh"
             "Nproc usage|check-nproc.sh"
