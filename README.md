@@ -143,35 +143,19 @@ npm run bench:daytona:agent -- --base-image "$(npm run -s base-image:ref)"
 
 BASE_IMAGE="$(npm run -s base-image:ref)"
 
-# Haiku, one attempt, all Tempo tasks, both Docs and MCP profiles.
+# Development smoke: Haiku, one attempt, both Tempo profiles.
 npm run bench:matrix:dev -- \
   --task-suite tempo --profile all --base-image "$BASE_IMAGE"
 
-# Haiku, one attempt, all Tempo tasks, pinned Docs only.
-npm run bench:matrix:dev -- \
-  --task-suite tempo --profile docs --base-image "$BASE_IMAGE"
-
-# Haiku, one attempt, all Tempo tasks, pinned Docs plus Tempo MCP.
-npm run bench:matrix:dev -- \
-  --task-suite tempo --profile mcp --base-image "$BASE_IMAGE"
-
-# All production models, three attempts, both profiles.
+# Production: configured models, three attempts, both Tempo profiles.
 npm run bench:matrix:production -- \
   --task-suite tempo --profile all --base-image "$BASE_IMAGE"
-
-# All production models, three attempts, pinned Docs only.
-npm run bench:matrix:production -- \
-  --task-suite tempo --profile docs --base-image "$BASE_IMAGE"
-
-# All production models, three attempts, pinned Docs plus Tempo MCP.
-npm run bench:matrix:production -- \
-  --task-suite tempo --profile mcp --base-image "$BASE_IMAGE"
 ```
 
 `bench:matrix:dev` reads `config/models.dev.yaml`; the production command reads
 `config/models.production.yaml`. Both commands include every matching task
-unless `--task-filter` is provided. The `docs` profile provides pinned Docs;
-the `mcp` profile provides the same pinned Docs plus the Tempo MCP server.
+unless `--task-filter` is provided. For Tempo, `docs` uses pinned Docs and `mcp`
+adds the Tempo MCP server.
 
 `--concurrency` is the concurrent-trial limit for each profile job, not a
 combined limit. `--profile all` runs the Docs and Docs-plus-MCP jobs in
@@ -179,19 +163,28 @@ parallel, so `--concurrency 32` permits up to 32 trials in each job, or 64
 across the pair. The model configs cap agent phases at 16 per provider and
 profile; `--agent-concurrency` overrides those caps.
 
-## Cataloging Production Runs
+## Production Jobs
 
-After a production run completes, upload its full Harbor job to Harbor Hub and
-add a small, Git-tracked run record under `results/<benchmark>/runs/<run-id>/`.
-The Harbor Hub job is the canonical archive for raw results, logs, artifacts,
-and configuration; the local record is a human-readable index and place for
-optional derived analysis.
+Production writes local Harbor jobs under `jobs/<job-name>` and does not upload
+them automatically:
 
-Start each run record from
-[`results/RUN_TEMPLATE.md`](results/RUN_TEMPLATE.md). Keep the published
-dataset digest, Harbor Hub job link, run configuration, and headline metrics in
-the record. Do not add run records beneath `tasks/`, because production history
-must not change a benchmark dataset's digest.
+| Suite | Production profile | Job names |
+| --- | --- | --- |
+| `tempo` | `all` | `tempo-bench-v1-production-<YYYYMMDDTHHMMSSZ>-{docs,mcp}` |
+| `mpp` | `docs` | `mpp-bench-v1-production-<YYYYMMDDTHHMMSSZ>-docs` |
+| `tempo-mcp` | `mcp-both` | `tempo-mcp-bench-v1-production-<YYYYMMDDTHHMMSSZ>-{mcp-direct,mcp-code}` |
+
+`--job-name` sets the shared run group, and the profile suffix is always added.
+
+```bash
+npm run harbor:view
+uv run harbor auth login # Skip when already authenticated
+uv run harbor upload --public "jobs/<job-name>"
+uv run harbor job download "<job-id>" --output-dir jobs
+```
+
+The upload prints a public Harbor Hub URL. Downloaded jobs can be viewed
+locally; resuming them requires the original staged task cache.
 
 ## Authoring a New Task
 
@@ -233,6 +226,7 @@ see [AGENTS.md](AGENTS.md) for versioning and contribution rules.
 | `DAYTONA_API_KEY` | Daytona authentication; JWT variables are an alternative |
 | `DAYTONA_JWT_TOKEN` + `DAYTONA_ORGANIZATION_ID` | Daytona JWT authentication |
 | `DAYTONA_TARGET` | Optional Daytona target |
+| `HARBOR_API_KEY` | Optional noninteractive Harbor Hub authentication |
 | `TEMPO_MCP_EVAL_URL` | Optional upstream endpoint for the MCP efficiency bridge |
 
 ## References

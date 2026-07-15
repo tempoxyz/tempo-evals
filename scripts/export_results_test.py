@@ -74,15 +74,7 @@ class ExportResultsTest(unittest.TestCase):
     def test_export_results_writes_trial_and_summary_outputs(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
             root_path = Path(root)
-            job_dir = root_path / "run-1" / "harbor-job"
-            write_json(
-                root_path / "run-1" / "metadata.json",
-                {
-                    "run_id": "run-1",
-                    "git_sha": "abc123",
-                    "docs_source": "docs123",
-                },
-            )
+            job_dir = root_path / "jobs" / "run-1"
             write_json(
                 job_dir / "trial-a" / "result.json", trial({"trial_name": "trial-a"})
             )
@@ -121,12 +113,13 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(len(result["summary"]), 2)
             self.assertEqual(result["trials"][0]["attempt_index"], 1)
             self.assertEqual(result["trials"][1]["attempt_index"], 2)
-            self.assertEqual(result["trials"][0]["git_sha"], "abc123")
-            self.assertEqual(result["trials"][0]["docs_source"], "docs123")
+            self.assertEqual(result["trials"][0]["git_sha"], "")
+            self.assertEqual(result["trials"][0]["docs_source"], "")
             self.assertEqual(result["trials"][0]["duration_sec"], 60)
             self.assertEqual(result["trials"][0]["agent_execution_duration_sec"], 30)
 
             out_dir = Path(result["out_dir"])
+            self.assertEqual(out_dir, (job_dir / "exports").resolve())
             trials_csv = (out_dir / "trials.csv").read_text()
             self.assertIn("verifier_reward_correctness", trials_csv)
             self.assertIn("transfer-with-memo-fee-payer", trials_csv)
