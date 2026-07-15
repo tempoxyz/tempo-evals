@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Fails if any pip / uv pip / uvx --with install in a task's Dockerfile, test.sh,
-# or solve.sh references a package without a `==<version>` pin. Unpinned pip
+# Fails if any pip / python -m pip / uv pip / uvx --with install in a task's
+# Dockerfile, test.sh, or solve.sh references a package without a `==<version>`
+# pin. Unpinned pip
 # installs let runtime versions drift after the task was authored: tb2.1 had to
 # patch mteb-leaderboard, mteb-retrieve, and train-fasttext for exactly this
 # (a transitive dep dropped or a major-version bump on rebuild broke the
@@ -95,9 +96,12 @@ def is_pinned_or_exempt(pkg):
     return False
 
 def check_pip_install(line):
-    """For `pip install` / `pip3 install` / `uv pip install`, every positional
-    package argument must be pinned. Returns list of unpinned positionals."""
-    m = re.search(r"\b(?:pip3?|uv\s+pip)\s+install\b(.*)", line)
+    """For pip and Python module-form pip installs, every positional package
+    argument must be pinned. Returns list of unpinned positionals."""
+    m = re.search(
+        r"\b(?:(?:python|python3)\s+-m\s+)?(?:pip3?|uv\s+pip)\s+install\b(.*)",
+        line,
+    )
     if not m:
         return []
     tokens = truncate_at_separator(m.group(1)).split()
@@ -200,9 +204,9 @@ done
 
 if [ $FAILED -eq 1 ]; then
     echo ""
-    echo "Some tasks have unpinned pip / uv pip / uvx --with installs."
+    echo "Some tasks have unpinned pip / python -m pip / uv pip / uvx --with installs."
     echo "Pin every package to ==<version>, or use a manifest (-r requirements.txt)."
     exit 1
 fi
 
-echo "All pip / uv pip / uvx --with installs are pinned"
+echo "All pip / python -m pip / uv pip / uvx --with installs are pinned"

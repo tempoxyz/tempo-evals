@@ -28,9 +28,10 @@ if [ $# -eq 0 ]; then
 else
     FILES_TO_CHECK=""
     for task_dir in "$@"; do
-        if [ -d "$task_dir" ] && [ -f "$task_dir/environment/Dockerfile" ]; then
-            FILES_TO_CHECK="$FILES_TO_CHECK $task_dir/environment/Dockerfile"
-        fi
+        [ -d "$task_dir" ] || continue
+        for dockerfile in "$task_dir/environment/Dockerfile" "$task_dir/tests/Dockerfile"; do
+            [ -f "$dockerfile" ] && FILES_TO_CHECK="$FILES_TO_CHECK $dockerfile"
+        done
     done
 fi
 

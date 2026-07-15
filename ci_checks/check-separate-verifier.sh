@@ -93,6 +93,8 @@ for art in artifacts:
     if isinstance(art, str):
         src = art
     elif isinstance(art, dict):
+        if art.get("service"):
+            continue
         src = art.get("source")
         if not src:
             continue

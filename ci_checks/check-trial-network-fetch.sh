@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Fails if tests/test.sh (the verifier-side trial-time script) fetches
-# external resources at trial time. Patterns flagged:
+# Fails if a verifier-side shell script under tests/ fetches external resources
+# at trial time. Patterns flagged:
 #   - `curl ... | sh` / `wget ... | sh` / `bash <(curl ...)`  (bootstrap installers)
 #   - `curl http(s)://<external>` / `wget http(s)://<external>` (raw fetches)
 #   - `git clone <external-url>`
@@ -19,8 +19,8 @@
 # sealed) instead.
 #
 # Scope:
-#   - Only enforced on tasks in separate verifier mode. Shared-mode
-#     tasks' test.sh runs in the agent container and must install at
+#   - Only enforced on tasks in separate verifier mode. Shared-mode verifier
+#     scripts run in the agent container and may install at
 #     trial time. Once every task is separate-mode, this applies to all.
 #   - Localhost / 127.0.0.1 / bare-hostname URLs (i.e. docker-compose
 #     sidecar service names — no dots in the host) are allowed: the
@@ -48,9 +48,7 @@ fi
 
 FAILED=0
 for task_dir in $TASK_DIRS; do
-    test_sh="$task_dir/tests/test.sh"
     toml="$task_dir/task.toml"
-    [ -f "$test_sh" ] || continue
     [ -f "$toml" ] || continue
 
     # Skip tasks not in separate verifier mode. Parsing via tomllib so we
@@ -76,7 +74,10 @@ PYEOF
 
     echo "Checking $task_dir..."
 
-    OUT=$(python3 - "$test_sh" <<'PYEOF'
+    VERIFIER_SCRIPTS=$(find "$task_dir/tests" -type f -name '*.sh' | sort)
+    [ -n "$VERIFIER_SCRIPTS" ] || continue
+    for verifier_script in $VERIFIER_SCRIPTS; do
+    OUT=$(python3 - "$verifier_script" <<'PYEOF'
 import re
 import sys
 
@@ -146,16 +147,17 @@ PYEOF
         FAILED=1
         continue
     }
+    done
 done
 
 if [ $FAILED -eq 1 ]; then
     echo ""
-    echo "Some tests/test.sh files fetch external resources at trial time."
+    echo "Some verifier scripts under tests/ fetch external resources at trial time."
     echo "Bake deps into tests/Dockerfile (verifier image) instead. Build-time"
     echo "fetches in the Dockerfile are pinned and sealed; trial-time fetches"
-    echo "in test.sh introduce 3p flakiness and reward-hacking surface."
+    echo "in verifier scripts introduce 3p flakiness and reward-hacking surface."
     echo "Localhost / 127.0.0.1 / bare-hostname (sidecar) fetches are allowed."
     exit 1
 fi
 
-echo "No external trial-time fetches in tests/test.sh"
+echo "No external trial-time fetches in verifier scripts under tests/"

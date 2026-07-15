@@ -1,6 +1,7 @@
 #!/bin/bash
 
-FORBIDDEN_FILES=("solution/solve.sh" "tests/test.sh" "tests/test_*.py")
+FORBIDDEN_FILES=("solution/solve.sh" "tests/test.sh")
+FORBIDDEN_TEST_PATTERN='tests/test_.*\.py'
 
 # Get list of files to check
 # Arguments: task directories (e.g., tasks/my-task) or no args to check all
@@ -27,11 +28,15 @@ for file in $FILES_TO_CHECK; do
     fi
 
     for forbidden_file in "${FORBIDDEN_FILES[@]}"; do
-        if grep -q "$forbidden_file" "$file"; then
+        if grep -Fq "$forbidden_file" "$file"; then
             echo "FAIL $file: contains reference to $forbidden_file (Dockerfiles must not COPY solution or test files)"
             FAILED=1
         fi
     done
+    if grep -Eq "$FORBIDDEN_TEST_PATTERN" "$file"; then
+        echo "FAIL $file: contains reference to tests/test_*.py (Dockerfiles must not COPY solution or test files)"
+        FAILED=1
+    fi
 done
 
 exit $FAILED
