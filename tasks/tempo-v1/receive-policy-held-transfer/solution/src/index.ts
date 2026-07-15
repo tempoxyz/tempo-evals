@@ -10,6 +10,10 @@ function required(name: string): string {
   return value;
 }
 
+const RECEIPT_TIMEOUT = 60_000;
+const transport = http(undefined, { timeout: RECEIPT_TIMEOUT + 5_000 });
+const wait = { timeout: RECEIPT_TIMEOUT };
+
 const token = required("TEMPO_TOKEN") as Address;
 const amount = parseUnits(required("TEMPO_AMOUNT"), Number(required("TEMPO_DECIMALS")));
 
@@ -18,18 +22,19 @@ const recipient = Account.fromSecp256k1(generatePrivateKey());
 const clientConfig = {
   chain: tempoTestnet,
   feeToken: token,
-  transport: http(),
+  transport,
 };
 const payerClient = createClient({ ...clientConfig, account: payer });
 const recipientClient = createClient({ ...clientConfig, account: recipient });
 
-await Actions.faucet.fundSync(payerClient, { account: payer.address });
-await Actions.faucet.fundSync(recipientClient, { account: recipient.address });
+await Actions.faucet.fundSync(payerClient, { account: payer.address, ...wait });
+await Actions.faucet.fundSync(recipientClient, { account: recipient.address, ...wait });
 
 const policy = await Actions.receivePolicy.setSync(recipientClient, {
   senderPolicyId: "reject-all",
   tokenPolicyId: "allow-all",
   claimer: "self",
+  ...wait,
 });
 if (policy.receipt.status !== "success") throw new Error("receive policy transaction failed");
 
@@ -37,6 +42,7 @@ const transfer = await Actions.token.transferSync(payerClient, {
   amount,
   to: recipient.address,
   token,
+  ...wait,
 });
 if (transfer.receipt.status !== "success") throw new Error("transfer transaction failed");
 

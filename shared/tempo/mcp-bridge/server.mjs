@@ -87,7 +87,10 @@ function reply(response, payload, status = 200, upstreamHeaders) {
 }
 
 function denied(id, name) {
-  return { jsonrpc: "2.0", id, error: { code: -32601, message: `Tool unavailable in ${mode} mode: ${name}` } };
+  const error = typeof name === "string"
+    ? { code: -32601, message: `Tool unavailable in ${mode} mode: ${name}` }
+    : { code: -32602, message: "Tool name must be a string" };
+  return { jsonrpc: "2.0", id, error };
 }
 
 function trace(event) {
@@ -185,7 +188,10 @@ export function traceToolCall(payload) {
 
 function requestedTool(payload) {
   const gatewayTool = payload?.params?.name;
-  if (gatewayTool === "get_tool_details" || gatewayTool?.startsWith("call_")) {
+  if (
+    gatewayTool === "get_tool_details"
+    || (typeof gatewayTool === "string" && gatewayTool.startsWith("call_"))
+  ) {
     return payload?.params?.arguments?.name ?? gatewayTool;
   }
   return gatewayTool;
@@ -195,7 +201,7 @@ export function responseDigest(text) {
   return createHash("sha256").update(text).digest("hex");
 }
 
-if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
+export async function handleRequest(request, response) {
   if (request.url === "/health") return reply(response, { ok: true, mode, tools: allowedToolNames(mode) });
   if (request.url === "/trace") {
     const events = readFileSync(tracePath, "utf8")
@@ -261,4 +267,6 @@ if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
     });
     reply(response, { jsonrpc: "2.0", id: body?.id ?? null, error: { code: -32603, message: "MCP bridge upstream request failed" } }, 502);
   }
-}).listen(port);
+}
+
+if (process.env.NODE_ENV !== "test") createServer(handleRequest).listen(port);

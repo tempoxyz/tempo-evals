@@ -1,7 +1,10 @@
-tasks/*/environment/Dockerfile linguist-generated=true
-tasks/*/environment/rewardkit-package/** linguist-generated=true
-tasks/*/tests/quality/** linguist-generated=true
-tasks/*/tests/tempo-bench-verifier/** linguist-generated=true
-tasks/*/tests/test.sh linguist-generated=true
-tasks/*-docs/tests/correctness/criteria.py linguist-generated=true
-tasks/*-mcp/tests/correctness/criteria.py linguist-generated=true
+# Generated from shared sources or dataset metadata.
+tasks/*/dataset.toml linguist-generated=true
+tasks/*/*/environment/Dockerfile linguist-generated=true
+tasks/*/*/tests/Dockerfile linguist-generated=true
+tasks/tempo-mcp-v1/*/solution/oracle.mjs linguist-generated=true
+tasks/mpp/*/solution/solve.sh linguist-generated=true
+tasks/mpp/*/solution/tsconfig.json linguist-generated=true
+tasks/mpp/*/tests/correctness/verify.sh linguist-generated=true
+tasks/mpp/*/tests/quality/check.py linguist-generated=true
+tasks/mpp/*/tests/test.sh linguist-generated=true

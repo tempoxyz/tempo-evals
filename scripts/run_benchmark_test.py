@@ -483,18 +483,22 @@ class RunBenchmarkTest(unittest.TestCase):
         )
 
     def test_mcp_eval_profiles_inject_distinct_bridge_servers(self) -> None:
-        self.assertEqual(
-            apply_profile({"agents": [{"name": "claude-code"}]}, "mcp-direct")[
-                "agents"
-            ][0]["mcp_servers"],
-            MCP_DIRECT_PROFILE["mcp_servers"],
-        )
-        self.assertEqual(
-            apply_profile({"agents": [{"name": "claude-code"}]}, "mcp-code")["agents"][
-                0
-            ]["mcp_servers"],
-            MCP_CODE_PROFILE["mcp_servers"],
-        )
+        for profile, docs_tool in (
+            (MCP_DIRECT_PROFILE, "docs_search"),
+            (MCP_CODE_PROFILE, "docs_code"),
+        ):
+            agents = apply_profile(
+                {"agents": [{"name": "claude-code"}, {"name": "oracle"}]},
+                profile["id"],
+            )["agents"]
+            self.assertEqual(agents[0]["mcp_servers"], profile["mcp_servers"])
+            self.assertEqual(
+                agents[1]["env"],
+                {
+                    "TEMPO_MCP_ORACLE_URL": profile["mcp_servers"][0]["url"],
+                    "TEMPO_MCP_ORACLE_DOCS_TOOL": docs_tool,
+                },
+            )
 
     def test_pair_id_is_injected_for_non_oracle_agents(self) -> None:
         self.assertEqual(

@@ -1,6 +1,15 @@
 name: Build task images
 
 on:
+  pull_request:
+    paths:
+      - .dockerignore
+      - shared/global/docker/**
+      - shared/global/rewardkit-lib/**
+      - shared/tempo/verifier/**
+      - scripts/images.py
+      - config/tasks.yaml
+      - .github/workflows/build-images.yml
   push:
     branches: [main]
     paths:
@@ -14,18 +23,38 @@ on:
 
 permissions:
   contents: read
-  packages: write
-
-concurrency:
-  group: build-task-images
-  cancel-in-progress: false
 
 jobs:
-  build-and-push:
+  validate:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
-    env:
-      AGENT_REPOSITORY: ghcr.io/tempoxyz/tempo-bench-agent
-      VERIFIER_REPOSITORY: ghcr.io/tempoxyz/tempo-bench-verifier
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Build image pair
+        run: |
+          set -euo pipefail
+          docker build --tag tempo-bench-agent:ci \
+            --file shared/global/docker/agent/Dockerfile .
+          docker build --tag tempo-bench-verifier:ci \
+            --build-arg AGENT_IMAGE=tempo-bench-agent:ci \
+            --file shared/global/docker/verifier/Dockerfile .
+
+  build-and-push:
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    concurrency:
+      group: build-task-images
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,27 +62,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v6
 
-      - name: Resolve image refs
-        id: images
-        run: |
-          set -euo pipefail
-          source_tag=$(uv run python scripts/images.py tag)
-          [[ "$source_tag" =~ ^source-[0-9a-f]{16}$ ]]
-          for image in agent verifier; do
-            if [ "$image" = agent ]; then
-              repository="$AGENT_REPOSITORY"
-            else
-              repository="$VERIFIER_REPOSITORY"
-            fi
-            release_ref="$repository:v1"
-            [ "$(uv run python scripts/images.py repository "$image")" = "$repository" ]
-            [ "$(uv run python scripts/images.py release "$image")" = "$release_ref" ]
-            {
-              echo "${image}_repository=$repository"
-              echo "${image}_ref=$repository:$source_tag"
-              echo "${image}_release_ref=$release_ref"
-            } >> "$GITHUB_OUTPUT"
-          done
+      - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
         with:
@@ -61,10 +70,44 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/setup-buildx-action@v3
+      - name: Resolve image tags
+        id: images
+        run: |
+          set -euo pipefail
+          image_exists() {
+            local output
+            if output=$(docker buildx imagetools inspect "$1" 2>&1); then
+              return 0
+            fi
+            if [[ "$output" == *"$1: not found"* ]]; then
+              return 1
+            fi
+            echo "$output" >&2
+            exit 1
+          }
+          repository=$(uv run python scripts/images.py repository)
+          echo "repository=$repository" >> "$GITHUB_OUTPUT"
+          for image in agent verifier; do
+            tag=$(uv run python scripts/images.py tag "$image")
+            [[ "$tag" =~ ^${image}-source-[0-9a-f]{64}$ ]]
+            ref="$repository:$tag"
+            exists=false
+            if image_exists "$ref"; then
+              exists=true
+            fi
+            printf -v "${image}_exists" '%s' "$exists"
+            {
+              echo "${image}_ref=$ref"
+              echo "${image}_exists=$exists"
+            } >> "$GITHUB_OUTPUT"
+          done
+          if [ "$verifier_exists" = true ] && [ "$agent_exists" = false ]; then
+            echo "Refusing a verifier image without its agent base." >&2
+            exit 1
+          fi
 
       - name: Build and push agent image
-        id: agent
+        if: steps.images.outputs.agent_exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -74,29 +117,45 @@ jobs:
           cache-from: type=gha,scope=tempo-bench-agent
           cache-to: type=gha,mode=max,scope=tempo-bench-agent
 
+      - name: Resolve agent digest
+        id: agent
+        run: |
+          set -euo pipefail
+          digest=$(docker buildx imagetools inspect \
+            "${{ steps.images.outputs.agent_ref }}" --format '{{.Manifest.Digest}}')
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "ref=${{ steps.images.outputs.repository }}@$digest" >> "$GITHUB_OUTPUT"
+
       - name: Build and push verifier image
+        if: steps.images.outputs.verifier_exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: shared/global/docker/verifier/Dockerfile
           build-args: |
-            AGENT_IMAGE=${{ steps.images.outputs.agent_repository }}@${{ steps.agent.outputs.digest }}
+            AGENT_IMAGE=${{ steps.agent.outputs.ref }}
           tags: ${{ steps.images.outputs.verifier_ref }}
           push: true
           cache-from: type=gha,scope=tempo-bench-verifier
           cache-to: type=gha,mode=max,scope=tempo-bench-verifier
 
-      - name: Update release images
+      - name: Resolve verifier digest
+        id: verifier
         run: |
           set -euo pipefail
-          docker buildx imagetools create \
-            --tag "${{ steps.images.outputs.agent_release_ref }}" \
-            "${{ steps.images.outputs.agent_ref }}"
-          docker buildx imagetools create \
-            --tag "${{ steps.images.outputs.verifier_release_ref }}" \
-            "${{ steps.images.outputs.verifier_ref }}"
+          digest=$(docker buildx imagetools inspect \
+            "${{ steps.images.outputs.verifier_ref }}" --format '{{.Manifest.Digest}}')
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "ref=${{ steps.images.outputs.repository }}@$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Verify anonymous pulls
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io
+          docker buildx imagetools inspect "${{ steps.agent.outputs.ref }}" >/dev/null
+          docker buildx imagetools inspect "${{ steps.verifier.outputs.ref }}" >/dev/null
 
       - name: Publish image references
         run: |
-          echo "Agent image: \`${{ steps.images.outputs.agent_ref }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "Verifier image: \`${{ steps.images.outputs.verifier_ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Agent image: \`${{ steps.agent.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Verifier image: \`${{ steps.verifier.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"

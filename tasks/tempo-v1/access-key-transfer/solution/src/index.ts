@@ -10,6 +10,10 @@ function required(name: string): string {
   return value;
 }
 
+const RECEIPT_TIMEOUT = 60_000;
+const transport = http(undefined, { timeout: RECEIPT_TIMEOUT + 5_000 });
+const wait = { timeout: RECEIPT_TIMEOUT };
+
 const token = required("TEMPO_TOKEN") as Address;
 const recipient = required("TEMPO_RECIPIENT") as Address;
 const amount = parseUnits(required("TEMPO_AMOUNT"), Number(required("TEMPO_DECIMALS")));
@@ -19,15 +23,16 @@ const accessKey = Account.fromSecp256k1(generatePrivateKey(), { access: payer })
 const clientConfig = {
   chain: tempoTestnet,
   feeToken: token,
-  transport: http(),
+  transport,
 };
 const payerClient = createClient({ ...clientConfig, account: payer });
 
-await Actions.faucet.fundSync(payerClient, { account: payer.address });
+await Actions.faucet.fundSync(payerClient, { account: payer.address, ...wait });
 
 const authorization = await Actions.accessKey.authorizeSync(payerClient, {
   accessKey,
   expiry: Math.floor(Date.now() / 1000) + 3600,
+  ...wait,
 });
 if (authorization.receipt.status !== "success") throw new Error("access key authorization failed");
 
@@ -36,6 +41,7 @@ const transfer = await Actions.token.transferSync(accessKeyClient, {
   amount,
   to: recipient,
   token,
+  ...wait,
 });
 if (transfer.receipt.status !== "success") throw new Error("access key transfer failed");
 

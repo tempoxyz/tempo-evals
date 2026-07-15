@@ -1,4 +1,4 @@
-ARG AGENT_IMAGE=ghcr.io/tempoxyz/tempo-bench-agent:v1
+ARG AGENT_IMAGE=tempo-bench-agent:local
 FROM ${AGENT_IMAGE}
 
 COPY shared/global/rewardkit-lib/pyproject.toml /tmp/tempo-bench-rewardkit/pyproject.toml

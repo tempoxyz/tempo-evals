@@ -10,6 +10,10 @@ function required(name: string): string {
   return value;
 }
 
+const RECEIPT_TIMEOUT = 60_000;
+const transport = http(undefined, { timeout: RECEIPT_TIMEOUT + 5_000 });
+const wait = { timeout: RECEIPT_TIMEOUT };
+
 const tokenIn = required("TEMPO_SWAP_TOKEN_IN") as Address;
 const tokenOut = required("TEMPO_SWAP_TOKEN_OUT") as Address;
 const dex = required("TEMPO_STABLECOIN_DEX") as Address;
@@ -22,15 +26,16 @@ const client = (account: typeof taker) => createClient({
   account,
   chain: tempoTestnet,
   feeToken: tokenIn,
-  transport: http(),
+  transport,
 });
 const takerClient = client(taker);
 
-await Actions.faucet.fundSync(takerClient, { account: taker.address });
+await Actions.faucet.fundSync(takerClient, { account: taker.address, ...wait });
 await Actions.token.approveSync(takerClient, {
   amount: amountIn,
   spender: dex,
   token: tokenIn,
+  ...wait,
 });
 
 const result = await Actions.dex.sellSync(takerClient, {
@@ -38,6 +43,7 @@ const result = await Actions.dex.sellSync(takerClient, {
   minAmountOut,
   tokenIn,
   tokenOut,
+  ...wait,
 });
 
 if (result.receipt.status !== "success") throw new Error("swap failed");

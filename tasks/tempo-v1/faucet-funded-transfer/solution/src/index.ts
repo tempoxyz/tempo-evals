@@ -10,21 +10,26 @@ function required(name: string): string {
   return value;
 }
 
+const RECEIPT_TIMEOUT = 60_000;
+const transport = http(undefined, { timeout: RECEIPT_TIMEOUT + 5_000 });
+const wait = { timeout: RECEIPT_TIMEOUT };
+
 const token = required("TEMPO_TOKEN") as Address;
 const account = privateKeyToAccount(generatePrivateKey());
 const client = createClient({
   account,
   chain: tempoTestnet,
   feeToken: token,
-  transport: http(),
+  transport,
 });
 
-const funding = await Actions.faucet.fundSync(client, { account: account.address });
+const funding = await Actions.faucet.fundSync(client, { account: account.address, ...wait });
 
 const result = await Actions.token.transferSync(client, {
   amount: parseUnits(required("TEMPO_AMOUNT"), Number(required("TEMPO_DECIMALS"))),
   to: required("TEMPO_RECIPIENT") as Address,
   token,
+  ...wait,
 });
 
 if (result.receipt.status !== "success") throw new Error("transfer failed");

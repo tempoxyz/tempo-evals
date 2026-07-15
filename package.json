@@ -43,7 +43,7 @@
     "check:shell": "git ls-files -z -- '*.sh' | xargs -0 uv run shellcheck --severity=warning",
     "check:scripts": "uv run python -m compileall -q scripts",
     "test:results": "uv run python -m unittest discover -s scripts -p '*_test.py'",
-    "test:mcp-bridge": "node --test shared/tempo/mcp-bridge/server.test.mjs",
+    "test:mcp-bridge": "node --test shared/tempo/mcp-bridge/server.test.mjs shared/tempo/mcp-eval/oracle.test.mjs",
     "test:tempo-verifier": "npm ci --ignore-scripts --no-audit --no-fund --prefix shared/tempo/verifier && npm test --prefix shared/tempo/verifier",
     "clean": "uv run python scripts/run_benchmark.py clean",
     "clean:jobs": "uv run python scripts/run_benchmark.py clean-jobs"

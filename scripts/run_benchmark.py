@@ -56,6 +56,10 @@ MCP_DIRECT_PROFILE = tempo_profile("mcp-direct")
 MCP_CODE_PROFILE = tempo_profile("mcp-code")
 PROFILE_IDS = tuple(profile["id"] for profile in TEMPO_PROFILES)
 DEFAULT_PROFILE_IDS = (DOCS_PROFILE["id"], MCP_PROFILE["id"])
+MCP_ORACLE_DOCS_TOOLS = {
+    MCP_DIRECT_PROFILE["id"]: "docs_search",
+    MCP_CODE_PROFILE["id"]: "docs_code",
+}
 _IMAGE_BUILD_LOCK = Lock()
 _images_built = False
 
@@ -721,7 +725,15 @@ def apply_profile(config: dict[str, Any], profile_id: str) -> dict[str, Any]:
 
     profile = tempo_profile(profile_id)
     for agent in config.get("agents", []):
-        if agent.get("name") != "oracle":
+        if agent.get("name") == "oracle":
+            if docs_tool := MCP_ORACLE_DOCS_TOOLS.get(profile_id):
+                agent.setdefault("env", {}).update(
+                    {
+                        "TEMPO_MCP_ORACLE_URL": profile["mcp_servers"][0]["url"],
+                        "TEMPO_MCP_ORACLE_DOCS_TOOL": docs_tool,
+                    }
+                )
+        else:
             agent["mcp_servers"] = copy.deepcopy(profile["mcp_servers"])
     return config
 

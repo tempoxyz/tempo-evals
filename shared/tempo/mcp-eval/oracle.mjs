@@ -1,7 +1,9 @@
 // AUTO-GENERATED INTO EACH MCP TASK BY npm run sync. DO NOT EDIT COPIES.
 import { writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const endpoint = process.env.TEMPO_MCP_ORACLE_URL ?? "http://tempo-mcp-direct:8787/mcp";
+const docsTool = process.env.TEMPO_MCP_ORACLE_DOCS_TOOL ?? "docs_search";
 const taskName = process.argv[2];
 const historicalWindow = {
   "timestamp.from": "2026-07-10T22:30:00Z",
@@ -171,6 +173,20 @@ function recordSubject(record) {
   return "MCP response record";
 }
 
+export function docsRequest(tool, query) {
+  let args;
+  if (tool === "docs_search") {
+    args = { query, max_results: 1 };
+  } else if (tool === "docs_code") {
+    args = {
+      code: `async () => codemode.search({ query: ${JSON.stringify(query)}, source: "tempo", max_results: 1 })`,
+    };
+  } else {
+    throw new Error(`Unknown MCP oracle docs tool: ${tool}`);
+  }
+  return { name: "call_write_tool", arguments: { name: tool, arguments: args } };
+}
+
 async function main() {
   const task = tasks[taskName];
   if (!task) throw new Error(`Unknown MCP oracle task: ${taskName}`);
@@ -210,13 +226,7 @@ async function main() {
     results.push(toolValue(result));
   }
   const docs = toolValue(
-    await request("tools/call", {
-      name: "call_write_tool",
-      arguments: {
-        name: "docs_search",
-        arguments: { query: task.docsQuery, max_results: 1 },
-      },
-    }),
+    await request("tools/call", docsRequest(docsTool, task.docsQuery)),
   );
   const evidence = task.lookups.map(({ tool }) => ({
     source: `mcp://tempo/${tool}`,
@@ -244,4 +254,6 @@ async function main() {
   writeFileSync("/app/answer.json", `${JSON.stringify(answer)}\n`);
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

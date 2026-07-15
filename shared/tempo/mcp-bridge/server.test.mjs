@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import test from "node:test";
 
 process.env.NODE_ENV = "test";
@@ -9,6 +10,7 @@ const {
   allowedToolNames,
   filterGatewayTools,
   filterSearchResult,
+  handleRequest,
   isAllowedToolCall,
   isJsonRpcObject,
   parseMcpPayload,
@@ -16,6 +18,27 @@ const {
   toolCallSucceeded,
   traceToolCall,
 } = await import("./server.mjs");
+
+test("rejects non-string tool names without crashing", async () => {
+  const server = createServer(handleRequest);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address();
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: {} } }),
+    });
+    assert.deepEqual(await response.json(), {
+      jsonrpc: "2.0",
+      id: 1,
+      error: { code: -32602, message: "Tool name must be a string" },
+    });
+    assert.equal((await fetch(`http://127.0.0.1:${port}/health`)).status, 200);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
 
 test("direct mode exposes data tools and direct docs retrieval", () => {
   assert.deepEqual(allowedToolNames("direct").slice(-3), ["docs_search", "docs_find_pages", "docs_read_page"]);

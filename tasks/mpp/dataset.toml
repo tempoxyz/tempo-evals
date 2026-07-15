@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:3e41d6d11e815014e4ddf438385a8c0aba4f53a09d40237efc6abcec17a262d3"
+digest = "sha256:8d4c9da1e99b93bd27e35ebd4027ea6e92e4abdb4e3b2ce501027dee7478984c"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:df3c604c791c0ee048a5b36ca1c109c4206280100f4dd4b37ad81a712486c5ff"
+digest = "sha256:38cea5fd6a47eada09baf321131a9ab765d5178372965b6608deeb0dacc89a69"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:f7386dd23f7a0c0db4d7ae36d042ca9ebf09a29f777ca19260ceb7ccc56569f7"
+digest = "sha256:00e97ceb02b808559a814ac1f57230165fd5d87523297cdc44c5d8f1298e1c52"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:8aa41d83a6eb3ac66d984a281d6c210b288186c04e535e4cdd3a7e571221d3d5"
+digest = "sha256:1b68ee0cd5a333f0848975878941c4f75ce713a352c59cc127c1424612ae0375"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:6625ab54a54586a42ad370bcd8fe9d0912a1e9c5486300faf0740ec63d1fde01"
+digest = "sha256:b368608172e9ecf5aeaecc800a3a47023cd64a0a2013b2a50d82811b041e9017"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:6db84c0ea0ce57abb0c44d7fd3478a5d3e8798760d669e361aee966bb1b9f043"
+digest = "sha256:69ee2aa697e731556a7c8de7f6633f9234ad5e3dbbeac1602525a31f1d9ad2ce"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:a245f38b695f5b0434990b97989d51a1d0b23bc31986a610afb6ff8e3999b832"
+digest = "sha256:d13167ac831448b8f8179e9f0b4be07abd987da3064ce117bf254c02b8ed2f16"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:afacb93db1013659e0b2513040bef2b7da33ebd42e3f2e5ea0a98409801edaef"
+digest = "sha256:226f352bc59e2576ff468ded5685a5d10e89935a3f3a11f58c26d21e3c036952"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:6cac4b66e6eaa3fcd0568d85ad7311cebf6e8be474a33b35c7bab2fe5060d554"
+digest = "sha256:56c3a444389f79328343ec9015a88e2b15fa5759f2db1932fda97a97da9aa676"
 

@@ -1,11 +1,10 @@
 # Runtime access profiles and shared MPP task synchronization data.
 
-# The agent image contains only the task runtime. The verifier image extends
-# that exact runtime with RewardKit and the Tempo verifier. CI publishes both;
-# local runs build both from the checkout.
+# Both roles use write-once tags in the existing public GHCR package. Local
+# runs build those tags from the checkout; Daytona resolves them to digests.
 images:
-  agent: ghcr.io/tempoxyz/tempo-bench-agent:v1
-  verifier: ghcr.io/tempoxyz/tempo-bench-verifier:v1
+  agent: ghcr.io/tempoxyz/tempo-bench-base:agent-source-49f5882afdd92e21819e8e82fd232bab2c6b3eebb171c08b0c2f8b2a428f75e6
+  verifier: ghcr.io/tempoxyz/tempo-bench-base:verifier-source-49f5882afdd92e21819e8e82fd232bab2c6b3eebb171c08b0c2f8b2a428f75e6
 
 # Run-time access profiles. Tempo tasks are authored directly; benchmark jobs
 # inject the MCP server for the MCP profile. A pinned docs SHA transparently
