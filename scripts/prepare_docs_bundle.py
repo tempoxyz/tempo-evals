@@ -22,6 +22,8 @@ LLMS_FEEDBACK_NOTICE = (
     "or `client`.\n"
 )
 
+BUNDLE_SCHEMA_VERSION = 2
+
 # Rewrite only rendered documentation links; root-host APIs such as the faucet
 # must continue to resolve to Tempo rather than the pinned docs sidecar.
 CANONICAL_DOCS_URL_PATTERN = re.compile(
@@ -90,7 +92,8 @@ def is_prepared(lock: dict[str, Any]) -> bool:
     try:
         manifest = json.loads(manifest_path(lock).read_text())
         return (
-            manifest.get("repo") == lock["repo"]
+            manifest.get("schemaVersion") == BUNDLE_SCHEMA_VERSION
+            and manifest.get("repo") == lock["repo"]
             and manifest.get("sha") == lock["sha"]
             and manifest.get("docCount", 0) > 0
             and (public_dir(lock) / "developers" / "llms.txt").exists()
@@ -275,7 +278,7 @@ def write_manifest(
     output_root: Path,
 ) -> None:
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": BUNDLE_SCHEMA_VERSION,
         "repo": lock["repo"],
         "sha": lock["sha"],
         "docCount": len(docs),
