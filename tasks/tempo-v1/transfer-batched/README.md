@@ -13,7 +13,7 @@ Build a TypeScript integration that pays every recipient in a supplied list the 
 ## Verification
 
 - General file structure: `/app/package.json` and `/app/src/index.ts` are checked.
-- Usage of proper Tempo libraries: the project must depend on `viem` and import `viem/tempo`; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
+- Usage of proper Tempo libraries: the project must depend on `viem` and import `viem/tempo`, `viem/tempo/actions`, `viem/tempo/chains`, or `viem/tempo/zones`; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
 - Correctness of the script, including:
   - Every configured recipient receives the configured stablecoin amount.
   - All transfers originate from the reported payer.

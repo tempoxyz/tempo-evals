@@ -14,5 +14,5 @@ the required memo attached.
 ## Verification
 
 - General file structure: a runnable `/app` TypeScript project with `src/index.ts` and an `npm run eval` entry point.
-- Usage of proper Tempo libraries: the project must depend on `viem` and import `viem/tempo`; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
+- Usage of proper Tempo libraries: the project must depend on `viem` and import `viem/tempo`, `viem/tempo/actions`, `viem/tempo/chains`, or `viem/tempo/zones`; other blockchain SDKs such as Solana, Sui, `ethers`, and `web3` are rejected.
 - Correctness of the script, including a TransferWithMemo event with the reported payer, recipient, amount, and memo.
