@@ -14,8 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Set to error once existing task violations have been remediated.
-  STATIC_CHECKS_MODE: warning
+  STATIC_CHECKS_MODE: error
   UPSTREAM_STATIC_CHECKS_URL: https://github.com/harbor-framework/benchmark-template/blob/main/.github/workflows/static-checks.yml
 
 jobs:
@@ -134,6 +133,11 @@ jobs:
             "Verifier tooling baked|check-verifier-tooling-baked.sh"
             "Compose host binds|check-compose-host-binds.sh"
           )
+          # These files come from the trusted base checkout. Reading exceptions
+          # from the PR checkout would let an untrusted task change bypass its
+          # own static check.
+          EXCEPTIONS_PATH="$GITHUB_WORKSPACE/base/ci_checks/exceptions.yml"
+          EXEMPTION_CHECK="$GITHUB_WORKSPACE/base/ci_checks/is-exempt.py"
 
           FAILED_ROWS=""
           PASSED_ROWS=""
@@ -150,9 +154,24 @@ jobs:
             if [ ! -f "$SCRIPT_PATH" ]; then
               echo "Static check script not found: $SCRIPT_PATH"
               FAIL_DETAILS="Script not found"
+            elif [ ! -f "$EXCEPTIONS_PATH" ] || [ ! -f "$EXEMPTION_CHECK" ]; then
+              echo "Static check exception registry is unavailable"
+              FAIL_DETAILS="Exception registry unavailable"
             else
               for task_dir in $TASK_DIRS; do
                 [ -d "$task_dir" ] || continue
+                if python3 "$EXEMPTION_CHECK" "$EXCEPTIONS_PATH" "$SCRIPT" "$task_dir"; then
+                  # The registry stores exact legacy task/check pairs only.
+                  echo "SKIP $task_dir: listed in ci_checks/exceptions.yml"
+                  continue
+                else
+                  EXEMPTION_STATUS=$?
+                  if [ "$EXEMPTION_STATUS" -ne 1 ]; then
+                    echo "Invalid exception registry"
+                    FAIL_DETAILS="Invalid exception registry"
+                    break
+                  fi
+                fi
                 if ! OUT=$(bash "$SCRIPT_PATH" "$task_dir" 2>&1); then
                   echo "$OUT"
                   CLEAN=$(printf '%s\n' "$OUT" | sed -E $'s/\x1b\\[[0-9;]*[A-Za-z]//g')
