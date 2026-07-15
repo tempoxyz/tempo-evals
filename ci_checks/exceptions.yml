@@ -1,10 +1,27 @@
 # Exceptions for benchmark-major contracts that predate the upstream static
-# checks. Paths are explicit so tasks added after this registry remain subject
-# to every check. Remove a path when its task has been migrated.
+# checks. This is a temporary compatibility registry, not a way to relax the
+# policy for new work.
+#
+# The workflow applies an exception only when both the check script and task
+# directory match exactly. Do not add globs, suite-level paths, or newly created
+# tasks: they must satisfy every upstream check. Remove a task path from a set
+# after its task has been migrated and validated without the exception.
+#
+# The constrained structure below is valid YAML and intentionally dependency
+# free in CI. `task_sets` names explicit task directories; `exceptions` maps a
+# check script to one task set.
 
 version: 1
 
 task_sets:
+  # Every existing task predates four upstream conventions:
+  # - a canary in every task source file, rather than Tempo's prompt canary;
+  # - benchmark-template metadata fields rather than Tempo task metadata;
+  # - the generated timeout/anti-cheat prompt suffix; and
+  # - a separate verifier container rather than the established shared harness.
+  #
+  # Changing those contracts in place would invalidate historical benchmark
+  # comparisons, so each current task is explicitly grandfathered instead.
   legacy-all:
     - tasks/mpp/client-access-keys
     - tasks/mpp/server-charge-and-session
@@ -36,6 +53,10 @@ task_sets:
     - tasks/tempo-v1/transfer-batched
     - tasks/tempo-v1/transfer-with-memo
     - tasks/tempo-v1/transfer-with-memo-fee-payer
+  # Tempo and Tempo MCP verifier scripts rely on dependencies supplied by the
+  # shared verifier base image. Their direct interpreter calls fail upstream's
+  # package-manager heuristic, although they are valid in the shared harness.
+  # MPP scripts already satisfy that heuristic and are deliberately omitted.
   legacy-test-sh-sanity:
     - tasks/tempo-mcp-v1/access-keys
     - tasks/tempo-mcp-v1/batched-transfers
@@ -58,6 +79,8 @@ task_sets:
     - tasks/tempo-v1/transfer-batched
     - tasks/tempo-v1/transfer-with-memo
     - tasks/tempo-v1/transfer-with-memo-fee-payer
+  # These established task IDs exceed upstream's three-token slug limit.
+  # Renaming them would change benchmark identities and dataset references.
   legacy-long-slugs:
     - tasks/mpp/server-charge-and-session
     - tasks/mpp/server-charge-pathusd-usdc
@@ -70,9 +93,15 @@ task_sets:
     - tasks/tempo-v1/transfer-with-memo-fee-payer
 
 exceptions:
+  # Existing tasks use one Tempo-specific canary in instruction.md.
   check-canary.sh: legacy-all
+  # Existing prompts are immutable and lack the generated upstream suffix.
   check-instruction-suffix.sh: legacy-all
+  # Existing suites intentionally run their verifier in the shared harness.
   check-separate-verifier.sh: legacy-all
+  # Existing task TOML files use Tempo Bench's metadata schema.
   check-task-fields.sh: legacy-all
+  # Only the explicitly listed legacy task IDs exceed the slug limit.
   check-task-slug.sh: legacy-long-slugs
+  # Only the listed shared-harness test scripts need this exception.
   check-test-sh-sanity.sh: legacy-test-sh-sanity
