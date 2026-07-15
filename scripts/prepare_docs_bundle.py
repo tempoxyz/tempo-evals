@@ -22,6 +22,15 @@ LLMS_FEEDBACK_NOTICE = (
     "or `client`.\n"
 )
 
+# Rewrite only rendered documentation links; root-host APIs such as the faucet
+# must continue to resolve to Tempo rather than the pinned docs sidecar.
+CANONICAL_DOCS_URL_PATTERN = re.compile(
+    r"https://tempo\.xyz/developers/(?:"
+    r"docs(?=[/?#\"'<\s)\]}]|$)|"
+    r"llms(?:-full)?\.txt(?=[/?#\"'<\s)\]}]|$)"
+    r")"
+)
+
 
 def read_lock() -> dict[str, Any]:
     lock = json.loads(LOCK_PATH.read_text())
@@ -164,6 +173,15 @@ def description_from(content: str) -> str:
     return parse_frontmatter(content).get("description", "").strip()
 
 
+def rewrite_canonical_docs_urls(content: str) -> str:
+    return CANONICAL_DOCS_URL_PATTERN.sub(
+        lambda match: match.group().replace(
+            "https://tempo.xyz", "https://docs.tempo.xyz"
+        ),
+        content,
+    )
+
+
 def clean_markdown(content: str, doc: dict[str, str]) -> str:
     without_frontmatter = re.sub(r"^---\n[\s\S]*?\n---\n*", "", content)
     cleaned_lines: list[str] = []
@@ -175,6 +193,7 @@ def clean_markdown(content: str, doc: dict[str, str]) -> str:
         cleaned_lines.append(line)
 
     markdown = re.sub(r"\n{3,}", "\n\n", "\n".join(cleaned_lines)).strip()
+    markdown = rewrite_canonical_docs_urls(markdown)
     if not markdown.startswith("# "):
         parts = [f"# {doc['title']}", "", doc.get("description", ""), "", markdown]
         markdown = "\n".join(part for part in parts if part)
