@@ -3,6 +3,7 @@ import http from "node:http";
 import { Hono } from "hono";
 import { Mppx, tempo } from "mppx/hono";
 import { NodeListener, Request as ServerRequest } from "mppx/server";
+import { tempoRpcClient } from "./tempo-rpc.js";
 
 const port = Number(process.env.PORT ?? "3000");
 const freePath = "/free";
@@ -15,6 +16,7 @@ const app = new Hono();
 const mppx = Mppx.create({
   methods: [
     tempo.charge({
+      getClient: () => tempoRpcClient,
       recipient,
       testnet: true,
     }),

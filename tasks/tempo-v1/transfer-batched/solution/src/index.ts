@@ -10,6 +10,10 @@ function required(name: string): string {
   return value;
 }
 
+const RECEIPT_TIMEOUT = 60_000;
+const transport = http(undefined, { timeout: RECEIPT_TIMEOUT + 5_000 });
+const wait = { timeout: RECEIPT_TIMEOUT };
+
 const token = required("TEMPO_TOKEN") as Address;
 const recipientInput = required("TEMPO_RECIPIENTS");
 const parsedRecipients: unknown = JSON.parse(recipientInput);
@@ -20,10 +24,10 @@ const recipients = parsedRecipients as Address[];
 const transferAmount = parseUnits(required("TEMPO_AMOUNT"), Number(required("TEMPO_DECIMALS")));
 
 const account = privateKeyToAccount(generatePrivateKey());
-const client = createClient({ account, chain: tempoTestnet, feeToken: token, transport: http() });
-const publicClient = createPublicClient({ chain: tempoTestnet, transport: http() });
+const client = createClient({ account, chain: tempoTestnet, feeToken: token, transport });
+const publicClient = createPublicClient({ chain: tempoTestnet, transport });
 
-await Actions.faucet.fundSync(client, { account: account.address });
+await Actions.faucet.fundSync(client, { account: account.address, ...wait });
 
 const calls = recipients.map((to) => ({
   to: token,
@@ -34,7 +38,7 @@ const calls = recipients.map((to) => ({
   }),
 }));
 const transactionHash = await client.sendTransaction({ calls });
-const receipt = await publicClient.waitForTransactionReceipt({ hash: transactionHash });
+const receipt = await publicClient.waitForTransactionReceipt({ hash: transactionHash, ...wait });
 if (receipt.status !== "success") throw new Error("batch transfer failed");
 
 const output = {

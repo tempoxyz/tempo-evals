@@ -23,26 +23,29 @@ creation, faucet funding, fee-token configuration, and Stablecoin DEX swaps.
 
 ## Harness
 
-Each task is authored as a Harbor task. Every file is
-task-owned and edited in place:
+Each task is authored as a Harbor task. `npm run sync` generates the two leaf
+Dockerfiles from the configured agent and verifier images; the remaining files
+are task-owned:
 
 ```text
 tasks/tempo-v1/<task>/
 ├── instruction.md           # Agent-facing prompt and output contract
 ├── task.toml                # Metadata, resources, artifacts, verifier config
-├── environment/Dockerfile   # Extends the shared base image
+├── environment/Dockerfile   # Agent runtime (generated)
 ├── solution/                # Minimal oracle used for benchmark validation
 └── tests/
+    ├── Dockerfile           # Separate verifier runtime (generated)
     ├── test.sh              # Verifier entry point
     ├── correctness/         # Task criteria and independent onchain verification
     └── quality/             # RewardKit quality checks and weights
 ```
 
-The task first runs the independent onchain verifier. A scored onchain failure
-publishes `correctness = 0`, `quality = 0`, and `reward = 0`, then skips
-RewardKit. On success, Harbor receives `correctness = 1`. Published `quality`
-is the mean of RewardKit's static code score and its aggregate LLM and
-trajectory quality score. Harbor then publishes
+Harbor transfers the declared submission artifacts into a separate verifier
+environment. The task first runs the independent onchain verifier. A scored
+onchain failure publishes `correctness = 0`, `quality = 0`, and `reward = 0`,
+then skips RewardKit. On success, Harbor receives `correctness = 1`. Published
+`quality` is the mean of RewardKit's static code score and its aggregate LLM
+and trajectory quality score. Harbor then publishes
 `reward = (correctness + quality) / 2`, which is equivalent to
 `0.5 * correctness + 0.25 * code + 0.25 * aggregate quality`. Missing quality
 configuration or a RewardKit execution/configuration error produces no reward.
@@ -84,38 +87,39 @@ npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 npm run bench:local:agent:dev -- --task-suite tempo --profile mcp \
   --task-filter transfer-with-memo
 
-BASE_IMAGE="$(npm run -s base-image:ref)"
+AGENT_IMAGE="$(npm run -s agent-image:ref)"
+VERIFIER_IMAGE="$(npm run -s verifier-image:ref)"
 
 # Haiku over every Tempo task with both access profiles.
 npm run bench:matrix:dev -- --task-suite tempo --profile all \
-  --base-image "$BASE_IMAGE"
+  --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 
 # One-task Haiku smoke with pinned Docs only.
 npm run bench:matrix:dev -- --task-suite tempo --profile docs \
-  --task-filter transfer-with-memo --base-image "$BASE_IMAGE"
+  --task-filter transfer-with-memo \
+  --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 
 # One-task Haiku smoke with pinned Docs plus Tempo MCP.
 npm run bench:matrix:dev -- --task-suite tempo --profile mcp \
-  --task-filter transfer-with-memo --base-image "$BASE_IMAGE"
+  --task-filter transfer-with-memo \
+  --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 
 # Full four-model, three-attempt production suite with both profiles.
 npm run bench:matrix:production -- --task-suite tempo --profile all \
-  --base-image "$BASE_IMAGE"
+  --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 
 # Refresh this suite's manifest after task changes.
 npm run dataset
 ```
 
 Use `npm run bench:local:oracle -- --task-suite all` before a cross-suite
-change is ready for review. Daytona runs require a CI-published base image via
-`--base-image`; see the root README for global environment setup.
+change is ready for review. Daytona runs require CI-published agent and verifier
+images; see the root README for global environment setup.
 
 ## Implementation Notes
 
-Edit task directories directly. `npm run sync` does not rewrite Tempo task
-files; it only refreshes shared MPP assets and generated job configurations.
-
-The shared Tempo verifier is installed in the base image and selects the case
-named by `TEMPO_BENCH_CASE`. Keep task-specific correctness criteria and onchain
-checks in the task directory. Refresh `dataset.toml` after a task change; the
-manifest is a required checked-in artifact.
+Edit task-owned files directly. `npm run sync` refreshes both generated
+Dockerfiles. The Tempo verifier is installed only in the verifier image and
+selects the case named by `TEMPO_BENCH_CASE`. Keep task-specific correctness
+criteria and onchain checks in the task directory. Refresh `dataset.toml` after
+a task change; the manifest is a required checked-in artifact.

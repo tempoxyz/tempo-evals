@@ -1,6 +1,6 @@
 schema_version = "1.3"
 
-artifacts = ["/app/package.json", "/app/src"]
+artifacts = [{ source = "/app", exclude = ["node_modules"] }, "/logs/agent/trajectory.json"]
 
 [task]
 name = "tempo-v1/set-fee-token"
@@ -14,7 +14,7 @@ feature = "set-fee-token"
 benchmark = "tempo-bench-v1"
 [verifier]
 timeout_sec = 300.0
-environment_mode = "shared"
+environment_mode = "separate"
 
 
 [agent]

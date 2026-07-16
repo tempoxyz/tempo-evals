@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:6b2635fe042d4b1920c112591a299ce9d29bb5c42970916f5b0666c8cf7dd39b"
+digest = "sha256:7801a46c5f9e249a4988b9fda79033a633b9a4c82c22488e9b88bb96618cab4e"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:d787435be7f69da60f15635e9f503c185c97687341e84a9891cf1f2b42adc80f"
+digest = "sha256:575b6cbdca4c928d66233917eb088adbe4cb7eaa2c17e50447dd270192f01cbb"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:4b80dbd99b96fe9d833b98ad58a304e66049c0aeaf61791a92c7984d691bcb22"
+digest = "sha256:93d61684a8bb4f888fb0a604b1e89c099d454c1bf5df87c5d44c1adbd95c7103"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:6dba25ae3e664c6af631ed582ba8788f7c6b3ccc4644c5e64c284304e1c22d4a"
+digest = "sha256:063c669f33b1376cd8df14b0fad11e7d4f6bbf55818b85cd371bb8bf9ed05182"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b9aad061942634c8e2db33fb50e0d6459ab88dca150d0da3d30b2a66e4188c7e"
+digest = "sha256:f4ea9e56565872e753910fa1efc9fbf11b79ae510b7ca282897f02435f24bbbe"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:9c647113d14a0828dc05f2959bada054a3f368498e708d201a841b6ad74e3de9"
+digest = "sha256:326f1374227e25cbce8637751d54257e60fe060dbcaee096b3242bef2bc5f58f"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:012f279e9ebfb79635f4bda029a93c64a34c7f5f73183dc92846477eb45e2365"
+digest = "sha256:d727eee4f4632bae0c6db0cab7ada4c230552b91ee1a9de0779f6be4010e5fa0"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:d8c44e01c7b01c2f4d049fbcdde24d89678ede13f21a05b0e2e87ec168d06c02"
+digest = "sha256:e2dd2061cf00c636e208bff307edce54d48359d8ad9692ec1e6384098fb9c2bc"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:8caf62573823bb3a2241b7adc9f14dda79c301c51527adc43b29d5386cf60dc6"
+digest = "sha256:e49f9dab3625fc05b84d2c94666fb7e051a1f043b99e26834d4ea81f317ffd80"
 

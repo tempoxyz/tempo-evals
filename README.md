@@ -28,6 +28,18 @@ contracts.
 - A **job** runs one or more agent trials against a dataset. Job configs are
   compiled from `config/` rather than edited by hand.
 
+### Runtime Isolation
+
+Each task uses two images generated from the refs in `config/tasks.yaml`:
+
+- The agent image contains only the task runtime.
+- The verifier image extends the exact agent image and adds RewardKit and the
+  shared Tempo verifier.
+
+Harbor runs them in separate environments and transfers only the task's
+declared artifacts into the verifier. CI publishes the pair under write-once
+source tags; remote runs resolve both tags to immutable digests.
+
 ### Access Profiles
 
 Tempo integration tasks use the same task artifacts under two access profiles:
@@ -53,7 +65,7 @@ and documentation.
 | Path | Purpose |
 | --- | --- |
 | `tasks/` | Authored, versioned Harbor task suites |
-| `shared/` | Shared base image, verifiers, and suite harnesses |
+| `shared/` | Shared runtime images, verifiers, and suite harnesses |
 | `config/` | Benchmark identities, access profiles, model matrices, and job sources |
 | `scripts/` | Synchronization, execution, validation, and result tooling |
 
@@ -87,19 +99,26 @@ npm run bench:local:agent:dev -- \
   --task-suite tempo --profile mcp --task-filter transfer-with-memo
 ```
 
-Daytona runs require credentials and an explicit CI-published base image:
+Daytona runs require credentials and the paired CI-published image refs:
 
 ```bash
-BASE_IMAGE="$(npm run -s base-image:ref)"
+AGENT_IMAGE="$(npm run -s agent-image:ref)"
+VERIFIER_IMAGE="$(npm run -s verifier-image:ref)"
 
 # Development model matrix: one attempt per task.
 npm run bench:matrix:dev -- \
-  --task-suite tempo --profile all --base-image "$BASE_IMAGE"
+  --task-suite tempo --profile all \
+  --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 
 # Production model matrix: three attempts per task.
 npm run bench:matrix:production -- \
-  --task-suite tempo --profile all --base-image "$BASE_IMAGE"
+  --task-suite tempo --profile all \
+  --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 ```
+
+The image-ref commands fail until CI has published both images, then return
+immutable digest refs. Trusted same-repository pull requests and `main` may
+publish; fork pull requests only build the pair.
 
 The matrix commands read `config/models.dev.yaml` and
 `config/models.production.yaml`. `--profile all` runs the `docs` and `mcp` jobs

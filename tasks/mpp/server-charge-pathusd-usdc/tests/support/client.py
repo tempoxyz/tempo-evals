@@ -1,7 +1,7 @@
 """Verifier scenario for tempo/mpp-server-charge-pathusd-usdc.
 
 The shared MPP verifier harness lives in tempo_bench_rewardkit.mpp.client_lib
-(baked into the base image); this file holds only the task-specific checks.
+(installed in the verifier image); this file holds only the task-specific checks.
 """
 
 import subprocess
@@ -23,6 +23,7 @@ async def run_task(process: subprocess.Popen[str]) -> dict:
             "TEMPO_MPP_PAID_URL": out["paidUrl"],
             "TEMPO_MPP_PAYER_PRIVATE_KEY": lib.PAYER_PRIVATE_KEY,
         },
+        timeout=180,
     )
     payer = currency_options.get("payer")
     paid = currency_options.get("paid")

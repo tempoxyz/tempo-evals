@@ -19,6 +19,12 @@ EXPECTED_TOOLS = {
     "v1_blocks_get",
     "v1_transactions_get",
 }
+DEFERRED_GATEWAY_TOOLS = {
+    "search_tools",
+    "get_tool_details",
+    "call_read_tool",
+    "call_write_tool",
+}
 
 
 def parse_mcp_response(raw: bytes) -> dict[str, Any]:
@@ -53,7 +59,16 @@ def json_rpc(
         return parse_mcp_response(response.read()), dict(response.headers.items())
 
 
-def list_tools(url: str) -> set[str]:
+def json_text_content(payload: dict[str, Any]) -> dict[str, Any]:
+    for item in payload.get("result", {}).get("content", []):
+        if isinstance(item, dict) and isinstance(item.get("text"), str):
+            value = json.loads(item["text"])
+            if isinstance(value, dict):
+                return value
+    raise RuntimeError("MCP tool response did not contain JSON text")
+
+
+def list_tools(url: str, expected: set[str] | None = None) -> set[str]:
     initialize, response_headers = json_rpc(
         url,
         {
@@ -83,11 +98,37 @@ def list_tools(url: str) -> set[str]:
     )
     if "error" in tools:
         raise RuntimeError(f"MCP tools/list failed: {tools['error']}")
-    return {
+    available = {
         str(tool["name"])
         for tool in tools.get("result", {}).get("tools", [])
         if isinstance(tool, dict) and isinstance(tool.get("name"), str)
     }
+    offset = 0
+    while expected and expected - available and available >= DEFERRED_GATEWAY_TOOLS:
+        response, _ = json_rpc(
+            url,
+            {
+                "jsonrpc": "2.0",
+                "id": offset + 3,
+                "method": "tools/call",
+                "params": {
+                    "name": "search_tools",
+                    "arguments": {"query": "", "limit": 20, "offset": offset},
+                },
+            },
+            headers,
+        )
+        page = json_text_content(response)
+        available.update(
+            tool["name"]
+            for tool in page.get("tools", [])
+            if isinstance(tool, dict) and tool.get("name") in expected
+        )
+        next_offset = page.get("nextOffset")
+        if not isinstance(next_offset, int) or next_offset <= offset:
+            break
+        offset = next_offset
+    return available
 
 
 def verify_claude_registration(claude: str, url: str) -> None:
@@ -128,7 +169,7 @@ def main() -> None:
     args = parser.parse_args()
 
     expected = set(args.expected_tools)
-    tools = list_tools(args.url)
+    tools = list_tools(args.url, expected)
     verify_tools(tools, expected)
     if not args.skip_claude:
         verify_claude_registration(args.claude, args.url)

@@ -14,7 +14,6 @@ const MCP_HEADER_NAMES = [
   "last-event-id",
 ];
 const DATA_TOOLS = [
-  "rpc_chain",
   "v1_addresses_address_activities",
   "v1_addresses_address_balances",
   "v1_blocks_block",
@@ -35,7 +34,12 @@ const DOCS_TOOLS = {
   direct: ["docs_search", "docs_find_pages", "docs_read_page"],
   code: ["docs_code"],
 };
-const allowed = new Set([...DATA_TOOLS, ...(DOCS_TOOLS[mode] ?? [])]);
+const GATEWAY_TOOLS = new Set([
+  "search_tools",
+  "get_tool_details",
+  "call_read_tool",
+  "call_write_tool",
+]);
 
 if (!(mode in DOCS_TOOLS) || !upstream) {
   throw new Error("MCP_TOOL_MODE must be direct or code and MCP_UPSTREAM_URL is required");
@@ -48,9 +52,21 @@ export function allowedToolNames(toolMode) {
   return [...DATA_TOOLS, ...DOCS_TOOLS[toolMode]];
 }
 
+export function isJsonRpcObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 export function isAllowedToolCall(payload, toolMode) {
+  if (!isJsonRpcObject(payload)) return false;
   if (payload?.method !== "tools/call") return true;
-  return allowedToolNames(toolMode).includes(payload?.params?.name);
+  const gatewayTool = payload?.params?.name;
+  if (gatewayTool === "search_tools") return true;
+  if (!GATEWAY_TOOLS.has(gatewayTool)) return false;
+  const logicalTool = payload?.params?.arguments?.name;
+  if (!allowedToolNames(toolMode).includes(logicalTool)) return false;
+  if (gatewayTool === "call_read_tool") return DATA_TOOLS.includes(logicalTool);
+  if (gatewayTool === "call_write_tool") return DOCS_TOOLS[toolMode].includes(logicalTool);
+  return true;
 }
 
 function mcpResponseHeaders(headers) {
@@ -71,7 +87,10 @@ function reply(response, payload, status = 200, upstreamHeaders) {
 }
 
 function denied(id, name) {
-  return { jsonrpc: "2.0", id, error: { code: -32601, message: `Tool unavailable in ${mode} mode: ${name}` } };
+  const error = typeof name === "string"
+    ? { code: -32601, message: `Tool unavailable in ${mode} mode: ${name}` }
+    : { code: -32602, message: "Tool name must be a string" };
+  return { jsonrpc: "2.0", id, error };
 }
 
 function trace(event) {
@@ -96,10 +115,15 @@ async function proxy(request, body) {
   return { status: response.status, headers: response.headers, text: await response.text() };
 }
 
-export function filterTools(payload, toolMode) {
+export function filterGatewayTools(payload) {
   if (!payload?.result?.tools) return payload;
-  const names = new Set(allowedToolNames(toolMode));
-  return { ...payload, result: { ...payload.result, tools: payload.result.tools.filter((tool) => names.has(tool.name)) } };
+  return {
+    ...payload,
+    result: {
+      ...payload.result,
+      tools: payload.result.tools.filter((tool) => GATEWAY_TOOLS.has(tool.name)),
+    },
+  };
 }
 
 export function parseMcpPayload(text, contentType = "") {
@@ -108,16 +132,76 @@ export function parseMcpPayload(text, contentType = "") {
     .split(/\r?\n/)
     .filter((line) => line.startsWith("data:"))
     .map((line) => line.slice("data:".length).trim())
-    .find(Boolean);
+    .filter(Boolean)
+    .at(-1);
   if (!data) throw new Error("MCP SSE response did not include data");
   return JSON.parse(data);
+}
+
+export function toolCallSucceeded(text, contentType, status) {
+  if (status < 200 || status >= 300) return false;
+  try {
+    const payload = parseMcpPayload(text, contentType);
+    return !payload?.error && payload?.result?.isError !== true;
+  } catch {
+    return false;
+  }
+}
+
+function filterCatalog(catalog, toolMode) {
+  if (!catalog?.tools) return catalog;
+  const names = new Set(allowedToolNames(toolMode));
+  return { ...catalog, tools: catalog.tools.filter((tool) => names.has(tool.name)) };
+}
+
+export function filterSearchResult(payload, toolMode) {
+  if (!payload?.result) return payload;
+  const result = { ...payload.result };
+  if (result.structuredContent) {
+    result.structuredContent = filterCatalog(result.structuredContent, toolMode);
+  }
+  if (Array.isArray(result.content)) {
+    result.content = result.content.map((item) => {
+      if (item?.type !== "text") return item;
+      try {
+        return { ...item, text: JSON.stringify(filterCatalog(JSON.parse(item.text), toolMode)) };
+      } catch {
+        return item;
+      }
+    });
+  }
+  return { ...payload, result };
+}
+
+export function traceToolCall(payload) {
+  const gatewayTool = payload?.params?.name;
+  const gatewayArguments = payload?.params?.arguments ?? {};
+  if (!new Set(["call_read_tool", "call_write_tool"]).has(gatewayTool)) {
+    return { tool: gatewayTool, arguments: gatewayArguments };
+  }
+  return {
+    tool: gatewayArguments.name,
+    arguments: gatewayArguments.arguments ?? {},
+    gateway_tool: gatewayTool,
+  };
+}
+
+function requestedTool(payload) {
+  const gatewayTool = payload?.params?.name;
+  if (
+    gatewayTool === "get_tool_details"
+    || (typeof gatewayTool === "string" && gatewayTool.startsWith("call_"))
+  ) {
+    return payload?.params?.arguments?.name ?? gatewayTool;
+  }
+  return gatewayTool;
 }
 
 export function responseDigest(text) {
   return createHash("sha256").update(text).digest("hex");
 }
 
-if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
+export async function handleRequest(request, response) {
   if (request.url === "/health") return reply(response, { ok: true, mode, tools: allowedToolNames(mode) });
   if (request.url === "/trace") {
     const events = readFileSync(tracePath, "utf8")
@@ -135,7 +219,8 @@ if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
   });
   let body;
   try { body = raw ? JSON.parse(raw) : {}; } catch { return reply(response, { error: "Invalid JSON" }, 400); }
-  const tool = body?.params?.name;
+  if (!isJsonRpcObject(body)) return reply(response, { error: "JSON-RPC batches are unsupported" }, 400);
+  const tool = requestedTool(body);
   if (!isAllowedToolCall(body, mode)) {
     trace({ method: body.method, tool, allowed: false });
     return reply(response, denied(body.id, tool));
@@ -143,22 +228,26 @@ if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
   const started = performance.now();
   try {
     const upstreamResponse = await proxy(request, body);
+    const call = body?.method === "tools/call" ? traceToolCall(body) : {};
+    const contentType = upstreamResponse.headers.get("content-type") ?? "";
     trace({
       method: body?.method,
-      tool,
+      ...call,
       allowed: true,
-      arguments: body?.method === "tools/call" ? (body?.params?.arguments ?? {}) : undefined,
+      ...(body?.method === "tools/call"
+        ? { succeeded: toolCallSucceeded(upstreamResponse.text, contentType, upstreamResponse.status) }
+        : {}),
       response_sha256: responseDigest(upstreamResponse.text),
       duration_ms: Math.round(performance.now() - started),
     });
-    if (body?.method === "tools/list") {
+    if (body?.method === "tools/list" || body?.params?.name === "search_tools") {
       const parsed = parseMcpPayload(
         upstreamResponse.text,
-        upstreamResponse.headers.get("content-type") ?? "",
+        contentType,
       );
       return reply(
         response,
-        filterTools(parsed, mode),
+        body?.method === "tools/list" ? filterGatewayTools(parsed) : filterSearchResult(parsed, mode),
         upstreamResponse.status,
         upstreamResponse.headers,
       );
@@ -169,7 +258,15 @@ if (process.env.NODE_ENV !== "test") createServer(async (request, response) => {
     });
     response.end(upstreamResponse.text);
   } catch (error) {
-    trace({ method: body?.method, tool, allowed: true, error: error instanceof Error ? error.message : String(error) });
+    trace({
+      method: body?.method,
+      tool,
+      allowed: true,
+      ...(body?.method === "tools/call" ? { succeeded: false } : {}),
+      error: error instanceof Error ? error.message : String(error),
+    });
     reply(response, { jsonrpc: "2.0", id: body?.id ?? null, error: { code: -32603, message: "MCP bridge upstream request failed" } }, 502);
   }
-}).listen(port);
+}
+
+if (process.env.NODE_ENV !== "test") createServer(handleRequest).listen(port);

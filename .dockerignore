@@ -27,7 +27,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # JavaScript package/install output
-node_modules
+**/node_modules
 package-lock.json
 !shared/tempo/verifier/package-lock.json
 yarn.lock

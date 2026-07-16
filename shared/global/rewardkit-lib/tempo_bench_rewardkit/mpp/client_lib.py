@@ -1,6 +1,6 @@
 """SHARED MPP VERIFIER HARNESS.
 
-Baked into the tempo-bench base image as part of the tempo-bench-rewardkit
+Installed in the verifier image as part of the tempo-bench-rewardkit
 package. Task-specific checks live in each task's tests/support/client.py,
 which imports this module and calls run(run_task).
 """
@@ -47,6 +47,9 @@ MPP_SECRET_KEY = "tempo-bench-mpp-secret-key-000000001"
 CHARGE_AMOUNT = Decimal("0.01")
 TOKEN_BASE_UNITS = Decimal("1000000")
 KEEP_SERVER = os.environ.get("TEMPO_MPP_KEEP_SERVER") == "1"
+PAYMENT_RPC_TIMEOUT_SECONDS = 65.0
+PAID_HTTP_TIMEOUT_SECONDS = 90.0
+SERVER_START_TIMEOUT_SECONDS = 90.0
 
 
 def write_json(path: Path, value: object) -> None:
@@ -177,7 +180,7 @@ def read_out_json(
     schema: dict[str, type[object]],
     url_keys: set[str],
 ) -> dict:
-    deadline = time.monotonic() + 30
+    deadline = time.monotonic() + SERVER_START_TIMEOUT_SECONDS
     while time.monotonic() < deadline:
         if OUT_PATH.exists():
             try:
@@ -192,7 +195,9 @@ def read_out_json(
         if process.poll() is not None:
             raise RuntimeError("server exited before writing out.json")
         time.sleep(0.1)
-    raise RuntimeError("server did not write out.json within 30s")
+    raise RuntimeError(
+        f"server did not write out.json within {SERVER_START_TIMEOUT_SECONDS:g}s"
+    )
 
 
 def start_server() -> subprocess.Popen[str]:
@@ -506,9 +511,10 @@ async def paid_request(url: str) -> dict:
     fund_account(account.address)
     response = await mpp_get(
         url,
+        timeout=PAID_HTTP_TIMEOUT_SECONDS,
         methods=[
             tempo(
-                intents={"charge": ChargeIntent()},
+                intents={"charge": ChargeIntent(timeout=PAYMENT_RPC_TIMEOUT_SECONDS)},
                 account=account,
                 chain_id=CHAIN_ID,
                 rpc_url=RPC_URL,
@@ -581,6 +587,7 @@ def session_request(url: str) -> dict:
             "TEMPO_MPP_PAYER_PRIVATE_KEY": PAYER_PRIVATE_KEY,
             "TEMPO_MPP_SESSION_URL": url,
         },
+        timeout=240,
     )
     if result.get("closeSucceeded") is not True:
         raise RuntimeError("session client did not close the payment session")
@@ -711,7 +718,7 @@ async def main(run_task: Callable[[subprocess.Popen[str]], Awaitable[dict]]) -> 
         write_json(LOG_DIR / "details.json", {"ok": True, **result.get("out", {})})
         keep_process = KEEP_SERVER
     except Exception as exc:
-        fail(str(exc))
+        fail(str(exc) or type(exc).__name__)
     finally:
         if process and process.poll() is None and not keep_process:
             stop_process_group(process)

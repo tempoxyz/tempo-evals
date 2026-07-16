@@ -1,4 +1,4 @@
-# Baked into the tempo-bench base image; see shared/global/docker/base/Dockerfile.
+# Installed in the verifier image; see shared/global/docker/verifier/Dockerfile.
 [project]
 name = "tempo-bench-rewardkit"
 version = "0.1.0"

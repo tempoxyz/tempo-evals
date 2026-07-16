@@ -8,16 +8,23 @@ async function main() {
   const { Mppx, NodeListener, Request: ServerRequest, tempo } = await import(
     require.resolve("mppx/server"),
   );
+  const { createClient, http: viemHttp } = await import(require.resolve("viem"));
+  const { Chain } = await import(require.resolve("viem/tempo"));
 
   const paidPath = "/paid";
   const pathUsd = "0x20c0000000000000000000000000000000000000";
   const recipient = process.env.RECIPIENT_ADDRESS;
   const chargeAmount = process.env.MPP_CHARGE_AMOUNT ?? "0.01";
+  const rpcClient = createClient({
+    chain: Chain.testnet,
+    transport: viemHttp(process.env.MPPX_RPC_URL, { retryCount: 0, timeout: 65_000 }),
+  });
 
   const mppx = Mppx.create({
     methods: [
       tempo.charge({
         currency: pathUsd,
+        getClient: () => rpcClient,
         recipient,
         testnet: true,
       }),

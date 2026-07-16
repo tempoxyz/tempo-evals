@@ -1,7 +1,9 @@
 // AUTO-GENERATED INTO EACH MCP TASK BY npm run sync. DO NOT EDIT COPIES.
 import { writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 const endpoint = process.env.TEMPO_MCP_ORACLE_URL ?? "http://tempo-mcp-direct:8787/mcp";
+const docsTool = process.env.TEMPO_MCP_ORACLE_DOCS_TOOL ?? "docs_search";
 const taskName = process.argv[2];
 const historicalWindow = {
   "timestamp.from": "2026-07-10T22:30:00Z",
@@ -12,75 +14,121 @@ const historicalWindow = {
 
 const tasks = {
   "access-keys": {
-    tool: "v1_transactions_get",
-    arguments: historicalWindow,
+    lookups: [{ tool: "v1_transactions_get", arguments: historicalWindow }],
+    observation: { lookup: 0, count: 2 },
     docsQuery: "Tempo access keys and fee sponsorship",
   },
   "batched-transfers": {
-    tool: "v1_transactions_get",
-    arguments: historicalWindow,
+    lookups: [{ tool: "v1_transactions_get", arguments: historicalWindow }],
+    observation: { lookup: 0, count: 1 },
     docsQuery: "Tempo multi-payment batched transfers",
   },
   "dex-swap": {
-    tool: "v1_fee-amm_pools",
-    arguments: { include: ["token"], limit: 5 },
+    lookups: [{ tool: "v1_fee-amm_pools", arguments: { include: ["token"], limit: 5 } }],
+    observation: { lookup: 0, count: 1 },
     docsQuery: "Tempo Fee AMM fee token payments",
   },
   "faucet-funding": {
-    tool: "v1_addresses_address_activities",
-    arguments: { address: "0x385193793fe875cd9f2341409563932023fb4fab", limit: 20 },
+    lookups: [
+      {
+        tool: "v1_addresses_address_activities",
+        arguments: { address: "0x385193793fe875cd9f2341409563932023fb4fab", limit: 20 },
+      },
+      {
+        tool: "v1_addresses_address_balances",
+        arguments: { address: "0x385193793fe875cd9f2341409563932023fb4fab", limit: 20 },
+      },
+    ],
+    observation: {
+      lookup: 0,
+      count: 1,
+      subject: "0x385193793fe875cd9f2341409563932023fb4fab",
+    },
     docsQuery: "Tempo account activity and funding",
   },
   "fee-token-and-payer": {
-    tool: "v1_transactions_transactionHash_get",
-    arguments: {
-      transactionHash: "0x52420cada2074e5ca33c381f39acb0c7849522f916a516ccad2ab936306198ec",
-      include: ["feeToken", "receipt"],
+    lookups: [
+      {
+        tool: "v1_transactions_transactionHash_get",
+        arguments: {
+          transactionHash: "0x52420cada2074e5ca33c381f39acb0c7849522f916a516ccad2ab936306198ec",
+          include: ["feeToken", "receipt"],
+        },
+      },
+    ],
+    observation: {
+      lookup: 0,
+      count: 1,
+      subject: "0x52420cada2074e5ca33c381f39acb0c7849522f916a516ccad2ab936306198ec",
     },
     docsQuery: "Tempo fee token and fee payer",
   },
   "fee-token-configuration": {
-    tool: "v1_transactions_get",
-    arguments: { ...historicalWindow, feeToken: "0x20c000000000000000000000b9537d11c60e8b50" },
+    lookups: [
+      {
+        tool: "v1_transactions_get",
+        arguments: { ...historicalWindow, feeToken: "0x20c000000000000000000000b9537d11c60e8b50" },
+      },
+      { tool: "v1_fee-amm_pools", arguments: { include: ["token"], limit: 5 } },
+    ],
+    observation: { lookup: 0, count: 1 },
     docsQuery: "Tempo fee token configuration",
   },
   "passkey-account": {
-    tool: "v1_addresses_address_activities",
-    arguments: { address: "0xbe058e1c4df8a4366a387bf595b284246a93039e", limit: 10 },
+    lookups: [
+      {
+        tool: "v1_addresses_address_activities",
+        arguments: { address: "0xbe058e1c4df8a4366a387bf595b284246a93039e", limit: 10 },
+      },
+    ],
+    observation: {
+      lookup: 0,
+      count: 1,
+      subject: "0xbe058e1c4df8a4366a387bf595b284246a93039e",
+    },
     docsQuery: "Tempo passkey account authorization",
   },
   "policy-authorization": {
-    tool: "v1_transactions_get",
-    arguments: historicalWindow,
+    lookups: [{ tool: "v1_transactions_get", arguments: historicalWindow }],
+    observation: { lookup: 0, count: 1 },
     docsQuery: "Tempo access key authorization and fee sponsorship",
   },
   "stablecoin-creation": {
-    tool: "v1_tokens_get",
-    arguments: { verified: true, currency: "USD", include: ["holderCount"], limit: 5 },
+    lookups: [
+      {
+        tool: "v1_tokens_get",
+        arguments: { verified: true, currency: "USD", include: ["holderCount"], limit: 5 },
+      },
+      {
+        tool: "v1_tokens_token_transactions",
+        arguments: { token: "0x20c0000000000000000000000000000000000000", limit: 5 },
+      },
+    ],
+    observation: { lookup: 0, count: 5 },
     docsQuery: "Tempo TIP-20 token specification",
   },
   "tip20-transfer-memo": {
-    tool: "v1_transfers",
-    arguments: {
-      address: "0x385193793fe875cd9f2341409563932023fb4fab",
-      ...historicalWindow,
-      include: ["token", "memo"],
+    lookups: [
+      {
+        tool: "v1_addresses_address_activities",
+        arguments: { address: "0x385193793fe875cd9f2341409563932023fb4fab", limit: 20 },
+      },
+    ],
+    observation: {
+      lookup: 0,
+      count: 1,
+      subject: "0x385193793fe875cd9f2341409563932023fb4fab",
     },
     docsQuery: "Tempo TIP-20 transfer memo",
   },
   "transaction-status": {
-    tool: "v1_transactions_get",
-    arguments: {
-      "timestamp.from": "2026-07-10T22:02:00Z",
-      "timestamp.to": "2026-07-10T22:03:00Z",
-      include: ["receipt"],
-      limit: 5,
-    },
+    lookups: [{ tool: "v1_blocks_get", arguments: { limit: 5 } }],
+    observation: { lookup: 0, count: 1 },
     docsQuery: "Tempo T7 upgrade",
   },
   "wallet-client": {
-    tool: "v1_transactions_get",
-    arguments: historicalWindow,
+    lookups: [{ tool: "v1_transactions_get", arguments: historicalWindow }],
+    observation: { lookup: 0, count: 1 },
     docsQuery: "Tempo wallet client transaction flow",
   },
 };
@@ -100,6 +148,43 @@ function parseResponse(text) {
 function firstUrl(value) {
   const match = JSON.stringify(value).match(/https:\/\/(?:docs|developers)\.tempo\.xyz[^"\\\s]*/);
   return match?.[0] ?? "https://docs.tempo.xyz/";
+}
+
+function toolValue(result) {
+  if (result?.isError) throw new Error(`MCP tool failed: ${JSON.stringify(result)}`);
+  const text = result?.content?.find((item) => item?.type === "text")?.text;
+  if (typeof text !== "string") return result?.structuredContent ?? result;
+  const value = JSON.parse(text);
+  if (value?.error) throw new Error(`MCP tool failed: ${JSON.stringify(value.error)}`);
+  return value;
+}
+
+function records(value) {
+  if (Array.isArray(value?.data)) return value.data;
+  return value && typeof value === "object" ? [value] : [];
+}
+
+function recordSubject(record) {
+  for (const key of ["hash", "transactionHash", "address", "id", "number", "symbol"]) {
+    if (typeof record?.[key] === "string" || typeof record?.[key] === "number") {
+      return String(record[key]);
+    }
+  }
+  return "MCP response record";
+}
+
+export function docsRequest(tool, query) {
+  let args;
+  if (tool === "docs_search") {
+    args = { query, max_results: 1 };
+  } else if (tool === "docs_code") {
+    args = {
+      code: `async () => codemode.search({ query: ${JSON.stringify(query)}, source: "tempo", max_results: 1 })`,
+    };
+  } else {
+    throw new Error(`Unknown MCP oracle docs tool: ${tool}`);
+  }
+  return { name: "call_write_tool", arguments: { name: tool, arguments: args } };
 }
 
 async function main() {
@@ -132,24 +217,43 @@ async function main() {
     capabilities: {},
     clientInfo: { name: "tempo-bench-oracle", version: "1" },
   });
-  const data = await request("tools/call", { name: task.tool, arguments: task.arguments });
-  const docs = await request("tools/call", {
-    name: "docs_search",
-    arguments: { query: task.docsQuery, max_results: 1 },
-  });
-  const evidenceSource = `mcp://tempo/${task.tool}`;
+  const results = [];
+  for (const lookup of task.lookups) {
+    const result = await request("tools/call", {
+      name: "call_read_tool",
+      arguments: { name: lookup.tool, arguments: lookup.arguments },
+    });
+    results.push(toolValue(result));
+  }
+  const docs = toolValue(
+    await request("tools/call", docsRequest(docsTool, task.docsQuery)),
+  );
+  const evidence = task.lookups.map(({ tool }) => ({
+    source: `mcp://tempo/${tool}`,
+    claim: `The ${tool} lookup completed for the task's fixed oracle input.`,
+  }));
   const answer = {
-    answer: `${taskName} oracle completed the fixed ${task.tool} lookup and a Tempo documentation search for ${task.docsQuery}. The live response is linked to the evidence entry.`,
-    sources: [firstUrl(docs)],
-    evidence: [
+    summary: `${taskName} oracle completed its fixed data lookups and Tempo documentation search.`,
+    observations: records(results[task.observation.lookup])
+      .slice(0, task.observation.count)
+      .map((record) => ({
+        subject: task.observation.subject ?? recordSubject(record),
+        details: `${task.lookups[task.observation.lookup].tool} returned ${JSON.stringify(record)}.`,
+        evidence_refs: [task.observation.lookup],
+      })),
+    inferences: [
       {
-        source: evidenceSource,
-        claim: `The ${task.tool} lookup completed for the task's fixed oracle input.`,
+        claim: `The observations are consistent with the documented ${task.docsQuery} behavior.`,
+        basis: "Fixed MCP data lookups and a Tempo documentation search.",
+        evidence_refs: evidence.map((_, index) => index),
       },
     ],
+    sources: [firstUrl(docs)],
+    evidence,
   };
   writeFileSync("/app/answer.json", `${JSON.stringify(answer)}\n`);
-  void data;
 }
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

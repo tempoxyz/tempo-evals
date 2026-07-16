@@ -4,7 +4,7 @@
 #
 #   1. task.toml declares [verifier] environment_mode = "separate"
 #   2. No [verifier].artifacts (it's a top-level field; nesting silently drops it)
-#   3. tests/Dockerfile exists (the verifier container's image spec)
+#   3. Agent and verifier Dockerfiles use a matching source-image pair
 #   4. tests/Dockerfile has a COPY (or ADD) into /tests (so test scripts are
 #      baked into the image, since harbor sets skip_tests_upload=True)
 #   5. tests/Dockerfile pre-creates parent dirs (e.g. RUN mkdir -p /app) for
@@ -18,14 +18,13 @@
 # the agent touched it. Separate mode runs the verifier in a fresh container
 # (built from tests/Dockerfile) that only sees explicitly declared artifacts,
 # providing real isolation.
-#
-# For a worked example of separate verifier mode, see tasks/hello-world/.
 
 set -e
 
-# Arguments: task directories (e.g., tasks/my-task) or no args to check all
+# Arguments: task directories (e.g., tasks/tempo-v1/my-task) or no args to
+# check every task in every suite.
 if [ $# -eq 0 ]; then
-    TASK_DIRS=$(find tasks -mindepth 1 -maxdepth 1 -type d)
+    TASK_DIRS=$(find tasks -mindepth 2 -maxdepth 2 -type d -exec test -f {}/task.toml \; -print)
 else
     TASK_DIRS=""
     for task_dir in "$@"; do
@@ -43,6 +42,7 @@ fi
 FAILED=0
 for task_dir in $TASK_DIRS; do
     toml="$task_dir/task.toml"
+    agent_dockerfile="$task_dir/environment/Dockerfile"
     verifier_dockerfile="$task_dir/tests/Dockerfile"
 
     if [ ! -f "$toml" ]; then
@@ -126,13 +126,25 @@ PYEOF
             ;;
     esac
 
-    if [ ! -f "$verifier_dockerfile" ]; then
-        echo "FAIL $task_dir: missing $verifier_dockerfile (verifier-container image spec)"
+    if [ ! -f "$agent_dockerfile" ] || [ ! -f "$verifier_dockerfile" ]; then
+        echo "FAIL $task_dir: missing agent or verifier Dockerfile"
         FAILED=1
         continue
     fi
 
-    # Step 2: Dockerfile must place test scripts at /tests via COPY or ADD.
+    # Step 2: Dockerfiles must use matching agent and verifier source images.
+    agent_ref=$(awk 'toupper($1) == "FROM" { ref = $2 } END { print ref }' "$agent_dockerfile")
+    verifier_ref=$(awk 'toupper($1) == "FROM" { ref = $2 } END { print ref }' "$verifier_dockerfile")
+    if ! printf '%s\n' "$agent_ref" | grep -Eq '^.+:agent-source-[0-9a-f]{64}$' \
+        || ! printf '%s\n' "$verifier_ref" | grep -Eq '^.+:verifier-source-[0-9a-f]{64}$' \
+        || [ "${agent_ref%:agent-source-*}" != "${verifier_ref%:verifier-source-*}" ] \
+        || [ "${agent_ref##*:agent-source-}" != "${verifier_ref##*:verifier-source-}" ]; then
+        echo "FAIL $task_dir: Dockerfiles must use a matching agent/verifier source pair"
+        FAILED=1
+        continue
+    fi
+
+    # Step 3: Dockerfile must place test scripts at /tests via COPY or ADD.
     # Accept any line that uses /tests (with optional trailing slash) as a
     # destination of a COPY or ADD instruction.
     if ! grep -qE '^\s*(COPY|ADD)\b.*[[:space:]]/tests(/|$|[[:space:]])' "$verifier_dockerfile"; then
@@ -141,7 +153,7 @@ PYEOF
         continue
     fi
 
-    # Step 3: Dockerfile must pre-create parent dirs for declared artifacts.
+    # Step 4: Dockerfile must pre-create parent dirs for declared artifacts.
     # Extract parent paths emitted by the TOML step.
     PARENTS=$(echo "$TOML_RESULT" | sed -n 's|^PARENT:||p')
     MISSING_PARENTS=""
@@ -167,11 +179,9 @@ if [ $FAILED -eq 1 ]; then
     echo "Required:"
     echo "  1. Set in task.toml:    [verifier] environment_mode = \"separate\""
     echo "  2. Put artifacts = [...] at the TOP LEVEL of task.toml (not under [verifier])"
-    echo "  3. Provide a verifier Dockerfile at tests/Dockerfile"
-    echo "  4. The Dockerfile must COPY/ADD the test scripts into /tests/"
-    echo "  5. The Dockerfile must 'RUN mkdir -p' for every declared artifact's parent dir"
-    echo ""
-    echo "See tasks/hello-world/ for a worked example of separate verifier mode."
+    echo "  3. Use matching source-image refs in the agent and verifier Dockerfiles"
+    echo "  4. The verifier Dockerfile must COPY/ADD the test scripts into /tests/"
+    echo "  5. The verifier Dockerfile must 'RUN mkdir -p' for every artifact parent dir"
     exit 1
 fi
 

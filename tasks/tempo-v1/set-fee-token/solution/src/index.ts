@@ -10,16 +10,20 @@ function required(name: string): string {
   return value;
 }
 
+const RECEIPT_TIMEOUT = 60_000;
+const transport = http(undefined, { timeout: RECEIPT_TIMEOUT + 5_000 });
+const wait = { timeout: RECEIPT_TIMEOUT };
+
 const account = privateKeyToAccount(generatePrivateKey());
 const feeToken = required("TEMPO_FEE_TOKEN") as Address;
 const client = createClient({
   account,
   chain: tempoTestnet,
-  transport: http(),
+  transport,
 });
 
-await Actions.faucet.fundSync(client, { account: account.address });
-const result = await Actions.fee.setUserTokenSync(client, { token: feeToken });
+await Actions.faucet.fundSync(client, { account: account.address, ...wait });
+const result = await Actions.fee.setUserTokenSync(client, { token: feeToken, ...wait });
 if (result.receipt.status !== "success") throw new Error("set fee token failed");
 
 const output = {

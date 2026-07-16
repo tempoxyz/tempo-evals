@@ -57,7 +57,7 @@ async function main() {
   const viemClient = createClient({
     account,
     chain: Chain.testnet,
-    transport: http(process.env.MPPX_RPC_URL),
+    transport: http(process.env.MPPX_RPC_URL, { retryCount: 0, timeout: 65_000 }),
   });
 
   McpClient.wrap(client, {
@@ -71,10 +71,14 @@ async function main() {
     onPaymentRequired: () => true,
   });
 
-  const paid = await client.callTool({
-    name: process.env.TEMPO_MPP_PAID_TOOL,
-    arguments: {},
-  });
+  const paid = await client.callTool(
+    {
+      name: process.env.TEMPO_MPP_PAID_TOOL,
+      arguments: {},
+    },
+    undefined,
+    { timeout: 90_000 },
+  );
   await client.close();
   if (
     !Array.isArray(paid.content) ||

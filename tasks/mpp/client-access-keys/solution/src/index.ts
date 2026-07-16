@@ -1,9 +1,10 @@
 import { writeFileSync } from "node:fs";
 import { Receipt } from "mppx";
 import { Mppx, tempo } from "mppx/client";
-import { createClient, http } from "viem";
+import { createClient } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { Chain } from "viem/tempo";
+import { tempoRpcTransport } from "./tempo-rpc.js";
 
 const paidUrl = process.env.PAID_URL;
 const privateKey = process.env.TEMPO_MPP_PAYER_PRIVATE_KEY;
@@ -15,7 +16,7 @@ const account = privateKeyToAccount(privateKey as `0x${string}`);
 const client = createClient({
   account,
   chain: Chain.testnet,
-  transport: http(process.env.MPPX_RPC_URL),
+  transport: tempoRpcTransport,
 });
 
 const mppx = Mppx.create({

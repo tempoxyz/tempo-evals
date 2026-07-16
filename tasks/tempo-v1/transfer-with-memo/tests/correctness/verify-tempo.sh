@@ -30,7 +30,7 @@ write_exception_artifact() {
 if [ ! -f "$VERIFIER" ]; then
   write_exception_artifact \
     "grader" \
-    "missing baked Tempo verifier: $VERIFIER (rebuild the tempo-bench base image)"
+    "missing Tempo verifier: $VERIFIER (rebuild the tempo-bench verifier image)"
   exit 1
 fi
 

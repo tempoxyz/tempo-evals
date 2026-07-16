@@ -1,6 +1,6 @@
 schema_version = "1.3"
 
-artifacts = ["/app/package.json", "/app/src"]
+artifacts = [{ source = "/app", exclude = ["node_modules"] }, "/logs/agent/trajectory.json"]
 
 [task]
 name = "tempo/mpp-server-x402-mpp-charges"
@@ -15,8 +15,8 @@ dataset = "mpp-bench-v1"
 benchmark = "mpp-bench-v1"
 
 [verifier]
-timeout_sec = 300.0
-environment_mode = "shared"
+timeout_sec = 900.0
+environment_mode = "separate"
 
 [agent]
 timeout_sec = 900.0

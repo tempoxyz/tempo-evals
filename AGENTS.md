@@ -34,7 +34,7 @@ of the evaluation contract.
 
 ## Sources of Truth and Generated Files
 
-Task directories are authored source. The access profiles, base-image reference,
+Task directories are authored source. The access profiles, image references,
 and shared MPP synchronization rules live in `config/tasks.yaml`; benchmark
 identities live in `config/benchmarks.yaml`. Job configs in `config/generated/`
 are compiled from `config/job.yaml.j2`, `config/variants.yaml`,
@@ -45,10 +45,11 @@ not hand-edit generated MPP harness copies or generated job configs. A suite
 README identifies any additional generated files and its canonical authoring
 location.
 
-All task environments extend the shared base image in
-`shared/global/docker/base/Dockerfile`. Local runs build it from the checkout;
-Daytona runs require an explicit CI-published image. Keep the configured base
-image tag stable within a benchmark major; only bump it for a new major version.
+Agent environments extend `shared/global/docker/agent/Dockerfile`; verifier
+environments extend `shared/global/docker/verifier/Dockerfile`. Local runs build
+both from the checkout. Daytona runs require both CI-published image refs, built
+under the same source tag. Trusted same-repository pull requests and `main`
+publish write-once image pairs; fork pull requests only build them locally.
 
 ## Authoring Rules
 

@@ -32,22 +32,12 @@ check_task_separate_verifier() {
 
     [ -f "$task_toml" ] || return 1
 
-    python3 - "$task_toml" <<'PYEOF'
-import sys
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import tomli as tomllib  # type: ignore
-try:
-    with open(sys.argv[1], "rb") as f:
-        data = tomllib.load(f)
-except Exception:
-    sys.exit(1)
-verifier = data.get("verifier", {})
-if verifier.get("environment_mode") == "separate" or verifier.get("environment") is not None:
-    sys.exit(0)
-sys.exit(1)
-PYEOF
+    awk '
+        /^[[:space:]]*\[verifier\][[:space:]]*(#.*)?$/ { in_verifier = 1; next }
+        /^[[:space:]]*\[/ { in_verifier = 0 }
+        in_verifier && /^[[:space:]]*environment_mode[[:space:]]*=[[:space:]]*"separate"[[:space:]]*(#.*)?$/ { found = 1 }
+        END { exit found ? 0 : 1 }
+    ' "$task_toml"
 }
 
 # Function to check a single test.sh file

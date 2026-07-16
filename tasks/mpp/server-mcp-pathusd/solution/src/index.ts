@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { Transport as MppMcpTransport } from "mppx/mcp/server";
 import { Mppx, tempo } from "mppx/server";
+import { tempoRpcClient } from "./tempo-rpc.js";
 
 const port = Number(process.env.PORT ?? "3000");
 const mcpPath = "/mcp";
@@ -17,6 +18,7 @@ const mppx = Mppx.create({
   methods: [
     tempo.charge({
       currency: pathUsd,
+      getClient: () => tempoRpcClient,
       recipient,
       testnet: true,
     }),

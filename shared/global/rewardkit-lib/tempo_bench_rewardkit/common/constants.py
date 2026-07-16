@@ -1,4 +1,4 @@
-# Baked into the tempo-bench base image as part of the tempo-bench-rewardkit
+# Installed in the verifier image as part of the tempo-bench-rewardkit
 # package.
 import os
 from enum import IntEnum, StrEnum

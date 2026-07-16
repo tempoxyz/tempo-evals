@@ -3,6 +3,7 @@ import { writeFileSync } from "node:fs";
 import { generate } from "mppx/discovery";
 import { Mppx, NodeListener, Request as ServerRequest, tempo } from "mppx/server";
 import { parseUnits } from "viem";
+import { tempoRpcClient } from "./tempo-rpc.js";
 
 const port = Number(process.env.PORT ?? "3000");
 const paidPath = "/paid";
@@ -16,6 +17,7 @@ const mppx = Mppx.create({
   methods: [
     tempo.charge({
       currency: pathUsd,
+      getClient: () => tempoRpcClient,
       recipient,
       testnet: true,
     }),

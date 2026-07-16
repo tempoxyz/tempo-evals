@@ -33,8 +33,8 @@ class McpEvalValidationTest(unittest.TestCase):
         self.assertTrue(
             has_required_tool_mix(
                 [
-                    {"allowed": True, "tool": "v1_blocks_get"},
-                    {"allowed": True, "tool": "docs_code"},
+                    {"allowed": True, "succeeded": True, "tool": "v1_blocks_get"},
+                    {"allowed": True, "succeeded": True, "tool": "docs_code"},
                 ]
             )
         )
@@ -43,19 +43,31 @@ class McpEvalValidationTest(unittest.TestCase):
         self.assertFalse(
             has_required_tool_mix(
                 [
-                    {"allowed": True, "tool": "v1_blocks_get"},
-                    {"allowed": False, "tool": "docs_code"},
+                    {"allowed": True, "succeeded": True, "tool": "v1_blocks_get"},
+                    {"allowed": False, "succeeded": False, "tool": "docs_code"},
                 ]
             )
         )
+
+    def test_rejects_failed_calls(self) -> None:
+        events = [
+            {"allowed": True, "succeeded": False, "tool": "v1_blocks_get"},
+            {"allowed": True, "succeeded": True, "tool": "docs_code"},
+        ]
+        self.assertFalse(has_required_tool_mix(events))
+        self.assertEqual(used_data_tools(events), set())
 
     def test_returns_only_allowed_data_tools(self) -> None:
         self.assertEqual(
             used_data_tools(
                 [
-                    {"allowed": True, "tool": "v1_blocks_get"},
-                    {"allowed": True, "tool": "docs_code"},
-                    {"allowed": False, "tool": "v1_transactions_get"},
+                    {"allowed": True, "succeeded": True, "tool": "v1_blocks_get"},
+                    {"allowed": True, "succeeded": True, "tool": "docs_code"},
+                    {
+                        "allowed": False,
+                        "succeeded": False,
+                        "tool": "v1_transactions_get",
+                    },
                 ]
             ),
             {"v1_blocks_get"},
@@ -65,6 +77,7 @@ class McpEvalValidationTest(unittest.TestCase):
         events = [
             {
                 "allowed": True,
+                "succeeded": True,
                 "tool": "v1_blocks_get",
                 "arguments": {"number": 1},
                 "response_sha256": "response",
@@ -98,7 +111,7 @@ class McpEvalValidationTest(unittest.TestCase):
         )
 
     def test_evidence_accepts_injected_mcp_server_names(self) -> None:
-        events = [{"allowed": True, "tool": "v1_blocks_get"}]
+        events = [{"allowed": True, "succeeded": True, "tool": "v1_blocks_get"}]
         for source in (
             "mcp://tempo/v1_blocks_get",
             "mcp://tempo-direct/v1_blocks_get",
@@ -146,7 +159,7 @@ class McpEvalValidationTest(unittest.TestCase):
         self,
     ) -> None:
         result = validated_data_evidence(
-            [{"allowed": True, "tool": "v1_blocks_get"}],
+            [{"allowed": True, "succeeded": True, "tool": "v1_blocks_get"}],
             [
                 {
                     "source": "mcp://tempo/v1_blocks_get",
@@ -180,7 +193,7 @@ class McpEvalValidationTest(unittest.TestCase):
 
     def test_docs_only_evidence_does_not_satisfy_data_provenance(self) -> None:
         result = validated_data_evidence(
-            [{"allowed": True, "tool": "docs_code"}],
+            [{"allowed": True, "succeeded": True, "tool": "docs_code"}],
             [{"source": "mcp://tempo/docs_code", "claim": "Documentation claim."}],
         )
         self.assertEqual(result["evidence"], [])
@@ -191,7 +204,7 @@ class McpEvalValidationTest(unittest.TestCase):
 
     def test_evidence_rejects_an_exploratory_tool(self) -> None:
         result = validated_data_evidence(
-            [{"allowed": True, "tool": "v1_blocks_get"}],
+            [{"allowed": True, "succeeded": True, "tool": "v1_blocks_get"}],
             [
                 {
                     "source": "mcp://tempo/v1_transactions_get",
@@ -231,7 +244,7 @@ class McpEvalValidationTest(unittest.TestCase):
             "inferences": [{"claim": "The fee was sponsored.", "basis": "Fee payer."}],
             "sources": ["https://docs.tempo.xyz/"],
         }
-        events = [{"allowed": True, "tool": "v1_transactions_get"}]
+        events = [{"allowed": True, "succeeded": True, "tool": "v1_transactions_get"}]
 
         self.assertEqual(expected_answer_errors(answer, expected, events), [])
         self.assertEqual(
@@ -353,7 +366,13 @@ class McpEvalValidationTest(unittest.TestCase):
             expected_answer_errors(
                 answer,
                 expected,
-                [{"allowed": True, "tool": "v1_transactions_transactionHash_get"}],
+                [
+                    {
+                        "allowed": True,
+                        "succeeded": True,
+                        "tool": "v1_transactions_transactionHash_get",
+                    }
+                ],
             ),
             [],
         )
