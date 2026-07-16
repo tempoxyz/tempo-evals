@@ -68,13 +68,14 @@ independent Harbor job that can be retried and published separately.
 
 `bench:matrix:dev` reads `config/models.dev.yaml` and runs Haiku 4.5 once over
 every matching task. `bench:matrix:production` reads
-`config/models.production.yaml` and runs Haiku 4.5, Sonnet 5, GPT-5.4 mini, and
-GPT-5.4 three times per task. Both commands run the full Tempo suite unless
+`config/models.production.yaml` and runs Fable 5, Opus 4.8, Haiku 4.5,
+Sonnet 5, GPT-5.4 mini, GPT-5.6 Sol, GPT-5.5 Pro, GPT-5.6 Terra, and GPT-5.6
+Luna three times per task. Both commands run the full Tempo suite unless
 `--task-filter` is provided. `--concurrency` applies independently to each
-profile job. Because `--profile all` runs the two profile jobs in parallel,
-the default `--concurrency 16` allows up to 16 trials in each job, or 32 across
-the pair.
-The model configs use a per-provider, per-profile agent concurrency cap of 16.
+profile job. Because `--profile all` runs the two profile jobs in parallel, the
+production default of 8 allows up to 8 trials in each job, or 16 across the
+pair. The production model config uses a per-provider, per-profile agent
+concurrency cap of 4.
 
 ```bash
 # Clean local oracle validation for the suite.
@@ -104,7 +105,7 @@ npm run bench:matrix:dev -- --task-suite tempo --profile mcp \
   --task-filter transfer-with-memo \
   --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 
-# Full four-model, three-attempt production suite with both profiles.
+# Full nine-model, three-attempt production suite with both profiles.
 npm run bench:matrix:production -- --task-suite tempo --profile all \
   --agent-image "$AGENT_IMAGE" --verifier-image "$VERIFIER_IMAGE"
 
