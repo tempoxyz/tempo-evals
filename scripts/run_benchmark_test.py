@@ -307,9 +307,16 @@ class RunBenchmarkTest(unittest.TestCase):
             Path(config["jobs_dir"]) / config["job_name"], Path("jobs") / run_id
         )
         self.assertEqual(job["n_attempts"], 1)
+        self.assertEqual(job["n_concurrent_trials"], 16)
         self.assertEqual(
             production_job("test-run", production_model_config(), {})["n_attempts"],
             3,
+        )
+        self.assertEqual(
+            production_job("test-run", production_model_config(), {"concurrency": "8"})[
+                "n_concurrent_trials"
+            ],
+            8,
         )
         with (
             patch(
