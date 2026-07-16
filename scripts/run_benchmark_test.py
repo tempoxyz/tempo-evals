@@ -283,7 +283,7 @@ class RunBenchmarkTest(unittest.TestCase):
             production["judge_model"], "anthropic/claude-haiku-4-5-20251001"
         )
         self.assertIsNone(dev["n_concurrent_trials"])
-        self.assertEqual(production["n_concurrent_trials"], "8")
+        self.assertEqual(production["n_concurrent_trials"], "16")
         self.assertEqual(
             [model["model_name"] for model in production["models"]],
             [
@@ -300,10 +300,10 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual([model["n_concurrent"] for model in dev["models"]], ["16"])
         self.assertEqual(
             [model["n_concurrent"] for model in production["models"]],
-            ["4"] * 8,
+            ["16"] * 8,
         )
         self.assertEqual(
-            production_job("test-run", production, {})["n_concurrent_trials"], 8
+            production_job("test-run", production, {})["n_concurrent_trials"], 16
         )
         self.assertEqual(
             [
