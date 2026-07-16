@@ -38,14 +38,14 @@ tasks/tempo-v1/<task>/
     └── quality/             # RewardKit quality checks and weights
 ```
 
-The task test script first runs the independent onchain verifier. A scored
-onchain failure writes a zero Harbor reward and skips RewardKit. On success,
-RewardKit's static correctness criteria run first and must all pass or the
-complete reward is zero without invoking the quality judge. The published
-`correctness` is therefore binary. Passing submissions receive 50% correctness
-plus 50% of RewardKit's aggregate `quality` score, which includes the LLM rubric
-and trajectory diagnostics. Missing quality configuration or a RewardKit
-execution/configuration error produces no reward.
+The task first runs the independent onchain verifier. A scored onchain failure
+publishes `correctness = 0`, `quality = 0`, and `reward = 0`, then skips
+RewardKit. On success, Harbor receives `correctness = 1`. Published `quality`
+is the mean of RewardKit's static code score and its aggregate LLM and
+trajectory quality score. Harbor then publishes
+`reward = (correctness + quality) / 2`, which is equivalent to
+`0.5 * correctness + 0.25 * code + 0.25 * aggregate quality`. Missing quality
+configuration or a RewardKit execution/configuration error produces no reward.
 
 The benchmark job injects access rather than changing task source. For requests
 made from within the task sandbox:

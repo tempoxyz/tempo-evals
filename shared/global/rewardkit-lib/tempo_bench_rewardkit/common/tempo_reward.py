@@ -23,17 +23,16 @@ def _score(output: dict[str, Any], key: str) -> float:
 def compose_reward(
     rewardkit_output: dict[str, Any],
 ) -> dict[str, float | int]:
-    correctness = _score(rewardkit_output, "correctness")
-    if correctness != 1:
-        return dict(ZERO_REWARD)
-
-    # RewardKit's aggregate `reward` is intentionally ignored because it also
-    # includes the correctness dimension and would count it twice here.
-    quality = _score(rewardkit_output, "quality")
+    # The onchain verifier already passed. Harbor correctness is therefore 1,
+    # while RewardKit's code and aggregate scores together form Harbor quality.
+    correctness = 1
+    code_score = _score(rewardkit_output, "correctness")
+    aggregate_quality = _score(rewardkit_output, "quality")
+    quality = round((code_score + aggregate_quality) / 2, 4)
     return {
-        "correctness": 1,
+        "correctness": correctness,
         "quality": quality,
-        "reward": round(0.5 + 0.5 * quality, 4),
+        "reward": round((correctness + quality) / 2, 4),
     }
 
 
@@ -45,12 +44,3 @@ def write_reward(
     if not isinstance(rewardkit_output, dict):
         raise ValueError("RewardKit output must be a JSON object")
     output_path.write_text(f"{json.dumps(compose_reward(rewardkit_output))}\n")
-
-
-def write_correctness_gate(rewardkit_path: Path, output_path: Path) -> None:
-    rewardkit_output = json.loads(rewardkit_path.read_text())
-    if not isinstance(rewardkit_output, dict):
-        raise ValueError("RewardKit output must be a JSON object")
-    output_path.unlink(missing_ok=True)
-    if _score(rewardkit_output, "correctness") != 1:
-        output_path.write_text(f"{json.dumps(ZERO_REWARD)}\n")

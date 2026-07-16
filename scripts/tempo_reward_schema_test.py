@@ -26,18 +26,26 @@ class RewardSchemaTest(unittest.TestCase):
         self.assertLessEqual(len(wrapper.splitlines()), 9)
         self.assertIn("tempo_bench_rewardkit.tempo.verifier", wrapper)
 
-    def test_tempo_reward_is_correctness_gated_and_evenly_weighted(self) -> None:
-        for quality, expected in ((0, 0.5), (0.6, 0.8), (1, 1)):
-            with self.subTest(quality=quality):
+    def test_tempo_reward_combines_code_and_aggregate_quality(self) -> None:
+        for code_score, aggregate_quality, quality, reward in (
+            (0, 0, 0, 0.5),
+            (0, 1, 0.5, 0.75),
+            (0.6, 0.8, 0.7, 0.85),
+            (1, 1, 1, 1),
+        ):
+            with self.subTest(
+                code_score=code_score, aggregate_quality=aggregate_quality
+            ):
                 self.assertEqual(
                     compose_reward(
-                        {"correctness": 1, "quality": quality, "reward": 0.123}
+                        {
+                            "correctness": code_score,
+                            "quality": aggregate_quality,
+                            "reward": 0.123,
+                        }
                     ),
-                    {"correctness": 1, "quality": quality, "reward": expected},
+                    {"correctness": 1, "quality": quality, "reward": reward},
                 )
-        self.assertEqual(
-            compose_reward({"correctness": 0.75, "quality": 1}), ZERO_REWARD
-        )
         with self.assertRaises(ValueError):
             compose_reward({"correctness": 1, "reward": 1})
 
@@ -54,7 +62,7 @@ class RewardSchemaTest(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIsNone(reward)
 
-    def test_tempo_static_failure_skips_quality(self) -> None:
+    def test_tempo_static_failure_contributes_to_quality(self) -> None:
         quality_check = (
             "import os\nfrom pathlib import Path\nimport rewardkit as rk\n"
             "@rk.criterion\ndef quality(workspace: Path) -> float:\n"
@@ -62,11 +70,14 @@ class RewardSchemaTest(unittest.TestCase):
             "    return 1\n"
         )
         result, reward, quality_ran = self._run_tempo(
-            "exit 0\n", correctness=0, quality_check=quality_check
+            "exit 0\n",
+            correctness=0,
+            quality_config='[scoring]\naggregation = "weighted_mean"\n',
+            quality_check=quality_check,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(reward, ZERO_REWARD)
-        self.assertFalse(quality_ran)
+        self.assertEqual(reward, {"correctness": 1, "quality": 0.5, "reward": 0.75})
+        self.assertTrue(quality_ran)
 
     def test_tempo_missing_quality_config_is_a_verifier_error(self) -> None:
         result, reward, _ = self._run_tempo(
