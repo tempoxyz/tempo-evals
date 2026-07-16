@@ -128,7 +128,9 @@ per-profile model caps.
 
 Production model configs pin the candidate and judge model IDs. The runner also
 requires a clean checkout and a full docs SHA, then records `TEMPO_EVALS_SHA`
-and `TEMPO_DOCS_SHA` in Harbor's generated `lock.json`.
+and `TEMPO_DOCS_SHA` in Harbor's generated `lock.json`. Production runs retry
+transient trial and setup failures up to four times by default; use
+`--max-retries` to override that limit.
 
 Jobs are written under `jobs/` and are not uploaded automatically:
 

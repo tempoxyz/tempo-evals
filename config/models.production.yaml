@@ -40,11 +40,6 @@ models:
     concurrency_group: openai
 
   - agent: codex
-    model_name: gpt-5.5-pro-2026-04-23
-    n_concurrent: 4
-    concurrency_group: openai
-
-  - agent: codex
     model_name: gpt-5.6-terra
     n_concurrent: 4
     concurrency_group: openai

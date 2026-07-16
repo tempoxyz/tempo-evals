@@ -100,7 +100,7 @@ Options:
                           (default: model config value, otherwise 16)
   --agent-concurrency N   Override per-profile agent concurrency pools
   --max-retries N         Retry transient trial/setup failures
-                          (default: 2 for Daytona runs)
+                          (default: 4 for production, 2 for other Daytona runs)
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and config variants
@@ -633,7 +633,7 @@ def run_production_variant(
     rendered = render_job_config(job, benchmark=None)
     rendered["verifier"]["env"].update(production_revision_env(options))
     config = stage_daytona_config(rendered, run_id, docs_bundle, options)
-    max_retries = options.get("max_retries") or "2"
+    max_retries = options.get("max_retries") or "4"
     args = ["run", "harbor", "run", "-c", config]
     if options.get("env_file"):
         args.extend(["--env-file", options["env_file"]])
