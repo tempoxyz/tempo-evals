@@ -3,48 +3,48 @@
 # Models from one provider share a per-profile `n_concurrent` pool.
 # `--agent-concurrency N` overrides these limits for the run.
 judge_model: anthropic/claude-haiku-4-5-20251001
-n_concurrent_trials: 8
+n_concurrent_trials: 16
 
 models:
   - agent: claude-code
     # Fable 5 uses a canonical ID without a snapshot date.
     model_name: claude-fable-5
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: anthropic
 
   - agent: claude-code
     # Opus 4.8 uses a canonical ID without a snapshot date.
     model_name: claude-opus-4-8
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: anthropic
 
   - agent: claude-code
     model_name: claude-haiku-4-5-20251001
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: anthropic
 
   - agent: claude-code
     # Sonnet 5 uses an immutable canonical ID without a snapshot date.
     model_name: claude-sonnet-5
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: anthropic
 
   - agent: codex
     model_name: gpt-5.4-mini-2026-03-17
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: openai
 
   - agent: codex
     model_name: gpt-5.6-sol
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: openai
 
   - agent: codex
     model_name: gpt-5.6-terra
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: openai
 
   - agent: codex
     model_name: gpt-5.6-luna
-    n_concurrent: 4
+    n_concurrent: 16
     concurrency_group: openai
