@@ -282,19 +282,36 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual(
             production["judge_model"], "anthropic/claude-haiku-4-5-20251001"
         )
+        self.assertIsNone(dev["n_concurrent_trials"])
+        self.assertEqual(production["n_concurrent_trials"], "8")
         self.assertEqual(
             [model["model_name"] for model in production["models"]],
             [
+                "claude-fable-5",
+                "claude-opus-4-8",
                 "claude-haiku-4-5-20251001",
                 "claude-sonnet-5",
                 "gpt-5.4-mini-2026-03-17",
-                "gpt-5.4-2026-03-05",
+                "gpt-5.6-sol",
+                "gpt-5.5-pro-2026-04-23",
+                "gpt-5.6-terra",
+                "gpt-5.6-luna",
             ],
         )
         self.assertEqual([model["n_concurrent"] for model in dev["models"]], ["16"])
         self.assertEqual(
             [model["n_concurrent"] for model in production["models"]],
-            ["16", "16", "16", "16"],
+            ["4"] * 9,
+        )
+        self.assertEqual(
+            production_job("test-run", production, {})["n_concurrent_trials"], 8
+        )
+        self.assertEqual(
+            [
+                (model["agent"], model["concurrency_group"])
+                for model in production["models"]
+            ],
+            [("claude-code", "anthropic")] * 4 + [("codex", "openai")] * 5,
         )
 
     def test_production_profiles_prepare_shared_inputs_once(self) -> None:

@@ -97,7 +97,7 @@ Options:
   --n-attempts N          Override production attempts per task and model
                           (default: 3)
   --concurrency N         Override n_concurrent_trials per profile job
-                          (default: 16 for production runs)
+                          (default: model config value, otherwise 16)
   --agent-concurrency N   Override per-profile agent concurrency pools
   --max-retries N         Retry transient trial/setup failures
                           (default: 2 for Daytona runs)
@@ -405,7 +405,14 @@ def parse_model_config(file_path: str, agent_concurrency: str | None) -> dict[st
     judge_model = parsed.get("judge_model", PINNED_JUDGE_MODEL)
     if not isinstance(judge_model, str) or not judge_model:
         raise RuntimeError(f"Invalid judge_model in {file_path}")
-    return {"judge_model": judge_model, "models": models}
+    n_concurrent_trials = validate_optional_positive_integer(
+        string_field(parsed, "n_concurrent_trials"), "n_concurrent_trials"
+    )
+    return {
+        "judge_model": judge_model,
+        "n_concurrent_trials": n_concurrent_trials,
+        "models": models,
+    }
 
 
 def normalize_production_model(
@@ -599,7 +606,11 @@ def production_job(
         "job_name": job_dir.name,
         "jobs_dir": str(job_dir.parent),
         "n_attempts": int(options.get("n_attempts") or "3"),
-        "n_concurrent_trials": int(options.get("concurrency") or "16"),
+        "n_concurrent_trials": int(
+            options.get("concurrency")
+            or model_config.get("n_concurrent_trials")
+            or "16"
+        ),
         "environment_type": "daytona",
         "force_build": False,
         "judge_model": model_config["judge_model"],
