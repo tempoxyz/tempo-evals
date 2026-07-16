@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:5a9377fcba6850654a929929213378f1d82fdf21203ebdb0d628ffe44af1d5b2"
+digest = "sha256:90ce7d1d1e2c95ea4db70844bb3f790e5302b403ab357f1b18d26218b896b425"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:9646a14cddf93f3eb4595db54738281f9c07edf65438ffc5c26a95d21ec5a4df"
+digest = "sha256:3df6fa406aa1334966c1bcd8c256f0c40c78b1457f6295fe782bcb711bcfa015"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:c7aabaa60ce41de3ef481e52d451e3efc5d2f3605094101943104f141278296d"
+digest = "sha256:09a28f149706d2964828ecf63d028b7489dea3eab681406951aaf84bae079f47"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:47efb7264bd6b39833f0ccda3c03aab8350b6b60ca81e370f5d6bb1598db42c3"
+digest = "sha256:cbb716387de07d16cf7e51710e2943b5d1d5d40d9b0d582b8309faf168e71011"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:981b9700bdc8a68da0d51da1bae26dc5fb89c391f5b935ea2dcf09e26b5ae1f9"
+digest = "sha256:a6e2f1d806b19713fd1f16d89dddd2e42fa01a8f2cfbc918c6fb0ceecc01f0bd"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:b5c46b119012619b69d65c27bf007a803e93cf4598f32a98507c39ee29d3e9df"
+digest = "sha256:5f24f67c65d95d5281b42752cee48225f41cbba2cf8c5e96edf66de8269adf67"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:c72e32ab76963bff7ed6f6cc5ba64fecfa6e485bbba03420847c32d37cbd8a78"
+digest = "sha256:2c73a9006a1786145af3a0ded05c6fcce81c047f9062c4f532b58eca94fc1139"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:be2fa8768fed7a9ca81ac24124321fd03f802541d48dd8d76403af6c9593f325"
+digest = "sha256:dcb1defe98fbcb9750bf1054ee10af65a1458a94b57fdfbc7c0a8460fd4526f9"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:b7dc7264e3e717cafb1bce859e78ef48379f8b2a842fb490fcdd8464d29256de"
+digest = "sha256:9e3edfc7ef6d179704e56cde38896cc5c260dbd6aaa1bd4d1d51ac7fc5424c7a"
 

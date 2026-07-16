@@ -41,11 +41,11 @@ tasks/tempo-v1/<task>/
 ```
 
 Harbor transfers the declared submission artifacts into a separate verifier
-environment. The task first runs the independent onchain verifier. A scored onchain failure
-publishes `correctness = 0`, `quality = 0`, and `reward = 0`, then skips
-RewardKit. On success, Harbor receives `correctness = 1`. Published `quality`
-is the mean of RewardKit's static code score and its aggregate LLM and
-trajectory quality score. Harbor then publishes
+environment. The task first runs the independent onchain verifier. A scored
+onchain failure publishes `correctness = 0`, `quality = 0`, and `reward = 0`,
+then skips RewardKit. On success, Harbor receives `correctness = 1`. Published
+`quality` is the mean of RewardKit's static code score and its aggregate LLM
+and trajectory quality score. Harbor then publishes
 `reward = (correctness + quality) / 2`, which is equivalent to
 `0.5 * correctness + 0.25 * code + 0.25 * aggregate quality`. Missing quality
 configuration or a RewardKit execution/configuration error produces no reward.

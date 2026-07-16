@@ -21,6 +21,7 @@ exceptions:
   #
   # Changing those contracts in place would invalidate historical benchmark
   # comparisons, so each current task is explicitly grandfathered instead.
+  # Separate verifier is intentionally not exempted: all current tasks migrated.
   legacy-task-contracts:
     checks:
       - check-canary.sh
