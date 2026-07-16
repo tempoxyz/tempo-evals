@@ -26,11 +26,13 @@ class RewardSchemaTest(unittest.TestCase):
         self.assertLessEqual(len(wrapper.splitlines()), 9)
         self.assertIn("tempo_bench_rewardkit.tempo.verifier", wrapper)
 
-    def test_tempo_reward_combines_code_and_aggregate_quality(self) -> None:
+    def test_tempo_reward_equals_combined_quality_after_functional_success(
+        self,
+    ) -> None:
         for code_score, aggregate_quality, quality, reward in (
-            (0, 0, 0, 0.5),
-            (0, 1, 0.5, 0.75),
-            (0.6, 0.8, 0.7, 0.85),
+            (0, 0, 0, 0),
+            (0, 1, 0.5, 0.5),
+            (0.6, 0.8, 0.7, 0.7),
             (1, 1, 1, 1),
         ):
             with self.subTest(
@@ -76,7 +78,7 @@ class RewardSchemaTest(unittest.TestCase):
             quality_check=quality_check,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(reward, {"correctness": 1, "quality": 0.5, "reward": 0.75})
+        self.assertEqual(reward, {"correctness": 1, "quality": 0.5, "reward": 0.5})
         self.assertTrue(quality_ran)
 
     def test_tempo_missing_quality_config_is_a_verifier_error(self) -> None:

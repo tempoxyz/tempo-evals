@@ -32,7 +32,7 @@ def compose_reward(
     return {
         "correctness": correctness,
         "quality": quality,
-        "reward": round((correctness + quality) / 2, 4),
+        "reward": quality,
     }
 
 

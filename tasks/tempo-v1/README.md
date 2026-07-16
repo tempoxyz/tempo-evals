@@ -45,10 +45,10 @@ environment. The task first runs the independent onchain verifier. A scored
 onchain failure publishes `correctness = 0`, `quality = 0`, and `reward = 0`,
 then skips RewardKit. On success, Harbor receives `correctness = 1`. Published
 `quality` is the mean of RewardKit's static code score and its aggregate LLM
-and trajectory quality score. Harbor then publishes
-`reward = (correctness + quality) / 2`, which is equivalent to
-`0.5 * correctness + 0.25 * code + 0.25 * aggregate quality`. Missing quality
-configuration or a RewardKit execution/configuration error produces no reward.
+and trajectory quality score. Harbor then publishes `reward = quality`, so
+functional correctness gates the reward without contributing additional
+weight. Missing quality configuration or a RewardKit execution/configuration
+error produces no reward.
 
 The benchmark job injects access rather than changing task source. For requests
 made from within the task sandbox:
