@@ -293,7 +293,6 @@ class RunBenchmarkTest(unittest.TestCase):
                 "claude-sonnet-5",
                 "gpt-5.4-mini-2026-03-17",
                 "gpt-5.6-sol",
-                "gpt-5.5-pro-2026-04-23",
                 "gpt-5.6-terra",
                 "gpt-5.6-luna",
             ],
@@ -301,7 +300,7 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual([model["n_concurrent"] for model in dev["models"]], ["16"])
         self.assertEqual(
             [model["n_concurrent"] for model in production["models"]],
-            ["4"] * 9,
+            ["4"] * 8,
         )
         self.assertEqual(
             production_job("test-run", production, {})["n_concurrent_trials"], 8
@@ -311,7 +310,7 @@ class RunBenchmarkTest(unittest.TestCase):
                 (model["agent"], model["concurrency_group"])
                 for model in production["models"]
             ],
-            [("claude-code", "anthropic")] * 4 + [("codex", "openai")] * 5,
+            [("claude-code", "anthropic")] * 4 + [("codex", "openai")] * 4,
         )
 
     def test_production_profiles_prepare_shared_inputs_once(self) -> None:
@@ -446,7 +445,7 @@ class RunBenchmarkTest(unittest.TestCase):
             patch(
                 "scripts.run_benchmark.stage_daytona_config", return_value="job.yaml"
             ) as stage,
-            patch("scripts.run_benchmark.run_status", return_value=0),
+            patch("scripts.run_benchmark.run_status", return_value=0) as run_status,
         ):
             run_production_variant(run_id, {"task_suite": "mpp"}, None)
 
@@ -459,6 +458,19 @@ class RunBenchmarkTest(unittest.TestCase):
                 "TEMPO_EVALS_SHA": "a" * 40,
                 "TEMPO_DOCS_SHA": "b" * 40,
             },
+        )
+        run_status.assert_called_once_with(
+            "uv",
+            [
+                "run",
+                "harbor",
+                "run",
+                "-c",
+                "job.yaml",
+                "--max-retries",
+                "4",
+                "-y",
+            ],
         )
 
     def test_production_revision_env_requires_clean_full_shas(self) -> None:
