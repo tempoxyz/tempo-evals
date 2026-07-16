@@ -22,6 +22,7 @@ from scripts.run_benchmark import (
     parse_model_config,
     prepare_production_profiles,
     production_job,
+    production_revision_env,
     render_job_config,
     run_benchmark_key,
     run_benchmark_variant,
@@ -38,7 +39,10 @@ def base_config() -> dict[str, Any]:
 
 
 def production_model_config() -> dict[str, Any]:
-    return {"models": [{"agent": "claude-code", "model_name": "claude-haiku-4-5"}]}
+    return {
+        "judge_model": "anthropic/claude-haiku-4-5-20251001",
+        "models": [{"agent": "claude-code", "model_name": "claude-haiku-4-5"}],
+    }
 
 
 class RunBenchmarkTest(unittest.TestCase):
@@ -187,6 +191,10 @@ class RunBenchmarkTest(unittest.TestCase):
             [model["model_name"] for model in dev["models"]],
             ["claude-haiku-4-5-20251001"],
         )
+        self.assertEqual(dev["judge_model"], "anthropic/claude-haiku-4-5-20251001")
+        self.assertEqual(
+            production["judge_model"], "anthropic/claude-haiku-4-5-20251001"
+        )
         self.assertEqual(
             [model["model_name"] for model in production["models"]],
             [
@@ -325,6 +333,13 @@ class RunBenchmarkTest(unittest.TestCase):
             ),
             patch("scripts.run_benchmark.preflight_production_agents"),
             patch(
+                "scripts.run_benchmark.production_revision_env",
+                return_value={
+                    "TEMPO_EVALS_SHA": "a" * 40,
+                    "TEMPO_DOCS_SHA": "b" * 40,
+                },
+            ),
+            patch(
                 "scripts.run_benchmark.stage_daytona_config", return_value="job.yaml"
             ) as stage,
             patch("scripts.run_benchmark.run_status", return_value=0),
@@ -332,6 +347,37 @@ class RunBenchmarkTest(unittest.TestCase):
             run_production_variant(run_id, {"task_suite": "mpp"}, None)
 
         self.assertEqual(stage.call_args.args[0]["job_name"], run_id)
+        self.assertEqual(
+            stage.call_args.args[0]["verifier"]["env"],
+            {
+                "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}",
+                "REWARDKIT_JUDGE": "anthropic/claude-haiku-4-5-20251001",
+                "TEMPO_EVALS_SHA": "a" * 40,
+                "TEMPO_DOCS_SHA": "b" * 40,
+            },
+        )
+
+    def test_production_revision_env_requires_clean_full_shas(self) -> None:
+        with (
+            patch(
+                "scripts.run_benchmark.git_output",
+                side_effect=["", "a" * 40],
+            ),
+            patch(
+                "scripts.run_benchmark.docs_source",
+                return_value={"mode": "pinned", "repo": "tempo/docs", "sha": "b" * 40},
+            ),
+        ):
+            self.assertEqual(
+                production_revision_env({"task_suite": "tempo"}),
+                {"TEMPO_EVALS_SHA": "a" * 40, "TEMPO_DOCS_SHA": "b" * 40},
+            )
+
+        with (
+            patch("scripts.run_benchmark.git_output", return_value="M dirty.py"),
+            self.assertRaisesRegex(RuntimeError, "clean tempo-evals checkout"),
+        ):
+            production_revision_env({"task_suite": "tempo"})
 
     def test_production_job_rejects_run_id_paths(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "one path component"):
