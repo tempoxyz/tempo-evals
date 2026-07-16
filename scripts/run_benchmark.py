@@ -90,7 +90,7 @@ Options:
   --n-attempts N          Override production attempts per task and model
                           (default: 3)
   --concurrency N         Override n_concurrent_trials per profile job
-                          (default: 32 for production runs)
+                          (default: 16 for production runs)
   --agent-concurrency N   Override per-profile agent concurrency pools
   --max-retries N         Retry transient trial/setup failures
                           (default: 2 for Daytona runs)
@@ -528,7 +528,7 @@ def production_job(
         "job_name": job_dir.name,
         "jobs_dir": str(job_dir.parent),
         "n_attempts": int(options.get("n_attempts") or "3"),
-        "n_concurrent_trials": int(options.get("concurrency") or "32"),
+        "n_concurrent_trials": int(options.get("concurrency") or "16"),
         "environment_type": "daytona",
         "force_build": False,
         "agents": [production_agent(model) for model in model_config["models"]],

@@ -69,7 +69,8 @@ every matching task. `bench:matrix:production` reads
 GPT-5.4 three times per task. Both commands run the full Tempo suite unless
 `--task-filter` is provided. `--concurrency` applies independently to each
 profile job. Because `--profile all` runs the two profile jobs in parallel,
-`--concurrency 32` allows up to 32 trials in each job, or 64 across the pair.
+the default `--concurrency 16` allows up to 16 trials in each job, or 32 across
+the pair.
 The model configs use a per-provider, per-profile agent concurrency cap of 16.
 
 ```bash
