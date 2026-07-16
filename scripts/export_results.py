@@ -357,6 +357,18 @@ def primary_reward(rewards: dict[str, float | int]) -> Numeric:
     return values[0] if len(values) == 1 else ""
 
 
+def pass_reward(
+    task_family: str,
+    rewards: dict[str, float | int],
+    reward: Numeric,
+) -> Numeric:
+    if task_family.startswith("tempo-v1/"):
+        correctness = as_number(rewards.get("correctness"))
+        if correctness is not None:
+            return correctness
+    return reward
+
+
 def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | None:
     result = read_json(file_path)
     if not result or not isinstance(result.get("task_name"), str):
@@ -378,7 +390,8 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         judge_available := as_number(rewards.get("quality_judge_available"))
     ) is not None:
         validation["quality_judge_available"] = judge_available
-    passed = isinstance(reward, int | float) and reward >= 1
+    passing_reward = pass_reward(task["task_family"], rewards, reward)
+    passed = isinstance(passing_reward, int | float) and passing_reward >= 1
     used_mcp = isinstance(trace["calls"], int | float) and trace["calls"] > 0
     trace_clean = (
         isinstance(trace["denied"], int | float)
