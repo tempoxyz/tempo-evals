@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:7801a46c5f9e249a4988b9fda79033a633b9a4c82c22488e9b88bb96618cab4e"
+digest = "sha256:af80188f296994ba1351f7a48753fa81d13e663949f796fe8ac6c051dc33728f"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:575b6cbdca4c928d66233917eb088adbe4cb7eaa2c17e50447dd270192f01cbb"
+digest = "sha256:9214ea248e04bbf7146d2d71570767346ae4b7ab9007475cd5f1b9ac0bf0c6a7"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:93d61684a8bb4f888fb0a604b1e89c099d454c1bf5df87c5d44c1adbd95c7103"
+digest = "sha256:f9c6b5c1d90768c255f628f157947466d48b399192e0780abfecff7157ac7479"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:063c669f33b1376cd8df14b0fad11e7d4f6bbf55818b85cd371bb8bf9ed05182"
+digest = "sha256:01bad8cc606a5dbf4f79fbf52e8dcb3df9f70242d91b3048400c21c8f00afb27"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:f4ea9e56565872e753910fa1efc9fbf11b79ae510b7ca282897f02435f24bbbe"
+digest = "sha256:e016f1736f5a5efcc0f6ce81b05b4d1478105b8e43a97f865f13446b911f2019"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:326f1374227e25cbce8637751d54257e60fe060dbcaee096b3242bef2bc5f58f"
+digest = "sha256:8a0ea38af04039736bf447d5d8822aea3fa348bba2ae02392c3a31ae09d6af3a"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:d727eee4f4632bae0c6db0cab7ada4c230552b91ee1a9de0779f6be4010e5fa0"
+digest = "sha256:289769466a973a6fa825e73dac2e32499f35d4460175c3df92280e939b72da49"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:e2dd2061cf00c636e208bff307edce54d48359d8ad9692ec1e6384098fb9c2bc"
+digest = "sha256:f8d2b5d3eb62a50d78c7e0f60e347258c407e11135f45cfe1daef28694ddf2f2"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:e49f9dab3625fc05b84d2c94666fb7e051a1f043b99e26834d4ea81f317ffd80"
+digest = "sha256:7f59f92ae26dbc39be5f2f0dcf951d22233d011418a0b77b324795757f9a255e"
 
