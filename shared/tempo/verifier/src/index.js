@@ -59,14 +59,14 @@ async function main() {
 
     context = {
       phase: "submission-npm-install",
-      expected: "npm install --silent exits 0",
+      expected: "npm install --loglevel=error exits 0",
       logs: [
         "submission-npm-install.stdout.txt",
         "submission-npm-install.stderr.txt",
         "submission-npm-install.status.json",
       ],
     };
-    runStep(config, "submission-npm-install", "npm", ["install", "--silent"]);
+    runStep(config, "submission-npm-install", "npm", ["install", "--loglevel=error"]);
     context = {
       phase: "submission-eval",
       expected: "npm run eval exits 0",
