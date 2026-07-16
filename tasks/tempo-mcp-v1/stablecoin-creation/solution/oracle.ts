@@ -2,6 +2,22 @@
 import { writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
+type McpPayload = {
+  error?: unknown;
+  result?: unknown;
+};
+
+type Lookup = {
+  tool: string;
+  arguments: Record<string, unknown>;
+};
+
+type OracleTask = {
+  lookups: Lookup[];
+  observation: { lookup: number; count: number; subject?: string };
+  docsQuery: string;
+};
+
 const endpoint = process.env.TEMPO_MCP_ORACLE_URL ?? "http://tempo-mcp-direct:8787/mcp";
 const docsTool = process.env.TEMPO_MCP_ORACLE_DOCS_TOOL ?? "docs_search";
 const taskName = process.argv[2];
@@ -12,7 +28,7 @@ const historicalWindow = {
   limit: 5,
 };
 
-const tasks = {
+const tasks: Record<string, OracleTask> = {
   "access-keys": {
     lookups: [{ tool: "v1_transactions_get", arguments: historicalWindow }],
     observation: { lookup: 0, count: 2 },
@@ -133,8 +149,8 @@ const tasks = {
   },
 };
 
-function parseResponse(text) {
-  if (!text.startsWith("event:")) return JSON.parse(text);
+function parseResponse(text: string): McpPayload {
+  if (!text.startsWith("event:")) return JSON.parse(text) as McpPayload;
   const data = text
     .split(/\r?\n/)
     .filter((line) => line.startsWith("data:"))
@@ -142,29 +158,29 @@ function parseResponse(text) {
     .filter(Boolean)
     .at(-1);
   if (!data) throw new Error("MCP response did not include an event payload");
-  return JSON.parse(data);
+  return JSON.parse(data) as McpPayload;
 }
 
-function firstUrl(value) {
+function firstUrl(value: unknown): string {
   const match = JSON.stringify(value).match(/https:\/\/(?:docs|developers)\.tempo\.xyz[^"\\\s]*/);
   return match?.[0] ?? "https://docs.tempo.xyz/";
 }
 
-function toolValue(result) {
+function toolValue(result: any): any {
   if (result?.isError) throw new Error(`MCP tool failed: ${JSON.stringify(result)}`);
-  const text = result?.content?.find((item) => item?.type === "text")?.text;
+  const text = result?.content?.find((item: any) => item?.type === "text")?.text;
   if (typeof text !== "string") return result?.structuredContent ?? result;
   const value = JSON.parse(text);
   if (value?.error) throw new Error(`MCP tool failed: ${JSON.stringify(value.error)}`);
   return value;
 }
 
-function records(value) {
+function records(value: any): any[] {
   if (Array.isArray(value?.data)) return value.data;
   return value && typeof value === "object" ? [value] : [];
 }
 
-function recordSubject(record) {
+function recordSubject(record: any): string {
   for (const key of ["hash", "transactionHash", "address", "id", "number", "symbol"]) {
     if (typeof record?.[key] === "string" || typeof record?.[key] === "number") {
       return String(record[key]);
@@ -173,8 +189,8 @@ function recordSubject(record) {
   return "MCP response record";
 }
 
-export function docsRequest(tool, query) {
-  let args;
+export function docsRequest(tool: string, query: string): { name: string; arguments: { name: string; arguments: Record<string, unknown> } } {
+  let args: Record<string, unknown>;
   if (tool === "docs_search") {
     args = { query, max_results: 1 };
   } else if (tool === "docs_code") {
@@ -187,13 +203,13 @@ export function docsRequest(tool, query) {
   return { name: "call_write_tool", arguments: { name: tool, arguments: args } };
 }
 
-async function main() {
-  const task = tasks[taskName];
-  if (!task) throw new Error(`Unknown MCP oracle task: ${taskName}`);
+async function main(): Promise<void> {
+  const task = taskName ? tasks[taskName] : undefined;
+  if (!task || !taskName) throw new Error(`Unknown MCP oracle task: ${taskName}`);
 
-  let sessionId;
+  let sessionId: string | null = null;
   let id = 1;
-  async function request(method, params) {
+  async function request(method: string, params: Record<string, unknown>): Promise<any> {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
@@ -217,7 +233,7 @@ async function main() {
     capabilities: {},
     clientInfo: { name: "tempo-bench-oracle", version: "1" },
   });
-  const results = [];
+  const results: any[] = [];
   for (const lookup of task.lookups) {
     const result = await request("tools/call", {
       name: "call_read_tool",
@@ -236,7 +252,7 @@ async function main() {
     summary: `${taskName} oracle completed its fixed data lookups and Tempo documentation search.`,
     observations: records(results[task.observation.lookup])
       .slice(0, task.observation.count)
-      .map((record) => ({
+      .map((record: any) => ({
         subject: task.observation.subject ?? recordSubject(record),
         details: `${task.lookups[task.observation.lookup].tool} returned ${JSON.stringify(record)}.`,
         evidence_refs: [task.observation.lookup],

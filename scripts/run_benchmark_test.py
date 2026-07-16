@@ -244,6 +244,32 @@ class RunBenchmarkTest(unittest.TestCase):
             ["tasks/tempo-v1", "tasks/tempo-mcp-v1", "tasks/mpp"],
         )
 
+    def test_mcp_pair_preflights_live_target_once_before_parallel_jobs(self) -> None:
+        with (
+            patch("scripts.run_benchmark.load_env_file"),
+            patch("scripts.run_benchmark.preflight_mcp_target") as preflight_target,
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+        ):
+            main(
+                [
+                    "daytona-agent-dev",
+                    "--profile",
+                    "mcp-both",
+                    "--task-suite",
+                    "tempo-mcp",
+                    "--job-name",
+                    "paired-run",
+                ]
+            )
+
+        preflight_target.assert_called_once()
+        self.assertTrue(
+            all(
+                invocation.args[1]["mcp_target_preflight_done"]
+                for invocation in run_variant.call_args_list
+            )
+        )
+
     def test_dev_and_production_model_configs_are_distinct(self) -> None:
         dev = parse_model_config("config/models.dev.yaml", None)
         production = parse_model_config("config/models.production.yaml", None)

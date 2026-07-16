@@ -1103,6 +1103,15 @@ def main(argv: list[str]) -> None:
             if variant.get("production")
             else f"{prefix}-mcp-pair-{timestamp()}"
         )
+        mcp_target_preflight_done = False
+        if (
+            options["profile"] == "mcp-both"
+            and uses_live_mcp_eval(options)
+            and variant.get("needs_daytona_auth")
+        ):
+            load_env_file(options.get("env_file"))
+            preflight_mcp_target(options | {"profile": MCP_DIRECT_PROFILE["id"]})
+            mcp_target_preflight_done = True
         profile_options = [
             options
             | {
@@ -1112,6 +1121,7 @@ def main(argv: list[str]) -> None:
                 ),
                 "pair_id": pair_id,
                 "sync": False,
+                "mcp_target_preflight_done": mcp_target_preflight_done,
             }
             for index, profile_id in enumerate(
                 (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"])
@@ -1156,7 +1166,8 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
     load_env_file(options.get("env_file"))
     preflight(variant, options)
-    preflight_mcp_target(options)
+    if not options.get("mcp_target_preflight_done"):
+        preflight_mcp_target(options)
     if options.get("sync"):
         sync_dataset(options)
     if not variant.get("needs_daytona_auth"):

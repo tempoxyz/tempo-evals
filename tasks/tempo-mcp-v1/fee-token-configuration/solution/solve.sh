@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec node /solution/oracle.mjs "fee-token-configuration"
+exec tsx /solution/oracle.ts "fee-token-configuration"

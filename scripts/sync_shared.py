@@ -21,7 +21,7 @@ TASKS_DIR = ROOT / "tasks" / "tempo-v1"
 MCP_TASKS_DIR = ROOT / "tasks" / "tempo-mcp-v1"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
 MPP_SHARED_DIR = ROOT / "shared" / "mpp"
-MCP_ORACLE = ROOT / "shared" / "tempo" / "mcp-eval" / "oracle.mjs"
+MCP_ORACLE = ROOT / "shared" / "tempo" / "mcp-eval" / "oracle.ts"
 
 TASKS_CONFIG: dict[str, Any] = yaml.safe_load(
     (ROOT / "config" / "tasks.yaml").read_text()
@@ -182,7 +182,8 @@ def write_mcp_dataset_manifest() -> None:
 def sync_mcp_oracles() -> int:
     tasks = mcp_task_dirs()
     for task_dir in tasks:
-        copy_file(MCP_ORACLE, task_dir / "solution" / "oracle.mjs")
+        remove_path(task_dir / "solution" / "oracle.mjs")
+        copy_file(MCP_ORACLE, task_dir / "solution" / "oracle.ts")
     return len(tasks)
 
 

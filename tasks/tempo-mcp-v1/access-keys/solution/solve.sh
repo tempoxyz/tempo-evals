@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec node /solution/oracle.mjs "access-keys"
+exec tsx /solution/oracle.ts "access-keys"

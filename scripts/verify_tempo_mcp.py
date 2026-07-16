@@ -27,6 +27,11 @@ DEFERRED_GATEWAY_TOOLS = {
 }
 
 
+def api_key_headers() -> dict[str, str]:
+    api_key = os.environ.get("TEMPO_API_KEY")
+    return {"authorization": f"Bearer {api_key}"} if api_key else {}
+
+
 def parse_mcp_response(raw: bytes) -> dict[str, Any]:
     text = raw.decode().strip()
     if text.startswith("event:"):
@@ -69,6 +74,7 @@ def json_text_content(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_tools(url: str, expected: set[str] | None = None) -> set[str]:
+    headers = {"mcp-protocol-version": "2025-06-18", **api_key_headers()}
     initialize, response_headers = json_rpc(
         url,
         {
@@ -81,14 +87,13 @@ def list_tools(url: str, expected: set[str] | None = None) -> set[str]:
                 "clientInfo": {"name": "tempo-bench-preflight", "version": "1"},
             },
         },
-        {"mcp-protocol-version": "2025-06-18"},
+        headers,
     )
     if "error" in initialize:
         raise RuntimeError(f"MCP initialize failed: {initialize['error']}")
     session_id = response_headers.get("Mcp-Session-Id") or response_headers.get(
         "mcp-session-id"
     )
-    headers = {"mcp-protocol-version": "2025-06-18"}
     if session_id:
         headers["mcp-session-id"] = session_id
     tools, _ = json_rpc(
