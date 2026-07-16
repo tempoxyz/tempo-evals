@@ -211,6 +211,9 @@ def run_python(script: str, args: list[str] | None = None) -> None:
 
 
 DOCS_SHA_PATTERN = re.compile(r"[0-9a-fA-F]{7,40}")
+FULL_GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+PINNED_JUDGE_MODEL = "anthropic/claude-haiku-4-5-20251001"
+DEFAULT_JUDGE_MODEL = f"${{REWARDKIT_JUDGE:-{PINNED_JUDGE_MODEL}}}"
 DOCS_ACCESS_LOG = "/var/log/tempo-docs/access.log"
 DOCS_TLS_DIR = "docs-tls"
 DOCS_CA_FILE = "ca.crt"
@@ -359,7 +362,10 @@ def parse_model_config(file_path: str, agent_concurrency: str | None) -> dict[st
     if not models:
         msg = f"No models configured in {file_path}"
         raise RuntimeError(msg)
-    return {"models": models}
+    judge_model = parsed.get("judge_model", PINNED_JUDGE_MODEL)
+    if not isinstance(judge_model, str) or not judge_model:
+        raise RuntimeError(f"Invalid judge_model in {file_path}")
+    return {"judge_model": judge_model, "models": models}
 
 
 def normalize_production_model(
@@ -406,6 +412,30 @@ def production_job_dir(job_name: str) -> Path:
     if job_name in {"", ".", ".."} or Path(job_name).name != job_name:
         raise RuntimeError("Production job name must be one path component")
     return Path("jobs") / job_name
+
+
+def git_output(args: list[str]) -> str:
+    result = subprocess.run(["git", *args], check=False, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.strip() or f"git {' '.join(args)} failed")
+    return result.stdout.strip()
+
+
+def production_revision_env(options: dict[str, Any]) -> dict[str, str]:
+    if git_output(["status", "--porcelain", "--untracked-files=all"]):
+        raise RuntimeError("Production runs require a clean tempo-evals checkout")
+    repository_sha = git_output(["rev-parse", "HEAD"]).lower()
+    if not FULL_GIT_SHA_PATTERN.fullmatch(repository_sha):
+        raise RuntimeError(f"Invalid tempo-evals Git SHA: {repository_sha!r}")
+
+    revisions = {"TEMPO_EVALS_SHA": repository_sha}
+    if options.get("task_suite") in {None, "tempo", "all"}:
+        source = docs_source(options)
+        docs_sha = source.get("sha", "").lower()
+        if source["mode"] != "pinned" or not FULL_GIT_SHA_PATTERN.fullmatch(docs_sha):
+            raise RuntimeError("Production Tempo runs require a full docs Git SHA")
+        revisions["TEMPO_DOCS_SHA"] = docs_sha
+    return revisions
 
 
 def benchmark_key(value: str | BenchmarkKey | None) -> BenchmarkKey:
@@ -494,6 +524,7 @@ def render_job_config(
         environment_type=job["environment_type"],
         force_build=job["force_build"],
         agents=job["agents"],
+        judge_model=job.get("judge_model", DEFAULT_JUDGE_MODEL),
         dind_image=RUN_CONFIG["daytona"]["dind_image"],
     )
     config = yaml.safe_load(rendered)
@@ -531,6 +562,7 @@ def production_job(
         "n_concurrent_trials": int(options.get("concurrency") or "32"),
         "environment_type": "daytona",
         "force_build": False,
+        "judge_model": model_config["judge_model"],
         "agents": [production_agent(model) for model in model_config["models"]],
         "datasets": datasets_for_suite(options.get("task_suite") or "tempo"),
     }
@@ -547,9 +579,9 @@ def run_production_variant(
     )
     preflight_production_agents(model_config)
     job = production_job(run_id, model_config, options)
-    config = stage_daytona_config(
-        render_job_config(job, benchmark=None), run_id, docs_bundle, options
-    )
+    rendered = render_job_config(job, benchmark=None)
+    rendered["verifier"]["env"].update(production_revision_env(options))
+    config = stage_daytona_config(rendered, run_id, docs_bundle, options)
     max_retries = options.get("max_retries") or "2"
     args = ["run", "harbor", "run", "-c", config]
     if options.get("env_file"):

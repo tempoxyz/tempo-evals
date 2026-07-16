@@ -26,7 +26,7 @@ verifier:
     - "*.txt"
   env:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-    REWARDKIT_JUDGE: ${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5}
+    REWARDKIT_JUDGE: {{ judge_model | tojson }}
 agents:
 {% for agent in agents %}
   - name: {{ agent.name | tojson }}

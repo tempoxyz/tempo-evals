@@ -107,6 +107,10 @@ in parallel. `--concurrency` limits trials per profile job, so a value of 32 can
 run 64 trials across the pair. `--agent-concurrency` overrides the per-provider,
 per-profile model caps.
 
+Production model configs pin the candidate and judge model IDs. The runner also
+requires a clean checkout and a full docs SHA, then records `TEMPO_EVALS_SHA`
+and `TEMPO_DOCS_SHA` in Harbor's generated `lock.json`.
+
 Jobs are written under `jobs/` and are not uploaded automatically:
 
 ```bash
