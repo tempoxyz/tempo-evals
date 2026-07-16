@@ -193,6 +193,64 @@ class ExportResultsTest(unittest.TestCase):
             )
             self.assertEqual({row["docs_source"] for row in rows}, {"live"})
 
+    def test_tempo_passes_use_correctness_instead_of_composite_reward(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+            job_dir = Path(root) / "job"
+            write_json(
+                job_dir / "trial" / "result.json",
+                trial(
+                    {
+                        "task_name": "tempo-v1/transfer-with-memo",
+                        "config": {
+                            "agent": {"mcp_servers": [{"name": "tempo"}]},
+                        },
+                        "verifier_result": {
+                            "rewards": {
+                                "correctness": 1,
+                                "quality": 0.85,
+                                "reward": 0.925,
+                            }
+                        },
+                    }
+                ),
+            )
+            trace = job_dir / "trial" / "artifacts" / "tempo" / "trace.jsonl"
+            trace.parent.mkdir(parents=True)
+            trace.write_text(
+                json.dumps({"method": "tools/call", "allowed": True}) + "\n"
+            )
+
+            result = export_results(job_dir)
+
+            self.assertTrue(result["trials"][0]["passed"])
+            self.assertTrue(result["trials"][0]["eligible"])
+            self.assertEqual(result["trials"][0]["outcome"], "passed")
+            self.assertEqual(result["summary"][0]["n_passed"], 1)
+            self.assertEqual(result["summary"][0]["pass_rate"], 1)
+
+    def test_non_tempo_suites_keep_primary_reward_pass_semantics(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+            job_dir = Path(root) / "job"
+            write_json(
+                job_dir / "trial" / "result.json",
+                trial(
+                    {
+                        "task_name": "mpp/server-charge-pathusd",
+                        "verifier_result": {
+                            "rewards": {
+                                "correctness": 0.75,
+                                "quality": 0.6,
+                                "reward": 1,
+                            }
+                        },
+                    }
+                ),
+            )
+
+            result = export_results(job_dir)
+
+            self.assertTrue(result["trials"][0]["passed"])
+
     def test_export_marks_only_clean_mcp_trials_eligible(self) -> None:
         with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
             job_dir = Path(root) / "job"
