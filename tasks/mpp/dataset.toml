@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:90ce7d1d1e2c95ea4db70844bb3f790e5302b403ab357f1b18d26218b896b425"
+digest = "sha256:988135cff92b09fa005e9427cc0abe3aff814d20ba99f942e479836bf49043c7"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:3df6fa406aa1334966c1bcd8c256f0c40c78b1457f6295fe782bcb711bcfa015"
+digest = "sha256:4c8a35c862816a7192985103516960b10bfd9ac79209b04870c7e7f1991168e6"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:09a28f149706d2964828ecf63d028b7489dea3eab681406951aaf84bae079f47"
+digest = "sha256:7460b1c7e6186e555cef5c58fdc741c767ee314b52224fe887833b5560bc1423"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:cbb716387de07d16cf7e51710e2943b5d1d5d40d9b0d582b8309faf168e71011"
+digest = "sha256:e21ff60a025df6dd9816f2c55b7c8c9213511c0e706f4c37c072f05927395954"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:a6e2f1d806b19713fd1f16d89dddd2e42fa01a8f2cfbc918c6fb0ceecc01f0bd"
+digest = "sha256:b0d75dcd79bf0bb9f11045ceee60daf77e83cdfd9994fa33ad6bc4b8cd0a36b8"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:5f24f67c65d95d5281b42752cee48225f41cbba2cf8c5e96edf66de8269adf67"
+digest = "sha256:35f22f588841b498a7df49f1bec428c9e97f572ebd30e94b777065fb0ae8ae9b"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:2c73a9006a1786145af3a0ded05c6fcce81c047f9062c4f532b58eca94fc1139"
+digest = "sha256:d4f1a6ba60284a47a6efad64a652d620f454912a678e256207f1570adb6cfbff"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:dcb1defe98fbcb9750bf1054ee10af65a1458a94b57fdfbc7c0a8460fd4526f9"
+digest = "sha256:fa64f0d3255f1deb24196aa530eed9fb3ca9650b82d88429ffd36b08c2ce0f3b"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:9e3edfc7ef6d179704e56cde38896cc5c260dbd6aaa1bd4d1d51ac7fc5424c7a"
+digest = "sha256:196de8eba83a3ddad0aedd56aa42abe94126f76988a04818c34cabeea15f067b"
 

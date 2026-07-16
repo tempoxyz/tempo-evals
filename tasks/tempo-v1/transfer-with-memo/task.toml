@@ -1,6 +1,6 @@
 schema_version = "1.3"
 
-artifacts = ["/app/package.json", "/app/tsconfig.json", "/app/src", "/logs/agent/trajectory.json"]
+artifacts = [{ source = "/app", exclude = ["node_modules"] }, "/logs/agent/trajectory.json"]
 
 [task]
 name = "tempo-v1/transfer-with-memo"

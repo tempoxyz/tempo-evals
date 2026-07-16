@@ -16,7 +16,7 @@ OUT_FILE="$WORKSPACE/out.json"
 mkdir -p "$LOG_DIR"
 rm -f "$SCORES_FILE" "$WORKSPACE_SCORES_FILE" "$OUT_FILE"
 cd "$WORKSPACE" || exit
-rm -rf node_modules package-lock.json
+rm -rf node_modules
 
 verifier_utils() {
   "$VERIFIER_PYTHON" -m tempo_bench_rewardkit.mpp.verifier_utils "$@"

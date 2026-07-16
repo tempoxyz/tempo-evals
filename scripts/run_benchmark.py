@@ -362,6 +362,10 @@ def build_images() -> None:
                 ".",
             ],
         )
+        run(
+            "bash",
+            ["ci_checks/check-image-boundary.sh", agent, image_ref("verifier")],
+        )
         _images_built = True
 
 

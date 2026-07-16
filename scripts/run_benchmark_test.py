@@ -57,7 +57,9 @@ class RunBenchmarkTest(unittest.TestCase):
         ):
             list(executor.map(lambda _: build_images(), range(2)))
 
-        self.assertEqual(run.call_count, 2)
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(run.call_args.args[0], "bash")
+        self.assertEqual(run.call_args.args[1][0], "ci_checks/check-image-boundary.sh")
 
     def test_finalize_config_defaults_to_tempo_suite(self) -> None:
         config = finalize_config(base_config(), {})

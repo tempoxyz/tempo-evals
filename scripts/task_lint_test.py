@@ -56,13 +56,28 @@ class TaskLintTest(unittest.TestCase):
             content = content.replace(
                 'environment_mode = "separate"', 'environment_mode = "shared"'
             )
-            content = content.replace('  "/app/tsconfig.json",\n', "")
+            content = content.replace('  "/logs/agent/trajectory.json",\n', "")
             task_toml.write_text(content)
 
             errors = lint(root)
 
             self.assertTrue(any("artifacts must be" in error for error in errors))
             self.assertTrue(any("environment_mode" in error for error in errors))
+
+    def test_lint_rejects_verifier_image_in_agent_environment(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for suite in SUITES:
+                (root / suite.path).mkdir(parents=True)
+            task = create_task(root, "tempo", "example")
+            dockerfile = task / "environment" / "Dockerfile"
+            dockerfile.write_text(
+                dockerfile.read_text().replace(":agent-source-", ":verifier-source-", 1)
+            )
+
+            errors = lint(root)
+
+            self.assertTrue(any("agent source image" in error for error in errors))
 
 
 if __name__ == "__main__":

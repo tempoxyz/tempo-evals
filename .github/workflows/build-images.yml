@@ -9,6 +9,7 @@ on:
       - shared/tempo/verifier/**
       - scripts/images.py
       - config/tasks.yaml
+      - ci_checks/check-image-boundary.sh
       - .github/workflows/build-images.yml
   push:
     branches: [main]
@@ -19,6 +20,7 @@ on:
       - shared/tempo/verifier/**
       - scripts/images.py
       - config/tasks.yaml
+      - ci_checks/check-image-boundary.sh
       - .github/workflows/build-images.yml
 
 permissions:
@@ -43,6 +45,9 @@ jobs:
           docker build --tag tempo-bench-verifier:ci \
             --build-arg AGENT_IMAGE=tempo-bench-agent:ci \
             --file shared/global/docker/verifier/Dockerfile .
+
+      - name: Verify image boundary
+        run: bash ci_checks/check-image-boundary.sh tempo-bench-agent:ci tempo-bench-verifier:ci
 
   build-and-push:
     if: >-
@@ -154,6 +159,12 @@ jobs:
           docker logout ghcr.io
           docker buildx imagetools inspect "${{ steps.agent.outputs.ref }}" >/dev/null
           docker buildx imagetools inspect "${{ steps.verifier.outputs.ref }}" >/dev/null
+
+      - name: Verify image boundary
+        run: >-
+          bash ci_checks/check-image-boundary.sh
+          "${{ steps.agent.outputs.ref }}"
+          "${{ steps.verifier.outputs.ref }}"
 
       - name: Publish image references
         run: |

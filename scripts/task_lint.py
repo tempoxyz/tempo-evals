@@ -14,13 +14,20 @@ CANARY_PATTERN = re.compile(
     r"<!-- tempo-bench-canary: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
     r"[0-9a-f]{4}-[0-9a-f]{12} -->"
 )
+SOURCE_IMAGE_PATTERN = re.compile(
+    r"^(?P<repository>.+):(?P<role>agent|verifier)-source-"
+    r"(?P<hash>[0-9a-f]{64})$"
+)
+
+Artifact = str | dict[str, object]
 
 
 @dataclass(frozen=True)
 class Suite:
     path: str
     required_files: tuple[str, ...]
-    artifacts: tuple[str, ...]
+    artifacts: tuple[Artifact, ...]
+    verifier_timeout_sec: int
     sidecar_artifacts: tuple[tuple[str, str], ...] = ()
 
     def task_name(self, slug: str) -> str:
@@ -42,11 +49,10 @@ SUITES = (
             "tests/test.sh",
         ),
         (
-            "/app/package.json",
-            "/app/tsconfig.json",
-            "/app/src",
+            {"source": "/app", "exclude": ["node_modules"]},
             "/logs/agent/trajectory.json",
         ),
+        300,
     ),
     Suite(
         "tasks/mpp",
@@ -60,11 +66,10 @@ SUITES = (
             "tests/test.sh",
         ),
         (
-            "/app/package.json",
-            "/app/tsconfig.json",
-            "/app/src",
+            {"source": "/app", "exclude": ["node_modules"]},
             "/logs/agent/trajectory.json",
         ),
+        900,
     ),
     Suite(
         "tasks/tempo-mcp-v1",
@@ -79,6 +84,7 @@ SUITES = (
             "tests/expected.json",
         ),
         ("/app/answer.json",),
+        90,
         (
             ("/var/log/tempo-mcp/direct-trace.jsonl", "tempo-mcp-direct"),
             ("/var/log/tempo-mcp/code-trace.jsonl", "tempo-mcp-code"),
@@ -106,6 +112,23 @@ def lint_task(root: Path, suite: Suite, task_dir: Path) -> list[str]:
     if instruction.is_file() and not CANARY_PATTERN.search(instruction.read_text()):
         errors.append(f"{instruction}: missing a tempo-bench canary comment")
 
+    image_pair = {}
+    for role, relative_path in (
+        ("agent", "environment/Dockerfile"),
+        ("verifier", "tests/Dockerfile"),
+    ):
+        dockerfile = task_dir / relative_path
+        if not dockerfile.is_file():
+            continue
+        refs = re.findall(r"(?im)^\s*FROM\s+(\S+)", dockerfile.read_text())
+        match = SOURCE_IMAGE_PATTERN.fullmatch(refs[-1]) if refs else None
+        if not match or match.group("role") != role:
+            errors.append(f"{dockerfile}: final FROM must use the {role} source image")
+            continue
+        image_pair[role] = (match.group("repository"), match.group("hash"))
+    if len(image_pair) == 2 and image_pair["agent"] != image_pair["verifier"]:
+        errors.append(f"{task_dir}: agent and verifier images must be a source pair")
+
     metadata_path = task_dir / "task.toml"
     if not metadata_path.is_file():
         return errors
@@ -131,6 +154,11 @@ def lint_task(root: Path, suite: Suite, task_dir: Path) -> list[str]:
     verifier = metadata.get("verifier")
     if not isinstance(verifier, dict) or verifier.get("environment_mode") != "separate":
         errors.append(f'{metadata_path}: verifier.environment_mode must be "separate"')
+    elif verifier.get("timeout_sec") != suite.verifier_timeout_sec:
+        errors.append(
+            f"{metadata_path}: verifier.timeout_sec must be "
+            f"{suite.verifier_timeout_sec}"
+        )
     return errors
 
 

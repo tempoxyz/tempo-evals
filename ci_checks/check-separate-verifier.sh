@@ -19,7 +19,8 @@ fi
 FAILED=0
 for task_dir in $TASK_DIRS; do
     toml="$task_dir/task.toml"
-    dockerfile="$task_dir/tests/Dockerfile"
+    agent_dockerfile="$task_dir/environment/Dockerfile"
+    verifier_dockerfile="$task_dir/tests/Dockerfile"
 
     if [ ! -f "$toml" ]; then
         echo "FAIL $task_dir: missing task.toml"
@@ -38,14 +39,24 @@ for task_dir in $TASK_DIRS; do
         continue
     fi
 
-    if [ ! -f "$dockerfile" ]; then
-        echo "FAIL $task_dir: missing tests/Dockerfile"
+    if [ ! -f "$agent_dockerfile" ] || [ ! -f "$verifier_dockerfile" ]; then
+        echo "FAIL $task_dir: missing agent or verifier Dockerfile"
         FAILED=1
         continue
     fi
 
-    if ! grep -qE '^[[:space:]]*(COPY|ADD)[[:space:]].*[[:space:]]/tests/?([[:space:]]|$)' "$dockerfile"; then
-        echo "FAIL $dockerfile: must COPY or ADD the test context into /tests"
+    agent_ref=$(awk 'toupper($1) == "FROM" { ref = $2 } END { print ref }' "$agent_dockerfile")
+    verifier_ref=$(awk 'toupper($1) == "FROM" { ref = $2 } END { print ref }' "$verifier_dockerfile")
+    if ! printf '%s\n' "$agent_ref" | grep -Eq '^.+:agent-source-[0-9a-f]{64}$' \
+        || ! printf '%s\n' "$verifier_ref" | grep -Eq '^.+:verifier-source-[0-9a-f]{64}$' \
+        || [ "${agent_ref%:agent-source-*}" != "${verifier_ref%:verifier-source-*}" ] \
+        || [ "${agent_ref##*:agent-source-}" != "${verifier_ref##*:verifier-source-}" ]; then
+        echo "FAIL $task_dir: Dockerfiles must use a matching agent/verifier source pair"
+        FAILED=1
+    fi
+
+    if ! grep -qE '^[[:space:]]*(COPY|ADD)[[:space:]].*[[:space:]]/tests/?([[:space:]]|$)' "$verifier_dockerfile"; then
+        echo "FAIL $verifier_dockerfile: must COPY or ADD the test context into /tests"
         FAILED=1
     fi
 done

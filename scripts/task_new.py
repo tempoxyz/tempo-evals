@@ -34,7 +34,14 @@ def task_toml(suite_id: str, suite: Suite, slug: str) -> str:
         "mpp": "mpp-bench-v1",
         "tempo-mcp": "tempo-mcp-bench-v1",
     }[suite_id]
-    artifacts = [json.dumps(artifact) for artifact in suite.artifacts]
+    artifacts = [
+        json.dumps(artifact)
+        if isinstance(artifact, str)
+        else "{ "
+        + ", ".join(f"{key} = {json.dumps(value)}" for key, value in artifact.items())
+        + " }"
+        for artifact in suite.artifacts
+    ]
     artifacts.extend(
         f"{{ source = {json.dumps(source)}, service = {json.dumps(service)} }}"
         for source, service in suite.sidecar_artifacts
@@ -57,7 +64,7 @@ benchmark = "{benchmark}"
 timeout_sec = {300 if suite_id == "tempo-mcp" else 900}.0
 
 [verifier]
-timeout_sec = {90 if suite_id == "tempo-mcp" else 300}.0
+timeout_sec = {suite.verifier_timeout_sec}.0
 environment_mode = "separate"
 
 [environment]
