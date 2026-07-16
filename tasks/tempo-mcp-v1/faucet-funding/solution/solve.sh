@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec node /solution/oracle.mjs "faucet-funding"
+exec tsx /solution/oracle.ts "faucet-funding"

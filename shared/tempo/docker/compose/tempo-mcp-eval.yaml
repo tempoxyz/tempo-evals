@@ -11,7 +11,9 @@ services:
       context: ./mcp-bridge
     environment:
       MCP_TOOL_MODE: direct
+      MCP_TOOL_DISCOVERY: ${TEMPO_MCP_TOOL_DISCOVERY:-progressive}
       MCP_UPSTREAM_URL: ${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}
+      MCP_API_KEY: ${TEMPO_API_KEY:-}
       MCP_TRACE_PATH: /var/log/tempo-mcp/direct-trace.jsonl
       MCP_TARGET_ID: ${TEMPO_MCP_TARGET_ID:-tempo-api-mcp-v1}
     healthcheck:
@@ -25,7 +27,9 @@ services:
       context: ./mcp-bridge
     environment:
       MCP_TOOL_MODE: code
+      MCP_TOOL_DISCOVERY: ${TEMPO_MCP_TOOL_DISCOVERY:-progressive}
       MCP_UPSTREAM_URL: ${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}
+      MCP_API_KEY: ${TEMPO_API_KEY:-}
       MCP_TRACE_PATH: /var/log/tempo-mcp/code-trace.jsonl
       MCP_TARGET_ID: ${TEMPO_MCP_TARGET_ID:-tempo-api-mcp-v1}
     healthcheck:

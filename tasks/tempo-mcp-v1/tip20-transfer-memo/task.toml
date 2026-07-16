@@ -16,7 +16,7 @@ category = "documentation"
 benchmark = "tempo-mcp-bench-v1"
 
 [agent]
-timeout_sec = 300.0
+timeout_sec = 600.0
 
 [verifier]
 timeout_sec = 90.0
