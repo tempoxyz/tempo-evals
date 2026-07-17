@@ -11,7 +11,7 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 | --- | ---: | ---: |
 | Benchmark | `tempo/tempo-bench-v1` | `tempo/tempo-bench-v1` |
 | Harbor Hub job | [a1db301d](https://hub.harborframework.com/jobs/a1db301d-af4b-4fe7-9976-bd7e98939d66) | [dac00a5f](https://hub.harborframework.com/jobs/dac00a5f-56f9-45e8-a8be-f3425e0ae4eb) |
-| Git revision | `d6384eb41c10ccf5e3d57eed6db6dbe29999898e` | `45d044ef548731926fed76efe17895bb93ecbde7` |
+| Git revision | `45d044ef548731926fed76efe17895bb93ecbde7` | `45d044ef548731926fed76efe17895bb93ecbde7` |
 | Trials | 216 | 216 |
 | Aggregate mean score | 0.894 | 0.917 |
 | Total cost | $218.66 | $196.72 |
@@ -45,16 +45,15 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 
 ## Analysis
 
-- MCP completes five more correct trials (198 vs. 193), raising mean score by
+- As of date, frontier models are able to consistently score high marks on tempo-bench, nearly saturating the benchmark.
+- Haiku and other smaller models perform very poorly, which we suspect is from:
+  - Earlier knowledge cutoffs (Tempo docs were published in Jan 2026)
+  - Observed reluctance to use web-search tools
+- Usage of the MCP completes five more correct trials (198 vs. 193), raising mean score by
   2.3pp while lowering aggregate cost 10.0%.
-- Luna MCP is the score/cost choice in this run: perfect score at $6.43. Nine
-  of 16 configurations reach a perfect score, so cost differentiates them.
-- The score gain is concentrated in Claude Haiku (+18.5pp); the GPT portfolio
-  is score-flat across access modes.
-- Tokens and turns are not predictive of correctness: Haiku MCP uses 90.1%
-  more tokens to improve, while Luna MCP uses 17.4% fewer tokens to improve.
-- Treat this as directional. The jobs used different revisions, and each model
-  score has 27 trials (one trial = 3.7pp).
+- Tokens and turns are not predictive of correctness: Haiku/MCP uses 90.1%
+  more tokens to improve, while Luna/MCP uses 17.4% fewer tokens to improve.
+- Outside of Claude Fable, GPT models perform much stronger on all axis and ar marketly better on cost.
 
 ## Notes
 
