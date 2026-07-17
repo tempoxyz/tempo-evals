@@ -3,32 +3,29 @@
   <desc id="desc">Aggregate Tempo Bench score and cost. Solid lines are Docs; dotted lines are MCP. Claude points are black and GPT points are warm gray.</desc>
   <style>
     .page { fill: #f3f3f3; } .ink { fill: #000; } .muted { fill: #808080; }
-    .eyebrow { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; }
-    .title { font: 300 40px 'HB Set', 'Times New Roman', Georgia, serif; letter-spacing: -1.2px; }
     .subtitle, .axis-label, .tick, .key { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
     .point-label { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
     .axis { stroke: #000; stroke-width: 1; } .grid { stroke: #d9d9d9; stroke-width: 1; }
     .leader { stroke: #b2b2b2; stroke-width: 1; } .claude { stroke: #000; fill: #000; }
+    .label-background { fill: #f3f3f3; }
     .gpt { stroke: #4d4d4d; fill: #4d4d4d; } .docs { fill: none; stroke-width: 2.25; }
     .mcp { fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }
-    .point { stroke: #f3f3f3; stroke-width: 2; }
+    .line-point { stroke: #f3f3f3; stroke-width: 2; } .dot { stroke-width: 2; }
   </style>
   <rect class="page" width="980" height="700"/>
-  <text x="90" y="54" class="eyebrow muted">2026-07-16</text>
-  <text x="90" y="96" class="title ink">Tempo Bench score / cost</text>
 
   <line x1="90" y1="610" x2="900" y2="610" class="axis"/>
-  <line x1="90" y1="160" x2="90" y2="610" class="axis"/>
-  <g class="grid"><line x1="90" y1="610" x2="900" y2="610"/><line x1="90" y1="502.9" x2="900" y2="502.9"/><line x1="90" y1="395.7" x2="900" y2="395.7"/><line x1="90" y1="288.6" x2="900" y2="288.6"/><line x1="90" y1="181.4" x2="900" y2="181.4"/></g>
-  <g class="tick muted"><text x="55" y="614">0.00</text><text x="55" y="506.9">0.25</text><text x="55" y="399.7">0.50</text><text x="55" y="292.6">0.75</text><text x="55" y="185.4">1.00</text><text x="86" y="632">$0</text><text x="233.3" y="632">$10</text><text x="380.5" y="632">$20</text><text x="527.8" y="632">$30</text><text x="675.1" y="632">$40</text><text x="822.4" y="632">$50</text></g>
+  <line x1="90" y1="80" x2="90" y2="610" class="axis"/>
+  <g class="grid"><line x1="90" y1="610" x2="900" y2="610"/><line x1="90" y1="483.8" x2="900" y2="483.8"/><line x1="90" y1="357.6" x2="900" y2="357.6"/><line x1="90" y1="231.4" x2="900" y2="231.4"/><line x1="90" y1="105.2" x2="900" y2="105.2"/></g>
+  <g class="tick muted"><text x="55" y="614">0.00</text><text x="55" y="487.8">0.25</text><text x="55" y="361.6">0.50</text><text x="55" y="235.4">0.75</text><text x="55" y="109.2">1.00</text><text x="86" y="632">$0</text><text x="233.3" y="632">$10</text><text x="380.5" y="632">$20</text><text x="527.8" y="632">$30</text><text x="675.1" y="632">$40</text><text x="822.4" y="632">$50</text></g>
   <text x="495" y="670" text-anchor="middle" class="axis-label ink">Aggregate cost (USD)</text>
   <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">Tempo Bench score</text>
-<path d="M267.4 498.9 C411.5 498.9 555.6 197.3 699.6 197.3 C731.9 197.3 764.2 181.4 796.5 181.4 C816.1 181.4 835.7 181.4 855.3 181.4" class="claude docs"/>
-<path d="M233.9 419.5 C368 419.5 502.2 181.4 636.3 181.4 C637.6 181.4 638.8 197.3 640 197.3 C700.6 197.3 761.3 181.4 821.9 181.4" class="claude mcp"/>
-<path d="M200.7 213.2 C235.2 213.2 269.6 181.4 304.1 181.4 C309.8 181.4 315.6 181.4 321.3 181.4 C379.3 181.4 437.4 181.4 495.4 181.4" class="gpt docs"/>
-<path d="M184.7 181.4 C221.6 181.4 258.5 197.3 295.5 197.3 C298.5 197.3 301.5 181.4 304.6 181.4 C369.8 181.4 435 197.3 500.3 197.3" class="gpt mcp"/>
-<g class="claude point"><circle cx="855.3" cy="181.4" r="5.5"/><circle cx="267.4" cy="498.9" r="5.5"/><circle cx="699.6" cy="197.3" r="5.5"/><circle cx="796.5" cy="181.4" r="5.5"/><circle cx="821.9" cy="181.4" r="5.5"/><circle cx="233.9" cy="419.5" r="5.5"/><circle cx="640" cy="197.3" r="5.5"/><circle cx="636.3" cy="181.4" r="5.5"/></g>
-<g class="gpt point"><circle cx="304.1" cy="181.4" r="5.5"/><circle cx="200.7" cy="213.2" r="5.5"/><circle cx="495.4" cy="181.4" r="5.5"/><circle cx="321.3" cy="181.4" r="5.5"/><circle cx="295.5" cy="197.3" r="5.5"/><circle cx="184.7" cy="181.4" r="5.5"/><circle cx="500.3" cy="197.3" r="5.5"/><circle cx="304.6" cy="181.4" r="5.5"/></g>
-<g class="leader"><line x1="200.7" y1="213.2" x2="206" y2="195"/><line x1="267.4" y1="498.9" x2="273" y2="480"/><line x1="304.1" y1="181.4" x2="310" y2="163"/><line x1="321.3" y1="181.4" x2="327" y2="193"/><line x1="495.4" y1="181.4" x2="501" y2="163"/><line x1="699.6" y1="197.3" x2="705" y2="179"/><line x1="796.5" y1="181.4" x2="802" y2="163"/><line x1="855.3" y1="181.4" x2="849" y2="193"/></g><g class="point-label ink"><text x="210" y="199">Luna</text><text x="277" y="484">Haiku 4.5</text><text x="314" y="167">GPT mini</text><text x="331" y="203">Terra</text><text x="505" y="167">Sol</text><text x="709" y="183">Opus 4.8</text><text x="806" y="167">Sonnet 5</text><text x="803" y="203">Fable 5</text></g>
+<path d="M267.4 479.1 C411.5 479.1 555.6 123.9 699.6 123.9 C731.9 123.9 764.2 105.2 796.5 105.2 C816.1 105.2 835.7 105.2 855.3 105.2" class="claude docs"/>
+<path d="M233.9 385.7 C368 385.7 502.2 105.2 636.3 105.2 C637.6 105.2 638.8 123.9 640 123.9 C700.6 123.9 761.3 105.2 821.9 105.2" class="claude mcp"/>
+<path d="M200.7 142.6 C235.2 142.6 269.6 105.2 304.1 105.2 C309.8 105.2 315.6 105.2 321.3 105.2 C379.3 105.2 437.4 105.2 495.4 105.2" class="gpt docs"/>
+<path d="M184.7 105.2 C221.6 105.2 258.5 123.9 295.5 123.9 C298.5 123.9 301.5 105.2 304.6 105.2 C369.8 105.2 435 123.9 500.3 123.9" class="gpt mcp"/>
+<g class="claude line-point"><circle cx="855.3" cy="105.2" r="5.5"/><circle cx="267.4" cy="479.1" r="5.5"/><circle cx="699.6" cy="123.9" r="5.5"/><circle cx="796.5" cy="105.2" r="5.5"/><circle cx="821.9" cy="105.2" r="5.5"/><circle cx="233.9" cy="385.7" r="5.5"/><circle cx="640" cy="123.9" r="5.5"/><circle cx="636.3" cy="105.2" r="5.5"/></g>
+<g class="gpt line-point"><circle cx="304.1" cy="105.2" r="5.5"/><circle cx="200.7" cy="142.6" r="5.5"/><circle cx="495.4" cy="105.2" r="5.5"/><circle cx="321.3" cy="105.2" r="5.5"/><circle cx="295.5" cy="123.9" r="5.5"/><circle cx="184.7" cy="105.2" r="5.5"/><circle cx="500.3" cy="123.9" r="5.5"/><circle cx="304.6" cy="105.2" r="5.5"/></g>
+<g class="leader"><line x1="200.7" y1="142.6" x2="206" y2="120"/><line x1="267.4" y1="479.1" x2="273" y2="457"/><line x1="304.1" y1="105.2" x2="310" y2="83"/><line x1="321.3" y1="105.2" x2="327" y2="121"/><line x1="495.4" y1="105.2" x2="501" y2="83"/><line x1="699.6" y1="123.9" x2="705" y2="101"/><line x1="796.5" y1="105.2" x2="802" y2="83"/><line x1="855.3" y1="105.2" x2="849" y2="121"/></g><g class="label-background"><rect x="207" y="111" width="38" height="17" rx="2"/><rect x="274" y="448" width="69" height="17" rx="2"/><rect x="311" y="74" width="62" height="17" rx="2"/><rect x="328" y="118" width="41" height="17" rx="2"/><rect x="502" y="74" width="38" height="17" rx="2"/><rect x="706" y="92" width="62" height="17" rx="2"/><rect x="803" y="74" width="62" height="17" rx="2"/><rect x="793" y="118" width="55" height="17" rx="2"/></g><g class="point-label ink"><text x="210" y="124">Luna</text><text x="277" y="461">Haiku 4.5</text><text x="314" y="87">GPT mini</text><text x="331" y="131">Terra</text><text x="505" y="87">Sol</text><text x="709" y="105">Opus 4.8</text><text x="806" y="87">Sonnet 5</text><text x="796" y="131">Fable 5</text></g>
   <g class="key"><line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text></g>
 </svg>

@@ -15,13 +15,13 @@ import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 WIDTH = 980
 HEIGHT = 700
 PLOT_LEFT = 90
 PLOT_RIGHT = 900
-PLOT_TOP = 160
+PLOT_TOP = 80
 PLOT_BOTTOM = 610
 
 
@@ -155,15 +155,16 @@ def metric_value(result: Result, metric: str) -> float:
 
 
 def label_width(label: str) -> int:
-    return max(30, len(label) * 6)
+    return max(32, len(label) * 7)
 
 
 def place_label_anchors(
     anchors: list[LabelAnchor],
+    obstacles: list[tuple[int, int, int, int]],
 ) -> list[tuple[LabelAnchor, int, int, int, int]]:
-    """Greedily assign label positions, avoiding collisions inside the plot."""
+    """Greedily assign clear label positions inside the plot."""
     label_gap = 5
-    placed: list[tuple[int, int, int, int]] = []
+    placed = list(obstacles)
     labels: list[tuple[LabelAnchor, int, int, int, int]] = []
     for anchor in sorted(anchors, key=lambda item: (item.x, item.y, item.label)):
         width = label_width(anchor.label)
@@ -172,7 +173,7 @@ def place_label_anchors(
         horizontal = ("right", "left") if right_first else ("left", "right")
         candidates = [
             (side, vertical, offset)
-            for offset in (14, 30, 46, 62, 78, 94)
+            for offset in (18, 36, 54, 72, 90, 108, 126)
             for vertical in ("top", "bottom")
             for side in horizontal
         ]
@@ -187,8 +188,8 @@ def place_label_anchors(
             if (
                 box[0] < PLOT_LEFT
                 or box[2] > PLOT_RIGHT
-                or box[1] < PLOT_TOP - 50
-                or box[3] > PLOT_BOTTOM - 14
+                or box[1] < PLOT_TOP - 10
+                or box[3] > PLOT_BOTTOM - 28
             ):
                 continue
             padded_box = (
@@ -218,7 +219,11 @@ def place_label_anchors(
 
 
 def place_labels(
-    results: list[Result], x: Any, y: Any, model_labels: dict[str, str]
+    results: list[Result],
+    x: Any,
+    y: Any,
+    model_labels: dict[str, str],
+    obstacles: Optional[list[tuple[int, int, int, int]]] = None,
 ) -> list[tuple[LabelAnchor, int, int, int, int]]:
     return place_label_anchors(
         [
@@ -229,7 +234,8 @@ def place_labels(
                 label=model_labels.get(result.model, result.model),
             )
             for result in results
-        ]
+        ],
+        obstacles or point_boxes(results, x, y),
     )
 
 
@@ -251,14 +257,23 @@ def place_model_pair_labels(
                 label=model_labels.get(model, model),
             )
         )
-    return place_label_anchors(anchors)
+    return place_label_anchors(anchors, point_boxes(results, x, y))
+
+
+def point_boxes(
+    results: list[Result], x: Any, y: Any
+) -> list[tuple[int, int, int, int]]:
+    """Reserve enough room that labels do not cover chart markers."""
+    return [
+        (int(x(result) - 9), int(y(result) - 9), int(x(result) + 9), int(y(result) + 9))
+        for result in results
+    ]
 
 
 def chart_svg(
     results: list[Result],
     config: dict[str, Any],
     model_labels: dict[str, str],
-    eyebrow: str,
 ) -> str:
     metric = config["x_metric"]
     mark = config.get("mark", "line")
@@ -275,10 +290,10 @@ def chart_svg(
     def y(result: Result) -> float:
         return scale(result.correctness, y_min, y_max, PLOT_BOTTOM, PLOT_TOP)
 
-    subtitle = str(config.get("subtitle", ""))
+    subtitle = config.get("subtitle")
     subtitle_svg = (
-        f'\n  <text x="90" y="119" class="subtitle muted">{html.escape(subtitle)}</text>'
-        if subtitle
+        f'\n  <text x="90" y="54" class="subtitle muted">{html.escape(subtitle)}</text>'
+        if isinstance(subtitle, str) and subtitle
         else ""
     )
 
@@ -306,7 +321,7 @@ def chart_svg(
                 f'<circle cx="{px(x(result))}" cy="{px(y(result))}" r="5.5"/>'
                 for result in family_results
             )
-            points.append(f'<g class="{family.lower()} point">{circles}</g>')
+            points.append(f'<g class="{family.lower()} line-point">{circles}</g>')
 
     annotations = ""
     label_access = config.get("label_access")
@@ -324,11 +339,13 @@ def chart_svg(
             x,
             y,
             model_labels,
+            point_boxes(results, x, y),
         )
     else:
         label_placements = []
     if label_placements:
         leaders: list[str] = []
+        backgrounds: list[str] = []
         text: list[str] = []
         for anchor, leader_x, leader_y, label_x, label_y in label_placements:
             if label_mode != "model-pairs":
@@ -336,11 +353,15 @@ def chart_svg(
                     f'<line x1="{px(x(result))}" y1="{px(y(result))}" x2="{leader_x}" y2="{leader_y}"/>'
                     for result in anchor.results
                 )
+            backgrounds.append(
+                f'<rect x="{label_x - 3}" y="{label_y - 13}" width="{label_width(anchor.label) + 6}" height="17" rx="2"/>'
+            )
             text.append(
                 f'<text x="{label_x}" y="{label_y}">{html.escape(anchor.label)}</text>'
             )
         annotations = (
             f'<g class="leader">{"".join(leaders)}</g>'
+            f'<g class="label-background">{"".join(backgrounds)}</g>'
             f'<g class="point-label ink">{"".join(text)}</g>'
         )
 
@@ -373,19 +394,16 @@ def chart_svg(
   <desc id="desc">{html.escape(config["description"])} {mark_description} Claude points are black and GPT points are warm gray.</desc>
   <style>
     .page {{ fill: #f3f3f3; }} .ink {{ fill: #000; }} .muted {{ fill: #808080; }}
-    .eyebrow {{ font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; }}
-    .title {{ font: 300 40px 'HB Set', 'Times New Roman', Georgia, serif; letter-spacing: -1.2px; }}
     .subtitle, .axis-label, .tick, .key {{ font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }}
     .point-label {{ font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }}
     .axis {{ stroke: #000; stroke-width: 1; }} .grid {{ stroke: #d9d9d9; stroke-width: 1; }}
     .leader {{ stroke: #b2b2b2; stroke-width: 1; }} .claude {{ stroke: #000; fill: #000; }}
+    .label-background {{ fill: #f3f3f3; }}
     .gpt {{ stroke: #4d4d4d; fill: #4d4d4d; }} .docs {{ fill: none; stroke-width: 2.25; }}
     .mcp {{ fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }}
-    .point {{ stroke: #f3f3f3; stroke-width: 2; }}
+    .line-point {{ stroke: #f3f3f3; stroke-width: 2; }} .dot {{ stroke-width: 2; }}
   </style>
   <rect class="page" width="{WIDTH}" height="{HEIGHT}"/>
-  <text x="90" y="54" class="eyebrow muted">{html.escape(eyebrow)}</text>
-  <text x="90" y="96" class="title ink">{html.escape(config["title"])}</text>
 {subtitle_svg}
   <line x1="{PLOT_LEFT}" y1="{PLOT_BOTTOM}" x2="{PLOT_RIGHT}" y2="{PLOT_BOTTOM}" class="axis"/>
   <line x1="{PLOT_LEFT}" y1="{PLOT_TOP}" x2="{PLOT_LEFT}" y2="{PLOT_BOTTOM}" class="axis"/>
@@ -419,12 +437,11 @@ def main() -> None:
     results = parse_results(args.input)
     config = json.loads(args.config.read_text())
     if (
-        not isinstance(config.get("eyebrow"), str)
-        or not isinstance(config.get("model_labels"), dict)
+        not isinstance(config.get("model_labels"), dict)
         or not config.get("charts")
     ):
         raise ValueError(
-            "chart config requires eyebrow, model_labels, and at least one chart"
+            "chart config requires model_labels and at least one chart"
         )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for chart in config["charts"]:
@@ -435,7 +452,7 @@ def main() -> None:
             )
         output = args.out_dir / chart["output"]
         output.write_text(
-            chart_svg(results, chart, config["model_labels"], config["eyebrow"])
+            chart_svg(results, chart, config["model_labels"])
         )
         print(output)
 
