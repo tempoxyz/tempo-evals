@@ -37,6 +37,14 @@ class Result:
     total_turns: int
 
 
+@dataclass(frozen=True)
+class LabelAnchor:
+    results: tuple[Result, ...]
+    x: float
+    y: float
+    label: str
+
+
 def parse_results(path: Path) -> list[Result]:
     with path.open(newline="") as file:
         reader = csv.DictReader(file)
@@ -150,17 +158,16 @@ def label_width(label: str) -> int:
     return max(30, len(label) * 6)
 
 
-def place_labels(
-    results: list[Result], x: Any, y: Any, model_labels: dict[str, str]
-) -> list[tuple[Result, str, int, int, int, int]]:
+def place_label_anchors(
+    anchors: list[LabelAnchor],
+) -> list[tuple[LabelAnchor, int, int, int, int]]:
     """Greedily assign label positions, avoiding collisions inside the plot."""
     label_gap = 5
     placed: list[tuple[int, int, int, int]] = []
-    labels: list[tuple[Result, str, int, int, int, int]] = []
-    for result in sorted(results, key=lambda item: (x(item), y(item), item.model)):
-        point_x, point_y = x(result), y(result)
-        label = model_labels.get(result.model, result.model)
-        width = label_width(label)
+    labels: list[tuple[LabelAnchor, int, int, int, int]] = []
+    for anchor in sorted(anchors, key=lambda item: (item.x, item.y, item.label)):
+        width = label_width(anchor.label)
+        point_x, point_y = anchor.x, anchor.y
         right_first = point_x < PLOT_RIGHT - width - 20
         horizontal = ("right", "left") if right_first else ("left", "right")
         candidates = [
@@ -203,11 +210,48 @@ def place_labels(
             leader_x = text_x - 4 if side == "right" else text_x + width + 4
             leader_y = text_y - 4 if vertical == "top" else text_y - 10
             placed.append(padded_box)
-            labels.append((result, label, leader_x, leader_y, text_x, text_y))
+            labels.append((anchor, leader_x, leader_y, text_x, text_y))
             break
         else:
-            raise ValueError(f"could not place label for {label}")
+            raise ValueError(f"could not place label for {anchor.label}")
     return labels
+
+
+def place_labels(
+    results: list[Result], x: Any, y: Any, model_labels: dict[str, str]
+) -> list[tuple[LabelAnchor, int, int, int, int]]:
+    return place_label_anchors(
+        [
+            LabelAnchor(
+                results=(result,),
+                x=x(result),
+                y=y(result),
+                label=model_labels.get(result.model, result.model),
+            )
+            for result in results
+        ]
+    )
+
+
+def place_model_pair_labels(
+    results: list[Result], x: Any, y: Any, model_labels: dict[str, str]
+) -> list[tuple[LabelAnchor, int, int, int, int]]:
+    grouped: dict[str, list[Result]] = {}
+    for result in results:
+        grouped.setdefault(result.model, []).append(result)
+    anchors = []
+    for model, pair in grouped.items():
+        if len(pair) != 2:
+            raise ValueError(f"expected Docs and MCP results for {model}")
+        anchors.append(
+            LabelAnchor(
+                results=tuple(pair),
+                x=sum(x(result) for result in pair) / len(pair),
+                y=sum(y(result) for result in pair) / len(pair),
+                label=model_labels.get(model, model),
+            )
+        )
+    return place_label_anchors(anchors)
 
 
 def chart_svg(
@@ -263,25 +307,34 @@ def chart_svg(
 
     annotations = ""
     label_access = config.get("label_access")
-    if label_access:
+    label_mode = config.get("label_mode")
+    if label_mode == "model-pairs":
+        label_placements = place_model_pair_labels(results, x, y, model_labels)
+    elif label_access:
         label_results = (
             results
             if label_access == "all"
             else [result for result in results if result.access == label_access]
         )
-        leaders: list[str] = []
-        text: list[str] = []
-        for result, label, leader_x, leader_y, label_x, label_y in place_labels(
+        label_placements = place_labels(
             label_results,
             x,
             y,
             model_labels,
-        ):
-            leaders.append(
-                f'<line x1="{px(x(result))}" y1="{px(y(result))}" x2="{leader_x}" y2="{leader_y}"/>'
-            )
+        )
+    else:
+        label_placements = []
+    if label_placements:
+        leaders: list[str] = []
+        text: list[str] = []
+        for anchor, leader_x, leader_y, label_x, label_y in label_placements:
+            if label_mode != "model-pairs":
+                leaders.extend(
+                    f'<line x1="{px(x(result))}" y1="{px(y(result))}" x2="{leader_x}" y2="{leader_y}"/>'
+                    for result in anchor.results
+                )
             text.append(
-                f'<text x="{label_x}" y="{label_y}">{html.escape(label)}</text>'
+                f'<text x="{label_x}" y="{label_y}">{html.escape(anchor.label)}</text>'
             )
         annotations = (
             f'<g class="leader">{"".join(leaders)}</g>'
