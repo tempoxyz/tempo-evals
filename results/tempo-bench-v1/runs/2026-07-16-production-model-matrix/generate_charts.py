@@ -15,7 +15,7 @@ import json
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 WIDTH = 980
 HEIGHT = 700
@@ -223,7 +223,7 @@ def place_labels(
     x: Any,
     y: Any,
     model_labels: dict[str, str],
-    obstacles: Optional[list[tuple[int, int, int, int]]] = None,
+    obstacles: list[tuple[int, int, int, int]] | None = None,
 ) -> list[tuple[LabelAnchor, int, int, int, int]]:
     return place_label_anchors(
         [
