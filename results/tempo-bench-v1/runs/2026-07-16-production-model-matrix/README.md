@@ -2,7 +2,8 @@
 
 ## Overview
 
-Comparison of eight Claude and GPT models across `tempo-bench` in order to establish an initial baseline.
+Comparison of eight Claude and GPT models across `tempo-bench` to establish an
+initial offline baseline.
 
 Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo docs (docs) or Tempo docs + an MCP (MCP).
 
@@ -28,19 +29,69 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 
 ![Tempo Bench score versus turns](score-vs-turns.svg)
 
-## Takeaways
+## Result
 
-- Across the eight-model matrix, MCP has a higher mean score (0.917 vs. 0.894)
-  at 10.0% lower aggregate cost. It used 4.2% more tokens but 2.8% fewer
-  model turns.
-- GPT 5.6 Luna with MCP is the cost standout: perfect score at $6.43. It also
-  improves on its Docs run in score, cost, tokens, and turns.
-- More tokens or turns do not reliably buy more score. GPT 5.4 mini reaches a
-  perfect Docs score with the most tokens (81.85M), while Fable reaches the
-  same score with the fewest tokens (24.12M) but much higher cost.
-- The result is directional, not causal: each point combines 27 trials and
-  scores move in increments of 1/27. The Docs Opus aggregate also includes one
-  error.
+Across 216 trials per access mode, the MCP configuration completed five more
+correct trials than Docs (198 vs. 193). Its mean Tempo Bench score was 0.917,
+up 2.3 percentage points from 0.894, while aggregate cost fell 10.0% ($196.72
+vs. $218.66). The gain did not come from doing more agent work: MCP used 4.2%
+more tokens but 2.8% fewer model turns.
+
+Within this matrix, GPT 5.6 Luna with MCP is the clear score/cost frontier: it
+is the only configuration with a perfect score at $6.43. Every other measured
+configuration costs more and scores no higher. Nine of the 16 configurations
+reach a perfect score, so among ceiling-level results, cost is the meaningful
+separator.
+
+## The MCP result is concentrated in Claude
+
+The aggregate improvement is not uniform across model families. Claude gains
+4.6 percentage points with MCP, entirely from Haiku 4.5 completing five more
+trials. The GPT portfolio is score-flat across access modes: Luna gains two
+trials, while GPT mini and Sol each lose one.
+
+| Family | Docs score | MCP score | Score change | Docs cost | MCP cost | Cost change |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Claude | 0.806 | 0.852 | +4.6pp | $153.38 | $133.91 | -12.7% |
+| GPT | 0.981 | 0.981 | 0.0pp | $65.29 | $62.81 | -3.8% |
+
+This makes MCP a promising configuration for the Claude models in this suite,
+but not evidence of a family-wide accuracy uplift. The immediate practical
+decision is simpler: MCP lowers cost for seven of eight models, and Luna MCP is
+the default efficiency choice in this run.
+
+## More tokens do not explain quality
+
+The efficiency plots show no monotonic relationship between model work and
+correctness. MCP Haiku uses 90.1% more tokens and 56.5% more turns, then gains
+18.5 percentage points. MCP Luna moves in the opposite direction: 17.4% fewer
+tokens and 12.6% fewer turns, while gaining 7.4 percentage points. MCP Sol uses
+slightly more of both and loses one trial. The useful distinction is therefore
+not how much the agent searched, but whether the available context and tools
+helped it take the right action.
+
+## What this baseline does and does not establish
+
+This is an offline, deterministic correctness measure. It is a useful read on
+the score/cost frontier, but it does not measure latency, user satisfaction, or
+the durability of the generated integration in a production workflow. The score
+for each configuration is based on 27 trials, so one trial moves the score by
+3.7 percentage points. Treat one-trial changes as directional.
+
+Most importantly, this is not a controlled MCP ablation: the Docs and MCP jobs
+ran different Git revisions, recorded above. The observed delta therefore
+combines access mode, revision, and any other run-level differences. The right
+claim is that the MCP configuration performed better in this matrix—not that
+MCP alone caused the improvement.
+
+## Next experiment
+
+Repeat the comparison on the same revision and fixtures, then publish a
+task-level breakdown alongside score, cost, latency, and failure categories.
+That experiment should retain the same model matrix and report matched
+Docs/MCP deltas per model. It will show whether the Haiku and Luna gains are
+repeatable, which tasks benefit from MCP access, and whether the offline
+frontier holds under real usage.
 
 ## Aggregate results
 
