@@ -75,9 +75,13 @@ Requirements: Docker, Node.js with `npm`, and
 [`uv`](https://docs.astral.sh/uv/).
 
 ```bash
+npm ci --ignore-scripts --no-audit --no-fund
 uv sync
 npm run docs:prepare
 ```
+
+Copy [`.env.example`](.env.example) to `.env` and populate only the credentials
+needed for the runner you use. Never commit `.env` or a funded private key.
 
 For remote runs, install Harbor with Daytona support:
 
@@ -181,3 +185,14 @@ and contribution rules.
 - [Harbor concepts](https://www.harborframework.com/docs/core-concepts)
 - [Tempo documentation](https://docs.tempo.xyz/)
 - [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for task-authoring and validation
+requirements. Report vulnerabilities according to [SECURITY.md](SECURITY.md),
+not through public issues.
+
+## License
+
+Tempo Evals is dual-licensed under [Apache-2.0](LICENSE-APACHE) and
+[MIT](LICENSE-MIT), at your option.
