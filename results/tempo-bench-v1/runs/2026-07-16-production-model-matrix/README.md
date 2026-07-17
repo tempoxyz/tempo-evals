@@ -13,6 +13,7 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 | Harbor Hub job | [a1db301d](https://hub.harborframework.com/jobs/a1db301d-af4b-4fe7-9976-bd7e98939d66) | [dac00a5f](https://hub.harborframework.com/jobs/dac00a5f-56f9-45e8-a8be-f3425e0ae4eb) |
 | Git revision | `d6384eb41c10ccf5e3d57eed6db6dbe29999898e` | `45d044ef548731926fed76efe17895bb93ecbde7` |
 | Trials | 216 | 216 |
+| Aggregate mean score | 0.894 | 0.917 |
 | Total cost | $218.66 | $196.72 |
 | Total tokens | 358.99M | 374.19M |
 | Total model turns | 6,117 | 5,948 |
@@ -108,12 +109,7 @@ frontier holds under real usage.
 
 ## Notes
 
-`summary.csv` contains the chart inputs. Tempo Bench score is mean
-deterministic correctness. Tokens are input plus output tokens, so cached input
-tokens are included once. Model turns are agent trajectory steps. Costs, tokens,
-and turns are sums across all 27 trials for each model and access mode.
-
-Regenerate all charts with:
+Charts can be generated with:
 
 ```bash
 python3 generate_charts.py --input summary.csv --config chart_config.json --out-dir .
