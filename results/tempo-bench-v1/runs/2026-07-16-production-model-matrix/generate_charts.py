@@ -1,0 +1,333 @@
+#!/usr/bin/env python3
+# ruff: noqa: E501
+"""Render Tempo Bench comparison charts from an aggregate CSV export.
+
+The input is intentionally a plain CSV so a Harbor job export can be inspected,
+versioned, and re-rendered without a charting dependency.
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import html
+import json
+from collections.abc import Iterable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+WIDTH = 980
+HEIGHT = 700
+PLOT_LEFT = 90
+PLOT_RIGHT = 900
+PLOT_TOP = 160
+PLOT_BOTTOM = 610
+
+
+@dataclass(frozen=True)
+class Result:
+    model: str
+    family: str
+    access: str
+    trials: int
+    correctness: float
+    cost_usd: float
+    total_tokens: int
+
+
+def parse_results(path: Path) -> list[Result]:
+    with path.open(newline="") as file:
+        reader = csv.DictReader(file)
+        required = {
+            "model",
+            "family",
+            "access",
+            "trials",
+            "correctness",
+            "cost_usd",
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+        }
+        if reader.fieldnames is None or not required.issubset(reader.fieldnames):
+            raise ValueError(f"{path} is missing one or more required columns")
+
+        results: list[Result] = []
+        seen: set[tuple[str, str]] = set()
+        for row in reader:
+            key = (row["model"], row["access"])
+            if key in seen:
+                raise ValueError(f"duplicate model/access row: {key}")
+            seen.add(key)
+            if row["access"] not in {"docs", "mcp"}:
+                raise ValueError(f"unsupported access mode: {row['access']}")
+            total_tokens = int(row["total_tokens"])
+            if total_tokens != int(row["input_tokens"]) + int(row["output_tokens"]):
+                raise ValueError(
+                    f"token total does not match inputs and outputs for {key}"
+                )
+            results.append(
+                Result(
+                    model=row["model"],
+                    family=row["family"],
+                    access=row["access"],
+                    trials=int(row["trials"]),
+                    correctness=float(row["correctness"]),
+                    cost_usd=float(row["cost_usd"]),
+                    total_tokens=total_tokens,
+                )
+            )
+    if not results:
+        raise ValueError(f"{path} has no data rows")
+    return results
+
+
+def scale(
+    value: float, minimum: float, maximum: float, start: float, end: float
+) -> float:
+    return start + (value - minimum) / (maximum - minimum) * (end - start)
+
+
+def px(value: float) -> str:
+    return f"{value:.1f}".rstrip("0").rstrip(".")
+
+
+def smooth_path(points: list[tuple[float, float]]) -> str:
+    """Return a smooth cubic path without overshooting the adjacent points."""
+    if len(points) == 1:
+        x, y = points[0]
+        return f"M{px(x)} {px(y)}"
+    parts = [f"M{px(points[0][0])} {px(points[0][1])}"]
+    for index in range(len(points) - 1):
+        current = points[index]
+        following = points[index + 1]
+        control_one = (
+            current[0] + (following[0] - current[0]) / 3,
+            current[1],
+        )
+        control_two = (
+            following[0] - (following[0] - current[0]) / 3,
+            following[1],
+        )
+        parts.append(
+            f"C{px(control_one[0])} {px(control_one[1])} {px(control_two[0])} {px(control_two[1])} {px(following[0])} {px(following[1])}"
+        )
+    return " ".join(parts)
+
+
+def line_groups(
+    results: Iterable[Result], metric: str
+) -> Iterable[tuple[str, str, list[Result]]]:
+    for family in ("Claude", "GPT"):
+        for access in ("docs", "mcp"):
+            group = sorted(
+                (
+                    result
+                    for result in results
+                    if result.family == family and result.access == access
+                ),
+                key=lambda result: (metric_value(result, metric), result.model),
+            )
+            if group:
+                yield family.lower(), access, group
+
+
+def metric_value(result: Result, metric: str) -> float:
+    if metric == "cost_usd":
+        return result.cost_usd
+    if metric == "total_tokens":
+        return float(result.total_tokens)
+    raise ValueError(f"unsupported x_metric: {metric}")
+
+
+def label_width(label: str) -> int:
+    return max(30, len(label) * 6)
+
+
+def place_labels(
+    results: list[Result], x: Any, y: Any, model_labels: dict[str, str]
+) -> list[tuple[Result, str, int, int, int, int]]:
+    """Greedily assign label positions, avoiding collisions inside the plot."""
+    label_gap = 8
+    placed: list[tuple[int, int, int, int]] = []
+    labels: list[tuple[Result, str, int, int, int, int]] = []
+    for result in sorted(results, key=lambda item: (x(item), y(item), item.model)):
+        point_x, point_y = x(result), y(result)
+        label = model_labels.get(result.model, result.model)
+        width = label_width(label)
+        right_first = point_x < PLOT_RIGHT - width - 20
+        horizontal = ("right", "left") if right_first else ("left", "right")
+        candidates = [
+            (side, vertical) for vertical in ("top", "bottom") for side in horizontal
+        ]
+        for side, vertical in candidates:
+            text_x = int(point_x + 10) if side == "right" else int(point_x - width - 10)
+            text_y = int(point_y - 14) if vertical == "top" else int(point_y + 22)
+            box = (text_x, text_y - 11, text_x + width, text_y + 2)
+            if box[0] < PLOT_LEFT or box[2] > PLOT_RIGHT or box[1] < PLOT_TOP - 10:
+                continue
+            padded_box = (
+                box[0] - label_gap,
+                box[1] - label_gap,
+                box[2] + label_gap,
+                box[3] + label_gap,
+            )
+            if any(
+                not (
+                    padded_box[2] < other[0]
+                    or padded_box[0] > other[2]
+                    or padded_box[3] < other[1]
+                    or padded_box[1] > other[3]
+                )
+                for other in placed
+            ):
+                continue
+            leader_x = text_x - 4 if side == "right" else text_x + width + 4
+            leader_y = text_y - 4 if vertical == "top" else text_y - 10
+            placed.append(padded_box)
+            labels.append((result, label, leader_x, leader_y, text_x, text_y))
+            break
+        else:
+            raise ValueError(f"could not place label for {label}")
+    return labels
+
+
+def chart_svg(
+    results: list[Result], config: dict[str, Any], model_labels: dict[str, str]
+) -> str:
+    metric = config["x_metric"]
+    x_axis = config["x_axis"]
+    y_axis = config["y_axis"]
+    x_min, x_max = float(x_axis["min"]), float(x_axis["max"])
+    y_min, y_max = float(y_axis["min"]), float(y_axis["max"])
+
+    def x(result: Result) -> float:
+        return scale(metric_value(result, metric), x_min, x_max, PLOT_LEFT, PLOT_RIGHT)
+
+    def y(result: Result) -> float:
+        return scale(result.correctness, y_min, y_max, PLOT_BOTTOM, PLOT_TOP)
+
+    subtitle = str(config.get("subtitle", ""))
+    subtitle_svg = (
+        f'\n  <text x="90" y="119" class="subtitle muted">{html.escape(subtitle)}</text>'
+        if subtitle
+        else ""
+    )
+
+    groups = []
+    for family, access, group in line_groups(results, metric):
+        points = [(x(result), y(result)) for result in group]
+        groups.append(f'<path d="{smooth_path(points)}" class="{family} {access}"/>')
+
+    points = []
+    for family in ("Claude", "GPT"):
+        family_results = [result for result in results if result.family == family]
+        circles = "".join(
+            f'<circle cx="{px(x(result))}" cy="{px(y(result))}" r="5.5"/>'
+            for result in family_results
+        )
+        points.append(f'<g class="{family.lower()} point">{circles}</g>')
+
+    annotations = ""
+    label_access = config.get("label_access")
+    if label_access:
+        leaders: list[str] = []
+        text: list[str] = []
+        for result, label, leader_x, leader_y, label_x, label_y in place_labels(
+            [result for result in results if result.access == label_access],
+            x,
+            y,
+            model_labels,
+        ):
+            leaders.append(
+                f'<line x1="{px(x(result))}" y1="{px(y(result))}" x2="{leader_x}" y2="{leader_y}"/>'
+            )
+            text.append(
+                f'<text x="{label_x}" y="{label_y}">{html.escape(label)}</text>'
+            )
+        annotations = (
+            f'<g class="leader">{"".join(leaders)}</g>'
+            f'<g class="point-label ink">{"".join(text)}</g>'
+        )
+
+    grid = "".join(
+        f'<line x1="{PLOT_LEFT}" y1="{px(scale(float(tick["value"]), y_min, y_max, PLOT_BOTTOM, PLOT_TOP))}" '
+        f'x2="{PLOT_RIGHT}" y2="{px(scale(float(tick["value"]), y_min, y_max, PLOT_BOTTOM, PLOT_TOP))}"/>'
+        for tick in y_axis["ticks"]
+    )
+    y_tick_text = "".join(
+        f'<text x="55" y="{px(scale(float(tick["value"]), y_min, y_max, PLOT_BOTTOM, PLOT_TOP) + 4)}">{html.escape(tick["label"])}</text>'
+        for tick in y_axis["ticks"]
+    )
+    x_tick_text = "".join(
+        f'<text x="{px(scale(float(tick["value"]), x_min, x_max, PLOT_LEFT, PLOT_RIGHT) - 4)}" y="632">{html.escape(tick["label"])}</text>'
+        for tick in x_axis["ticks"]
+    )
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-labelledby="title desc">
+  <title id="title">Tempo Bench {html.escape(config["title"].lower())}</title>
+  <desc id="desc">{html.escape(config["description"])} Solid lines are Docs; dotted lines are MCP. Claude points are black and GPT points are warm gray.</desc>
+  <style>
+    .page {{ fill: #f7f7f5; }} .ink {{ fill: #101010; }} .muted {{ fill: #706f6b; }}
+    .eyebrow {{ font: 500 11px Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }}
+    .title {{ font: 400 35px Georgia, 'Times New Roman', serif; }}
+    .subtitle, .axis-label, .tick, .key {{ font: 400 12px Arial, sans-serif; }}
+    .point-label {{ font: 500 11px Arial, sans-serif; }}
+    .axis {{ stroke: #101010; stroke-width: 1; }} .grid {{ stroke: #deddd9; stroke-width: 1; }}
+    .leader {{ stroke: #aaa8a2; stroke-width: 1; }} .claude {{ stroke: #101010; fill: #101010; }}
+    .gpt {{ stroke: #837f76; fill: #837f76; }} .docs {{ fill: none; stroke-width: 2.25; }}
+    .mcp {{ fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }}
+    .point {{ stroke: #f7f7f5; stroke-width: 2; }}
+  </style>
+  <rect class="page" width="{WIDTH}" height="{HEIGHT}"/>
+  <text x="90" y="54" class="eyebrow muted">Tempo Bench · Production matrix</text>
+  <text x="90" y="96" class="title ink">{html.escape(config["title"])}</text>
+{subtitle_svg}
+  <line x1="{PLOT_LEFT}" y1="{PLOT_BOTTOM}" x2="{PLOT_RIGHT}" y2="{PLOT_BOTTOM}" class="axis"/>
+  <line x1="{PLOT_LEFT}" y1="{PLOT_TOP}" x2="{PLOT_LEFT}" y2="{PLOT_BOTTOM}" class="axis"/>
+  <g class="grid">{grid}</g>
+  <g class="tick muted">{y_tick_text}{x_tick_text}</g>
+  <text x="495" y="670" text-anchor="middle" class="axis-label ink">{html.escape(x_axis["label"])}</text>
+  <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">{html.escape(y_axis["label"])}</text>
+  {"".join(groups)}
+  {"".join(points)}
+  {annotations}
+  <g class="key"><line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text></g>
+</svg>
+'''
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--input", type=Path, default=Path("summary.csv"), help="aggregate CSV input"
+    )
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("chart_config.json"),
+        help="chart configuration JSON",
+    )
+    parser.add_argument(
+        "--out-dir", type=Path, default=Path("."), help="directory for SVG outputs"
+    )
+    args = parser.parse_args()
+
+    results = parse_results(args.input)
+    config = json.loads(args.config.read_text())
+    if not isinstance(config.get("model_labels"), dict) or not config.get("charts"):
+        raise ValueError("chart config requires model_labels and at least one chart")
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    for chart in config["charts"]:
+        required = {"output", "title", "description", "x_metric", "x_axis", "y_axis"}
+        if not required.issubset(chart):
+            raise ValueError(
+                f"chart config is missing fields: {required - chart.keys()}"
+            )
+        output = args.out_dir / chart["output"]
+        output.write_text(chart_svg(results, chart, config["model_labels"]))
+        print(output)
+
+
+if __name__ == "__main__":
+    main()
