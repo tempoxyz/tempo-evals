@@ -109,7 +109,12 @@ frontier holds under real usage.
 
 ## Notes
 
-Charts can be generated with:
+`summary.csv` contains the chart inputs. Tempo Bench score is mean
+deterministic correctness. Tokens are input plus output tokens, so cached input
+tokens are included once. Model turns are agent trajectory steps. Costs, tokens,
+and turns are sums across all 27 trials for each model and access mode.
+
+Regenerate all charts with:
 
 ```bash
 python3 generate_charts.py --input summary.csv --config chart_config.json --out-dir .
