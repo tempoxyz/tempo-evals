@@ -60,6 +60,12 @@ MCP_ORACLE_DOCS_TOOLS = {
     MCP_DIRECT_PROFILE["id"]: "docs_search",
     MCP_CODE_PROFILE["id"]: "docs_code",
 }
+SUITE_PROFILES = {
+    "tempo": (DOCS_PROFILE["id"], MCP_PROFILE["id"], "all"),
+    "tempo-mcp": (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"], "mcp-both"),
+    "mpp": (DOCS_PROFILE["id"],),
+    "all": (DOCS_PROFILE["id"],),
+}
 _IMAGE_BUILD_LOCK = Lock()
 _images_built = False
 
@@ -320,6 +326,35 @@ def task_paths(options: dict[str, Any]) -> list[str]:
     }
     suite = options.get("task_suite") or "tempo"
     return list(paths.values()) if suite == "all" else [paths[suite]]
+
+
+def validate_run_options(variant_name: str, options: dict[str, Any]) -> dict[str, Any]:
+    variant = VARIANTS.get(variant_name)
+    if not variant:
+        raise RuntimeError(f"Unknown variant: {variant_name}")
+
+    suite = options.get("task_suite") or "tempo"
+    profile = options["profile"]
+    profiles = SUITE_PROFILES[suite]
+    if profile not in profiles:
+        choices = ", ".join(profiles)
+        raise RuntimeError(
+            f"--profile {profile} is not valid for --task-suite {suite}; use {choices}"
+        )
+
+    job_agents = variant.get("job", {}).get("agents", [])
+    if suite == "all" and (
+        not job_agents or any(agent.get("name") != "oracle" for agent in job_agents)
+    ):
+        raise RuntimeError("--task-suite all requires an oracle variant")
+
+    if (
+        not variant.get("job")
+        and not variant.get("production")
+        and profile != DOCS_PROFILE["id"]
+    ):
+        raise RuntimeError("Non-Docs profiles require a job-backed variant")
+    return variant
 
 
 def sync_generated() -> None:
@@ -619,6 +654,17 @@ def production_job(
     }
 
 
+def harbor_flags(options: dict[str, Any]) -> list[str]:
+    names = (
+        "no_force_build",
+        "no_delete",
+        "disable_verification",
+        "install_only",
+        "debug",
+    )
+    return [f"--{name.replace('_', '-')}" for name in names if options.get(name)]
+
+
 def run_production_variant(
     run_id: str,
     options: dict[str, Any],
@@ -637,6 +683,7 @@ def run_production_variant(
     args = ["run", "harbor", "run", "-c", config]
     if options.get("env_file"):
         args.extend(["--env-file", options["env_file"]])
+    args.extend(harbor_flags(options))
     args.extend(["--max-retries", max_retries])
     os.environ["TEMPO_DOCS_BUNDLE_PATH"] = ""
     args.append("-y")
@@ -1095,14 +1142,7 @@ def main(argv: list[str]) -> None:
         return
 
     if options["profile"] in {"all", "mcp-both"}:
-        variant = VARIANTS.get(variant_name)
-        if not variant:
-            usage()
-            raise RuntimeError(f"Unknown variant: {variant_name}")
-        if not variant.get("job") and not variant.get("production"):
-            raise RuntimeError(
-                "The all profile requires a job-backed or production benchmark variant."
-            )
+        variant = validate_run_options(variant_name, options)
         if variant.get("production"):
             prepare_production_profiles(variant, options)
         elif options["sync"]:
@@ -1153,26 +1193,7 @@ def main(argv: list[str]) -> None:
 
 
 def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
-
-    variant = VARIANTS.get(variant_name)
-    if not variant:
-        usage()
-        msg = f"Unknown variant: {variant_name}"
-        raise RuntimeError(msg)
-
-    if (
-        options["profile"]
-        in {
-            MCP_PROFILE["id"],
-            MCP_DIRECT_PROFILE["id"],
-            MCP_CODE_PROFILE["id"],
-        }
-        and not variant.get("job")
-        and not variant.get("production")
-    ):
-        raise RuntimeError(
-            "The MCP profile requires a job-backed or production benchmark variant."
-        )
+    variant = validate_run_options(variant_name, options)
 
     source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
     load_env_file(options.get("env_file"))
@@ -1210,7 +1231,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         args.extend(
             [
                 "--path",
-                options.get("tasks") or variant.get("path") or "tasks/tempo-v1",
+                task_paths(options)[0],
             ]
         )
         args.extend(
@@ -1233,16 +1254,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         args.extend(["--n-concurrent", options["concurrency"]])
     if options.get("agent_concurrency"):
         args.extend(["--n-concurrent-agents", options["agent_concurrency"]])
-    if options.get("no_force_build"):
-        args.append("--no-force-build")
-    if options.get("no_delete"):
-        args.append("--no-delete")
-    if options.get("disable_verification"):
-        args.append("--disable-verification")
-    if options.get("install_only"):
-        args.append("--install-only")
-    if options.get("debug"):
-        args.append("--debug")
+    args.extend(harbor_flags(options))
     max_retries = options.get("max_retries") or (
         "2" if variant.get("needs_daytona_auth") else None
     )
