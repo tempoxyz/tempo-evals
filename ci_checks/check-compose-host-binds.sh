@@ -28,10 +28,13 @@
 # style sources.
 
 if [ $# -eq 0 ]; then
-    TASK_DIRS=$(find tasks -mindepth 1 -maxdepth 1 -type d | sort)
-else
-    TASK_DIRS="$*"
+    echo "Usage: $0 TASK_DIR [TASK_DIR ...]" >&2
+    exit 2
 fi
+for task_dir in "$@"; do
+    [ -f "$task_dir/task.toml" ] || { echo "Not a task directory: $task_dir" >&2; exit 2; }
+done
+TASK_DIRS="$*"
 
 FAILED=0
 for task_dir in $TASK_DIRS; do

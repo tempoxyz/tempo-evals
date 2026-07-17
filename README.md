@@ -71,19 +71,17 @@ and documentation.
 
 ## Setup
 
-Requirements: Docker, Node.js with `npm`, and
-[`uv`](https://docs.astral.sh/uv/).
+Requirements: Docker, Node.js 22 with `npm`, and
+[`uv`](https://docs.astral.sh/uv/). `uv` installs the Python 3.13 CI runtime.
 
 ```bash
-uv sync
-npm run docs:prepare
+uv sync --python 3.13 --locked
+npm ci
+npm run task:lint
 ```
 
-For remote runs, install Harbor with Daytona support:
-
-```bash
-uv tool install 'harbor[daytona]'
-```
+The last command is credential-free and prints `Task lint passed.` Harbor,
+including Daytona support, is installed by `uv sync`.
 
 ## Run Benchmarks
 
