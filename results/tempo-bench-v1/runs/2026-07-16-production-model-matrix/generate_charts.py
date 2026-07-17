@@ -436,13 +436,8 @@ def main() -> None:
 
     results = parse_results(args.input)
     config = json.loads(args.config.read_text())
-    if (
-        not isinstance(config.get("model_labels"), dict)
-        or not config.get("charts")
-    ):
-        raise ValueError(
-            "chart config requires model_labels and at least one chart"
-        )
+    if not isinstance(config.get("model_labels"), dict) or not config.get("charts"):
+        raise ValueError("chart config requires model_labels and at least one chart")
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for chart in config["charts"]:
         required = {"output", "title", "description", "x_metric", "x_axis", "y_axis"}
@@ -451,9 +446,7 @@ def main() -> None:
                 f"chart config is missing fields: {required - chart.keys()}"
             )
         output = args.out_dir / chart["output"]
-        output.write_text(
-            chart_svg(results, chart, config["model_labels"])
-        )
+        output.write_text(chart_svg(results, chart, config["model_labels"]))
         print(output)
 
 
