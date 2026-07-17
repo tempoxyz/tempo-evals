@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="700" viewBox="0 0 980 700" role="img" aria-labelledby="title desc">
   <title id="title">Tempo Bench score / cost</title>
-  <desc id="desc">Aggregate Tempo Bench score and cost. Solid lines are Docs; dotted lines are MCP. Claude points are black and GPT points are warm gray.</desc>
+  <desc id="desc">Aggregate Tempo Bench score and cost. Solid lines are Docs; dotted lines are MCP. Claude series are black and GPT series use Tempo gray.</desc>
   <style>
     .page { fill: #f3f3f3; } .ink { fill: #000; } .muted { fill: #808080; }
     .subtitle, .axis-label, .tick, .key { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
@@ -8,7 +8,7 @@
     .axis { stroke: #000; stroke-width: 1; } .grid { stroke: #d9d9d9; stroke-width: 1; }
     .leader { stroke: #b2b2b2; stroke-width: 1; } .claude { stroke: #000; fill: #000; }
     .label-background { fill: #f3f3f3; }
-    .gpt { stroke: #4d4d4d; fill: #4d4d4d; } .docs { fill: none; stroke-width: 2.25; }
+    .gpt { stroke: #999; fill: #999; } .docs { fill: none; stroke-width: 2.25; }
     .mcp { fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }
     .line-point { stroke: #f3f3f3; stroke-width: 2; } .dot { stroke-width: 2; }
   </style>
@@ -27,5 +27,5 @@
 <g class="claude line-point"><circle cx="855.3" cy="105.2" r="5.5"/><circle cx="267.4" cy="479.1" r="5.5"/><circle cx="699.6" cy="123.9" r="5.5"/><circle cx="796.5" cy="105.2" r="5.5"/><circle cx="821.9" cy="105.2" r="5.5"/><circle cx="233.9" cy="385.7" r="5.5"/><circle cx="640" cy="123.9" r="5.5"/><circle cx="636.3" cy="105.2" r="5.5"/></g>
 <g class="gpt line-point"><circle cx="304.1" cy="105.2" r="5.5"/><circle cx="200.7" cy="142.6" r="5.5"/><circle cx="495.4" cy="105.2" r="5.5"/><circle cx="321.3" cy="105.2" r="5.5"/><circle cx="295.5" cy="123.9" r="5.5"/><circle cx="184.7" cy="105.2" r="5.5"/><circle cx="500.3" cy="123.9" r="5.5"/><circle cx="304.6" cy="105.2" r="5.5"/></g>
 <g class="leader"><line x1="200.7" y1="142.6" x2="206" y2="120"/><line x1="267.4" y1="479.1" x2="273" y2="457"/><line x1="304.1" y1="105.2" x2="310" y2="83"/><line x1="321.3" y1="105.2" x2="327" y2="121"/><line x1="495.4" y1="105.2" x2="501" y2="83"/><line x1="699.6" y1="123.9" x2="705" y2="101"/><line x1="796.5" y1="105.2" x2="802" y2="83"/><line x1="855.3" y1="105.2" x2="849" y2="121"/></g><g class="label-background"><rect x="207" y="111" width="38" height="17" rx="2"/><rect x="274" y="448" width="69" height="17" rx="2"/><rect x="311" y="74" width="62" height="17" rx="2"/><rect x="328" y="118" width="41" height="17" rx="2"/><rect x="502" y="74" width="38" height="17" rx="2"/><rect x="706" y="92" width="62" height="17" rx="2"/><rect x="803" y="74" width="62" height="17" rx="2"/><rect x="793" y="118" width="55" height="17" rx="2"/></g><g class="point-label ink"><text x="210" y="124">Luna</text><text x="277" y="461">Haiku 4.5</text><text x="314" y="87">GPT mini</text><text x="331" y="131">Terra</text><text x="505" y="87">Sol</text><text x="709" y="105">Opus 4.8</text><text x="806" y="87">Sonnet 5</text><text x="796" y="131">Fable 5</text></g>
-  <g class="key"><line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text></g>
+  <g class="key"><line x1="90" y1="578" x2="120" y2="578" stroke="#000" stroke-width="2.25"/><text x="128" y="582" class="ink">Claude</text><line x1="208" y1="578" x2="238" y2="578" stroke="#999" stroke-width="2.25"/><text x="246" y="582" class="ink">GPT</text><line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text></g>
 </svg>

@@ -23,6 +23,8 @@ PLOT_LEFT = 90
 PLOT_RIGHT = 900
 PLOT_TOP = 80
 PLOT_BOTTOM = 610
+CLAUDE_COLOR = "#000"
+GPT_COLOR = "#999"
 
 
 @dataclass(frozen=True)
@@ -308,7 +310,7 @@ def chart_svg(
     points = []
     if mark == "dot":
         for result in results:
-            color = "#000" if result.family == "Claude" else "#4d4d4d"
+            color = CLAUDE_COLOR if result.family == "Claude" else GPT_COLOR
             fill = color if result.access == "docs" else "#f3f3f3"
             stroke = "#f3f3f3" if result.access == "docs" else color
             points.append(
@@ -383,7 +385,12 @@ def chart_svg(
         if mark == "line"
         else "Filled dots are Docs; hollow dots are MCP."
     )
-    legend = (
+    family_legend = (
+        f'<line x1="90" y1="578" x2="120" y2="578" stroke="{CLAUDE_COLOR}" stroke-width="2.25"/><text x="128" y="582" class="ink">Claude</text><line x1="208" y1="578" x2="238" y2="578" stroke="{GPT_COLOR}" stroke-width="2.25"/><text x="246" y="582" class="ink">GPT</text>'
+        if mark == "line"
+        else f'<circle cx="95" cy="578" r="5" fill="{CLAUDE_COLOR}" stroke="{CLAUDE_COLOR}"/><text x="106" y="582" class="ink">Claude</text><circle cx="213" cy="578" r="5" fill="{GPT_COLOR}" stroke="{GPT_COLOR}"/><text x="224" y="582" class="ink">GPT</text>'
+    )
+    access_legend = (
         '<line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text>'
         if mark == "line"
         else '<circle cx="665" cy="578" r="5" fill="#000" stroke="#000"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f3f3f3" stroke="#000" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text>'
@@ -391,15 +398,15 @@ def chart_svg(
     marks = "\n".join((*groups, *points))
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-labelledby="title desc">
   <title id="title">{html.escape(config["title"])}</title>
-  <desc id="desc">{html.escape(config["description"])} {mark_description} Claude points are black and GPT points are warm gray.</desc>
+  <desc id="desc">{html.escape(config["description"])} {mark_description} Claude series are black and GPT series use Tempo gray.</desc>
   <style>
     .page {{ fill: #f3f3f3; }} .ink {{ fill: #000; }} .muted {{ fill: #808080; }}
     .subtitle, .axis-label, .tick, .key {{ font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }}
     .point-label {{ font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }}
     .axis {{ stroke: #000; stroke-width: 1; }} .grid {{ stroke: #d9d9d9; stroke-width: 1; }}
-    .leader {{ stroke: #b2b2b2; stroke-width: 1; }} .claude {{ stroke: #000; fill: #000; }}
+    .leader {{ stroke: #b2b2b2; stroke-width: 1; }} .claude {{ stroke: {CLAUDE_COLOR}; fill: {CLAUDE_COLOR}; }}
     .label-background {{ fill: #f3f3f3; }}
-    .gpt {{ stroke: #4d4d4d; fill: #4d4d4d; }} .docs {{ fill: none; stroke-width: 2.25; }}
+    .gpt {{ stroke: {GPT_COLOR}; fill: {GPT_COLOR}; }} .docs {{ fill: none; stroke-width: 2.25; }}
     .mcp {{ fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }}
     .line-point {{ stroke: #f3f3f3; stroke-width: 2; }} .dot {{ stroke-width: 2; }}
   </style>
@@ -413,7 +420,7 @@ def chart_svg(
   <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">{html.escape(y_axis["label"])}</text>
 {marks}
 {annotations}
-  <g class="key">{legend}</g>
+  <g class="key">{family_legend}{access_legend}</g>
 </svg>
 '''
 

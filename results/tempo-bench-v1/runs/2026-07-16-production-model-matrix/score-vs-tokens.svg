@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="700" viewBox="0 0 980 700" role="img" aria-labelledby="title desc">
   <title id="title">Tempo Bench score / tokens</title>
-  <desc id="desc">Aggregate Tempo Bench score and token use. Filled dots are Docs; hollow dots are MCP. Claude points are black and GPT points are warm gray.</desc>
+  <desc id="desc">Aggregate Tempo Bench score and token use. Filled dots are Docs; hollow dots are MCP. Claude series are black and GPT series use Tempo gray.</desc>
   <style>
     .page { fill: #f3f3f3; } .ink { fill: #000; } .muted { fill: #808080; }
     .subtitle, .axis-label, .tick, .key { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
@@ -8,7 +8,7 @@
     .axis { stroke: #000; stroke-width: 1; } .grid { stroke: #d9d9d9; stroke-width: 1; }
     .leader { stroke: #b2b2b2; stroke-width: 1; } .claude { stroke: #000; fill: #000; }
     .label-background { fill: #f3f3f3; }
-    .gpt { stroke: #4d4d4d; fill: #4d4d4d; } .docs { fill: none; stroke-width: 2.25; }
+    .gpt { stroke: #999; fill: #999; } .docs { fill: none; stroke-width: 2.25; }
     .mcp { fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }
     .line-point { stroke: #f3f3f3; stroke-width: 2; } .dot { stroke-width: 2; }
   </style>
@@ -24,18 +24,18 @@
 <circle class="point dot dot-access-docs" cx="213.3" cy="479.1" r="5.5" fill="#000" stroke="#f3f3f3"/>
 <circle class="point dot dot-access-docs" cx="304.5" cy="123.9" r="5.5" fill="#000" stroke="#f3f3f3"/>
 <circle class="point dot dot-access-docs" cx="836.6" cy="105.2" r="5.5" fill="#000" stroke="#f3f3f3"/>
-<circle class="point dot dot-access-docs" cx="860.8" cy="105.2" r="5.5" fill="#4d4d4d" stroke="#f3f3f3"/>
-<circle class="point dot dot-access-docs" cx="362.5" cy="142.6" r="5.5" fill="#4d4d4d" stroke="#f3f3f3"/>
-<circle class="point dot dot-access-docs" cx="214.8" cy="105.2" r="5.5" fill="#4d4d4d" stroke="#f3f3f3"/>
-<circle class="point dot dot-access-docs" cx="265.9" cy="105.2" r="5.5" fill="#4d4d4d" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="860.8" cy="105.2" r="5.5" fill="#999" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="362.5" cy="142.6" r="5.5" fill="#999" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="214.8" cy="105.2" r="5.5" fill="#999" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="265.9" cy="105.2" r="5.5" fill="#999" stroke="#f3f3f3"/>
 <circle class="point dot dot-access-mcp" cx="157.2" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#000"/>
 <circle class="point dot dot-access-mcp" cx="549" cy="385.7" r="5.5" fill="#f3f3f3" stroke="#000"/>
 <circle class="point dot dot-access-mcp" cx="301.8" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#000"/>
 <circle class="point dot dot-access-mcp" cx="845.9" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#000"/>
-<circle class="point dot dot-access-mcp" cx="825.6" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#4d4d4d"/>
-<circle class="point dot dot-access-mcp" cx="271.7" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#4d4d4d"/>
-<circle class="point dot dot-access-mcp" cx="217.7" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#4d4d4d"/>
-<circle class="point dot dot-access-mcp" cx="220.3" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#4d4d4d"/>
+<circle class="point dot dot-access-mcp" cx="825.6" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#999"/>
+<circle class="point dot dot-access-mcp" cx="271.7" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#999"/>
+<circle class="point dot dot-access-mcp" cx="217.7" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#999"/>
+<circle class="point dot dot-access-mcp" cx="220.3" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#999"/>
 <g class="leader"><line x1="141.3" y1="105.2" x2="147" y2="83"/><line x1="213.3" y1="479.1" x2="219" y2="457"/><line x1="214.8" y1="105.2" x2="220" y2="83"/><line x1="265.9" y1="105.2" x2="271" y2="83"/><line x1="304.5" y1="123.9" x2="298" y2="139"/><line x1="362.5" y1="142.6" x2="368" y2="120"/><line x1="836.6" y1="105.2" x2="830" y2="83"/><line x1="860.8" y1="105.2" x2="854" y2="139"/></g><g class="label-background"><rect x="148" y="74" width="55" height="17" rx="2"/><rect x="220" y="448" width="69" height="17" rx="2"/><rect x="221" y="74" width="38" height="17" rx="2"/><rect x="272" y="74" width="41" height="17" rx="2"/><rect x="235" y="136" width="62" height="17" rx="2"/><rect x="369" y="111" width="38" height="17" rx="2"/><rect x="767" y="74" width="62" height="17" rx="2"/><rect x="791" y="136" width="62" height="17" rx="2"/></g><g class="point-label ink"><text x="151" y="87">Fable 5</text><text x="223" y="461">Haiku 4.5</text><text x="224" y="87">Sol</text><text x="275" y="87">Terra</text><text x="238" y="149">Opus 4.8</text><text x="372" y="124">Luna</text><text x="770" y="87">Sonnet 5</text><text x="794" y="149">GPT mini</text></g>
-  <g class="key"><circle cx="665" cy="578" r="5" fill="#000" stroke="#000"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f3f3f3" stroke="#000" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text></g>
+  <g class="key"><circle cx="95" cy="578" r="5" fill="#000" stroke="#000"/><text x="106" y="582" class="ink">Claude</text><circle cx="213" cy="578" r="5" fill="#999" stroke="#999"/><text x="224" y="582" class="ink">GPT</text><circle cx="665" cy="578" r="5" fill="#000" stroke="#000"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f3f3f3" stroke="#000" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text></g>
 </svg>
