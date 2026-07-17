@@ -255,7 +255,10 @@ def place_model_pair_labels(
 
 
 def chart_svg(
-    results: list[Result], config: dict[str, Any], model_labels: dict[str, str]
+    results: list[Result],
+    config: dict[str, Any],
+    model_labels: dict[str, str],
+    eyebrow: str,
 ) -> str:
     metric = config["x_metric"]
     mark = config.get("mark", "line")
@@ -381,7 +384,7 @@ def chart_svg(
     .point {{ stroke: #f3f3f3; stroke-width: 2; }}
   </style>
   <rect class="page" width="{WIDTH}" height="{HEIGHT}"/>
-  <text x="90" y="54" class="eyebrow muted">Tempo Bench · Production matrix</text>
+  <text x="90" y="54" class="eyebrow muted">{html.escape(eyebrow)}</text>
   <text x="90" y="96" class="title ink">{html.escape(config["title"])}</text>
 {subtitle_svg}
   <line x1="{PLOT_LEFT}" y1="{PLOT_BOTTOM}" x2="{PLOT_RIGHT}" y2="{PLOT_BOTTOM}" class="axis"/>
@@ -415,8 +418,14 @@ def main() -> None:
 
     results = parse_results(args.input)
     config = json.loads(args.config.read_text())
-    if not isinstance(config.get("model_labels"), dict) or not config.get("charts"):
-        raise ValueError("chart config requires model_labels and at least one chart")
+    if (
+        not isinstance(config.get("eyebrow"), str)
+        or not isinstance(config.get("model_labels"), dict)
+        or not config.get("charts")
+    ):
+        raise ValueError(
+            "chart config requires eyebrow, model_labels, and at least one chart"
+        )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     for chart in config["charts"]:
         required = {"output", "title", "description", "x_metric", "x_axis", "y_axis"}
@@ -425,7 +434,9 @@ def main() -> None:
                 f"chart config is missing fields: {required - chart.keys()}"
             )
         output = args.out_dir / chart["output"]
-        output.write_text(chart_svg(results, chart, config["model_labels"]))
+        output.write_text(
+            chart_svg(results, chart, config["model_labels"], config["eyebrow"])
+        )
         print(output)
 
 

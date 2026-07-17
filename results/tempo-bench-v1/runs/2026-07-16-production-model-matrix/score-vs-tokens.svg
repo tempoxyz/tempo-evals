@@ -14,7 +14,7 @@
     .point { stroke: #f3f3f3; stroke-width: 2; }
   </style>
   <rect class="page" width="980" height="700"/>
-  <text x="90" y="54" class="eyebrow muted">Tempo Bench · Production matrix</text>
+  <text x="90" y="54" class="eyebrow muted">2026-07-16</text>
   <text x="90" y="96" class="title ink">Tempo Bench score / tokens</text>
 
   <line x1="90" y1="610" x2="900" y2="610" class="axis"/>
