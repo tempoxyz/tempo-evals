@@ -14,10 +14,33 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 | Trials | 216 | 216 |
 | Total cost | $218.66 | $196.72 |
 | Total tokens | 358.99M | 374.19M |
+| Total model turns | 6,117 | 5,948 |
 
 ## Score vs. cost
 
-![Correctness versus cost](score-vs-cost.svg)
+![Tempo Bench score versus cost](score-vs-cost.svg)
+
+## Score vs. tokens
+
+![Tempo Bench score versus tokens](score-vs-tokens.svg)
+
+## Score vs. turns
+
+![Tempo Bench score versus turns](score-vs-turns.svg)
+
+## Takeaways
+
+- Across the eight-model matrix, MCP has a higher mean score (0.917 vs. 0.894)
+  at 10.0% lower aggregate cost. It used 4.2% more tokens but 2.8% fewer
+  model turns.
+- GPT 5.6 Luna with MCP is the cost standout: perfect score at $6.43. It also
+  improves on its Docs run in score, cost, tokens, and turns.
+- More tokens or turns do not reliably buy more score. GPT 5.4 mini reaches a
+  perfect Docs score with the most tokens (81.85M), while Fable reaches the
+  same score with the fewest tokens (24.12M) but much higher cost.
+- The result is directional, not causal: each point combines 27 trials and
+  scores move in increments of 1/27. The Docs Opus aggregate also includes one
+  error.
 
 ## Aggregate results
 
@@ -34,4 +57,13 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 
 ## Notes
 
-TK TODO
+`summary.csv` contains the chart inputs. Tempo Bench score is mean
+deterministic correctness. Tokens are input plus output tokens, so cached input
+tokens are included once. Model turns are agent trajectory steps. Costs, tokens,
+and turns are sums across all 27 trials for each model and access mode.
+
+Regenerate all charts with:
+
+```bash
+python3 generate_charts.py --input summary.csv --config chart_config.json --out-dir .
+```

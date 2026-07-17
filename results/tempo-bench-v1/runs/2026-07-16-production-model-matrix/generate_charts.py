@@ -34,6 +34,7 @@ class Result:
     correctness: float
     cost_usd: float
     total_tokens: int
+    total_turns: int
 
 
 def parse_results(path: Path) -> list[Result]:
@@ -49,6 +50,7 @@ def parse_results(path: Path) -> list[Result]:
             "input_tokens",
             "output_tokens",
             "total_tokens",
+            "total_turns",
         }
         if reader.fieldnames is None or not required.issubset(reader.fieldnames):
             raise ValueError(f"{path} is missing one or more required columns")
@@ -76,6 +78,7 @@ def parse_results(path: Path) -> list[Result]:
                     correctness=float(row["correctness"]),
                     cost_usd=float(row["cost_usd"]),
                     total_tokens=total_tokens,
+                    total_turns=int(row["total_turns"]),
                 )
             )
     if not results:
@@ -138,6 +141,8 @@ def metric_value(result: Result, metric: str) -> float:
         return result.cost_usd
     if metric == "total_tokens":
         return float(result.total_tokens)
+    if metric == "total_turns":
+        return float(result.total_turns)
     raise ValueError(f"unsupported x_metric: {metric}")
 
 
@@ -197,6 +202,9 @@ def chart_svg(
     results: list[Result], config: dict[str, Any], model_labels: dict[str, str]
 ) -> str:
     metric = config["x_metric"]
+    mark = config.get("mark", "line")
+    if mark not in {"line", "dot"}:
+        raise ValueError(f"unsupported mark: {mark}")
     x_axis = config["x_axis"]
     y_axis = config["y_axis"]
     x_min, x_max = float(x_axis["min"]), float(x_axis["max"])
@@ -216,18 +224,30 @@ def chart_svg(
     )
 
     groups = []
-    for family, access, group in line_groups(results, metric):
-        points = [(x(result), y(result)) for result in group]
-        groups.append(f'<path d="{smooth_path(points)}" class="{family} {access}"/>')
+    if mark == "line":
+        for family, access, group in line_groups(results, metric):
+            points = [(x(result), y(result)) for result in group]
+            groups.append(
+                f'<path d="{smooth_path(points)}" class="{family} {access}"/>'
+            )
 
     points = []
-    for family in ("Claude", "GPT"):
-        family_results = [result for result in results if result.family == family]
-        circles = "".join(
-            f'<circle cx="{px(x(result))}" cy="{px(y(result))}" r="5.5"/>'
-            for result in family_results
-        )
-        points.append(f'<g class="{family.lower()} point">{circles}</g>')
+    if mark == "dot":
+        for result in results:
+            color = "#101010" if result.family == "Claude" else "#837f76"
+            fill = color if result.access == "docs" else "#f7f7f5"
+            stroke = "#f7f7f5" if result.access == "docs" else color
+            points.append(
+                f'<circle class="point dot dot-access-{result.access}" cx="{px(x(result))}" cy="{px(y(result))}" r="5.5" fill="{fill}" stroke="{stroke}"/>'
+            )
+    else:
+        for family in ("Claude", "GPT"):
+            family_results = [result for result in results if result.family == family]
+            circles = "".join(
+                f'<circle cx="{px(x(result))}" cy="{px(y(result))}" r="5.5"/>'
+                for result in family_results
+            )
+            points.append(f'<g class="{family.lower()} point">{circles}</g>')
 
     annotations = ""
     label_access = config.get("label_access")
@@ -264,9 +284,20 @@ def chart_svg(
         f'<text x="{px(scale(float(tick["value"]), x_min, x_max, PLOT_LEFT, PLOT_RIGHT) - 4)}" y="632">{html.escape(tick["label"])}</text>'
         for tick in x_axis["ticks"]
     )
+    mark_description = (
+        "Solid lines are Docs; dotted lines are MCP."
+        if mark == "line"
+        else "Filled dots are Docs; hollow dots are MCP."
+    )
+    legend = (
+        '<line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text>'
+        if mark == "line"
+        else '<circle cx="665" cy="578" r="5" fill="#101010" stroke="#101010"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f7f7f5" stroke="#101010" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text>'
+    )
+    marks = "\n".join((*groups, *points))
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-labelledby="title desc">
   <title id="title">Tempo Bench {html.escape(config["title"].lower())}</title>
-  <desc id="desc">{html.escape(config["description"])} Solid lines are Docs; dotted lines are MCP. Claude points are black and GPT points are warm gray.</desc>
+  <desc id="desc">{html.escape(config["description"])} {mark_description} Claude points are black and GPT points are warm gray.</desc>
   <style>
     .page {{ fill: #f7f7f5; }} .ink {{ fill: #101010; }} .muted {{ fill: #706f6b; }}
     .eyebrow {{ font: 500 11px Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }}
@@ -289,10 +320,9 @@ def chart_svg(
   <g class="tick muted">{y_tick_text}{x_tick_text}</g>
   <text x="495" y="670" text-anchor="middle" class="axis-label ink">{html.escape(x_axis["label"])}</text>
   <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">{html.escape(y_axis["label"])}</text>
-  {"".join(groups)}
-  {"".join(points)}
-  {annotations}
-  <g class="key"><line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text></g>
+{marks}
+{annotations}
+  <g class="key">{legend}</g>
 </svg>
 '''
 

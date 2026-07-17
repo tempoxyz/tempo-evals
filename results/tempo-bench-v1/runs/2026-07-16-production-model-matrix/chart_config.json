@@ -12,7 +12,7 @@
   "charts": [
     {
       "output": "score-vs-cost.svg",
-      "title": "Correctness / cost",
+      "title": "Tempo Bench score / cost",
       "description": "Aggregate Tempo Bench score and cost.",
       "x_metric": "cost_usd",
       "x_axis": {
@@ -41,6 +41,68 @@
         ]
       },
       "label_access": "docs"
+    },
+    {
+      "output": "score-vs-tokens.svg",
+      "title": "Tempo Bench score / tokens",
+      "description": "Aggregate Tempo Bench score and token use.",
+      "mark": "dot",
+      "x_metric": "total_tokens",
+      "x_axis": {
+        "label": "Aggregate tokens",
+        "min": 20000000,
+        "max": 85000000,
+        "ticks": [
+          {"value": 20000000, "label": "20M"},
+          {"value": 40000000, "label": "40M"},
+          {"value": 60000000, "label": "60M"},
+          {"value": 80000000, "label": "80M"}
+        ]
+      },
+      "y_axis": {
+        "label": "Tempo Bench score",
+        "min": 0,
+        "max": 1.05,
+        "ticks": [
+          {"value": 0, "label": "0.00"},
+          {"value": 0.25, "label": "0.25"},
+          {"value": 0.5, "label": "0.50"},
+          {"value": 0.75, "label": "0.75"},
+          {"value": 1, "label": "1.00"}
+        ]
+      },
+      "label_access": null
+    },
+    {
+      "output": "score-vs-turns.svg",
+      "title": "Tempo Bench score / turns",
+      "description": "Aggregate Tempo Bench score and model turns.",
+      "mark": "dot",
+      "x_metric": "total_turns",
+      "x_axis": {
+        "label": "Aggregate model turns",
+        "min": 500,
+        "max": 1200,
+        "ticks": [
+          {"value": 500, "label": "500"},
+          {"value": 700, "label": "700"},
+          {"value": 900, "label": "900"},
+          {"value": 1100, "label": "1100"}
+        ]
+      },
+      "y_axis": {
+        "label": "Tempo Bench score",
+        "min": 0,
+        "max": 1.05,
+        "ticks": [
+          {"value": 0, "label": "0.00"},
+          {"value": 0.25, "label": "0.25"},
+          {"value": 0.5, "label": "0.50"},
+          {"value": 0.75, "label": "0.75"},
+          {"value": 1, "label": "1.00"}
+        ]
+      },
+      "label_access": null
     }
   ]
 }

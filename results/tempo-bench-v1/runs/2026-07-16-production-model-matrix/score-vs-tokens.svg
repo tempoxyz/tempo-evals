@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="700" viewBox="0 0 980 700" role="img" aria-labelledby="title desc">
+  <title id="title">Tempo Bench tempo bench score / tokens</title>
+  <desc id="desc">Aggregate Tempo Bench score and token use. Filled dots are Docs; hollow dots are MCP. Claude points are black and GPT points are warm gray.</desc>
+  <style>
+    .page { fill: #f7f7f5; } .ink { fill: #101010; } .muted { fill: #706f6b; }
+    .eyebrow { font: 500 11px Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }
+    .title { font: 400 35px Georgia, 'Times New Roman', serif; }
+    .subtitle, .axis-label, .tick, .key { font: 400 12px Arial, sans-serif; }
+    .point-label { font: 500 11px Arial, sans-serif; }
+    .axis { stroke: #101010; stroke-width: 1; } .grid { stroke: #deddd9; stroke-width: 1; }
+    .leader { stroke: #aaa8a2; stroke-width: 1; } .claude { stroke: #101010; fill: #101010; }
+    .gpt { stroke: #837f76; fill: #837f76; } .docs { fill: none; stroke-width: 2.25; }
+    .mcp { fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }
+    .point { stroke: #f7f7f5; stroke-width: 2; }
+  </style>
+  <rect class="page" width="980" height="700"/>
+  <text x="90" y="54" class="eyebrow muted">Tempo Bench · Production matrix</text>
+  <text x="90" y="96" class="title ink">Tempo Bench score / tokens</text>
+
+  <line x1="90" y1="610" x2="900" y2="610" class="axis"/>
+  <line x1="90" y1="160" x2="90" y2="610" class="axis"/>
+  <g class="grid"><line x1="90" y1="610" x2="900" y2="610"/><line x1="90" y1="502.9" x2="900" y2="502.9"/><line x1="90" y1="395.7" x2="900" y2="395.7"/><line x1="90" y1="288.6" x2="900" y2="288.6"/><line x1="90" y1="181.4" x2="900" y2="181.4"/></g>
+  <g class="tick muted"><text x="55" y="614">0.00</text><text x="55" y="506.9">0.25</text><text x="55" y="399.7">0.50</text><text x="55" y="292.6">0.75</text><text x="55" y="185.4">1.00</text><text x="86" y="632">20M</text><text x="335.2" y="632">40M</text><text x="584.5" y="632">60M</text><text x="833.7" y="632">80M</text></g>
+  <text x="495" y="670" text-anchor="middle" class="axis-label ink">Aggregate tokens</text>
+  <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">Tempo Bench score</text>
+<circle class="point dot dot-access-docs" cx="141.3" cy="181.4" r="5.5" fill="#101010" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-docs" cx="213.3" cy="498.9" r="5.5" fill="#101010" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-docs" cx="304.5" cy="197.3" r="5.5" fill="#101010" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-docs" cx="836.6" cy="181.4" r="5.5" fill="#101010" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-docs" cx="860.8" cy="181.4" r="5.5" fill="#837f76" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-docs" cx="362.5" cy="213.2" r="5.5" fill="#837f76" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-docs" cx="214.8" cy="181.4" r="5.5" fill="#837f76" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-docs" cx="265.9" cy="181.4" r="5.5" fill="#837f76" stroke="#f7f7f5"/>
+<circle class="point dot dot-access-mcp" cx="157.2" cy="181.4" r="5.5" fill="#f7f7f5" stroke="#101010"/>
+<circle class="point dot dot-access-mcp" cx="549" cy="419.5" r="5.5" fill="#f7f7f5" stroke="#101010"/>
+<circle class="point dot dot-access-mcp" cx="301.8" cy="197.3" r="5.5" fill="#f7f7f5" stroke="#101010"/>
+<circle class="point dot dot-access-mcp" cx="845.9" cy="181.4" r="5.5" fill="#f7f7f5" stroke="#101010"/>
+<circle class="point dot dot-access-mcp" cx="825.6" cy="197.3" r="5.5" fill="#f7f7f5" stroke="#837f76"/>
+<circle class="point dot dot-access-mcp" cx="271.7" cy="181.4" r="5.5" fill="#f7f7f5" stroke="#837f76"/>
+<circle class="point dot dot-access-mcp" cx="217.7" cy="197.3" r="5.5" fill="#f7f7f5" stroke="#837f76"/>
+<circle class="point dot dot-access-mcp" cx="220.3" cy="181.4" r="5.5" fill="#f7f7f5" stroke="#837f76"/>
+
+  <g class="key"><circle cx="665" cy="578" r="5" fill="#101010" stroke="#101010"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f7f7f5" stroke="#101010" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text></g>
+</svg>
