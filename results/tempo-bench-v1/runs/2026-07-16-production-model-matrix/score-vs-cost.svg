@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="700" viewBox="0 0 980 700" role="img" aria-labelledby="title desc">
-  <title id="title">Tempo Bench tempo bench score / cost</title>
+  <title id="title">Tempo Bench score / cost</title>
   <desc id="desc">Aggregate Tempo Bench score and cost. Solid lines are Docs; dotted lines are MCP. Claude points are black and GPT points are warm gray.</desc>
   <style>
-    .page { fill: #f7f7f5; } .ink { fill: #101010; } .muted { fill: #706f6b; }
-    .eyebrow { font: 500 11px Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }
-    .title { font: 400 35px Georgia, 'Times New Roman', serif; }
-    .subtitle, .axis-label, .tick, .key { font: 400 12px Arial, sans-serif; }
-    .point-label { font: 500 11px Arial, sans-serif; }
-    .axis { stroke: #101010; stroke-width: 1; } .grid { stroke: #deddd9; stroke-width: 1; }
-    .leader { stroke: #aaa8a2; stroke-width: 1; } .claude { stroke: #101010; fill: #101010; }
-    .gpt { stroke: #837f76; fill: #837f76; } .docs { fill: none; stroke-width: 2.25; }
+    .page { fill: #f3f3f3; } .ink { fill: #000; } .muted { fill: #808080; }
+    .eyebrow { font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; }
+    .title { font: 300 40px 'HB Set', 'Times New Roman', Georgia, serif; letter-spacing: -1.2px; }
+    .subtitle, .axis-label, .tick, .key { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
+    .point-label { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
+    .axis { stroke: #000; stroke-width: 1; } .grid { stroke: #d9d9d9; stroke-width: 1; }
+    .leader { stroke: #b2b2b2; stroke-width: 1; } .claude { stroke: #000; fill: #000; }
+    .gpt { stroke: #4d4d4d; fill: #4d4d4d; } .docs { fill: none; stroke-width: 2.25; }
     .mcp { fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }
-    .point { stroke: #f7f7f5; stroke-width: 2; }
+    .point { stroke: #f3f3f3; stroke-width: 2; }
   </style>
   <rect class="page" width="980" height="700"/>
   <text x="90" y="54" class="eyebrow muted">Tempo Bench · Production matrix</text>

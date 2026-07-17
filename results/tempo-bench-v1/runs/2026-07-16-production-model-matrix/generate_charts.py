@@ -154,7 +154,7 @@ def place_labels(
     results: list[Result], x: Any, y: Any, model_labels: dict[str, str]
 ) -> list[tuple[Result, str, int, int, int, int]]:
     """Greedily assign label positions, avoiding collisions inside the plot."""
-    label_gap = 8
+    label_gap = 5
     placed: list[tuple[int, int, int, int]] = []
     labels: list[tuple[Result, str, int, int, int, int]] = []
     for result in sorted(results, key=lambda item: (x(item), y(item), item.model)):
@@ -164,13 +164,25 @@ def place_labels(
         right_first = point_x < PLOT_RIGHT - width - 20
         horizontal = ("right", "left") if right_first else ("left", "right")
         candidates = [
-            (side, vertical) for vertical in ("top", "bottom") for side in horizontal
+            (side, vertical, offset)
+            for offset in (14, 30, 46, 62, 78, 94)
+            for vertical in ("top", "bottom")
+            for side in horizontal
         ]
-        for side, vertical in candidates:
+        for side, vertical, offset in candidates:
             text_x = int(point_x + 10) if side == "right" else int(point_x - width - 10)
-            text_y = int(point_y - 14) if vertical == "top" else int(point_y + 22)
+            text_y = (
+                int(point_y - offset)
+                if vertical == "top"
+                else int(point_y + offset + 8)
+            )
             box = (text_x, text_y - 11, text_x + width, text_y + 2)
-            if box[0] < PLOT_LEFT or box[2] > PLOT_RIGHT or box[1] < PLOT_TOP - 10:
+            if (
+                box[0] < PLOT_LEFT
+                or box[2] > PLOT_RIGHT
+                or box[1] < PLOT_TOP - 50
+                or box[3] > PLOT_BOTTOM - 14
+            ):
                 continue
             padded_box = (
                 box[0] - label_gap,
@@ -234,9 +246,9 @@ def chart_svg(
     points = []
     if mark == "dot":
         for result in results:
-            color = "#101010" if result.family == "Claude" else "#837f76"
-            fill = color if result.access == "docs" else "#f7f7f5"
-            stroke = "#f7f7f5" if result.access == "docs" else color
+            color = "#000" if result.family == "Claude" else "#4d4d4d"
+            fill = color if result.access == "docs" else "#f3f3f3"
+            stroke = "#f3f3f3" if result.access == "docs" else color
             points.append(
                 f'<circle class="point dot dot-access-{result.access}" cx="{px(x(result))}" cy="{px(y(result))}" r="5.5" fill="{fill}" stroke="{stroke}"/>'
             )
@@ -252,10 +264,15 @@ def chart_svg(
     annotations = ""
     label_access = config.get("label_access")
     if label_access:
+        label_results = (
+            results
+            if label_access == "all"
+            else [result for result in results if result.access == label_access]
+        )
         leaders: list[str] = []
         text: list[str] = []
         for result, label, leader_x, leader_y, label_x, label_y in place_labels(
-            [result for result in results if result.access == label_access],
+            label_results,
             x,
             y,
             model_labels,
@@ -292,23 +309,23 @@ def chart_svg(
     legend = (
         '<line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text>'
         if mark == "line"
-        else '<circle cx="665" cy="578" r="5" fill="#101010" stroke="#101010"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f7f7f5" stroke="#101010" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text>'
+        else '<circle cx="665" cy="578" r="5" fill="#000" stroke="#000"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f3f3f3" stroke="#000" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text>'
     )
     marks = "\n".join((*groups, *points))
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-labelledby="title desc">
-  <title id="title">Tempo Bench {html.escape(config["title"].lower())}</title>
+  <title id="title">{html.escape(config["title"])}</title>
   <desc id="desc">{html.escape(config["description"])} {mark_description} Claude points are black and GPT points are warm gray.</desc>
   <style>
-    .page {{ fill: #f7f7f5; }} .ink {{ fill: #101010; }} .muted {{ fill: #706f6b; }}
-    .eyebrow {{ font: 500 11px Arial, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }}
-    .title {{ font: 400 35px Georgia, 'Times New Roman', serif; }}
-    .subtitle, .axis-label, .tick, .key {{ font: 400 12px Arial, sans-serif; }}
-    .point-label {{ font: 500 11px Arial, sans-serif; }}
-    .axis {{ stroke: #101010; stroke-width: 1; }} .grid {{ stroke: #deddd9; stroke-width: 1; }}
-    .leader {{ stroke: #aaa8a2; stroke-width: 1; }} .claude {{ stroke: #101010; fill: #101010; }}
-    .gpt {{ stroke: #837f76; fill: #837f76; }} .docs {{ fill: none; stroke-width: 2.25; }}
+    .page {{ fill: #f3f3f3; }} .ink {{ fill: #000; }} .muted {{ fill: #808080; }}
+    .eyebrow {{ font: 500 11px 'IBM Plex Mono', monospace; letter-spacing: 1.5px; text-transform: uppercase; }}
+    .title {{ font: 300 40px 'HB Set', 'Times New Roman', Georgia, serif; letter-spacing: -1.2px; }}
+    .subtitle, .axis-label, .tick, .key {{ font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }}
+    .point-label {{ font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }}
+    .axis {{ stroke: #000; stroke-width: 1; }} .grid {{ stroke: #d9d9d9; stroke-width: 1; }}
+    .leader {{ stroke: #b2b2b2; stroke-width: 1; }} .claude {{ stroke: #000; fill: #000; }}
+    .gpt {{ stroke: #4d4d4d; fill: #4d4d4d; }} .docs {{ fill: none; stroke-width: 2.25; }}
     .mcp {{ fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }}
-    .point {{ stroke: #f7f7f5; stroke-width: 2; }}
+    .point {{ stroke: #f3f3f3; stroke-width: 2; }}
   </style>
   <rect class="page" width="{WIDTH}" height="{HEIGHT}"/>
   <text x="90" y="54" class="eyebrow muted">Tempo Bench · Production matrix</text>
