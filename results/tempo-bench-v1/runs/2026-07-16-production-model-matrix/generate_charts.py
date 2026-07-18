@@ -385,12 +385,7 @@ def chart_svg(
         if mark == "line"
         else "Filled dots are Docs; hollow dots are MCP."
     )
-    family_legend = (
-        f'<line x1="90" y1="578" x2="120" y2="578" stroke="{CLAUDE_COLOR}" stroke-width="2.25"/><text x="128" y="582" class="ink">Claude</text><line x1="208" y1="578" x2="238" y2="578" stroke="{GPT_COLOR}" stroke-width="2.25"/><text x="246" y="582" class="ink">GPT</text>'
-        if mark == "line"
-        else f'<circle cx="95" cy="578" r="5" fill="{CLAUDE_COLOR}" stroke="{CLAUDE_COLOR}"/><text x="106" y="582" class="ink">Claude</text><circle cx="213" cy="578" r="5" fill="{GPT_COLOR}" stroke="{GPT_COLOR}"/><text x="224" y="582" class="ink">GPT</text>'
-    )
-    access_legend = (
+    legend = (
         '<line x1="650" y1="578" x2="680" y2="578" class="axis docs"/><text x="688" y="582" class="ink">Docs</text><line x1="762" y1="578" x2="792" y2="578" class="axis mcp"/><text x="800" y="582" class="ink">MCP</text>'
         if mark == "line"
         else '<circle cx="665" cy="578" r="5" fill="#000" stroke="#000"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f3f3f3" stroke="#000" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text>'
@@ -420,7 +415,7 @@ def chart_svg(
   <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">{html.escape(y_axis["label"])}</text>
 {marks}
 {annotations}
-  <g class="key">{family_legend}{access_legend}</g>
+  <g class="key">{legend}</g>
 </svg>
 '''
 

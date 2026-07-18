@@ -40,7 +40,7 @@
           {"value": 1, "label": "1.00"}
         ]
       },
-      "label_access": "docs"
+      "label_access": "all"
     },
     {
       "output": "score-vs-tokens.svg",
