@@ -71,8 +71,8 @@ and documentation.
 
 ## Setup
 
-Requirements: Docker, Node.js with `npm`, and
-[`uv`](https://docs.astral.sh/uv/).
+Requirements: Docker, Node.js 22 with `npm`, and
+[`uv`](https://docs.astral.sh/uv/). `uv` installs the Python 3.13 CI runtime.
 
 ```bash
 npm ci --ignore-scripts --no-audit --no-fund

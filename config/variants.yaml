@@ -83,7 +83,6 @@ variants:
   model:
     benchmark: tempo
     prefix: model-local
-    path: tasks/tempo-v1
     default_agent: claude-code
     default_model: haiku
     needs_agent_auth: true

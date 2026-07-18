@@ -4,8 +4,7 @@
 # This ensures tasks don't have implicit assumptions about working directory
 #
 # Usage:
-#   ./check-task-absolute-path.sh                    # Check all tasks
-#   ./check-task-absolute-path.sh tasks/task1/       # Check specific tasks
+#   ./check-task-absolute-path.sh tasks/tempo-v1/set-fee-token
 #
 # This script checks for:
 # 1. File paths in task instructions that should be absolute (starting with /)
@@ -115,19 +114,14 @@ $subdir_paths"
     echo -e "$issues"
 }
 
-# Get list of task directories to check (either from arguments or check all tasks)
 if [ $# -eq 0 ]; then
-    # If no arguments, check all task directories
-    TASK_DIRS=$(find tasks -mindepth 1 -maxdepth 1 -type d | sort)
-else
-    # If arguments provided, use those directories
-    TASK_DIRS=""
-    for arg in "$@"; do
-        if [ -d "$arg" ]; then
-            TASK_DIRS="$TASK_DIRS $arg"
-        fi
-    done
+    echo "Usage: $0 TASK_DIR [TASK_DIR ...]" >&2
+    exit 2
 fi
+for task_dir in "$@"; do
+    [ -f "$task_dir/task.toml" ] || { echo "Not a task directory: $task_dir" >&2; exit 2; }
+done
+TASK_DIRS="$*"
 
 if [ -z "$TASK_DIRS" ]; then
     echo "No task directories to check"

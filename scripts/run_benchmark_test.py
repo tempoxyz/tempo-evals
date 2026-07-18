@@ -33,6 +33,7 @@ from scripts.run_benchmark import (
     stage_pinned_docs_task,
     sync_dataset,
     uses_live_mcp_eval,
+    validate_run_options,
     versioned_name,
 )
 
@@ -402,6 +403,58 @@ class RunBenchmarkTest(unittest.TestCase):
 
         self.assertEqual(options["n_attempts"], "1")
 
+    def test_model_uses_the_requested_task_suite(self) -> None:
+        options = {
+            "env_file": None,
+            "job_name": "mpp-model-test",
+            "profile": "docs",
+            "sync": False,
+            "task_suite": "mpp",
+        }
+        with (
+            patch("scripts.run_benchmark.preflight"),
+            patch("scripts.run_benchmark.build_images"),
+            patch("scripts.run_benchmark.docs_source", return_value={"mode": "public"}),
+            patch("scripts.run_benchmark.ensure_docs_bundle", return_value=None),
+            patch("scripts.run_benchmark.run") as run,
+        ):
+            run_benchmark_variant("model", options)
+
+        self.assertEqual(
+            run.call_args.args[1][3:5],
+            ["--path", "tasks/mpp"],
+        )
+
+    def test_suite_profiles_are_validated_before_running(self) -> None:
+        for suite, profile in (
+            ("tempo", "mcp-direct"),
+            ("tempo-mcp", "mcp"),
+            ("mpp", "mcp"),
+            ("all", "all"),
+        ):
+            with (
+                self.subTest(suite=suite, profile=profile),
+                self.assertRaisesRegex(RuntimeError, "is not valid"),
+            ):
+                validate_run_options(
+                    "local-agent", {"task_suite": suite, "profile": profile}
+                )
+
+    def test_model_rejects_the_all_suite(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "requires an oracle variant"):
+            validate_run_options("model", {"task_suite": "all", "profile": "docs"})
+
+    def test_all_suite_rejects_agent_runs_before_work(self) -> None:
+        with patch("scripts.run_benchmark.preflight") as preflight:
+            for variant in ("local-agent", "production-daytona"):
+                with (
+                    self.subTest(variant=variant),
+                    self.assertRaisesRegex(RuntimeError, "requires an oracle variant"),
+                ):
+                    main([variant, "--task-suite", "all"])
+
+        preflight.assert_not_called()
+
     def test_production_job_uses_native_name_and_requested_attempts(self) -> None:
         run_id = "mpp-bench-v1-production-20260714T202823Z-docs"
         job = production_job(
@@ -447,7 +500,17 @@ class RunBenchmarkTest(unittest.TestCase):
             ) as stage,
             patch("scripts.run_benchmark.run_status", return_value=0) as run_status,
         ):
-            run_production_variant(run_id, {"task_suite": "mpp"}, None)
+            run_production_variant(
+                run_id,
+                {
+                    "task_suite": "mpp",
+                    "no_delete": True,
+                    "disable_verification": True,
+                    "install_only": True,
+                    "debug": True,
+                },
+                None,
+            )
 
         self.assertEqual(stage.call_args.args[0]["job_name"], run_id)
         self.assertEqual(
@@ -467,6 +530,10 @@ class RunBenchmarkTest(unittest.TestCase):
                 "run",
                 "-c",
                 "job.yaml",
+                "--no-delete",
+                "--disable-verification",
+                "--install-only",
+                "--debug",
                 "--max-retries",
                 "4",
                 "-y",
