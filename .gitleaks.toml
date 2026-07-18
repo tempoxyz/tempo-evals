@@ -1,0 +1,7 @@
+title = "Tempo Evals Gitleaks configuration"
+
+[allowlist]
+description = "Public Ethereum addresses used as fixed task fixtures"
+regexes = [
+  '''0x[0-9a-fA-F]{40}''',
+]
