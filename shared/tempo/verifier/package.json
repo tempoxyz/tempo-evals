@@ -1,10 +1,10 @@
 {
-  "name": "@tempo-bench/verifier",
+  "name": "@stable-bench/verifier",
   "version": "0.0.0",
   "private": true,
   "type": "commonjs",
   "bin": {
-    "tempo-bench-verify": "bin/tempo-bench-verify.js"
+    "stable-bench-verify": "bin/stable-bench-verify.js"
   },
   "scripts": {
     "test": "node --test"

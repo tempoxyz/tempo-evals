@@ -231,7 +231,7 @@ async function main(): Promise<void> {
   await request("initialize", {
     protocolVersion: "2025-06-18",
     capabilities: {},
-    clientInfo: { name: "tempo-bench-oracle", version: "1" },
+    clientInfo: { name: "stable-bench-oracle", version: "1" },
   });
   const results: any[] = [];
   for (const lookup of task.lookups) {

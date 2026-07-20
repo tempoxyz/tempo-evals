@@ -59,8 +59,8 @@ class ImagesTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            immutable_ref("ghcr.io/tempoxyz/tempo-bench-base:agent-source-test"),
-            f"ghcr.io/tempoxyz/tempo-bench-base@sha256:{'a' * 64}",
+            immutable_ref("ghcr.io/tempoxyz/stable-bench-base:agent-source-test"),
+            f"ghcr.io/tempoxyz/stable-bench-base@sha256:{'a' * 64}",
         )
 
     @patch("scripts.images.immutable_ref")

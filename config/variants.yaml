@@ -9,7 +9,7 @@ daytona:
   # Image and snapshot used by Daytona job environments. After changing the
   # image, run scripts/create-daytona-dind-snapshot.py to create the snapshot.
   dind_image: docker:28.3.3-dind
-  dind_snapshot_name: tempo-bench-dind-28-3-3
+  dind_snapshot_name: stable-bench-dind-28-3-3
 
 # Dataset scopes for explicit benchmark entrypoints. Commands default to Tempo;
 # use --task-suite all to include every task family.

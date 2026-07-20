@@ -34,12 +34,12 @@ function addressArrayEnv(name) {
 }
 
 function readConfig() {
-  const workspace = env("TEMPO_BENCH_WORKSPACE", "/app");
+  const workspace = env("STABLE_BENCH_WORKSPACE", "/app");
   return {
-    caseId: env("TEMPO_BENCH_CASE", "transfer-with-memo"),
+    caseId: env("STABLE_BENCH_CASE", "transfer-with-memo"),
     workspace,
-    logDir: env("TEMPO_BENCH_LOG_DIR", "/logs/verifier"),
-    artifactDir: env("TEMPO_BENCH_ARTIFACT_DIR", "/logs/artifacts"),
+    logDir: env("STABLE_BENCH_LOG_DIR", "/logs/verifier"),
+    artifactDir: env("STABLE_BENCH_ARTIFACT_DIR", "/logs/artifacts"),
     resultPath: path.join(workspace, "out.json"),
     token: requiredEnv("TEMPO_TOKEN"),
     feeToken: env("TEMPO_FEE_TOKEN", env("TEMPO_TOKEN")),
@@ -59,9 +59,9 @@ function readConfig() {
     swapTokenOut: env("TEMPO_SWAP_TOKEN_OUT", "0x20c0000000000000000000000000000000000002"),
     swapAmountIn: env("TEMPO_SWAP_AMOUNT_IN", env("TEMPO_AMOUNT")),
     swapMinAmountOut: env("TEMPO_SWAP_MIN_AMOUNT_OUT", "0"),
-    submissionTimeoutMs: Number(env("TEMPO_BENCH_SUBMISSION_TIMEOUT_MS", "180000")),
-    rpcWaitMs: Number(env("TEMPO_BENCH_RPC_WAIT_MS", "60000")),
-    logWaitMs: Number(env("TEMPO_BENCH_LOG_WAIT_MS", "30000")),
+    submissionTimeoutMs: Number(env("STABLE_BENCH_SUBMISSION_TIMEOUT_MS", "180000")),
+    rpcWaitMs: Number(env("STABLE_BENCH_RPC_WAIT_MS", "60000")),
+    logWaitMs: Number(env("STABLE_BENCH_LOG_WAIT_MS", "30000")),
   };
 }
 

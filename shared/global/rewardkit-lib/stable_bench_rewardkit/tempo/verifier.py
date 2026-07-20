@@ -8,7 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from tempo_bench_rewardkit.common.tempo_reward import (
+from stable_bench_rewardkit.common.tempo_reward import (
     ZERO_REWARD,
     write_reward,
 )
@@ -34,9 +34,9 @@ def _run_rewardkit(tests: Path, workspace: Path, output: Path) -> bool:
 
 
 def run() -> int:
-    log_dir = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
-    workspace = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
-    tests = Path(os.environ.get("TEMPO_BENCH_TESTS_DIR", "/tests"))
+    log_dir = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
+    workspace = Path(os.environ.get("STABLE_BENCH_WORKSPACE", "/app"))
+    tests = Path(os.environ.get("STABLE_BENCH_TESTS_DIR", "/tests"))
     reward = log_dir / "reward.json"
     details = log_dir / "reward-details.json"
     rewardkit_output = log_dir / "rewardkit-output.json"
@@ -62,7 +62,7 @@ def run() -> int:
             ["bash", str(tests / "correctness" / "verify-tempo.sh")], check=False
         )
         if verifier_result.returncode != 0:
-            if (log_dir / "tempo-bench-scores.json").is_file():
+            if (log_dir / "stable-bench-scores.json").is_file():
                 reward.write_text(f"{json.dumps(ZERO_REWARD)}\n")
                 return 0
             return verifier_result.returncode or 1

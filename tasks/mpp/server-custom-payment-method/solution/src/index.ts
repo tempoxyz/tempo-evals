@@ -6,7 +6,7 @@ import { Mppx, NodeListener, Request as ServerRequest } from "mppx/server";
 const port = Number(process.env.PORT ?? "3000");
 const freePath = "/free";
 const paidPath = "/paid";
-const expectedAccessKey = process.env.MPP_CUSTOM_ACCESS_KEY ?? "tempo-bench-access-key";
+const expectedAccessKey = process.env.MPP_CUSTOM_ACCESS_KEY ?? "stable-bench-access-key";
 
 const benchKey = Method.from({
   name: "bench-key",
@@ -44,7 +44,7 @@ const benchKeyServer = Method.toServer(benchKey, {
 
 const mppx = Mppx.create({
   methods: [benchKeyServer],
-  secretKey: process.env.MPP_SECRET_KEY ?? "tempo-bench-mpp-secret-key-000000001",
+  secretKey: process.env.MPP_SECRET_KEY ?? "stable-bench-mpp-secret-key-000000001",
 });
 
 function writeJson(response: http.ServerResponse, status: number, body: unknown) {

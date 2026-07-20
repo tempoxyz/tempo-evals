@@ -2,18 +2,18 @@
 # SYNCED FROM shared/mpp/tests/test.sh BY npm run sync. DO NOT EDIT COPIES IN tasks/.
 set -u
 
-LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
-# The venv is installed in the tempo-bench verifier image; see
+LOG_DIR="${STABLE_BENCH_LOG_DIR:-/logs/verifier}"
+# The venv is installed in the stable-bench verifier image; see
 # shared/global/docker/verifier/Dockerfile.
-REWARDKIT_VENV="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}"
+REWARDKIT_VENV="${stable_bench_rewardkit_VENV:-/opt/stable-bench-rewardkit-venv}"
 REWARDKIT_PYTHON="$REWARDKIT_VENV/bin/python"
 REWARD_FILE="$LOG_DIR/reward.json"
 DETAILS_FILE="$LOG_DIR/reward-details.json"
 REWARDKIT_OUTPUT_FILE="$LOG_DIR/rewardkit-output.json"
 SCORES_FILE="$LOG_DIR/scores.json"
-WORKSPACE_SCORES_FILE="${TEMPO_BENCH_WORKSPACE:-/app}/scores.json"
-OUT_FILE="${TEMPO_BENCH_WORKSPACE:-/app}/out.json"
-REWARDKIT_TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
+WORKSPACE_SCORES_FILE="${STABLE_BENCH_WORKSPACE:-/app}/scores.json"
+OUT_FILE="${STABLE_BENCH_WORKSPACE:-/app}/out.json"
+REWARDKIT_TESTS_DIR="${STABLE_BENCH_TESTS_DIR:-/tests}"
 
 mkdir -p "$LOG_DIR"
 rm -f "$REWARD_FILE" "$DETAILS_FILE" "$REWARDKIT_OUTPUT_FILE" "$SCORES_FILE" "$WORKSPACE_SCORES_FILE" "$OUT_FILE"
@@ -22,18 +22,18 @@ skip_llm_quality() {
   reason="$1"
   REWARDKIT_TESTS_DIR="/tmp/tempo-mpp-rewardkit-tests"
   rm -rf "$REWARDKIT_TESTS_DIR"
-  cp -R "${TEMPO_BENCH_TESTS_DIR:-/tests}" "$REWARDKIT_TESTS_DIR"
+  cp -R "${STABLE_BENCH_TESTS_DIR:-/tests}" "$REWARDKIT_TESTS_DIR"
   rm -f "$REWARDKIT_TESTS_DIR/quality/reward.toml"
   printf '%s\n' "$reason" > "$LOG_DIR/quality-skipped.txt"
 }
 
 if [ -z "${ANTHROPIC_API_KEY:-}" ] \
-  && [ -f "${TEMPO_BENCH_TESTS_DIR:-/tests}/quality/reward.toml" ]; then
+  && [ -f "${STABLE_BENCH_TESTS_DIR:-/tests}/quality/reward.toml" ]; then
   skip_llm_quality 'Skipping LLM quality reward because ANTHROPIC_API_KEY is not set.'
 fi
 
 verifier_utils() {
-  "$REWARDKIT_PYTHON" -m tempo_bench_rewardkit.mpp.verifier_utils "$@"
+  "$REWARDKIT_PYTHON" -m stable_bench_rewardkit.mpp.verifier_utils "$@"
 }
 
 write_binary_reward() {
@@ -64,7 +64,7 @@ finish() {
 trap finish EXIT
 
 if [ ! -x "$REWARDKIT_PYTHON" ]; then
-  printf 'missing RewardKit venv: %s (rebuild the tempo-bench verifier image)\n' \
+  printf 'missing RewardKit venv: %s (rebuild the stable-bench verifier image)\n' \
     "$REWARDKIT_VENV" >&2
   write_zero_reward
   exit 0
@@ -72,7 +72,7 @@ fi
 
 run_rewardkit() {
   "$REWARDKIT_PYTHON" -m rewardkit "$REWARDKIT_TESTS_DIR" \
-    --workspace "${TEMPO_BENCH_WORKSPACE:-/app}" \
+    --workspace "${STABLE_BENCH_WORKSPACE:-/app}" \
     --output "$REWARDKIT_OUTPUT_FILE" \
     > "$LOG_DIR/rewardkit.stdout.txt" \
     2> "$LOG_DIR/rewardkit.stderr.txt"
@@ -87,7 +87,7 @@ fi
 
 if ! run_rewardkit; then
   if [ "$REWARDKIT_TESTS_DIR" != "/tmp/tempo-mpp-rewardkit-tests" ] \
-    && [ -f "${TEMPO_BENCH_TESTS_DIR:-/tests}/quality/reward.toml" ]; then
+    && [ -f "${STABLE_BENCH_TESTS_DIR:-/tests}/quality/reward.toml" ]; then
     cp "$LOG_DIR/rewardkit.stderr.txt" "$LOG_DIR/rewardkit-with-llm.stderr.txt"
     skip_llm_quality 'Skipping LLM quality reward because the LLM judge failed; reran programmatic rewards only.'
     rm -f "$DETAILS_FILE" "$REWARDKIT_OUTPUT_FILE"

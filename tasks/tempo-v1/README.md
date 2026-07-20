@@ -1,6 +1,6 @@
 # Tempo Testnet Integration Suite
 
-Dataset: `tempo/tempo-bench-v1`
+Dataset: `tempo/stable-bench-v1`
 
 ## Overview
 
@@ -121,6 +121,6 @@ images; see the root README for global environment setup.
 
 Edit task-owned files directly. `npm run sync` refreshes both generated
 Dockerfiles. The Tempo verifier is installed only in the verifier image and
-selects the case named by `TEMPO_BENCH_CASE`. Keep task-specific correctness
+selects the case named by `STABLE_BENCH_CASE`. Keep task-specific correctness
 criteria and onchain checks in the task directory. Refresh `dataset.toml` after
 a task change; the manifest is a required checked-in artifact.

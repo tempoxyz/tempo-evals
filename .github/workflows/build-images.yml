@@ -40,14 +40,14 @@ jobs:
       - name: Build image pair
         run: |
           set -euo pipefail
-          docker build --tag tempo-bench-agent:ci \
+          docker build --tag stable-bench-agent:ci \
             --file shared/global/docker/agent/Dockerfile .
-          docker build --tag tempo-bench-verifier:ci \
-            --build-arg AGENT_IMAGE=tempo-bench-agent:ci \
+          docker build --tag stable-bench-verifier:ci \
+            --build-arg AGENT_IMAGE=stable-bench-agent:ci \
             --file shared/global/docker/verifier/Dockerfile .
 
       - name: Verify image boundary
-        run: bash ci_checks/check-image-boundary.sh tempo-bench-agent:ci tempo-bench-verifier:ci
+        run: bash ci_checks/check-image-boundary.sh stable-bench-agent:ci stable-bench-verifier:ci
 
   build-and-push:
     if: >-
@@ -119,8 +119,8 @@ jobs:
           file: shared/global/docker/agent/Dockerfile
           tags: ${{ steps.images.outputs.agent_ref }}
           push: true
-          cache-from: type=gha,scope=tempo-bench-agent
-          cache-to: type=gha,mode=max,scope=tempo-bench-agent
+          cache-from: type=gha,scope=stable-bench-agent
+          cache-to: type=gha,mode=max,scope=stable-bench-agent
 
       - name: Resolve agent digest
         id: agent
@@ -141,8 +141,8 @@ jobs:
             AGENT_IMAGE=${{ steps.agent.outputs.ref }}
           tags: ${{ steps.images.outputs.verifier_ref }}
           push: true
-          cache-from: type=gha,scope=tempo-bench-verifier
-          cache-to: type=gha,mode=max,scope=tempo-bench-verifier
+          cache-from: type=gha,scope=stable-bench-verifier
+          cache-to: type=gha,mode=max,scope=stable-bench-verifier
 
       - name: Resolve verifier digest
         id: verifier

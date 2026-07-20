@@ -162,7 +162,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
         self.assertEqual(
             run_production.call_args.args[0],
-            "tempo-bench-v1-production-20260714T202823Z-docs",
+            "stable-bench-v1-production-20260714T202823Z-docs",
         )
 
     def test_production_profiles_share_one_timestamped_run_group(self) -> None:
@@ -189,7 +189,7 @@ class RunBenchmarkTest(unittest.TestCase):
             invocation.args[1]["profile"]: invocation.args[1]
             for invocation in run_variant.call_args_list
         }
-        run_group = "tempo-bench-v1-production-20260714T202823Z"
+        run_group = "stable-bench-v1-production-20260714T202823Z"
         self.assertEqual(set(profiles), {"docs", "mcp"})
         self.assertTrue(
             all(options["job_name"] == run_group for options in profiles.values())
@@ -380,7 +380,7 @@ class RunBenchmarkTest(unittest.TestCase):
     def test_run_names_resolve_from_catalog(self) -> None:
         self.assertEqual(
             versioned_name(BenchmarkKey.TEMPO, "oracle-local"),
-            "tempo-bench-v1-oracle-local",
+            "stable-bench-v1-oracle-local",
         )
         self.assertEqual(
             run_benchmark_key({"benchmark": "tempo"}, "mpp"), BenchmarkKey.MPP
@@ -632,7 +632,7 @@ class RunBenchmarkTest(unittest.TestCase):
             ),
             {
                 "agents": [
-                    {"name": "claude-code", "env": {"TEMPO_BENCH_PAIR_ID": "pair-1"}},
+                    {"name": "claude-code", "env": {"STABLE_BENCH_PAIR_ID": "pair-1"}},
                     {"name": "oracle"},
                 ]
             },
@@ -695,7 +695,7 @@ class RunBenchmarkTest(unittest.TestCase):
             self.assertIn('service = "tempo-docs"', config)
             self.assertIn(
                 "COPY docs-tls/ca.crt "
-                "/usr/local/share/ca-certificates/tempo-bench-docs.crt",
+                "/usr/local/share/ca-certificates/stable-bench-docs.crt",
                 (environment_dir / "Dockerfile").read_text(),
             )
             self.assertEqual(

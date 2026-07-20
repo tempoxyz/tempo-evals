@@ -26,7 +26,7 @@ const mppx = Mppx.create({
       },
     }),
   ],
-  secretKey: process.env.MPP_SECRET_KEY ?? "tempo-bench-mpp-secret-key-000000001",
+  secretKey: process.env.MPP_SECRET_KEY ?? "stable-bench-mpp-secret-key-000000001",
 });
 
 function jsonResponse(body: unknown, status = 200) {

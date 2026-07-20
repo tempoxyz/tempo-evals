@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scaffold a new Tempo Bench task with suite-specific conventions."""
+"""Scaffold a new Stable Bench task with suite-specific conventions."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def title(slug: str) -> str:
 
 def task_toml(suite_id: str, suite: Suite, slug: str) -> str:
     benchmark = {
-        "tempo": "tempo-bench-v1",
+        "tempo": "stable-bench-v1",
         "mpp": "mpp-bench-v1",
         "tempo-mcp": "tempo-mcp-bench-v1",
     }[suite_id]
@@ -76,7 +76,7 @@ storage_mb = {2048 if suite_id == "tempo-mcp" else 10240}
 
 def instruction(suite_id: str, slug: str, canary: str) -> str:
     output = "/app/answer.json" if suite_id == "tempo-mcp" else "/app/out.json"
-    return f"""<!-- tempo-bench-canary: {canary} -->
+    return f"""<!-- stable-bench-canary: {canary} -->
 # {title(slug)}
 
 TODO: write the end-user task instruction.

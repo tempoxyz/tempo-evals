@@ -72,7 +72,7 @@ class ExportResultsTest(unittest.TestCase):
         )
 
     def test_export_results_writes_trial_and_summary_outputs(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
             root_path = Path(root)
             job_dir = root_path / "jobs" / "run-1"
             write_json(
@@ -142,7 +142,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(summary_json["reward_keys"], ["correctness", "reward"])
 
     def test_export_results_reads_mcp_profile_from_trial_config(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
             job_dir = Path(root) / "job"
             write_json(
                 job_dir / "trial" / "result.json",
@@ -161,7 +161,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(result["trials"][0]["profile"], "mcp")
 
     def test_export_results_reads_mcp_eval_profiles(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
             job_dir = Path(root) / "job"
             write_json(
                 job_dir / "direct" / "result.json",
@@ -171,7 +171,7 @@ class ExportResultsTest(unittest.TestCase):
                         "config": {
                             "agent": {
                                 "mcp_servers": [{"name": "tempo-direct"}],
-                                "env": {"TEMPO_BENCH_PAIR_ID": "pair-1"},
+                                "env": {"STABLE_BENCH_PAIR_ID": "pair-1"},
                             }
                         },
                     }
@@ -194,7 +194,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual({row["docs_source"] for row in rows}, {"live"})
 
     def test_tempo_passes_use_correctness_instead_of_composite_reward(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
             job_dir = Path(root) / "job"
             write_json(
                 job_dir / "trial" / "result.json",
@@ -229,7 +229,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(result["summary"][0]["pass_rate"], 1)
 
     def test_non_tempo_suites_keep_primary_reward_pass_semantics(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
             job_dir = Path(root) / "job"
             write_json(
                 job_dir / "trial" / "result.json",
@@ -252,7 +252,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertTrue(result["trials"][0]["passed"])
 
     def test_export_marks_only_clean_mcp_trials_eligible(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
             job_dir = Path(root) / "job"
             trial_dir = job_dir / "trial"
             write_json(
@@ -263,7 +263,7 @@ class ExportResultsTest(unittest.TestCase):
                         "config": {
                             "agent": {
                                 "mcp_servers": [{"name": "tempo-direct"}],
-                                "env": {"TEMPO_BENCH_PAIR_ID": "pair-1"},
+                                "env": {"STABLE_BENCH_PAIR_ID": "pair-1"},
                             }
                         },
                         "verifier_result": {
@@ -323,7 +323,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["quality_judge_available"], 1)
 
     def test_compare_pairs_direct_and_code_trials(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-compare-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-compare-") as root:
             root_path = Path(root)
             direct_path = root_path / "direct.csv"
             code_path = root_path / "code.csv"
@@ -356,7 +356,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(result.loc[0, "mcp_calls_delta"], 2)
 
     def test_compare_rejects_unpaired_mcp_trials(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-compare-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-compare-") as root:
             root_path = Path(root)
             direct_path = root_path / "direct.csv"
             code_path = root_path / "code.csv"
@@ -389,7 +389,7 @@ class ExportResultsTest(unittest.TestCase):
                 compare(str(direct_path), str(code_path))
 
     def test_quality_summaries_preserve_missing_judge_scores(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-quality-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-quality-") as root:
             root_path = Path(root)
             direct_path = root_path / "direct.csv"
             code_path = root_path / "code.csv"
@@ -440,7 +440,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertAlmostEqual(overall_summary.loc[0, "direct_quality_at_k"], 0.6)
 
     def test_summarize_rows_groups_by_model_task_and_profile(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="tempo-bench-export-") as root:
+        with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
             job_dir = Path(root) / "run-2" / "harbor-job"
             write_json(job_dir / "a" / "result.json", trial({"trial_name": "a"}))
             write_json(

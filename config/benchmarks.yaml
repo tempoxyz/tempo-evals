@@ -3,8 +3,8 @@
 # incompatible task, fixture, verifier, or scoring change.
 benchmarks:
   tempo:
-    id: tempo-bench-v1
-    dataset: tempo/tempo-bench-v1
+    id: stable-bench-v1
+    dataset: tempo/stable-bench-v1
     path: tasks/tempo-v1
     description: Tempo integration benchmark
     keywords: [stablecoins, docs, tempo]

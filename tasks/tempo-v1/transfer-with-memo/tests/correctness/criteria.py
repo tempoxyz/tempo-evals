@@ -1,5 +1,5 @@
 import rewardkit as rk
-from tempo_bench_rewardkit.common.checks import (
+from stable_bench_rewardkit.common.checks import (
     register_source_patterns,
     register_tempo_eval_contract,
 )

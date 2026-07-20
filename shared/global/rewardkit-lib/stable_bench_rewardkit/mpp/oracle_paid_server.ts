@@ -3,7 +3,7 @@ import http from "node:http";
 import { createRequire } from "node:module";
 
 async function main() {
-  const workspace = process.env.TEMPO_BENCH_WORKSPACE ?? "/app";
+  const workspace = process.env.STABLE_BENCH_WORKSPACE ?? "/app";
   const require = createRequire(`${workspace}/package.json`);
   const { Mppx, NodeListener, Request: ServerRequest, tempo } = await import(
     require.resolve("mppx/server"),

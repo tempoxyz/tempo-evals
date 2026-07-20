@@ -1,4 +1,4 @@
-# Installed in the verifier image as part of the tempo-bench-rewardkit
+# Installed in the verifier image as part of the stable-bench-rewardkit
 # package.
 from .criteria import (
     agent_token_efficiency,

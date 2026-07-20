@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "shared" / "global" / "rewardkit-lib"))
 
-from tempo_bench_rewardkit import criteria  # noqa: E402
+from stable_bench_rewardkit import criteria  # noqa: E402
 
 
 class ViemTempoCriterionTests(unittest.TestCase):

@@ -1,12 +1,12 @@
 """Verifier scenario for tempo/mpp-server-custom-payment-method.
 
-The shared MPP verifier harness lives in tempo_bench_rewardkit.mpp.client_lib
+The shared MPP verifier harness lives in stable_bench_rewardkit.mpp.client_lib
 (installed in the verifier image); this file holds only the task-specific checks.
 """
 
 import subprocess
 
-from tempo_bench_rewardkit.mpp import client_lib as lib
+from stable_bench_rewardkit.mpp import client_lib as lib
 
 
 async def run_task(process: subprocess.Popen[str]) -> dict:
@@ -19,7 +19,7 @@ async def run_task(process: subprocess.Popen[str]) -> dict:
         "custom-method-client",
         "custom_method_client.ts",
         env={
-            "MPP_CUSTOM_ACCESS_KEY": "tempo-bench-access-key",
+            "MPP_CUSTOM_ACCESS_KEY": "stable-bench-access-key",
             "TEMPO_MPP_PAID_URL": out["paidUrl"],
         },
     )

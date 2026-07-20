@@ -18,7 +18,7 @@ const account = privateKeyToAccount(generatePrivateKey());
 const feeToken = required("TEMPO_TOKEN") as Address;
 const salt = generatePrivateKey();
 const suffix = salt.slice(2, 8).toUpperCase();
-const name = `Tempo Bench ${suffix}`;
+const name = `Stable Bench ${suffix}`;
 const symbol = `TB${suffix.slice(0, 4)}`;
 const client = createClient({
   account,

@@ -34,12 +34,12 @@ async function main() {
   const scores = { build: 0, run: 0, onchain: 0 };
   let context = {
     phase: "case-selection",
-    expected: "TEMPO_BENCH_CASE maps to a supported verifier case",
+    expected: "STABLE_BENCH_CASE maps to a supported verifier case",
     logs: [],
   };
 
   try {
-    if (!verifier) throw new Error(`unsupported Tempo bench case: ${config.caseId}`);
+    if (!verifier) throw new Error(`unsupported Stable Bench case: ${config.caseId}`);
 
     context = {
       phase: "submission-shape",

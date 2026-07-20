@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -u
 
-LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
-ARTIFACT_DIR="${TEMPO_BENCH_ARTIFACT_DIR:-/logs/artifacts}"
-INTERNAL_REWARD="$LOG_DIR/tempo-bench-reward.json"
-SCORES_FILE="$LOG_DIR/tempo-bench-scores.json"
-VERIFIER="${TEMPO_BENCH_VERIFIER:-/opt/tempo-bench/verifier/bin/tempo-bench-verify.js}"
+LOG_DIR="${STABLE_BENCH_LOG_DIR:-/logs/verifier}"
+ARTIFACT_DIR="${STABLE_BENCH_ARTIFACT_DIR:-/logs/artifacts}"
+INTERNAL_REWARD="$LOG_DIR/stable-bench-reward.json"
+SCORES_FILE="$LOG_DIR/stable-bench-scores.json"
+VERIFIER="${STABLE_BENCH_VERIFIER:-/opt/stable-bench/verifier/bin/stable-bench-verify.js}"
 
 mkdir -p "$LOG_DIR" "$ARTIFACT_DIR"
 rm -f "$INTERNAL_REWARD" "$SCORES_FILE"
@@ -30,12 +30,12 @@ write_exception_artifact() {
 if [ ! -f "$VERIFIER" ]; then
   write_exception_artifact \
     "grader" \
-    "missing Tempo verifier: $VERIFIER (rebuild the tempo-bench verifier image)"
+    "missing Tempo verifier: $VERIFIER (rebuild the stable-bench verifier image)"
   exit 1
 fi
 
 cd /app || exit 1
-TEMPO_BENCH_INTERNAL_REWARD_FILE="$INTERNAL_REWARD" node "$VERIFIER" \
+STABLE_BENCH_INTERNAL_REWARD_FILE="$INTERNAL_REWARD" node "$VERIFIER" \
   > "$LOG_DIR/grader.stdout.txt" \
   2> "$LOG_DIR/grader.stderr.txt"
 GRADER_STATUS=$?

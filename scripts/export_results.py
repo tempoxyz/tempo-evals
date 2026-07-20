@@ -179,7 +179,7 @@ def profile_from_trial(result: JsonObject) -> str:
 
 def pair_id_from_trial(result: JsonObject) -> str:
     agent = as_object(as_object(result.get("config")).get("agent"))
-    return as_string(as_object(agent.get("env")).get("TEMPO_BENCH_PAIR_ID"))
+    return as_string(as_object(agent.get("env")).get("STABLE_BENCH_PAIR_ID"))
 
 
 def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, str]:

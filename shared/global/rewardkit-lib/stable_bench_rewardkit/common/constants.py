@@ -1,10 +1,10 @@
-# Installed in the verifier image as part of the tempo-bench-rewardkit
+# Installed in the verifier image as part of the stable-bench-rewardkit
 # package.
 import os
 from enum import IntEnum, StrEnum
 from pathlib import Path
 
-WORKSPACE_PATH = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
+WORKSPACE_PATH = Path(os.environ.get("STABLE_BENCH_WORKSPACE", "/app"))
 
 type TokenEfficiencyThreshold = tuple[int | str, float]
 

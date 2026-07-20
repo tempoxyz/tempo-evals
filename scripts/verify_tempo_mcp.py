@@ -55,7 +55,7 @@ def json_rpc(
         headers={
             "accept": "application/json, text/event-stream",
             "content-type": "application/json",
-            "user-agent": "tempo-bench-mcp-preflight/1.0",
+            "user-agent": "stable-bench-mcp-preflight/1.0",
             **headers,
         },
         method="POST",
@@ -84,7 +84,7 @@ def list_tools(url: str, expected: set[str] | None = None) -> set[str]:
             "params": {
                 "protocolVersion": "2025-06-18",
                 "capabilities": {},
-                "clientInfo": {"name": "tempo-bench-preflight", "version": "1"},
+                "clientInfo": {"name": "stable-bench-preflight", "version": "1"},
             },
         },
         headers,

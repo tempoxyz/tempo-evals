@@ -1,6 +1,6 @@
 """SHARED MPP VERIFIER HARNESS.
 
-Installed in the verifier image as part of the tempo-bench-rewardkit
+Installed in the verifier image as part of the stable-bench-rewardkit
 package. Task-specific checks live in each task's tests/support/client.py,
 which imports this module and calls run(run_task).
 """
@@ -24,11 +24,11 @@ from mpp import Challenge, Receipt
 from mpp.client import get as mpp_get
 from mpp.methods.tempo import ChargeIntent, TempoAccount, tempo
 
-WORKSPACE = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
-LOG_DIR = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
+WORKSPACE = Path(os.environ.get("STABLE_BENCH_WORKSPACE", "/app"))
+LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
 # Task-local verifier node scripts (for example mcp_client.ts) live in the
 # task's tests/support directory; shared scripts ship next to this module.
-SUPPORT_DIR = Path(os.environ.get("TEMPO_BENCH_TESTS_DIR", "/tests")) / "support"
+SUPPORT_DIR = Path(os.environ.get("STABLE_BENCH_TESTS_DIR", "/tests")) / "support"
 MODULE_DIR = Path(__file__).resolve().parent
 OUT_PATH = WORKSPACE / "out.json"
 SCORES_PATH = WORKSPACE / "scores.json"
@@ -43,7 +43,7 @@ RECIPIENT = "0x1111111111111111111111111111111111111111"
 PAYER_PRIVATE_KEY = os.environ.get(
     "TEMPO_MPP_PAYER_PRIVATE_KEY", f"0x{secrets.token_hex(32)}"
 )
-MPP_SECRET_KEY = "tempo-bench-mpp-secret-key-000000001"
+MPP_SECRET_KEY = "stable-bench-mpp-secret-key-000000001"
 CHARGE_AMOUNT = Decimal("0.01")
 TOKEN_BASE_UNITS = Decimal("1000000")
 KEEP_SERVER = os.environ.get("TEMPO_MPP_KEEP_SERVER") == "1"
