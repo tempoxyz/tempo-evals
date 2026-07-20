@@ -10,13 +10,13 @@ agent=$1
 verifier=$2
 
 docker run --rm "$agent" sh -ceu '
-  for path in /tests /opt/tempo-bench/verifier /opt/tempo-bench-rewardkit /opt/tempo-bench-rewardkit-venv; do
+  for path in /tests /opt/stable-bench/verifier /opt/stable-bench-rewardkit /opt/stable-bench-rewardkit-venv; do
     [ ! -e "$path" ] || { echo "agent image contains $path" >&2; exit 1; }
   done
 '
 docker run --rm "$verifier" sh -ceu '
-  test -d /opt/tempo-bench/verifier
-  /opt/tempo-bench-rewardkit-venv/bin/python -c "import tempo_bench_rewardkit"
+  test -d /opt/stable-bench/verifier
+  /opt/stable-bench-rewardkit-venv/bin/python -c "import stable_bench_rewardkit"
 '
 
 agent_layers=$(docker image inspect "$agent" --format '{{json .RootFS.Layers}}')

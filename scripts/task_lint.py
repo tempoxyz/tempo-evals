@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate shared task conventions across Tempo Bench suites."""
+"""Validate shared task conventions across Stable Bench suites."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CANARY_PATTERN = re.compile(
-    r"<!-- tempo-bench-canary: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
+    r"<!-- stable-bench-canary: [0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
     r"[0-9a-f]{4}-[0-9a-f]{12} -->"
 )
 SOURCE_IMAGE_PATTERN = re.compile(
@@ -110,7 +110,7 @@ def lint_task(root: Path, suite: Suite, task_dir: Path) -> list[str]:
 
     instruction = task_dir / "instruction.md"
     if instruction.is_file() and not CANARY_PATTERN.search(instruction.read_text()):
-        errors.append(f"{instruction}: missing a tempo-bench canary comment")
+        errors.append(f"{instruction}: missing a stable-bench canary comment")
 
     image_pair = {}
     for role, relative_path in (

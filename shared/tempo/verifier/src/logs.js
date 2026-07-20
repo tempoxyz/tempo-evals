@@ -50,7 +50,7 @@ function writeException(config, details) {
 }
 
 function writeReward(config, scores) {
-  const rewardFile = process.env.TEMPO_BENCH_INTERNAL_REWARD_FILE;
+  const rewardFile = process.env.STABLE_BENCH_INTERNAL_REWARD_FILE;
   if (rewardFile) {
     ensureLogDir(config);
     fs.writeFileSync(rewardFile, `${JSON.stringify(scores, null, 2)}\n`);

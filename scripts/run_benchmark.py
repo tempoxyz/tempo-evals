@@ -232,7 +232,7 @@ DEFAULT_JUDGE_MODEL = f"${{REWARDKIT_JUDGE:-{PINNED_JUDGE_MODEL}}}"
 DOCS_ACCESS_LOG = "/var/log/tempo-docs/access.log"
 DOCS_TLS_DIR = "docs-tls"
 DOCS_CA_FILE = "ca.crt"
-DOCS_CA_DESTINATION = "/usr/local/share/ca-certificates/tempo-bench-docs.crt"
+DOCS_CA_DESTINATION = "/usr/local/share/ca-certificates/stable-bench-docs.crt"
 MCP_UPSTREAM_PLACEHOLDER = "${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}"
 DOCS_TLS_VALIDITY_DAYS = "30"
 
@@ -805,7 +805,7 @@ def apply_pair_id(config: dict[str, Any], pair_id: str | None) -> dict[str, Any]
         return config
     for agent in config.get("agents", []):
         if agent.get("name") != "oracle":
-            agent.setdefault("env", {})["TEMPO_BENCH_PAIR_ID"] = pair_id
+            agent.setdefault("env", {})["STABLE_BENCH_PAIR_ID"] = pair_id
     return config
 
 
@@ -876,7 +876,7 @@ def generate_docs_tls_assets(environment_dir: Path) -> Path:
             "-days",
             DOCS_TLS_VALIDITY_DAYS,
             "-subj",
-            "/CN=Tempo Bench Ephemeral Docs CA",
+            "/CN=Stable Bench Ephemeral Docs CA",
             "-addext",
             "basicConstraints=critical,CA:TRUE",
             "-addext",

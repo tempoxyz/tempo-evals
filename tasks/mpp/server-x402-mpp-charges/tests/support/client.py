@@ -7,7 +7,7 @@ import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from tempo_bench_rewardkit.mpp import client_lib as lib
+from stable_bench_rewardkit.mpp import client_lib as lib
 
 
 class FacilitatorHandler(BaseHTTPRequestHandler):

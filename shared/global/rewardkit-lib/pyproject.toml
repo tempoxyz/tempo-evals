@@ -1,8 +1,8 @@
 # Installed in the verifier image; see shared/global/docker/verifier/Dockerfile.
 [project]
-name = "tempo-bench-rewardkit"
+name = "stable-bench-rewardkit"
 version = "0.1.0"
-description = "Shared RewardKit criteria and MPP verifier harness for Tempo benchmark tasks"
+description = "Shared RewardKit criteria and MPP verifier harness for Tempo integration benchmark tasks"
 requires-python = ">=3.11"
 dependencies = [
   "harbor-rewardkit==0.1.7",
@@ -14,4 +14,4 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
-tempo_bench_rewardkit = ["mpp/*.ts"]
+stable_bench_rewardkit = ["mpp/*.ts"]

@@ -55,9 +55,9 @@ def run_check(
             trace_paths[arm].write_text(text)
 
         env = {
-            "TEMPO_BENCH_WORKSPACE": str(workspace),
-            "TEMPO_BENCH_TESTS_DIR": str(tests_dir),
-            "TEMPO_BENCH_LOG_DIR": str(log_dir),
+            "STABLE_BENCH_WORKSPACE": str(workspace),
+            "STABLE_BENCH_TESTS_DIR": str(tests_dir),
+            "STABLE_BENCH_LOG_DIR": str(log_dir),
         }
         with (
             mock.patch.dict(os.environ, env),

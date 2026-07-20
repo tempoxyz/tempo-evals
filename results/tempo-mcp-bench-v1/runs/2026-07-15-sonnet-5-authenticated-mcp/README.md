@@ -9,7 +9,7 @@ mode with direct MCP results. Each profile ran with two concurrent trials.
 | --- | --- |
 | Benchmark | `tempo/tempo-mcp-bench-v1` |
 | Git revision | `5aec4a82b1e58aab73c6013a9064973113599257` |
-| Base image | `ghcr.io/tempoxyz/tempo-bench-base:source-c9e1d15eba6e8bad` |
+| Base image | `ghcr.io/tempoxyz/stable-bench-base:source-c9e1d15eba6e8bad` |
 | Profiles | `mcp-direct` and `mcp-code` |
 | Attempts | 1 per task |
 | Model | `claude-code / claude-sonnet-5` |

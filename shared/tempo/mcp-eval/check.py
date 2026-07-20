@@ -48,7 +48,7 @@ def write_result(
     warnings: list[str],
     evidence: list[dict],
 ) -> None:
-    log_dir = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
+    log_dir = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
     log_dir.mkdir(parents=True, exist_ok=True)
     valid_answer = int(not errors)
     reward = component_reward(components)
@@ -85,8 +85,8 @@ def write_result(
 
 
 def main() -> None:
-    workspace = Path(os.environ.get("TEMPO_BENCH_WORKSPACE", "/app"))
-    tests_dir = Path(os.environ.get("TEMPO_BENCH_TESTS_DIR", "/tests"))
+    workspace = Path(os.environ.get("STABLE_BENCH_WORKSPACE", "/app"))
+    tests_dir = Path(os.environ.get("STABLE_BENCH_TESTS_DIR", "/tests"))
     components = {
         "schema_valid": 0,
         "docs_source_valid": 0,

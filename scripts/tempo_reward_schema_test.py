@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "shared" / "global" / "rewardkit-lib"))
 
-from tempo_bench_rewardkit.common.tempo_reward import compose_reward  # noqa: E402
+from stable_bench_rewardkit.common.tempo_reward import compose_reward  # noqa: E402
 
 ZERO_REWARD = {"correctness": 0, "quality": 0, "reward": 0}
 
@@ -24,7 +24,7 @@ class RewardSchemaTest(unittest.TestCase):
         self.assertEqual(len(contents), 1)
         wrapper = contents.pop()
         self.assertLessEqual(len(wrapper.splitlines()), 9)
-        self.assertIn("tempo_bench_rewardkit.tempo.verifier", wrapper)
+        self.assertIn("stable_bench_rewardkit.tempo.verifier", wrapper)
 
     def test_tempo_reward_equals_combined_quality_after_functional_success(
         self,
@@ -53,8 +53,8 @@ class RewardSchemaTest(unittest.TestCase):
 
     def test_tempo_functional_failure_emits_zero(self) -> None:
         result, reward, _ = self._run_tempo(
-            'printf \'{"reward":0}\\n\' > "$TEMPO_BENCH_LOG_DIR/'
-            'tempo-bench-scores.json"\nexit 1\n'
+            'printf \'{"reward":0}\\n\' > "$STABLE_BENCH_LOG_DIR/'
+            'stable-bench-scores.json"\nexit 1\n'
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(reward, ZERO_REWARD)
@@ -112,7 +112,7 @@ class RewardSchemaTest(unittest.TestCase):
     def test_mpp_binary_fallback_emits_the_complete_reward_schema(self) -> None:
         verifier_utils = (
             ROOT
-            / "shared/global/rewardkit-lib/tempo_bench_rewardkit/mpp/verifier_utils.py"
+            / "shared/global/rewardkit-lib/stable_bench_rewardkit/mpp/verifier_utils.py"
         )
         for score in (0, 1):
             with self.subTest(score=score), tempfile.TemporaryDirectory() as temporary:
@@ -147,7 +147,7 @@ class RewardSchemaTest(unittest.TestCase):
     def test_mpp_final_reward_preserves_native_dimension_scores(self) -> None:
         verifier_utils = (
             ROOT
-            / "shared/global/rewardkit-lib/tempo_bench_rewardkit/mpp/verifier_utils.py"
+            / "shared/global/rewardkit-lib/stable_bench_rewardkit/mpp/verifier_utils.py"
         )
         with tempfile.TemporaryDirectory() as temporary:
             temporary_path = Path(temporary)
@@ -220,11 +220,11 @@ class RewardSchemaTest(unittest.TestCase):
             env.update(
                 {
                     "PYTHONPATH": str(ROOT / "shared/global/rewardkit-lib"),
-                    "TEMPO_BENCH_LOG_DIR": str(logs),
-                    "TEMPO_BENCH_TESTS_DIR": str(tests),
-                    "TEMPO_BENCH_WORKSPACE": str(workspace),
+                    "STABLE_BENCH_LOG_DIR": str(logs),
+                    "STABLE_BENCH_TESTS_DIR": str(tests),
+                    "STABLE_BENCH_WORKSPACE": str(workspace),
                     "TEMPO_TEST_QUALITY_MARKER": str(marker),
-                    "tempo_bench_rewardkit_VENV": sys.prefix,
+                    "stable_bench_rewardkit_VENV": sys.prefix,
                 }
             )
             result = subprocess.run(
@@ -256,10 +256,10 @@ class RewardSchemaTest(unittest.TestCase):
             env = os.environ.copy()
             env.update(
                 {
-                    "TEMPO_BENCH_LOG_DIR": str(logs),
-                    "TEMPO_BENCH_TESTS_DIR": str(tests),
-                    "TEMPO_BENCH_WORKSPACE": str(workspace),
-                    "tempo_bench_rewardkit_VENV": str(temporary / "missing-venv"),
+                    "STABLE_BENCH_LOG_DIR": str(logs),
+                    "STABLE_BENCH_TESTS_DIR": str(tests),
+                    "STABLE_BENCH_WORKSPACE": str(workspace),
+                    "stable_bench_rewardkit_VENV": str(temporary / "missing-venv"),
                 }
             )
             result = subprocess.run(

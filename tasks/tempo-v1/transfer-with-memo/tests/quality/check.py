@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import rewardkit as rk
-from tempo_bench_rewardkit.common.checks import (
+from stable_bench_rewardkit.common.checks import (
     TokenEfficiencyConfig,
     register_token_efficiency_check,
 )

@@ -1,4 +1,4 @@
-# Installed in the verifier image as part of the tempo-bench-rewardkit
+# Installed in the verifier image as part of the stable-bench-rewardkit
 # package.
 import fcntl
 import json
@@ -10,7 +10,7 @@ from typing import Any
 
 from rewardkit import criterion
 
-LOG_DIR = Path(os.environ.get("TEMPO_BENCH_LOG_DIR", "/logs/verifier"))
+LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
 _EFFICIENCY_LOCK = threading.Lock()
 
 type Cutoff = tuple[int | str, float]
@@ -393,7 +393,7 @@ def tempo_mcp_tool_used(_workspace: Path, server_name: str = "tempo") -> bool:
 @criterion(shared=True)
 def agent_token_efficiency(
     _workspace: Path,
-    cutoffs_env: str = "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS",
+    cutoffs_env: str = "STABLE_BENCH_TOKENS_SCORE_CUTOFFS",
     default_cutoffs: list[Cutoff] | None = None,
 ) -> float:
     """Score agent token usage from trajectory metrics against cutoff thresholds."""

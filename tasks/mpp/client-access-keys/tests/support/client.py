@@ -1,6 +1,6 @@
 """Verifier scenario for tempo/mpp-client-access-keys.
 
-The shared MPP verifier harness lives in tempo_bench_rewardkit.mpp.client_lib
+The shared MPP verifier harness lives in stable_bench_rewardkit.mpp.client_lib
 (installed in the verifier image); this file holds only the task-specific checks.
 """
 
@@ -8,7 +8,7 @@ import json
 import os
 import subprocess
 
-from tempo_bench_rewardkit.mpp import client_lib as lib
+from stable_bench_rewardkit.mpp import client_lib as lib
 
 
 def main() -> None:

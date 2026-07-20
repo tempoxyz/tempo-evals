@@ -8,7 +8,7 @@ Pass@1 with sonnet to establish baseline for Code mode vs. direct MCP results.
 | --- | --- |
 | Benchmark | `tempo/tempo-mcp-bench-v1` |
 | Git revision | `e9ebffd0d823ab2af3aac298330cb033022351c2` |
-| Base image | `ghcr.io/tempoxyz/tempo-bench-base@sha256:f5de8cee38a434c090c67e3e94bf340c7595070b5866812e843470ac65e40073` |
+| Base image | `ghcr.io/tempoxyz/stable-bench-base@sha256:f5de8cee38a434c090c67e3e94bf340c7595070b5866812e843470ac65e40073` |
 | Profiles | `mcp-direct` and `mcp-code` |
 | Attempts | 1 per task |
 | Model | `claude-code / claude-sonnet-5` |

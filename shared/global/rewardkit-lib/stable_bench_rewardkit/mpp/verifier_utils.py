@@ -1,5 +1,5 @@
-# Installed in the verifier image as part of the tempo-bench-rewardkit
-# package. Invoked as `python -m tempo_bench_rewardkit.mpp.verifier_utils`.
+# Installed in the verifier image as part of the stable-bench-rewardkit
+# package. Invoked as `python -m stable_bench_rewardkit.mpp.verifier_utils`.
 import json
 import os
 import re

@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 
 async function main() {
-  const require = createRequire("/opt/tempo-bench/verifier/package.json");
+  const require = createRequire("/opt/stable-bench/verifier/package.json");
   const { Client } = await import(
     require.resolve("@modelcontextprotocol/sdk/client/index.js"),
   );
@@ -15,7 +15,7 @@ async function main() {
   const { Chain } = await import(require.resolve("viem/tempo"));
 
   const client = new Client({
-    name: "tempo-bench-verifier",
+    name: "stable-bench-verifier",
     version: "1.0.0",
   });
   const transport = new StreamableHTTPClientTransport(

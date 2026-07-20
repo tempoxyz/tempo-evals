@@ -22,7 +22,7 @@ const mppx = Mppx.create({
       testnet: true,
     }),
   ],
-  secretKey: process.env.MPP_SECRET_KEY ?? "tempo-bench-mpp-secret-key-000000001",
+  secretKey: process.env.MPP_SECRET_KEY ?? "stable-bench-mpp-secret-key-000000001",
 });
 
 const openapi = generate(mppx, {

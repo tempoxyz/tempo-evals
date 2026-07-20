@@ -1,13 +1,13 @@
 """Verifier scenario for tempo/mpp-server-discovery-endpoint.
 
-The shared MPP verifier harness lives in tempo_bench_rewardkit.mpp.client_lib
+The shared MPP verifier harness lives in stable_bench_rewardkit.mpp.client_lib
 (installed in the verifier image); this file holds only the task-specific checks.
 """
 
 import subprocess
 from urllib.parse import urlparse
 
-from tempo_bench_rewardkit.mpp import client_lib as lib
+from stable_bench_rewardkit.mpp import client_lib as lib
 
 
 async def run_task(process: subprocess.Popen[str]) -> dict:

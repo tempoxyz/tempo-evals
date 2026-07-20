@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -u -o pipefail
 
-LOG_DIR="${TEMPO_BENCH_LOG_DIR:-/logs/verifier}"
-WORKSPACE="${TEMPO_BENCH_WORKSPACE:-/app}"
-TESTS_DIR="${TEMPO_BENCH_TESTS_DIR:-/tests}"
-REWARDKIT_PYTHON="${tempo_bench_rewardkit_VENV:-/opt/tempo-bench-rewardkit-venv}/bin/python"
+LOG_DIR="${STABLE_BENCH_LOG_DIR:-/logs/verifier}"
+WORKSPACE="${STABLE_BENCH_WORKSPACE:-/app}"
+TESTS_DIR="${STABLE_BENCH_TESTS_DIR:-/tests}"
+REWARDKIT_PYTHON="${stable_bench_rewardkit_VENV:-/opt/stable-bench-rewardkit-venv}/bin/python"
 JUDGE_WORKSPACE="$(mktemp -d)"
 
 mkdir -p "$LOG_DIR"

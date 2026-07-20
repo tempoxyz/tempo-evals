@@ -1,11 +1,11 @@
-# Installed in the verifier image as part of the tempo-bench-rewardkit
+# Installed in the verifier image as part of the stable-bench-rewardkit
 # package.
 from dataclasses import dataclass
 
 import rewardkit as rk
 
-import tempo_bench_rewardkit  # noqa: F401
-from tempo_bench_rewardkit.common.constants import (
+import stable_bench_rewardkit  # noqa: F401
+from stable_bench_rewardkit.common.constants import (
     DEFAULT_TOKEN_EFFICIENCY_THRESHOLDS,
     ScorePath,
     SourcePattern,
@@ -19,7 +19,7 @@ class TokenEfficiencyConfig:
     thresholds: tuple[TokenEfficiencyThreshold, ...] = (
         DEFAULT_TOKEN_EFFICIENCY_THRESHOLDS
     )
-    thresholds_env: str = "TEMPO_BENCH_TOKENS_SCORE_CUTOFFS"
+    thresholds_env: str = "STABLE_BENCH_TOKENS_SCORE_CUTOFFS"
     weight: float = 1.0
 
 
