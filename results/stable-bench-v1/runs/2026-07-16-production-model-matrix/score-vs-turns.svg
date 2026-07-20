@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="700" viewBox="0 0 980 700" role="img" aria-labelledby="title desc">
+  <title id="title">Stable Bench score / turns</title>
+  <desc id="desc">Aggregate Stable Bench score and model turns. Filled dots are Docs; hollow dots are MCP. Claude series are black and GPT series use Tempo gray.</desc>
+  <style>
+    .page { fill: #f3f3f3; } .ink { fill: #000; } .muted { fill: #808080; }
+    .subtitle, .axis-label, .tick, .key { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
+    .point-label { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
+    .axis { stroke: #000; stroke-width: 1; } .grid { stroke: #d9d9d9; stroke-width: 1; }
+    .leader { stroke: #b2b2b2; stroke-width: 1; } .claude { stroke: #000; fill: #000; }
+    .label-background { fill: #f3f3f3; }
+    .gpt { stroke: #999; fill: #999; } .docs { fill: none; stroke-width: 2.25; }
+    .mcp { fill: none; stroke-width: 2.25; stroke-dasharray: 1 6; stroke-linecap: round; }
+    .line-point { stroke: #f3f3f3; stroke-width: 2; } .dot { stroke-width: 2; }
+  </style>
+  <rect class="page" width="980" height="700"/>
+
+  <line x1="90" y1="610" x2="900" y2="610" class="axis"/>
+  <line x1="90" y1="80" x2="90" y2="610" class="axis"/>
+  <g class="grid"><line x1="90" y1="610" x2="900" y2="610"/><line x1="90" y1="483.8" x2="900" y2="483.8"/><line x1="90" y1="357.6" x2="900" y2="357.6"/><line x1="90" y1="231.4" x2="900" y2="231.4"/><line x1="90" y1="105.2" x2="900" y2="105.2"/></g>
+  <g class="tick muted"><text x="55" y="614">0.00</text><text x="55" y="487.8">0.25</text><text x="55" y="361.6">0.50</text><text x="55" y="235.4">0.75</text><text x="55" y="109.2">1.00</text><text x="86" y="632">500</text><text x="317.4" y="632">700</text><text x="548.9" y="632">900</text><text x="780.3" y="632">1100</text></g>
+  <text x="495" y="670" text-anchor="middle" class="axis-label ink">Aggregate model turns</text>
+  <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">Stable Bench score</text>
+<circle class="point dot dot-access-docs" cx="322.6" cy="105.2" r="5.5" fill="#000" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="381.6" cy="479.1" r="5.5" fill="#000" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="486.9" cy="123.9" r="5.5" fill="#000" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="841" cy="105.2" r="5.5" fill="#000" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="396.6" cy="105.2" r="5.5" fill="#999" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="307.5" cy="142.6" r="5.5" fill="#999" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="226.5" cy="105.2" r="5.5" fill="#999" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-docs" cx="206.9" cy="105.2" r="5.5" fill="#999" stroke="#f3f3f3"/>
+<circle class="point dot dot-access-mcp" cx="175.6" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#000"/>
+<circle class="point dot dot-access-mcp" cx="873.4" cy="385.7" r="5.5" fill="#f3f3f3" stroke="#000"/>
+<circle class="point dot dot-access-mcp" cx="289" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#000"/>
+<circle class="point dot dot-access-mcp" cx="630.4" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#000"/>
+<circle class="point dot dot-access-mcp" cx="393.2" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#999"/>
+<circle class="point dot dot-access-mcp" cx="206.9" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#999"/>
+<circle class="point dot dot-access-mcp" cx="232.3" cy="123.9" r="5.5" fill="#f3f3f3" stroke="#999"/>
+<circle class="point dot dot-access-mcp" cx="173.3" cy="105.2" r="5.5" fill="#f3f3f3" stroke="#999"/>
+<g class="leader"><line x1="206.9" y1="105.2" x2="212" y2="83"/><line x1="226.5" y1="105.2" x2="220" y2="121"/><line x1="307.5" y1="142.6" x2="313" y2="158"/><line x1="322.6" y1="105.2" x2="328" y2="83"/><line x1="381.6" y1="479.1" x2="387" y2="457"/><line x1="396.6" y1="105.2" x2="402" y2="83"/><line x1="486.9" y1="123.9" x2="492" y2="101"/><line x1="841" y1="105.2" x2="834" y2="83"/></g><g class="label-background"><rect x="213" y="74" width="41" height="17" rx="2"/><rect x="181" y="118" width="38" height="17" rx="2"/><rect x="314" y="155" width="38" height="17" rx="2"/><rect x="329" y="74" width="55" height="17" rx="2"/><rect x="388" y="448" width="69" height="17" rx="2"/><rect x="403" y="74" width="62" height="17" rx="2"/><rect x="493" y="92" width="62" height="17" rx="2"/><rect x="771" y="74" width="62" height="17" rx="2"/></g><g class="point-label ink"><text x="216" y="87">Terra</text><text x="184" y="131">Sol</text><text x="317" y="168">Luna</text><text x="332" y="87">Fable 5</text><text x="391" y="461">Haiku 4.5</text><text x="406" y="87">GPT mini</text><text x="496" y="105">Opus 4.8</text><text x="774" y="87">Sonnet 5</text></g>
+  <g class="key"><circle cx="665" cy="578" r="5" fill="#000" stroke="#000"/><text x="676" y="582" class="ink">Docs</text><circle cx="777" cy="578" r="5" fill="#f3f3f3" stroke="#000" stroke-width="2"/><text x="788" y="582" class="ink">MCP</text></g>
+</svg>
