@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ruff: noqa: E501
-"""Render Tempo Bench comparison charts from an aggregate CSV export.
+"""Render Stable Bench comparison charts from an aggregate CSV export.
 
 The input is intentionally a plain CSV so a Harbor job export can be inspected,
 versioned, and re-rendered without a charting dependency.

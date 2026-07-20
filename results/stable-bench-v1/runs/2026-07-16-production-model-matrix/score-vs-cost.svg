@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="700" viewBox="0 0 980 700" role="img" aria-labelledby="title desc">
-  <title id="title">Tempo Bench score / cost</title>
-  <desc id="desc">Aggregate Tempo Bench score and cost. Solid lines are Docs; dotted lines are MCP. Claude series are black and GPT series use Tempo gray.</desc>
+  <title id="title">Stable Bench score / cost</title>
+  <desc id="desc">Aggregate Stable Bench score and cost. Solid lines are Docs; dotted lines are MCP. Claude series are black and GPT series use Tempo gray.</desc>
   <style>
     .page { fill: #f3f3f3; } .ink { fill: #000; } .muted { fill: #808080; }
     .subtitle, .axis-label, .tick, .key { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
@@ -19,7 +19,7 @@
   <g class="grid"><line x1="90" y1="610" x2="900" y2="610"/><line x1="90" y1="483.8" x2="900" y2="483.8"/><line x1="90" y1="357.6" x2="900" y2="357.6"/><line x1="90" y1="231.4" x2="900" y2="231.4"/><line x1="90" y1="105.2" x2="900" y2="105.2"/></g>
   <g class="tick muted"><text x="55" y="614">0.00</text><text x="55" y="487.8">0.25</text><text x="55" y="361.6">0.50</text><text x="55" y="235.4">0.75</text><text x="55" y="109.2">1.00</text><text x="86" y="632">$0</text><text x="233.3" y="632">$10</text><text x="380.5" y="632">$20</text><text x="527.8" y="632">$30</text><text x="675.1" y="632">$40</text><text x="822.4" y="632">$50</text></g>
   <text x="495" y="670" text-anchor="middle" class="axis-label ink">Aggregate cost (USD)</text>
-  <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">Tempo Bench score</text>
+  <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">Stable Bench score</text>
 <path d="M267.4 479.1 C411.5 479.1 555.6 123.9 699.6 123.9 C731.9 123.9 764.2 105.2 796.5 105.2 C816.1 105.2 835.7 105.2 855.3 105.2" class="claude docs"/>
 <path d="M233.9 385.7 C368 385.7 502.2 105.2 636.3 105.2 C637.6 105.2 638.8 123.9 640 123.9 C700.6 123.9 761.3 105.2 821.9 105.2" class="claude mcp"/>
 <path d="M200.7 142.6 C235.2 142.6 269.6 105.2 304.1 105.2 C309.8 105.2 315.6 105.2 321.3 105.2 C379.3 105.2 437.4 105.2 495.4 105.2" class="gpt docs"/>

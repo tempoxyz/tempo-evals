@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="700" viewBox="0 0 980 700" role="img" aria-labelledby="title desc">
-  <title id="title">Tempo Bench score / tokens</title>
-  <desc id="desc">Aggregate Tempo Bench score and token use. Filled dots are Docs; hollow dots are MCP. Claude series are black and GPT series use Tempo gray.</desc>
+  <title id="title">Stable Bench score / tokens</title>
+  <desc id="desc">Aggregate Stable Bench score and token use. Filled dots are Docs; hollow dots are MCP. Claude series are black and GPT series use Tempo gray.</desc>
   <style>
     .page { fill: #f3f3f3; } .ink { fill: #000; } .muted { fill: #808080; }
     .subtitle, .axis-label, .tick, .key { font: 400 12px 'Pilat', Arial, Helvetica, sans-serif; }
@@ -19,7 +19,7 @@
   <g class="grid"><line x1="90" y1="610" x2="900" y2="610"/><line x1="90" y1="483.8" x2="900" y2="483.8"/><line x1="90" y1="357.6" x2="900" y2="357.6"/><line x1="90" y1="231.4" x2="900" y2="231.4"/><line x1="90" y1="105.2" x2="900" y2="105.2"/></g>
   <g class="tick muted"><text x="55" y="614">0.00</text><text x="55" y="487.8">0.25</text><text x="55" y="361.6">0.50</text><text x="55" y="235.4">0.75</text><text x="55" y="109.2">1.00</text><text x="86" y="632">20M</text><text x="335.2" y="632">40M</text><text x="584.5" y="632">60M</text><text x="833.7" y="632">80M</text></g>
   <text x="495" y="670" text-anchor="middle" class="axis-label ink">Aggregate tokens</text>
-  <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">Tempo Bench score</text>
+  <text transform="translate(23 385) rotate(-90)" text-anchor="middle" class="axis-label ink">Stable Bench score</text>
 <circle class="point dot dot-access-docs" cx="141.3" cy="105.2" r="5.5" fill="#000" stroke="#f3f3f3"/>
 <circle class="point dot dot-access-docs" cx="213.3" cy="479.1" r="5.5" fill="#000" stroke="#f3f3f3"/>
 <circle class="point dot dot-access-docs" cx="304.5" cy="123.9" r="5.5" fill="#000" stroke="#f3f3f3"/>

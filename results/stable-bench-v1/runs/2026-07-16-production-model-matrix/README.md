@@ -1,15 +1,15 @@
-# Tempo Bench production model matrix — 2026-07-16
+# Stable Bench production model matrix — 2026-07-16
 
 ## Overview
 
-Comparison of eight Claude and GPT models across `tempo-bench` to establish an
+Comparison of eight Claude and GPT models across `stable-bench` to establish an
 initial offline baseline.
 
 Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo docs (docs) or Tempo docs + an MCP (MCP).
 
 | Field | Docs | MCP |
 | --- | ---: | ---: |
-| Benchmark | `tempo/tempo-bench-v1` | `tempo/tempo-bench-v1` |
+| Benchmark | `tempo/stable-bench-v1` | `tempo/stable-bench-v1` |
 | Harbor Hub job | [a1db301d](https://hub.harborframework.com/jobs/a1db301d-af4b-4fe7-9976-bd7e98939d66) | [dac00a5f](https://hub.harborframework.com/jobs/dac00a5f-56f9-45e8-a8be-f3425e0ae4eb) |
 | Git revision | `45d044ef548731926fed76efe17895bb93ecbde7` | `45d044ef548731926fed76efe17895bb93ecbde7` |
 | Trials | 216 | 216 |
@@ -33,19 +33,19 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 
 ## Score vs. cost
 
-![Tempo Bench score versus cost](score-vs-cost.svg)
+![Stable Bench score versus cost](score-vs-cost.svg)
 
 ## Score vs. tokens
 
-![Tempo Bench score versus tokens](score-vs-tokens.svg)
+![Stable Bench score versus tokens](score-vs-tokens.svg)
 
 ## Score vs. turns
 
-![Tempo Bench score versus turns](score-vs-turns.svg)
+![Stable Bench score versus turns](score-vs-turns.svg)
 
 ## Analysis
 
-- As of date, frontier models are able to consistently score high marks on tempo-bench, nearly saturating the benchmark.
+- As of date, frontier models are able to consistently score high marks on stable-bench, nearly saturating the benchmark.
 - Haiku and other smaller models perform very poorly, which we suspect is from:
   - Earlier knowledge cutoffs (Tempo docs were published in Jan 2026)
   - Observed reluctance to use web-search tools
@@ -57,7 +57,7 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 
 ## Notes
 
-`summary.csv` contains the chart inputs. Tempo Bench score is mean
+`summary.csv` contains the chart inputs. Stable Bench score is mean
 deterministic correctness. Tokens are input plus output tokens, so cached input
 tokens are included once. Model turns are agent trajectory steps. Costs, tokens,
 and turns are sums across all 27 trials for each model and access mode.
