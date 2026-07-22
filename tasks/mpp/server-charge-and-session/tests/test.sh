@@ -28,8 +28,13 @@ skip_llm_quality() {
 }
 
 if [ -z "${ANTHROPIC_API_KEY:-}" ] \
+  && [ -z "${ANTHROPIC_AUTH_TOKEN:-}" ] \
   && [ -f "${STABLE_BENCH_TESTS_DIR:-/tests}/quality/reward.toml" ]; then
-  skip_llm_quality 'Skipping LLM quality reward because ANTHROPIC_API_KEY is not set.'
+  skip_llm_quality 'Skipping LLM quality reward because no Anthropic judge auth is set.'
+fi
+
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -n "${ANTHROPIC_AUTH_TOKEN:-}" ]; then
+  export ANTHROPIC_API_KEY="$ANTHROPIC_AUTH_TOKEN"
 fi
 
 verifier_utils() {
