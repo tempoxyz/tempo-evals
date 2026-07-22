@@ -1,0 +1,50 @@
+# The runner configures the main service. This sidecar serves a staged MPP docs
+# bundle at https://mpp.dev inside MPP task containers.
+services:
+  main:
+    environment:
+      - CHARGE_AMOUNT
+      - MPP_CHARGE_AMOUNT
+      - MPP_CUSTOM_ACCESS_KEY
+      - MPP_RECIPIENT_ADDRESS
+      - MPP_SECRET_KEY
+      - MPPX_RPC_URL
+      - PAID_URL
+      - PAYMENT_AMOUNT
+      - PAYMENT_RECIPIENT_ADDRESS
+      - RECIPIENT_ADDRESS
+      - STABLE_BENCH_LOG_WAIT_MS
+      - STABLE_BENCH_TOKENS_SCORE_CUTOFFS
+      - STABLE_BENCH_TURNS_SCORE_CUTOFFS
+      - TEMPO_MPP_PAYER_PRIVATE_KEY
+    depends_on:
+      mpp-docs:
+        condition: service_healthy
+
+  mpp-docs:
+    build:
+      context: ./docs-proxy
+    environment:
+      DOCS_SITE_NAME: MPP docs
+      DOCS_ROOT: /docs
+      DOCS_INDEX_PATH: /agent.html
+      DOCS_HEALTH_PATH: /llms-full.txt
+      DOCS_BASE_URL: https://mpp.dev
+      DOCS_MARKDOWN_ALIAS_PREFIX: /assets/md
+      ACCESS_LOG_PATH: /var/log/mpp-docs/access.log
+    volumes:
+      - ${MPP_DOCS_BUNDLE_PATH:-./mpp-docs-bundle}:/docs:ro
+      - ./mpp-docs-tls:/tls:ro
+    networks:
+      default:
+        aliases:
+          - mpp.dev
+    expose:
+      - "80"
+      - "443"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
