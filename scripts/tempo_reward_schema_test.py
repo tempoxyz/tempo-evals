@@ -7,11 +7,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "shared" / "global" / "rewardkit-lib"))
 
 from stable_bench_rewardkit.common.tempo_reward import compose_reward  # noqa: E402
+from stable_bench_rewardkit.tempo.verifier import normalize_judge_auth_env  # noqa: E402
 
 ZERO_REWARD = {"correctness": 0, "quality": 0, "reward": 0}
 
@@ -59,10 +61,30 @@ class RewardSchemaTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(reward, ZERO_REWARD)
 
-    def test_tempo_verifier_error_does_not_emit_a_reward(self) -> None:
+    def test_tempo_verifier_error_emits_zero_reward(self) -> None:
         result, reward, _ = self._run_tempo("exit 1\n")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIsNone(reward)
+        self.assertEqual(reward, ZERO_REWARD)
+
+    def test_proxy_auth_token_is_exposed_for_litellm_judges(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"ANTHROPIC_AUTH_TOKEN": "proxy-token"},
+            clear=True,
+        ):
+            normalize_judge_auth_env()
+            self.assertEqual(os.environ["ANTHROPIC_API_KEY"], "proxy-token")
+
+        with patch.dict(
+            os.environ,
+            {
+                "ANTHROPIC_API_KEY": "direct-token",
+                "ANTHROPIC_AUTH_TOKEN": "proxy-token",
+            },
+            clear=True,
+        ):
+            normalize_judge_auth_env()
+            self.assertEqual(os.environ["ANTHROPIC_API_KEY"], "direct-token")
 
     def test_tempo_static_failure_contributes_to_quality(self) -> None:
         quality_check = (
@@ -87,7 +109,7 @@ class RewardSchemaTest(unittest.TestCase):
             correctness=1,
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIsNone(reward)
+        self.assertEqual(reward, ZERO_REWARD)
         self.assertIn("Missing quality configuration", result.stderr)
 
     def test_tempo_quality_config_failure_is_a_verifier_error(self) -> None:
@@ -97,7 +119,7 @@ class RewardSchemaTest(unittest.TestCase):
             quality_config="[judge\n",
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIsNone(reward)
+        self.assertEqual(reward, ZERO_REWARD)
 
     def test_every_mpp_missing_rewardkit_failure_emits_the_complete_reward_schema(
         self,

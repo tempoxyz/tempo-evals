@@ -27,6 +27,9 @@ defaults:
   claude_agent: &claude_agent
     name: claude-code
     model_name: claude-haiku-4-5
+  codex_agent: &codex_agent
+    name: codex
+    model_name: gpt-5.4-mini
   local_job: &local_job
     n_attempts: 1
     n_concurrent_trials: 4
@@ -80,6 +83,27 @@ variants:
       datasets: *tempo_only_datasets
       agents:
         - *claude_agent
+  local-codex-agent:
+    benchmark: tempo
+    prefix: codex-agents-local
+    needs_agent_auth: true
+    job:
+      <<: *local_job
+      job_name: codex-agents-local
+      n_attempts: 3
+      datasets: *tempo_only_datasets
+      agents:
+        - *codex_agent
+  local-codex-agent-dev:
+    benchmark: tempo
+    prefix: codex-agents-dev-local
+    needs_agent_auth: true
+    job:
+      <<: *local_job
+      job_name: codex-agents-dev-local
+      datasets: *tempo_only_datasets
+      agents:
+        - *codex_agent
   model:
     benchmark: tempo
     prefix: model-local

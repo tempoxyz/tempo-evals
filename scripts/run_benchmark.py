@@ -80,6 +80,9 @@ Variants:
   local-oracle-dev   Fast oracle iteration on local Docker
   local-agent        Claude Code matrix on local Docker
   local-agent-dev    One-attempt Claude Code smoke run on local Docker
+  local-codex-agent  Codex matrix on local Docker
+  local-codex-agent-dev
+                     One-attempt Codex smoke run on local Docker
   model              One local harness/model run over tasks
   daytona-oracle     Oracle validation on Daytona
   daytona-agent      Claude Code matrix on Daytona
@@ -279,11 +282,17 @@ def ensure_docs_bundle(source: dict[str, str]) -> str | None:
 
 
 def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
-    effective_agent = options.get("agent") or variant.get("default_agent")
-    needs_agent_auth = variant.get("needs_agent_auth") and effective_agent != "oracle"
-    if needs_agent_auth and not os.environ.get("ANTHROPIC_API_KEY"):
+    effective_agents = effective_agent_names(variant, options)
+    needs_agent_auth = variant.get("needs_agent_auth") and effective_agents
+    if needs_agent_auth and "claude-code" in effective_agents and not has_claude_auth():
         raise RuntimeError(
-            "Missing Claude Code and verifier judge auth: set ANTHROPIC_API_KEY."
+            "Missing Claude Code auth: set ANTHROPIC_API_KEY, or set both "
+            "ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN."
+        )
+    if needs_agent_auth and "codex" in effective_agents and not has_codex_auth():
+        raise RuntimeError(
+            "Missing Codex auth: set OPENAI_API_KEY, or set CODEX_AUTH_JSON_PATH "
+            "to an existing Codex auth.json file."
         )
     if (
         variant.get("needs_daytona_auth")
@@ -300,6 +309,42 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
         raise RuntimeError(msg)
 
 
+def effective_agent_names(variant: dict[str, Any], options: dict[str, Any]) -> set[str]:
+    if agent_name := options.get("agent"):
+        return {agent_name}
+    job_agents = variant.get("job", {}).get("agents", [])
+    names = {
+        agent["name"]
+        for agent in job_agents
+        if agent.get("name") and agent.get("name") != "oracle"
+    }
+    if names:
+        return names
+    if default_agent := variant.get("default_agent"):
+        return {default_agent}
+    return set()
+
+
+def has_claude_auth() -> bool:
+    return bool(
+        os.environ.get("ANTHROPIC_API_KEY")
+        or (
+            os.environ.get("ANTHROPIC_BASE_URL")
+            and os.environ.get("ANTHROPIC_AUTH_TOKEN")
+        )
+    )
+
+
+def has_codex_auth() -> bool:
+    if os.environ.get("OPENAI_API_KEY"):
+        return True
+    if auth_json_path := os.environ.get("CODEX_AUTH_JSON_PATH"):
+        return Path(auth_json_path).is_file()
+    if os.environ.get("CODEX_FORCE_AUTH_JSON"):
+        return (Path.home() / ".codex" / "auth.json").is_file()
+    return False
+
+
 def preflight_mcp_target(options: dict[str, Any]) -> None:
     if options["profile"] not in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}:
         return
@@ -310,8 +355,16 @@ def preflight_mcp_target(options: dict[str, Any]) -> None:
 
 
 def preflight_production_agents(model_config: dict[str, Any]) -> None:
+    if (
+        any(model["agent"] == "claude-code" for model in model_config["models"])
+        and not has_claude_auth()
+    ):
+        raise RuntimeError(
+            "Missing Claude Code auth: set ANTHROPIC_API_KEY, or set both "
+            "ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN."
+        )
     if any(model["agent"] == "codex" for model in model_config["models"]) and not (
-        os.environ.get("OPENAI_API_KEY")
+        has_codex_auth()
     ):
         raise RuntimeError("Missing Codex auth: set OPENAI_API_KEY.")
 
@@ -354,6 +407,11 @@ def validate_run_options(variant_name: str, options: dict[str, Any]) -> dict[str
         and profile != DOCS_PROFILE["id"]
     ):
         raise RuntimeError("Non-Docs profiles require a job-backed variant")
+    if variant.get("job") and options.get("agent"):
+        raise RuntimeError(
+            "--agent is only supported by the model variant; use an agent-specific "
+            "job variant for generated configs"
+        )
     return variant
 
 
