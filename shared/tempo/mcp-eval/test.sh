@@ -45,11 +45,15 @@ then
   exit 0
 fi
 
-if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${ANTHROPIC_AUTH_TOKEN:-}" ]; then
   write_failed_reward 'missing_api_key'
-  printf '%s\n' 'Failing task because ANTHROPIC_API_KEY is required for MCP quality grading.' \
+  printf '%s\n' 'Failing task because Anthropic judge auth is required for MCP quality grading.' \
     > "$LOG_DIR/quality-skipped.txt"
   exit 0
+fi
+
+if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -n "${ANTHROPIC_AUTH_TOKEN:-}" ]; then
+  export ANTHROPIC_API_KEY="$ANTHROPIC_AUTH_TOKEN"
 fi
 
 if [ ! -x "$REWARDKIT_PYTHON" ]; then

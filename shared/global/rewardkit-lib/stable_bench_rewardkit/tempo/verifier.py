@@ -15,6 +15,7 @@ from stable_bench_rewardkit.common.tempo_reward import (
 
 
 def _run_rewardkit(tests: Path, workspace: Path, output: Path) -> bool:
+    normalize_judge_auth_env()
     return (
         subprocess.run(
             [
@@ -33,6 +34,14 @@ def _run_rewardkit(tests: Path, workspace: Path, output: Path) -> bool:
     )
 
 
+def normalize_judge_auth_env() -> None:
+    """Expose proxy Anthropic auth to RewardKit/LiteLLM when needed."""
+    if os.environ.get("ANTHROPIC_AUTH_TOKEN") and not os.environ.get(
+        "ANTHROPIC_API_KEY"
+    ):
+        os.environ["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_AUTH_TOKEN"]
+
+
 def run() -> int:
     log_dir = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
     workspace = Path(os.environ.get("STABLE_BENCH_WORKSPACE", "/app"))
@@ -47,8 +56,9 @@ def run() -> int:
 
     def verifier_error(message: str) -> int:
         print(message, file=sys.stderr)
-        for path in (reward, details, rewardkit_output):
+        for path in (details, rewardkit_output):
             path.unlink(missing_ok=True)
+        reward.write_text(f"{json.dumps(ZERO_REWARD)}\n")
         return 1
 
     with tempfile.TemporaryDirectory() as workspace_dir:
@@ -65,7 +75,9 @@ def run() -> int:
             if (log_dir / "stable-bench-scores.json").is_file():
                 reward.write_text(f"{json.dumps(ZERO_REWARD)}\n")
                 return 0
-            return verifier_result.returncode or 1
+            return verifier_error(
+                "Tempo correctness verifier failed before emitting scores."
+            )
 
         quality_config = tests / "quality" / "reward.toml"
         if not quality_config.is_file():

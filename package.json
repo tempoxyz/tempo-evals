@@ -23,6 +23,8 @@
     "bench:local:one": "uv run python scripts/run_benchmark.py local-oracle-dev --no-sync --concurrency 1",
     "bench:local:agent": "uv run python scripts/run_benchmark.py local-agent",
     "bench:local:agent:dev": "uv run python scripts/run_benchmark.py local-agent-dev",
+    "bench:local:codex": "uv run python scripts/run_benchmark.py local-codex-agent",
+    "bench:local:codex:dev": "uv run python scripts/run_benchmark.py local-codex-agent-dev",
     "bench:daytona:oracle": "uv run python scripts/run_benchmark.py daytona-oracle",
     "bench:daytona:agent": "uv run python scripts/run_benchmark.py daytona-agent",
     "bench:daytona:agent:dev": "uv run python scripts/run_benchmark.py daytona-agent-dev",
@@ -46,6 +48,7 @@
     "check:mcp-types": "tsc -p shared/tempo/mcp-bridge && tsc -p shared/tempo/mcp-eval",
     "test:mcp-bridge": "tsx --test shared/tempo/mcp-bridge/server.test.ts shared/tempo/mcp-eval/oracle.test.ts",
     "test:tempo-verifier": "npm ci --ignore-scripts --no-audit --no-fund --prefix shared/tempo/verifier && npm test --prefix shared/tempo/verifier",
+    "llm-proxy": "tsx scripts/local-llm-proxy.ts",
     "clean": "uv run python scripts/run_benchmark.py clean",
     "clean:jobs": "uv run python scripts/run_benchmark.py clean-jobs"
   },

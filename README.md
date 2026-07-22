@@ -101,7 +101,20 @@ npm run bench:local:one -- --task-filter tempo-v1/transfer-with-memo
 # Run an agent against one Tempo task with Docs plus MCP.
 npm run bench:local:agent:dev -- \
   --task-suite tempo --profile mcp --task-filter transfer-with-memo
+
+# In another terminal, expose a host-only LLM gateway to Docker containers.
+npm run llm-proxy -- --env-file .env.local-llm
+
+# Run a local agent through provider-compatible proxy credentials.
+npm run bench:local:codex:dev -- \
+  --env-file .env.local-llm \
+  --task-suite tempo --profile docs --task-filter transfer-with-memo \
+  --concurrency 1 --agent-concurrency 1
 ```
+
+Keep organization-specific endpoints and tokens in ignored env files rather
+than checked-in config. If a gateway requires purpose or team attribution, put
+that value in the provider auth field expected by the agent client.
 
 Daytona runs require credentials and the paired CI-published image refs:
 
@@ -174,7 +187,12 @@ and contribution rules.
 | Variable | Purpose |
 | --- | --- |
 | `ANTHROPIC_API_KEY` | Claude Code runs and RewardKit evaluation |
+| `ANTHROPIC_BASE_URL` + `ANTHROPIC_AUTH_TOKEN` | Optional Anthropic-compatible proxy credentials |
+| `ANTHROPIC_DEFAULT_OPUS_MODEL`, `ANTHROPIC_DEFAULT_SONNET_MODEL` | Optional Claude Code model aliases for a proxy |
 | `OPENAI_API_KEY` | Codex runs |
+| `OPENAI_BASE_URL` | Optional OpenAI-compatible proxy endpoint for Codex |
+| `CODEX_AUTH_JSON_PATH` | Optional Codex auth file path alternative |
+| `LOCAL_LLM_PROXY_*` | Optional host proxy routing for LLM gateways that task containers cannot reach directly |
 | `DAYTONA_API_KEY` | Daytona authentication |
 | `DAYTONA_JWT_TOKEN` + `DAYTONA_ORGANIZATION_ID` | Alternative Daytona authentication |
 | `HARBOR_API_KEY` | Optional noninteractive Harbor Hub authentication |

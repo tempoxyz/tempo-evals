@@ -26,6 +26,10 @@ verifier:
     - "*.txt"
   env:
     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+{% if environment_type == "docker" %}
+    ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+    ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-}
+{% endif %}
     REWARDKIT_JUDGE: {{ judge_model | tojson }}
 agents:
 {% for agent in agents %}
@@ -42,8 +46,18 @@ agents:
 {% if agent.name == "claude-code" %}
     env:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+{% if environment_type == "docker" %}
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-}
+      ANTHROPIC_DEFAULT_OPUS_MODEL: ${ANTHROPIC_DEFAULT_OPUS_MODEL:-}
+      ANTHROPIC_DEFAULT_SONNET_MODEL: ${ANTHROPIC_DEFAULT_SONNET_MODEL:-}
+{% endif %}
 {% elif agent.name == "codex" %}
     env:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+{% if environment_type == "docker" %}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      CODEX_AUTH_JSON_PATH: ${CODEX_AUTH_JSON_PATH:-}
+{% endif %}
 {% endif %}
 {% endfor %}

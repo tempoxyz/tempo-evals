@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -22,6 +23,7 @@ from scripts.run_benchmark import (
     main,
     parse_args,
     parse_model_config,
+    preflight,
     prepare_production_profiles,
     production_job,
     production_revision_env,
@@ -87,6 +89,58 @@ class RunBenchmarkTest(unittest.TestCase):
             finalize_config(base_config(), {"task_suite": "tempo-mcp"})["datasets"],
             [{"path": "tasks/tempo-mcp-v1"}],
         )
+
+    def test_claude_preflight_accepts_proxy_credentials(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "ANTHROPIC_BASE_URL": "http://localhost:4000",
+                "ANTHROPIC_AUTH_TOKEN": "token",
+            },
+            clear=True,
+        ):
+            preflight({"needs_agent_auth": True, "default_agent": "claude-code"}, {})
+
+    def test_codex_preflight_accepts_openai_api_key_and_base_url(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "OPENAI_BASE_URL": "http://localhost:4000/v1",
+                "OPENAI_API_KEY": "token",
+            },
+            clear=True,
+        ):
+            preflight(
+                {"needs_agent_auth": True, "default_agent": "claude-code"},
+                {"agent": "codex"},
+            )
+
+    def test_codex_job_preflight_accepts_openai_api_key_and_base_url(self) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "OPENAI_BASE_URL": "http://localhost:4000/v1",
+                "OPENAI_API_KEY": "token",
+            },
+            clear=True,
+        ):
+            preflight(
+                {
+                    "needs_agent_auth": True,
+                    "job": {"agents": [{"name": "codex"}]},
+                },
+                {},
+            )
+
+    def test_codex_preflight_rejects_missing_auth(self) -> None:
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            self.assertRaisesRegex(RuntimeError, "Missing Codex auth"),
+        ):
+            preflight(
+                {"needs_agent_auth": True, "default_agent": "claude-code"},
+                {"agent": "codex"},
+            )
 
     def test_tempo_mcp_suite_uses_the_live_mcp_server(self) -> None:
         self.assertTrue(uses_live_mcp_eval({"task_suite": "tempo-mcp"}))
@@ -566,7 +620,14 @@ class RunBenchmarkTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "one path component"):
             production_job("nested/run", production_model_config(), {})
 
-    def test_job_config_scopes_api_keys_to_each_agent_provider(self) -> None:
+    def test_job_backed_variants_reject_agent_override(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "--agent is only supported"):
+            validate_run_options(
+                "local-agent-dev",
+                {"profile": "docs", "task_suite": "tempo", "agent": "codex"},
+            )
+
+    def test_job_config_passes_local_proxy_env_by_agent_provider(self) -> None:
         config = render_job_config(
             {
                 "job_name": "auth-test",
@@ -586,14 +647,51 @@ class RunBenchmarkTest(unittest.TestCase):
 
         self.assertEqual(
             agents["claude-code"]["env"],
-            {"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}"},
+            {
+                "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}",
+                "ANTHROPIC_AUTH_TOKEN": "${ANTHROPIC_AUTH_TOKEN:-}",
+                "ANTHROPIC_BASE_URL": "${ANTHROPIC_BASE_URL:-}",
+                "ANTHROPIC_DEFAULT_OPUS_MODEL": "${ANTHROPIC_DEFAULT_OPUS_MODEL:-}",
+                "ANTHROPIC_DEFAULT_SONNET_MODEL": "${ANTHROPIC_DEFAULT_SONNET_MODEL:-}",
+            },
         )
         self.assertEqual(
             agents["codex"]["env"],
-            {"OPENAI_API_KEY": "${OPENAI_API_KEY:-}"},
+            {
+                "OPENAI_API_KEY": "${OPENAI_API_KEY:-}",
+                "OPENAI_BASE_URL": "${OPENAI_BASE_URL:-}",
+                "CODEX_AUTH_JSON_PATH": "${CODEX_AUTH_JSON_PATH:-}",
+            },
         )
         self.assertNotIn("env", agents["oracle"])
-        self.assertIn("ANTHROPIC_API_KEY", config["verifier"]["env"])
+        self.assertEqual(
+            config["verifier"]["env"],
+            {
+                "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}",
+                "ANTHROPIC_AUTH_TOKEN": "${ANTHROPIC_AUTH_TOKEN:-}",
+                "ANTHROPIC_BASE_URL": "${ANTHROPIC_BASE_URL:-}",
+                "REWARDKIT_JUDGE": (
+                    "${REWARDKIT_JUDGE:-anthropic/claude-haiku-4-5-20251001}"
+                ),
+            },
+        )
+
+    def test_local_codex_variant_is_authored_as_codex(self) -> None:
+        config = render_job_config(
+            validate_run_options(
+                "local-codex-agent-dev", {"profile": "docs", "task_suite": "tempo"}
+            )["job"]
+        )
+
+        self.assertEqual(config["agents"][0]["name"], "codex")
+        self.assertEqual(
+            config["agents"][0]["env"],
+            {
+                "OPENAI_API_KEY": "${OPENAI_API_KEY:-}",
+                "OPENAI_BASE_URL": "${OPENAI_BASE_URL:-}",
+                "CODEX_AUTH_JSON_PATH": "${CODEX_AUTH_JSON_PATH:-}",
+            },
+        )
 
     def test_mcp_profile_is_injected_at_job_level(self) -> None:
         config = {"agents": [{"name": "claude-code"}, {"name": "oracle"}]}

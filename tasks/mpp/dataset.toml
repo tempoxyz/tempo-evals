@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:2c8fd60520ed61395bd5978541fbdd2d746b3a1dba8571270bd76713c35ea579"
+digest = "sha256:d5cf6cb3557fa02adcf53fb7e239a6457d6e6e0ad248aa40e71f142b170719e6"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:d224ff4eb2ab7513f6e5418cb31692f195f931082e45dfb9e0cbbf3260731d03"
+digest = "sha256:50a235308ceb5279de4be93ad93e033e7482daaac6acdd6788d7bf04f615396e"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:8a35e2f53d31e68ef749b3081dff6d1ae49d159930dc71cc8101968ed1e102c8"
+digest = "sha256:b1ada97b48e7bfbada52ff84b122deec221a3085809cb6aeb692a48066b96666"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:868d5a3c04cdaee16ab31e27c8539e50a7f803296d0a09f913b6e98ee2a7d1a4"
+digest = "sha256:cb96a2a8bfa6b3ae18f4e4779eb5bcd041516219de8776c411ecf305fd46df71"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b006b6ca48d627a87bb6c838db2552dca8f3bf022aad157c29b957eade149f12"
+digest = "sha256:e49146b00339623404ca871a752aeb975b7b5597f23450cb96ff46050df62605"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:2709b8b29c8e447b7c0ca1daea6a646b51bff3ab8c249228a67c0075fe8728bf"
+digest = "sha256:66e055af31548ed27b4773377214421413388971c220d8ad4ff82020282450d7"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:dc39d35b96d5e7b6e5c825a3e0d5ac797e7f7a2b07c978e8848b207ccd2122d0"
+digest = "sha256:226117dd4fccba3e4a6ec23a0dbfee3b2994d7d41e8608cfd6acdb0cb4790dae"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:1c21dbd2253cdc9decb8bc9486b99f5b7308894579c217748507ef89cb532c93"
+digest = "sha256:5e79f763b479d8780849a312a05649881aa0fcebf19a7d3dff4625f40b20b5f0"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:11bc89579c100c6938405eabc05ef9d3430a057d46a9ec27ebb0009f6217debb"
+digest = "sha256:c19601c6371ecca825f1c61ac90b874cdd378e646c662be564fcbbe5e65790fd"
 
