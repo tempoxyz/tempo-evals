@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:787c8255c490b4fe4f9313e37de2050ce6701a7ef26630012bf9f85122eb018d"
+digest = "sha256:2c8fd60520ed61395bd5978541fbdd2d746b3a1dba8571270bd76713c35ea579"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:06784b1881ad7301cdf6b08fd17c42e67655137c3d5e7f6e730e9102298accd8"
+digest = "sha256:d224ff4eb2ab7513f6e5418cb31692f195f931082e45dfb9e0cbbf3260731d03"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:0de0a9941378d7eea15dad357f034e20b63501c9d248a83bbf621b6c60354dbc"
+digest = "sha256:8a35e2f53d31e68ef749b3081dff6d1ae49d159930dc71cc8101968ed1e102c8"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:42bce10bb05f0dffa29a160adeadc7b3a4be7d696e18cb6fd66d6dd2bec835bc"
+digest = "sha256:868d5a3c04cdaee16ab31e27c8539e50a7f803296d0a09f913b6e98ee2a7d1a4"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:197971e113677b3a197dec25860be6427144e88befe0c02b3ddde1085461003f"
+digest = "sha256:b006b6ca48d627a87bb6c838db2552dca8f3bf022aad157c29b957eade149f12"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:be677a4842e4ad0c8574418e22ec16ddb047ab97a5b4c09d9118466e963efc55"
+digest = "sha256:2709b8b29c8e447b7c0ca1daea6a646b51bff3ab8c249228a67c0075fe8728bf"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:e6613e6bb636d3ac14fb46404c4aa102643ab698436d911642bd8c58bd9507c3"
+digest = "sha256:dc39d35b96d5e7b6e5c825a3e0d5ac797e7f7a2b07c978e8848b207ccd2122d0"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:8e965239fd115fe40dc458414710f52291badcffe9586a0000e3c0a457584f9f"
+digest = "sha256:1c21dbd2253cdc9decb8bc9486b99f5b7308894579c217748507ef89cb532c93"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:948ead523c5dcf6cbdb86faece85d36ba7f55dcc8d69e78b1e060a5a5a74ae35"
+digest = "sha256:11bc89579c100c6938405eabc05ef9d3430a057d46a9ec27ebb0009f6217debb"
 
