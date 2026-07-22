@@ -6,6 +6,8 @@
   "scripts": {
     "docs:prepare": "uv run python scripts/prepare_docs_bundle.py",
     "docs:check": "uv run python scripts/prepare_docs_bundle.py --check",
+    "mpp-docs:prepare": "uv run python scripts/prepare_mpp_docs_bundle.py",
+    "mpp-docs:check": "uv run python scripts/prepare_mpp_docs_bundle.py --check",
     "sync": "uv run python scripts/run_benchmark.py sync",
     "dataset": "uv run python scripts/run_benchmark.py dataset",
     "build-images": "uv run python scripts/run_benchmark.py build-images",

@@ -172,6 +172,10 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument("--tasks")
     parser.add_argument("--docs-sha")
     parser.add_argument(
+        "--mpp-docs-source",
+        help="Local MPP docs checkout to stage at https://mpp.dev for MPP tasks",
+    )
+    parser.add_argument(
         "--profile",
         choices=(*PROFILE_IDS, "mcp-both", "all"),
         default=DOCS_PROFILE["id"],
@@ -238,6 +242,10 @@ DOCS_CA_FILE = "ca.crt"
 DOCS_CA_DESTINATION = "/usr/local/share/ca-certificates/stable-bench-docs.crt"
 MCP_UPSTREAM_PLACEHOLDER = "${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}"
 DOCS_TLS_VALIDITY_DAYS = "30"
+MPP_DOCS_ACCESS_LOG = "/var/log/mpp-docs/access.log"
+MPP_DOCS_TLS_DIR = "mpp-docs-tls"
+MPP_DOCS_BUNDLE_PATH = Path(".cache") / "mpp-docs" / "local" / "public"
+DOCS_PROXY_SOURCE = "shared/docs/static-docs-proxy"
 
 
 def read_docs_lock() -> dict[str, Any]:
@@ -278,6 +286,39 @@ def ensure_docs_bundle(source: dict[str, str]) -> str | None:
     if not (bundle_path / "developers" / "llms.txt").exists():
         msg = f"Pinned Tempo docs bundle was not created at {bundle_path}"
         raise RuntimeError(msg)
+    return str(bundle_path)
+
+
+def is_mpp_tasks_path(path: str) -> bool:
+    try:
+        return Path(path).resolve() == Path("tasks/mpp").resolve()
+    except OSError:
+        return path == "tasks/mpp"
+
+
+def is_tempo_tasks_path(path: str) -> bool:
+    try:
+        return Path(path).resolve() == Path("tasks/tempo-v1").resolve()
+    except OSError:
+        return path == "tasks/tempo-v1"
+
+
+def ensure_mpp_docs_bundle(options: dict[str, Any]) -> str | None:
+    source = options.get("mpp_docs_source")
+    if not source:
+        return None
+    targets_mpp = options.get("task_suite") in {"mpp", "all"} or any(
+        is_mpp_tasks_path(path) for path in task_paths(options)
+    )
+    if not targets_mpp:
+        raise RuntimeError("--mpp-docs-source is only valid for MPP task suites")
+    bundle_path = MPP_DOCS_BUNDLE_PATH.resolve()
+    run_python(
+        "scripts/prepare_mpp_docs_bundle.py",
+        ["--source", source, "--output", str(bundle_path), "--force"],
+    )
+    if not (bundle_path / "llms-full.txt").exists():
+        raise RuntimeError(f"MPP docs bundle was not created at {bundle_path}")
     return str(bundle_path)
 
 
@@ -727,6 +768,7 @@ def run_production_variant(
     run_id: str,
     options: dict[str, Any],
     docs_bundle: str | None,
+    mpp_docs_bundle: str | None,
 ) -> None:
     models_config_path = options.get("models_config") or "config/models.production.yaml"
     model_config = parse_model_config(
@@ -736,7 +778,9 @@ def run_production_variant(
     job = production_job(run_id, model_config, options)
     rendered = render_job_config(job, benchmark=None)
     rendered["verifier"]["env"].update(production_revision_env(options))
-    config = stage_daytona_config(rendered, run_id, docs_bundle, options)
+    config = stage_daytona_config(
+        rendered, run_id, docs_bundle, mpp_docs_bundle, options
+    )
     max_retries = options.get("max_retries") or "4"
     args = ["run", "harbor", "run", "-c", config]
     if options.get("env_file"):
@@ -744,6 +788,7 @@ def run_production_variant(
     args.extend(harbor_flags(options))
     args.extend(["--max-retries", max_retries])
     os.environ["TEMPO_DOCS_BUNDLE_PATH"] = ""
+    os.environ["MPP_DOCS_BUNDLE_PATH"] = ""
     args.append("-y")
     status = run_status("uv", args)
     if status != 0:
@@ -907,9 +952,14 @@ def run_openssl(args: list[str]) -> None:
         raise RuntimeError(f"openssl {' '.join(args)} failed: {output}")
 
 
-def generate_docs_tls_assets(environment_dir: Path) -> Path:
-    """Create an ephemeral CA and docs.tempo.xyz leaf certificate for one run."""
-    tls_dir = environment_dir / DOCS_TLS_DIR
+def generate_docs_tls_assets(
+    environment_dir: Path,
+    *,
+    hostname: str = "docs.tempo.xyz",
+    tls_dir_name: str = DOCS_TLS_DIR,
+) -> Path:
+    """Create an ephemeral CA and docs leaf certificate for one run."""
+    tls_dir = environment_dir / tls_dir_name
     shutil.rmtree(tls_dir, ignore_errors=True)
     tls_dir.mkdir(parents=True)
 
@@ -952,14 +1002,14 @@ def generate_docs_tls_assets(environment_dir: Path) -> Path:
             "-out",
             str(leaf_csr),
             "-subj",
-            "/CN=docs.tempo.xyz",
+            f"/CN={hostname}",
         ]
     )
     extensions.write_text(
         "basicConstraints=critical,CA:FALSE\n"
         "keyUsage=critical,digitalSignature,keyEncipherment\n"
         "extendedKeyUsage=serverAuth\n"
-        "subjectAltName=DNS:docs.tempo.xyz\n"
+        f"subjectAltName=DNS:{hostname}\n"
     )
     run_openssl(
         [
@@ -992,6 +1042,11 @@ def generate_docs_tls_assets(environment_dir: Path) -> Path:
 def trust_docs_ca(environment_dir: Path, tls_dir: Path) -> None:
     dockerfile = environment_dir / "Dockerfile"
     ca_path = tls_dir.relative_to(environment_dir) / DOCS_CA_FILE
+    dockerignore = environment_dir / ".dockerignore"
+    ignore_entry = f"{tls_dir.name}/*\n!{tls_dir.name}/{DOCS_CA_FILE}\n"
+    existing_ignore = dockerignore.read_text() if dockerignore.exists() else ""
+    if existing_ignore and not existing_ignore.endswith("\n"):
+        existing_ignore = f"{existing_ignore}\n"
     content = dockerfile.read_text().rstrip()
     dockerfile.write_text(
         f"{content}\n\n"
@@ -999,35 +1054,71 @@ def trust_docs_ca(environment_dir: Path, tls_dir: Path) -> None:
         "RUN update-ca-certificates\n"
         f"ENV NODE_EXTRA_CA_CERTS={DOCS_CA_DESTINATION}\n"
     )
-    (environment_dir / ".dockerignore").write_text("docs-tls/*\n!docs-tls/ca.crt\n")
+    dockerignore.write_text(f"{existing_ignore}{ignore_entry}")
 
 
-def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
+def stage_docs_proxy_task(
+    task_dir: Path,
+    *,
+    docs_bundle: str,
+    compose_source: str,
+    bundle_dir_name: str,
+    access_log_path: str,
+    service: str,
+    hostname: str,
+    tls_dir_name: str,
+) -> None:
     task_config_path = task_dir / "task.toml"
     config = tomlkit.parse(task_config_path.read_text())
     artifacts = config.get("artifacts")
     if not isinstance(artifacts, list):
         raise RuntimeError(f"Missing artifacts array in staged task: {task_dir}")
     access_log = tomlkit.inline_table()
-    access_log["source"] = DOCS_ACCESS_LOG
-    access_log["service"] = "tempo-docs"
+    access_log["source"] = access_log_path
+    access_log["service"] = service
     artifacts.append(access_log)
     task_config_path.write_text(tomlkit.dumps(config))
 
     environment_dir = task_dir / "environment"
-    shutil.copyfile(
-        "shared/tempo/docker/compose/tempo-docs.yaml",
-        environment_dir / "docker-compose.yaml",
-    )
+    shutil.copyfile(compose_source, environment_dir / "docker-compose.yaml")
     shutil.copytree(
-        "shared/tempo/docs/tempo-docs",
-        environment_dir / "tempo-docs",
+        DOCS_PROXY_SOURCE,
+        environment_dir / "docs-proxy",
         dirs_exist_ok=True,
     )
-    shutil.copytree(
-        docs_bundle, environment_dir / "tempo-docs-bundle", dirs_exist_ok=True
+    shutil.copytree(docs_bundle, environment_dir / bundle_dir_name, dirs_exist_ok=True)
+    tls_dir = generate_docs_tls_assets(
+        environment_dir,
+        hostname=hostname,
+        tls_dir_name=tls_dir_name,
     )
-    trust_docs_ca(environment_dir, generate_docs_tls_assets(environment_dir))
+    trust_docs_ca(environment_dir, tls_dir)
+
+
+def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
+    stage_docs_proxy_task(
+        task_dir,
+        docs_bundle=docs_bundle,
+        compose_source="shared/tempo/docker/compose/tempo-docs.yaml",
+        bundle_dir_name="tempo-docs-bundle",
+        access_log_path=DOCS_ACCESS_LOG,
+        service="tempo-docs",
+        hostname="docs.tempo.xyz",
+        tls_dir_name=DOCS_TLS_DIR,
+    )
+
+
+def stage_mpp_docs_task(task_dir: Path, mpp_docs_bundle: str) -> None:
+    stage_docs_proxy_task(
+        task_dir,
+        docs_bundle=mpp_docs_bundle,
+        compose_source="shared/mpp/docker/compose/mpp-docs.yaml",
+        bundle_dir_name="mpp-docs-bundle",
+        access_log_path=MPP_DOCS_ACCESS_LOG,
+        service="mpp-docs",
+        hostname="mpp.dev",
+        tls_dir_name=MPP_DOCS_TLS_DIR,
+    )
 
 
 def override_staged_images(staging_root: Path, images: dict[str, str]) -> None:
@@ -1049,6 +1140,7 @@ def override_staged_images(staging_root: Path, images: dict[str, str]) -> None:
 def stage_task_datasets(
     staging_root: Path,
     docs_bundle: str | None,
+    mpp_docs_bundle: str | None = None,
     images: dict[str, str] | None = None,
 ) -> None:
     staged_tasks = staging_root / "tasks" / "tempo-v1"
@@ -1099,7 +1191,12 @@ def stage_task_datasets(
                 dirs_exist_ok=True,
             )
     if Path("tasks/mpp").exists():
-        copy_tasks(Path("tasks/mpp"), staging_root / "tasks" / "mpp")
+        mpp_tasks = staging_root / "tasks" / "mpp"
+        copy_tasks(Path("tasks/mpp"), mpp_tasks)
+        if mpp_docs_bundle is not None:
+            for task_dir in mpp_tasks.iterdir():
+                if task_dir.is_dir() and (task_dir / "task.toml").exists():
+                    stage_mpp_docs_task(task_dir, mpp_docs_bundle)
     if images is not None:
         override_staged_images(staging_root, images)
     if docs_bundle is not None:
@@ -1122,13 +1219,16 @@ def stage_daytona_config(
     config: dict[str, Any],
     run_id: str,
     docs_bundle: str | None,
+    mpp_docs_bundle: str | None,
     options: dict[str, Any],
 ) -> str:
     staging_root = Path(".cache") / "harbor-daytona" / run_id
     staged_config = staging_root / "job.yaml"
 
     shutil.rmtree(staging_root, ignore_errors=True)
-    stage_task_datasets(staging_root, docs_bundle, daytona_images(options))
+    stage_task_datasets(
+        staging_root, docs_bundle, mpp_docs_bundle, daytona_images(options)
+    )
 
     config = apply_pair_id(
         apply_profile(finalize_config(config, options), options["profile"]),
@@ -1144,6 +1244,7 @@ def stage_filtered_config(
     run_id: str,
     options: dict[str, Any],
     docs_bundle: str | None,
+    mpp_docs_bundle: str | None,
 ) -> str:
     staging_root = Path(".cache") / "harbor-config" / run_id
     staged_config = staging_root / "job.yaml"
@@ -1155,13 +1256,36 @@ def stage_filtered_config(
     )
     if (
         docs_bundle is not None
+        or mpp_docs_bundle is not None
         or options["profile"] in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}
         or options.get("task_suite") in {"tempo-mcp", "all"}
     ):
-        stage_task_datasets(staging_root, docs_bundle)
+        stage_task_datasets(staging_root, docs_bundle, mpp_docs_bundle)
         redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
+
+
+def stage_direct_task_path(
+    run_id: str,
+    task_path: str,
+    docs_bundle: str | None,
+    mpp_docs_bundle: str | None,
+) -> str:
+    if docs_bundle is None and mpp_docs_bundle is None:
+        return task_path
+
+    if is_mpp_tasks_path(task_path):
+        staged_path = "tasks/mpp"
+    elif is_tempo_tasks_path(task_path):
+        staged_path = "tasks/tempo-v1"
+    else:
+        return task_path
+
+    staging_root = Path(".cache") / "harbor-model" / run_id
+    shutil.rmtree(staging_root, ignore_errors=True)
+    stage_task_datasets(staging_root, docs_bundle, mpp_docs_bundle)
+    return str(staging_root / staged_path)
 
 
 def main(argv: list[str]) -> None:
@@ -1263,6 +1387,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     if not variant.get("needs_daytona_auth"):
         build_images()
     docs_bundle = None if source["mode"] == "live" else ensure_docs_bundle(source)
+    mpp_docs_bundle = ensure_mpp_docs_bundle(options)
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))
     default_run_name = versioned_name(benchmark, variant["prefix"])
@@ -1274,22 +1399,32 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         run_id = run_group or f"{default_run_name}-{options['profile']}-{timestamp()}"
     args = ["run", "harbor", "run"]
     if variant.get("production"):
-        run_production_variant(run_id, options, docs_bundle)
+        run_production_variant(run_id, options, docs_bundle, mpp_docs_bundle)
         return
 
     if variant.get("job"):
         job_config = load_compiled_config(variant_name)
         config = (
-            stage_daytona_config(job_config, run_id, docs_bundle, options)
+            stage_daytona_config(
+                job_config, run_id, docs_bundle, mpp_docs_bundle, options
+            )
             if variant.get("needs_daytona_auth")
-            else stage_filtered_config(job_config, run_id, options, docs_bundle)
+            else stage_filtered_config(
+                job_config, run_id, options, docs_bundle, mpp_docs_bundle
+            )
         )
         args.extend(["-c", config])
     else:
+        task_path = stage_direct_task_path(
+            run_id,
+            task_paths(options)[0],
+            docs_bundle,
+            mpp_docs_bundle,
+        )
         args.extend(
             [
                 "--path",
-                task_paths(options)[0],
+                task_path,
             ]
         )
         args.extend(
@@ -1320,6 +1455,11 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         args.extend(["--max-retries", max_retries])
     os.environ["TEMPO_DOCS_BUNDLE_PATH"] = (
         "" if variant.get("needs_daytona_auth") or docs_bundle is None else docs_bundle
+    )
+    os.environ["MPP_DOCS_BUNDLE_PATH"] = (
+        ""
+        if variant.get("needs_daytona_auth") or mpp_docs_bundle is None
+        else mpp_docs_bundle
     )
     args.append("-y")
     run("uv", args)

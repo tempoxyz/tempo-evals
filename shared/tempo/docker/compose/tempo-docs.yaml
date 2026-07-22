@@ -36,9 +36,19 @@ services:
 
   tempo-docs:
     build:
-      context: ./tempo-docs
+      context: ./docs-proxy
+    environment:
+      DOCS_SITE_NAME: Tempo docs
+      DOCS_ROOT: /docs
+      DOCS_INDEX_PATH: /developers/index.html
+      DOCS_HEALTH_PATH: /developers/llms.txt
+      DOCS_BASE_URL: https://docs.tempo.xyz
+      ACCESS_LOG_PATH: /var/log/tempo-docs/access.log
+      DOCS_EXACT_ALIASES: '{"/":"/developers","/llms.txt":"/developers/llms.txt","/llms-full.txt":"/developers/llms-full.txt","/docs":"/developers/docs.md","/docs/":"/developers/docs.md","/developers/docs":"/developers/docs.md","/developers/docs/":"/developers/docs.md"}'
+      DOCS_PREFIX_ALIASES: '[["/docs/","/developers/docs/"]]'
+      DOCS_STRIP_TRAILING_SLASH_PREFIXES: '["/developers/docs/","/docs/"]'
     volumes:
-      - ${TEMPO_DOCS_BUNDLE_PATH:-./tempo-docs-bundle}:/tempo-docs:ro
+      - ${TEMPO_DOCS_BUNDLE_PATH:-./tempo-docs-bundle}:/docs:ro
       - ./docs-tls:/tls:ro
     networks:
       default:

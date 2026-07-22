@@ -65,6 +65,26 @@ npm run bench:model -- --tasks tasks/mpp \
 npm run dataset -- --tasks tasks/mpp
 ```
 
+### Local mpp.dev docs proxy
+
+Existing MPP tasks can be run against a local mpp.dev checkout without changing
+task prompts or verifier contracts. Build the docs checkout first, then pass it
+to the model runner:
+
+```bash
+cd ~/stripe/mpp
+pnpm build
+
+cd ~/stripe/tempo-evals
+npm run bench:model -- --tasks tasks/mpp \
+  --task-filter server-mcp-pathusd \
+  --mpp-docs-source ~/stripe/mpp
+```
+
+The runner stages the checkout's built `dist/public` output behind an HTTPS
+`mpp.dev` sidecar in each task environment and collects
+`/var/log/mpp-docs/access.log` as a job artifact.
+
 Use `npm run bench:local:oracle -- --task-suite all` for clean validation when
 a shared change affects multiple suites.
 
