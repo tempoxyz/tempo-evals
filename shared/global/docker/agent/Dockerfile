@@ -1,5 +1,7 @@
 FROM node:22-trixie
 
+LABEL org.opencontainers.image.source="https://github.com/tempoxyz/tempo-evals"
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     ca-certificates \

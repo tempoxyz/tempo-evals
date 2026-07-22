@@ -1,6 +1,8 @@
 ARG AGENT_IMAGE=stable-bench-agent:local
 FROM ${AGENT_IMAGE}
 
+LABEL org.opencontainers.image.source="https://github.com/tempoxyz/tempo-evals"
+
 COPY shared/global/rewardkit-lib/pyproject.toml /tmp/stable-bench-rewardkit/pyproject.toml
 
 RUN python3 -m venv /opt/stable-bench-rewardkit-venv \
