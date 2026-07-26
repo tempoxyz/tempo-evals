@@ -47,5 +47,7 @@ venv/
 dist/
 build/
 coverage/
+.coverage
+generated/
 .cache/
 .turbo/

@@ -1,0 +1,1 @@
+"""Registered suite declarations."""

@@ -13,12 +13,22 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "coverage>=7.13,<8",
     "ruff>=0.15.21",
     "shellcheck-py>=0.11.0.1",
 ]
 
 [tool.uv]
 package = false
+
+[tool.coverage.run]
+branch = true
+source = ["evalkit"]
+
+[tool.coverage.report]
+fail_under = 99
+omit = ["*/*_test.py"]
+show_missing = true
 
 [tool.ruff]
 target-version = "py312"

@@ -1,0 +1,639 @@
+"""Deterministic LOAD → VALIDATE → LOWER → RENDER → HASH → EMIT pipeline."""
+
+from __future__ import annotations
+
+import ast
+import filecmp
+import hashlib
+import importlib
+import json
+import shutil
+from collections.abc import Iterable, Mapping
+from pathlib import Path, PurePosixPath
+
+import tomlkit
+
+from evalkit.api import Environment, ImageRef, Suite, Task
+from evalkit.harbor_compat import content_hash
+from evalkit.ir import (
+    Asset,
+    Provenance,
+    ResolvedImage,
+    ServiceSpec,
+    SourceRef,
+    SuiteIR,
+    TaskIR,
+)
+from evalkit.lock import load as load_locks
+from evalkit.lock import resolve as resolve_image
+
+ROOT = Path(__file__).resolve().parents[2]
+LOCK_PATH = ROOT / "evalkit.lock"
+MANIFEST = ".evalkit-manifest.json"
+SUITE_MODULES = {
+    "mpp": "evalkit.suites.mpp",
+    "tempo-mcp-v1": "evalkit.suites.tempo_mcp_v1",
+    "tempo-v1": "evalkit.suites.tempo_v1",
+}
+
+
+def suite_names() -> tuple[str, ...]:
+    """Return registered suite names in stable command-line order."""
+    return tuple(sorted(SUITE_MODULES))
+
+
+def load_suite(name: str) -> Suite:
+    """LOAD a registered suite without executing arbitrary user input."""
+    try:
+        module_name = SUITE_MODULES[name]
+    except KeyError as error:
+        choices = ", ".join(sorted(SUITE_MODULES))
+        raise ValueError(f"Unknown suite {name!r}; choose one of: {choices}") from error
+    suite = importlib.import_module(module_name).SUITE
+    if not isinstance(suite, Suite):
+        raise TypeError(f"{module_name}.SUITE must be an evalkit.api.Suite")
+    return suite
+
+
+def task_slug(task: Task) -> str:
+    """Extract the output-directory slug from a suite-qualified task name."""
+    prefix, separator, slug = task.name.rpartition("/")
+    if not separator or not prefix or not slug:
+        raise ValueError(f"Task names must be suite-qualified: {task.name!r}")
+    return slug
+
+
+def _suite_component(name: str) -> str:
+    """Return one safe output-directory component for a suite name."""
+    candidate = PurePosixPath(name)
+    if candidate.is_absolute() or len(candidate.parts) != 1 or name in {".", ".."}:
+        raise ValueError(f"Suite names must be one relative path component: {name!r}")
+    return name
+
+
+def _existing_files(source: Path) -> Iterable[Path]:
+    """Yield regular source files in deterministic path order."""
+    return (path for path in sorted(source.rglob("*")) if path.is_file())
+
+
+def _adapter_symbols(path: Path) -> set[str]:
+    """Read top-level adapter symbols with AST parsing and without importing code."""
+    tree = ast.parse(path.read_text(), filename=str(path))
+    return {
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+    } | {
+        target.id
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+
+
+def _validate_adapter_contract(task: Task) -> None:
+    """Reject verifier adapters that do not provide their declared symbols."""
+    for use in task.verifiers:
+        contract = use.verifier.contract
+        if contract is None:
+            continue
+        adapter = use.adapter or (task.source / contract.path if task.source else None)
+        if adapter is None or not adapter.is_file():
+            raise ValueError(
+                f"{task.name}: missing verifier adapter for {use.verifier.name}"
+            )
+        missing = set(contract.symbols) - _adapter_symbols(adapter)
+        if missing:
+            symbols = ", ".join(sorted(missing))
+            raise ValueError(f"{task.name}: adapter {adapter} lacks {symbols}")
+
+
+def _validate_environment(task: Task) -> None:
+    """Reject ambiguous service and environment variable declarations."""
+    environment = task.environment
+    service_names = [service.name for service in environment.services]
+    if len(service_names) != len(set(service_names)):
+        raise ValueError(f"{task.name}: runtime service names must be unique")
+    variable_names = [variable.name for variable in environment.variables]
+    if len(variable_names) != len(set(variable_names)):
+        raise ValueError(
+            f"{task.name}: environment variable declarations must be unique"
+        )
+
+
+def _validate_asset_source(task: Task, source: Path, label: str) -> None:
+    """Reject any declared asset whose source does not exist."""
+    if not source.exists():
+        raise ValueError(f"{task.name}: missing {label} asset {source}")
+
+
+def validate(suite: Suite) -> None:
+    """VALIDATE task names, source inputs, policies, and adapter contracts."""
+    _suite_component(suite.name)
+    if not suite.tasks:
+        raise ValueError(f"Suite {suite.name!r} has no tasks")
+    if suite.dataset_source is not None and not suite.dataset_source.is_file():
+        raise ValueError(f"Missing dataset manifest: {suite.dataset_source}")
+    names = [name for task in suite.tasks for name in (task.name, *task.aliases)]
+    if len(names) != len(set(names)):
+        raise ValueError(f"Suite {suite.name!r} has duplicate task names or aliases")
+    for task in suite.tasks:
+        task_slug(task)
+        for alias in task.aliases:
+            task_slug(Task(alias))
+        if task.source is not None:
+            if not suite.policy.allow_legacy_sources:
+                raise ValueError(f"{task.name}: legacy sources are disabled by policy")
+            if not task.source.is_dir():
+                raise ValueError(f"Missing task source: {task.source}")
+            if not (task.source / "task.toml").is_file():
+                raise ValueError(f"Missing task.toml: {task.source}")
+        for copied in task.copies:
+            _validate_asset_source(task, copied.source, "copied")
+        for build in (task.environment.agent, task.environment.verifier):
+            if build is not None:
+                for baked in build.assets:
+                    _validate_asset_source(task, baked.source, "baked")
+        for case in task.cases:
+            for fixture in case.fixtures:
+                _validate_asset_source(task, fixture.source, "fixture")
+        if task.solution is not None:
+            for copied in task.solution.assets:
+                _validate_asset_source(task, copied.source, "solution")
+        for use in task.verifiers:
+            _validate_asset_source(task, use.verifier.source, "verifier")
+            if use.adapter is not None:
+                _validate_asset_source(task, use.adapter, "verifier adapter")
+        _validate_environment(task)
+        _validate_adapter_contract(task)
+
+
+def _lifecycle(destination: PurePosixPath) -> str:
+    """Classify an output path according to the Harbor phase that consumes it."""
+    if destination.parts[0] == "environment":
+        return "build"
+    if destination.parts[0] == "tests":
+        return "verifier"
+    if destination.parts[0] == "solution":
+        return "solution"
+    return "runtime"
+
+
+def _asset(
+    path: Path, destination: PurePosixPath, declaration: str, mode: int | None = None
+) -> Asset:
+    """Convert one source file to an IR asset with inferred lifecycle metadata."""
+    return Asset(
+        SourceRef(path=path),
+        destination,
+        _lifecycle(destination),
+        Provenance(declaration),
+        mode,
+    )
+
+
+def _add_copy(
+    assets: list[Asset],
+    source: Path,
+    destination: PurePosixPath,
+    label: str,
+    mode: int | None = None,
+) -> None:
+    """Append one file or recursively append a directory of IR assets."""
+    if source.is_file():
+        assets.append(_asset(source, destination, label, mode))
+        return
+    for path in _existing_files(source):
+        relative = PurePosixPath(path.relative_to(source).as_posix())
+        assets.append(_asset(path, destination / relative, label, mode))
+
+
+def _merge_assets(task: Task, assets: list[Asset]) -> tuple[Asset, ...]:
+    """Sort output assets and require explicit rationale for every collision."""
+    allowed_overrides = {entry.destination: entry.reason for entry in task.overrides}
+    merged: dict[PurePosixPath, Asset] = {}
+    for asset in assets:
+        previous = merged.get(asset.destination)
+        if previous is None:
+            merged[asset.destination] = asset
+            continue
+        reason = allowed_overrides.get(asset.destination)
+        if reason is None:
+            raise ValueError(
+                f"{task.name}: destination collision at {asset.destination}; "
+                "use override(..., reason=...)"
+            )
+        merged[asset.destination] = Asset(
+            asset.source,
+            asset.destination,
+            asset.lifecycle,
+            Provenance(asset.provenance.declaration, reason),
+            asset.mode,
+        )
+    return tuple(
+        sorted(merged.values(), key=lambda asset: asset.destination.as_posix())
+    )
+
+
+def _environment_values(environment: Environment) -> dict[str, str]:
+    """Build the stable union of declared variable names and default values."""
+    values: dict[str, str] = {}
+    for variable in sorted(environment.variables, key=lambda value: value.name):
+        if variable.default is not None:
+            values[variable.name] = variable.default
+        elif variable.required:
+            values[variable.name] = ""
+    return values
+
+
+def _images(
+    task: Task, locks: dict[str, str], require_locks: bool
+) -> tuple[ResolvedImage, ...]:
+    """Resolve all declared build and service images through the suite lock policy."""
+    images: list[ImageRef] = []
+    if task.environment.agent:
+        images.append(task.environment.agent.image)
+    if task.environment.verifier:
+        images.append(task.environment.verifier.image)
+    images.extend(service.image for service in task.environment.services)
+    if not images:
+        return ()
+    if not require_locks:
+        return tuple(ResolvedImage(image.reference, "") for image in images)
+    return tuple(
+        ResolvedImage(image.reference, resolve_image(image, locks)) for image in images
+    )
+
+
+def _services(task: Task) -> tuple[ServiceSpec, ...]:
+    """Lower public runtime-service declarations to IR service specifications."""
+    return tuple(
+        ServiceSpec(
+            service.name,
+            service.image.reference,
+            service.ports,
+            service.env,
+            service.command,
+            service.healthcheck,
+            service.depends_on,
+        )
+        for service in task.environment.services
+    )
+
+
+def _render_environment(
+    task: Task, assets: list[Asset], images: tuple[ResolvedImage, ...]
+) -> None:
+    """Render Docker build contexts and runtime service configuration assets."""
+    builds = (
+        ("agent", task.environment.agent),
+        ("verifier", task.environment.verifier),
+    )
+    image_digests = {image.reference: image.digest for image in images}
+    for role, build in builds:
+        if build is None:
+            continue
+        if task.source is not None and not build.assets:
+            continue
+        context = PurePosixPath("environment" if role == "agent" else "tests")
+        digest = image_digests[build.image.reference]
+        image = f"{build.image.reference}@{digest}" if digest else build.image.reference
+        lines = [f"FROM {image}"]
+        for baked in build.assets:
+            relative_destination = (
+                PurePosixPath(*baked.destination.parts[1:])
+                if baked.destination.is_absolute()
+                else baked.destination
+            )
+            baked_destination = context / "baked" / role / relative_destination
+            _add_copy(
+                assets, baked.source, baked_destination, f"bake:{role}", baked.mode
+            )
+            lines.append(
+                f"COPY baked/{role}/{relative_destination} {baked.destination}"
+            )
+        assets.append(
+            Asset(
+                SourceRef(content=("\n".join(lines) + "\n").encode()),
+                context / "Dockerfile",
+                "build",
+                Provenance(f"docker build:{role}"),
+            )
+        )
+    if not task.environment.services:
+        return
+    services = {}
+    for service in task.environment.services:
+        digest = image_digests[service.image.reference]
+        service_image = (
+            f"{service.image.reference}@{digest}" if digest else service.image.reference
+        )
+        services[service.name] = {
+            "command": list(service.command),
+            "depends_on": list(service.depends_on),
+            "environment": dict(service.env),
+            "healthcheck": service.healthcheck,
+            "image": service_image,
+            "ports": list(service.ports),
+        }
+    assets.append(
+        Asset(
+            SourceRef(
+                content=(json.dumps({"services": services}, indent=2) + "\n").encode()
+            ),
+            PurePosixPath("environment") / "compose.yaml",
+            "build",
+            Provenance("runtime services"),
+        )
+    )
+
+
+def _render_task_toml(task: Task, environment: Mapping[str, str]) -> Asset:
+    """Render minimal task metadata when a declaration has no source task TOML."""
+    document = tomlkit.document()
+    document["schema_version"] = "1.3"
+    document["task"] = {"name": task.name}
+    for key, value in task.extra_config.items():
+        if isinstance(value, Mapping) and isinstance(document.get(key), Mapping):
+            document[key].update(value)
+        else:
+            document[key] = value
+    if environment:
+        document.setdefault("environment", tomlkit.table())["env"] = dict(environment)
+    return Asset(
+        SourceRef(content=tomlkit.dumps(document).encode()),
+        PurePosixPath("task.toml"),
+        "runtime",
+        Provenance("generated task.toml"),
+    )
+
+
+def _apply_environment(
+    task: Task, assets: list[Asset], environment: Mapping[str, str]
+) -> None:
+    """Merge declared values into a source task TOML or create one if necessary."""
+    if not environment:
+        return
+    destination = PurePosixPath("task.toml")
+    for index, asset in enumerate(assets):
+        if asset.destination != destination:
+            continue
+        document = tomlkit.parse(asset.source.read_bytes().decode())
+        environment_table = document.setdefault("environment", tomlkit.table())
+        environment_table["env"] = {
+            **dict(environment_table.get("env", {})),
+            **environment,
+        }
+        assets[index] = Asset(
+            SourceRef(content=tomlkit.dumps(document).encode()),
+            destination,
+            "runtime",
+            Provenance("environment env union"),
+        )
+        return
+    assets.append(_render_task_toml(task, environment))
+
+
+def _lower_task(task: Task, locks: dict[str, str], require_locks: bool) -> TaskIR:
+    """Lower one validated public declaration into an immutable task IR."""
+    environment = _environment_values(task.environment)
+    images = _images(task, locks, require_locks)
+    assets: list[Asset] = []
+    if task.source is not None:
+        for source in _existing_files(task.source):
+            if source.name == MANIFEST:
+                continue
+            destination = PurePosixPath(source.relative_to(task.source).as_posix())
+            assets.append(_asset(source, destination, "legacy source"))
+    for copy in task.copies:
+        _add_copy(assets, copy.source, copy.destination, "copy")
+    for case in task.cases:
+        for fixture in case.fixtures:
+            _add_copy(
+                assets,
+                fixture.source,
+                PurePosixPath("tests") / "fixtures" / fixture.name,
+                f"fixture:{case.name}",
+            )
+        environment.update(case.environment)
+    if task.instruction is not None:
+        assets.append(
+            Asset(
+                SourceRef(content=task.instruction.content.encode()),
+                task.instruction.destination,
+                "runtime",
+                Provenance("instruction"),
+            )
+        )
+    if task.solution is not None:
+        for copy in task.solution.assets:
+            _add_copy(
+                assets,
+                copy.source,
+                PurePosixPath("solution") / copy.destination,
+                "solution",
+            )
+    for use in task.verifiers:
+        _add_copy(
+            assets,
+            use.verifier.source,
+            PurePosixPath("tests"),
+            f"verifier:{use.verifier.name}",
+        )
+        if use.adapter is not None:
+            _add_copy(
+                assets,
+                use.adapter,
+                PurePosixPath("tests") / use.adapter.name,
+                "adapter",
+            )
+    for mcp in task.environment.mcps:
+        mcp_config = {"mcpServers": {mcp.name: {"url": mcp.server, "env": mcp.env}}}
+        assets.append(
+            Asset(
+                SourceRef(
+                    content=(json.dumps(mcp_config, sort_keys=True) + "\n").encode()
+                ),
+                PurePosixPath("environment") / f"{mcp.name}.mcp.json",
+                "build",
+                Provenance(f"runtime_mcp:{mcp.name}"),
+            )
+        )
+    _render_environment(task, assets, images)
+    _apply_environment(task, assets, environment)
+    if not any(asset.destination == PurePosixPath("task.toml") for asset in assets):
+        assets.append(_render_task_toml(task, environment))
+    return TaskIR(
+        task.name,
+        task_slug(task),
+        task.aliases,
+        _merge_assets(task, assets),
+        environment,
+        _services(task),
+        images,
+        task.source,
+    )
+
+
+def lower_suite(suite: Suite, lock_path: Path = LOCK_PATH) -> SuiteIR:
+    """LOWER validated declarations into immutable compiler IR."""
+    validate(suite)
+    locks = load_locks(lock_path)
+    return SuiteIR(
+        suite.name,
+        tuple(
+            _lower_task(task, locks, suite.policy.require_image_locks)
+            for task in suite.tasks
+        ),
+        suite.dataset_source,
+    )
+
+
+def destination(output_root: Path, suite: SuiteIR, task: TaskIR) -> Path:
+    """Return a checked task output path that cannot escape its suite directory."""
+    root = output_root.resolve()
+    suite_root = (root / _suite_component(suite.name)).resolve()
+    path = (suite_root / task.slug).resolve()
+    if not path.is_relative_to(root) or not path.is_relative_to(suite_root):
+        raise ValueError(f"Task destination escapes output root: {path}")
+    return path
+
+
+def _source_name(asset: Asset) -> str | None:
+    """Return a reproducible repository-relative asset source path when possible."""
+    if asset.source.path is None:
+        return None
+    try:
+        return asset.source.path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return asset.source.path.as_posix()
+
+
+def manifest(task: TaskIR) -> str:
+    """Render stable provenance JSON excluded from Harbor content hashes."""
+    return (
+        json.dumps(
+            {
+                "assets": {
+                    asset.destination.as_posix(): {
+                        "provenance": asset.provenance.declaration,
+                        "sha256": hashlib.sha256(asset.source.read_bytes()).hexdigest(),
+                        "source": _source_name(asset),
+                    }
+                    for asset in task.assets
+                },
+                "images": {
+                    image.reference: image.digest
+                    for image in task.resolved_images
+                    if image.digest
+                },
+                "aliases": list(task.aliases),
+                "task": task.name,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
+    )
+
+
+def _write_asset(asset: Asset, target: Path) -> None:
+    """Write an IR asset while preserving source modes or applying declared modes."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if asset.source.path is not None and asset.source.content is None:
+        shutil.copy2(asset.source.path, target)
+    else:
+        target.write_bytes(asset.source.read_bytes())
+    if asset.mode is not None:
+        target.chmod(asset.mode)
+
+
+def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
+    """RENDER, HASH, and EMIT self-contained Harbor task directories."""
+    emitted = []
+    for task in suite.tasks:
+        task_destination = destination(output_root, suite, task)
+        if task_destination.exists():
+            if not (task_destination / MANIFEST).is_file():
+                raise ValueError(
+                    f"Refusing to replace unmanaged output: {task_destination}"
+                )
+            shutil.rmtree(task_destination)
+        for asset in task.assets:
+            _write_asset(asset, task_destination / asset.destination)
+        (task_destination / MANIFEST).write_text(manifest(task))
+        if task.source is not None and content_hash(task.source) != content_hash(
+            task_destination
+        ):
+            raise RuntimeError(f"Harbor hash changed while rendering {task.name}")
+        emitted.append(task_destination)
+
+    if suite.dataset_source is not None:
+        suite_destination = (output_root / suite.name).resolve()
+        suite_destination.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(suite.dataset_source, suite_destination / "dataset.toml")
+    return emitted
+
+
+def build(
+    name: str,
+    output_root: Path = ROOT / "generated",
+    lock_path: Path = LOCK_PATH,
+) -> list[Path]:
+    """Build a suite into plain Harbor task directories."""
+    return emit(lower_suite(load_suite(name), lock_path), output_root)
+
+
+def task_differences(source: Path, rendered: Path) -> list[str]:
+    """List definition paths that differ while ignoring evalkit provenance metadata."""
+    comparison = filecmp.dircmp(source, rendered, ignore=[MANIFEST])
+    differences = [
+        *comparison.left_only,
+        *comparison.right_only,
+        *comparison.diff_files,
+    ]
+    for subdirectory in comparison.common_dirs:
+        differences.extend(
+            f"{subdirectory}/{path}"
+            for path in task_differences(source / subdirectory, rendered / subdirectory)
+        )
+    return sorted(differences)
+
+
+def diff(
+    name: str,
+    output_root: Path = ROOT / "generated",
+    lock_path: Path = LOCK_PATH,
+) -> dict[str, list[str]]:
+    """Report Harbor-definition diffs between source and rendered output."""
+    suite = lower_suite(load_suite(name), lock_path)
+    return {
+        task.name: task_differences(task.source, destination(output_root, suite, task))
+        for task in suite.tasks
+        if task.source is not None and destination(output_root, suite, task).is_dir()
+    }
+
+
+def check(
+    name: str,
+    output_root: Path = ROOT / "generated",
+    lock_path: Path = LOCK_PATH,
+) -> dict[str, list[str]]:
+    """Validate declarations and fail if generated definitions are stale."""
+    suite = lower_suite(load_suite(name), lock_path)
+    differences = diff(name, output_root, lock_path)
+    missing = [
+        task.name
+        for task in suite.tasks
+        if not destination(output_root, suite, task).is_dir()
+    ]
+    if missing:
+        raise ValueError(f"Missing generated tasks: {', '.join(missing)}")
+    changed = {task: paths for task, paths in differences.items() if paths}
+    if changed:
+        rendered = "; ".join(
+            f"{task}: {', '.join(paths)}" for task, paths in changed.items()
+        )
+        raise ValueError(f"Generated task definitions differ: {rendered}")
+    return differences
