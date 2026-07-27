@@ -4,9 +4,9 @@
 Build a TypeScript server in `/app` with both an MPP charge route and an x402
 charge route.
 
-The MPP route must accept pathUSD on Tempo testnet and return JSON after
-payment. The x402 route must advertise an x402 USDC payment challenge and return
-JSON after payment.
+Both paid routes must accept GET requests. The MPP route must accept pathUSD on
+Tempo testnet and return JSON after payment. The x402 route must advertise an
+x402 USDC payment challenge and return JSON after payment.
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.
 

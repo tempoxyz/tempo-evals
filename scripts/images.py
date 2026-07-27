@@ -104,9 +104,14 @@ def immutable_ref(tagged_ref: str) -> str:
         )
     except subprocess.CalledProcessError as error:
         raise RuntimeError(f"Image is not published: {tagged_ref}") from error
-    digest = result.stdout.strip()
-    if not re.fullmatch(r"sha256:[0-9a-f]{64}", digest):
-        raise RuntimeError(f"Invalid registry digest for {tagged_ref}: {digest}")
+    output = result.stdout.strip()
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", output):
+        digest = output
+    else:
+        match = re.search(r"^Digest:\s*(sha256:[0-9a-f]{64})$", output, re.MULTILINE)
+        digest = match.group(1) if match else ""
+    if not digest:
+        raise RuntimeError(f"Invalid registry digest for {tagged_ref}: {output}")
     return f"{tagged_ref.rsplit(':', 1)[0]}@{digest}"
 
 

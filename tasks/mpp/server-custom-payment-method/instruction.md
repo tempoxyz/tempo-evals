@@ -3,7 +3,8 @@
 
 Build an MPP server using TypeScript in `/app` with a custom payment method.
 
-Expose one free endpoint and one paid endpoint. Both endpoints should return JSON.
+Expose one free endpoint and one paid endpoint. Both endpoints must accept GET
+requests and return JSON.
 The paid endpoint must use MPP with a custom access-key style method named
 `bench-key` for a `charge` intent.
 

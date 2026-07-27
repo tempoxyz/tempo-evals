@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:d5cf6cb3557fa02adcf53fb7e239a6457d6e6e0ad248aa40e71f142b170719e6"
+digest = "sha256:3e45ba0bdbab606d17e2ae86332be4e3cbe2ab99fc508a792293cc11a3321687"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:50a235308ceb5279de4be93ad93e033e7482daaac6acdd6788d7bf04f615396e"
+digest = "sha256:af63b85ca9b08a2fdd62250d6748c12d61c8f962cb5d56841bb9d9ad768a6a5a"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:b1ada97b48e7bfbada52ff84b122deec221a3085809cb6aeb692a48066b96666"
+digest = "sha256:36a3a13684605f78466ffe70878cde594896437839e5d0e0cdde3f54fbb3c3f2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:cb96a2a8bfa6b3ae18f4e4779eb5bcd041516219de8776c411ecf305fd46df71"
+digest = "sha256:b8e0af6401d09690cdb35abd167fde69d64b186b27e0bc5e42dfdf0631a638ca"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:e49146b00339623404ca871a752aeb975b7b5597f23450cb96ff46050df62605"
+digest = "sha256:143cfae983f03235e8dad26b97078a72f9dd3987dbfe0504d0246fcd7fdfb4c1"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:66e055af31548ed27b4773377214421413388971c220d8ad4ff82020282450d7"
+digest = "sha256:e677eefb58a275b7c0f44d2133df342e36dd463fc806af28bff89528e6fbf9ee"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:226117dd4fccba3e4a6ec23a0dbfee3b2994d7d41e8608cfd6acdb0cb4790dae"
+digest = "sha256:fb992e31bbc1dfad370cc47971dbc3164afb433a5a94884af427228c1d3b4b72"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:5e79f763b479d8780849a312a05649881aa0fcebf19a7d3dff4625f40b20b5f0"
+digest = "sha256:a262c39d341ae5139428f504f8fb1d8e6936f2d8ced7e2610187ea79548a9cef"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:c19601c6371ecca825f1c61ac90b874cdd378e646c662be564fcbbe5e65790fd"
+digest = "sha256:092b12f83cc1a9b7ec9894cc8fbd4e18123df0f9ddc142f8006f31d5c9a54e43"
 
