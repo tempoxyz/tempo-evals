@@ -4,7 +4,8 @@
 Build an MPP server using Hono and TypeScript in `/app` that runs on Tempo
 testnet and accepts pathUSD.
 
-Expose one free endpoint and one paid endpoint. Both endpoints should return JSON.
+Expose one free endpoint and one paid endpoint. Both endpoints must accept GET
+requests and return JSON.
 Use the Hono integration from `mppx/hono` for the paid route.
 
 Add npm scripts named `build` and `serve`. `npm run serve` must start the server.

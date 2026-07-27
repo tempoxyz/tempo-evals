@@ -63,6 +63,24 @@ class ImagesTest(unittest.TestCase):
             f"ghcr.io/tempoxyz/stable-bench-base@sha256:{'a' * 64}",
         )
 
+    @patch("scripts.images.subprocess.run")
+    def test_immutable_ref_accepts_buildx_inspect_output(self, run) -> None:
+        run.return_value = CompletedProcess(
+            [],
+            0,
+            stdout=(
+                "Name: ghcr.io/tempoxyz/stable-bench-base:agent-source-test\n"
+                "MediaType: application/vnd.oci.image.index.v1+json\n"
+                f"Digest: sha256:{'b' * 64}\n"
+            ),
+            stderr="",
+        )
+
+        self.assertEqual(
+            immutable_ref("ghcr.io/tempoxyz/stable-bench-base:agent-source-test"),
+            f"ghcr.io/tempoxyz/stable-bench-base@sha256:{'b' * 64}",
+        )
+
     @patch("scripts.images.immutable_ref")
     def test_source_ref_requires_the_complete_pair(self, resolve) -> None:
         resolve.side_effect = ["agent@sha256:a", RuntimeError("missing verifier")]

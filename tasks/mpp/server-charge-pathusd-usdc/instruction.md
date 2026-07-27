@@ -3,7 +3,8 @@
 
 Build an MPP server using TypeScript in `/app` that runs on Tempo testnet.
 
-Expose one free endpoint and one paid endpoint. Both endpoints should return JSON.
+Expose one free endpoint and one paid endpoint. Both endpoints must accept GET
+requests and return JSON.
 The paid endpoint must accept pathUSD on Tempo testnet and also advertise USDC as
 an accepted payment currency or option.
 
