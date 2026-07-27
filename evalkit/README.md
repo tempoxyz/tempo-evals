@@ -78,6 +78,10 @@ reasons. Harbor does not include this manifest in its task content hash.
 Declarations live in `evalkit/suites/`. A task may wrap a current Harbor task
 directory during migration, or describe files and environments directly.
 
+Fully declared tasks require an instruction, agent and verifier environments,
+an independent verifier, and a solution. Use `source=` while incrementally
+migrating a current task definition.
+
 ```python
 from evalkit.api import (
     DockerBuild,
@@ -118,7 +122,7 @@ declarations are progressively made more granular.
 | --- | --- |
 | `Suite`, `Policy` | Registered task collection and suite-wide lock/migration policy. |
 | `Task`, `InstructionDoc`, `Solution` | One Harbor task, its prompt, and oracle assets. |
-| `ImageRef`, `DockerBuild`, `Environment` | Locked images, Docker build inputs, variables, sidecars, and MCP servers. |
+| `ImageRef`, `DockerBuild`, `Environment` | Locked images, Docker build inputs, variables, and sidecars. |
 | `Copy`, `Bake`, `Fixture`, `Case` | Filesystem assets, image-layer assets, and explicit test parameterization. |
 | `SharedVerifier`, `VerifierUse`, `AdapterContract` | Reusable verifier content and static adapter-symbol validation. |
 | `Override` | Required rationale for intentionally replacing an output path. |
@@ -145,7 +149,7 @@ Task(
 )
 ```
 
-## Images, services, and MCP
+## Images and services
 
 `ImageRef` contains only a name and tag. For fully declared tasks, the compiler
 resolves it through `evalkit.lock` and renders the OCI index digest into the
@@ -154,9 +158,9 @@ of declarations. `evalkit lock --update` writes the required digest. Exact-parit
 `source=` migration declarations preserve their existing Dockerfiles and do not
 declare `ImageRef`s until those files are migrated.
 
-`runtime_service()` declares a Docker sidecar. `runtime_mcp()` creates an
-agent MCP configuration asset and records the access profile. Both are lowered
-into the task IR and rendered deterministically.
+`runtime_service()` declares a Docker sidecar. MCP access profiles remain
+owned by `config/tasks.yaml` and the benchmark job configuration, so EvalKit
+does not duplicate or override that runtime selection.
 
 ## Verifiers and cases
 

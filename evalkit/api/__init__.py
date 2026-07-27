@@ -7,9 +7,6 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Literal
 
-Scope = Literal["agent", "verifier", "runtime"]
-"""The task execution context to which an environment value applies."""
-
 
 def path(value: str | Path) -> PurePosixPath:
     """Create a task-relative POSIX path."""
@@ -25,6 +22,7 @@ class Policy:
 
     require_image_locks: bool = True
     allow_legacy_sources: bool = True
+    allow_incomplete_tasks: bool = False
 
 
 @dataclass(frozen=True)
@@ -56,7 +54,6 @@ class Environment:
     verifier: DockerBuild | None = None
     variables: tuple[Env, ...] = ()
     services: tuple[RuntimeService, ...] = ()
-    mcps: tuple[RuntimeMCP, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -88,13 +85,11 @@ class Fixture:
 
 @dataclass(frozen=True)
 class Env:
-    """One declared environment variable and its default/forwarding policy."""
+    """One declared agent environment variable and its default value policy."""
 
     name: str
-    forward: bool = True
     default: str | None = None
     required: bool = True
-    scope: Scope = "agent"
 
 
 @dataclass(frozen=True)
@@ -108,16 +103,6 @@ class RuntimeService:
     command: tuple[str, ...] = ()
     healthcheck: str | None = None
     depends_on: tuple[str, ...] = ()
-
-
-@dataclass(frozen=True)
-class RuntimeMCP:
-    """An MCP server injected into the agent environment for one access profile."""
-
-    name: str
-    server: str
-    access_profile: str
-    env: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -232,13 +217,11 @@ def fixture(source: str | Path, name: str, schema: str | None = None) -> Fixture
 def env(
     name: str,
     *,
-    forward: bool = True,
     default: str | None = None,
     required: bool = True,
-    scope: Scope = "agent",
 ) -> Env:
-    """Declare one environment value with explicit default and forwarding behavior."""
-    return Env(name, forward, default, required, scope)
+    """Declare one agent environment value with an explicit default policy."""
+    return Env(name, default, required)
 
 
 def runtime_service(
@@ -255,17 +238,6 @@ def runtime_service(
     return RuntimeService(
         name, image, ports, env or {}, command, healthcheck, depends_on
     )
-
-
-def runtime_mcp(
-    name: str,
-    server: str,
-    access_profile: str,
-    *,
-    env: Mapping[str, str] | None = None,
-) -> RuntimeMCP:
-    """Declare an MCP server and the access profile that enables it."""
-    return RuntimeMCP(name, server, access_profile, env or {})
 
 
 def override(destination: str | Path | Copy | Bake, *, reason: str) -> Override:
@@ -297,7 +269,6 @@ __all__ = [
     "InstructionDoc",
     "Override",
     "Policy",
-    "RuntimeMCP",
     "RuntimeService",
     "SharedVerifier",
     "Solution",
@@ -310,6 +281,5 @@ __all__ = [
     "fixture",
     "instruction_fragment",
     "override",
-    "runtime_mcp",
     "runtime_service",
 ]

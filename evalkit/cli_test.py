@@ -95,6 +95,8 @@ class CliTest(unittest.TestCase):
                     self.run_cli("new", "invalid")
                 with self.assertRaisesRegex(ValueError, "suite/name"):
                     self.run_cli("new", "../outside")
+                with self.assertRaisesRegex(ValueError, "suite/name"):
+                    self.run_cli("new", "tempo-v1/not.importable")
 
     def test_lock_and_explain_commands_validate_input_and_render_json(self) -> None:
         digest = "sha256:" + "a" * 64

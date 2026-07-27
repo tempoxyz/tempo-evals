@@ -38,6 +38,7 @@ def _new_task(target: str) -> None:
         or not slug
         or len(parts) != 2
         or any(part in {".", ".."} for part in parts)
+        or any(not part.replace("-", "_").isidentifier() for part in parts)
     ):
         raise ValueError("Task target must be suite/name")
     module = (

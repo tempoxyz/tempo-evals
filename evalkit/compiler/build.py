@@ -13,7 +13,7 @@ from pathlib import Path, PurePosixPath
 
 import tomlkit
 
-from evalkit.api import Environment, ImageRef, Suite, Task
+from evalkit.api import Environment, ImageRef, Policy, Suite, Task
 from evalkit.harbor_compat import content_hash
 from evalkit.ir import (
     Asset,
@@ -128,6 +128,35 @@ def _validate_asset_source(task: Task, source: Path, label: str) -> None:
         raise ValueError(f"{task.name}: missing {label} asset {source}")
 
 
+def _validate_asset_destination(task: Task, destination: PurePosixPath) -> None:
+    """Reject output paths that would escape the emitted task directory."""
+    if destination.is_absolute() or ".." in destination.parts:
+        raise ValueError(
+            f"{task.name}: task asset destination must be relative: {destination}"
+        )
+
+
+def _validate_complete_task(task: Task, policy: Policy) -> None:
+    """Require runnable Harbor inputs for a fully declared task by default."""
+    if task.source is not None or policy.allow_incomplete_tasks:
+        return
+    missing = []
+    if task.instruction is None:
+        missing.append("instruction")
+    if task.environment.agent is None:
+        missing.append("agent environment")
+    if task.environment.verifier is None:
+        missing.append("verifier environment")
+    if not task.verifiers:
+        missing.append("verifier")
+    if task.solution is None:
+        missing.append("solution")
+    if missing:
+        raise ValueError(
+            f"{task.name}: fully declared tasks require {', '.join(missing)}"
+        )
+
+
 def validate(suite: Suite) -> None:
     """VALIDATE task names, source inputs, policies, and adapter contracts."""
     _suite_component(suite.name)
@@ -138,8 +167,10 @@ def validate(suite: Suite) -> None:
     names = [name for task in suite.tasks for name in (task.name, *task.aliases)]
     if len(names) != len(set(names)):
         raise ValueError(f"Suite {suite.name!r} has duplicate task names or aliases")
+    slugs = [task_slug(task) for task in suite.tasks]
+    if len(slugs) != len(set(slugs)):
+        raise ValueError(f"Suite {suite.name!r} has duplicate task output slugs")
     for task in suite.tasks:
-        task_slug(task)
         for alias in task.aliases:
             task_slug(Task(alias))
         if task.source is not None:
@@ -151,20 +182,41 @@ def validate(suite: Suite) -> None:
                 raise ValueError(f"Missing task.toml: {task.source}")
         for copied in task.copies:
             _validate_asset_source(task, copied.source, "copied")
+            _validate_asset_destination(task, copied.destination)
         for build in (task.environment.agent, task.environment.verifier):
             if build is not None:
                 for baked in build.assets:
                     _validate_asset_source(task, baked.source, "baked")
+                    if baked.into not in {"agent", "verifier"}:
+                        raise ValueError(f"{task.name}: invalid bake role {baked.into}")
         for case in task.cases:
             for fixture in case.fixtures:
                 _validate_asset_source(task, fixture.source, "fixture")
+                _validate_asset_destination(
+                    task, PurePosixPath("tests") / "fixtures" / fixture.name
+                )
         if task.solution is not None:
             for copied in task.solution.assets:
                 _validate_asset_source(task, copied.source, "solution")
+                _validate_asset_destination(task, copied.destination)
+            if task.solution.entrypoint is not None:
+                _validate_asset_destination(task, task.solution.entrypoint)
         for use in task.verifiers:
             _validate_asset_source(task, use.verifier.source, "verifier")
             if use.adapter is not None:
                 _validate_asset_source(task, use.adapter, "verifier adapter")
+            if use.verifier.contract is not None:
+                _validate_asset_destination(task, use.verifier.contract.path)
+        if task.instruction is not None:
+            _validate_asset_destination(task, task.instruction.destination)
+        case_environments = {
+            tuple(sorted(case.environment.items())) for case in task.cases
+        }
+        if len(case_environments) > 1:
+            raise ValueError(
+                f"{task.name}: cases with different environments require separate tasks"
+            )
+        _validate_complete_task(task, suite.policy)
         _validate_environment(task)
         _validate_adapter_contract(task)
 
@@ -214,6 +266,7 @@ def _merge_assets(task: Task, assets: list[Asset]) -> tuple[Asset, ...]:
     allowed_overrides = {entry.destination: entry.reason for entry in task.overrides}
     merged: dict[PurePosixPath, Asset] = {}
     for asset in assets:
+        _validate_asset_destination(task, asset.destination)
         previous = merged.get(asset.destination)
         if previous is None:
             merged[asset.destination] = asset
@@ -301,6 +354,10 @@ def _render_environment(
         image = f"{build.image.reference}@{digest}" if digest else build.image.reference
         lines = [f"FROM {image}"]
         for baked in build.assets:
+            if baked.into != role:
+                raise ValueError(
+                    f"{task.name}: {baked.into} bake cannot be used by {role} build"
+                )
             relative_destination = (
                 PurePosixPath(*baked.destination.parts[1:])
                 if baked.destination.is_absolute()
@@ -356,7 +413,13 @@ def _render_task_toml(task: Task, environment: Mapping[str, str]) -> Asset:
     document["task"] = {"name": task.name}
     for key, value in task.extra_config.items():
         if isinstance(value, Mapping) and isinstance(document.get(key), Mapping):
-            document[key].update(value)
+            document[key].update(
+                {
+                    item_key: item_value
+                    for item_key, item_value in value.items()
+                    if not (key == "task" and item_key == "name")
+                }
+            )
         else:
             document[key] = value
     if environment:
@@ -434,6 +497,26 @@ def _lower_task(task: Task, locks: dict[str, str], require_locks: bool) -> TaskI
                 PurePosixPath("solution") / copy.destination,
                 "solution",
             )
+        if task.solution.entrypoint is not None:
+            entrypoint = next(
+                (
+                    copy
+                    for copy in task.solution.assets
+                    if copy.destination == task.solution.entrypoint
+                ),
+                None,
+            )
+            if entrypoint is None:
+                raise ValueError(
+                    f"{task.name}: solution entrypoint must name a solution asset"
+                )
+            if task.solution.entrypoint != PurePosixPath("solve.sh"):
+                _add_copy(
+                    assets,
+                    entrypoint.source,
+                    PurePosixPath("solution") / "solve.sh",
+                    "solution entrypoint",
+                )
     for use in task.verifiers:
         _add_copy(
             assets,
@@ -442,24 +525,18 @@ def _lower_task(task: Task, locks: dict[str, str], require_locks: bool) -> TaskI
             f"verifier:{use.verifier.name}",
         )
         if use.adapter is not None:
+            contract = use.verifier.contract
+            adapter_destination = (
+                PurePosixPath("tests") / contract.path
+                if contract is not None
+                else PurePosixPath("tests") / use.adapter.name
+            )
             _add_copy(
                 assets,
                 use.adapter,
-                PurePosixPath("tests") / use.adapter.name,
+                adapter_destination,
                 "adapter",
             )
-    for mcp in task.environment.mcps:
-        mcp_config = {"mcpServers": {mcp.name: {"url": mcp.server, "env": mcp.env}}}
-        assets.append(
-            Asset(
-                SourceRef(
-                    content=(json.dumps(mcp_config, sort_keys=True) + "\n").encode()
-                ),
-                PurePosixPath("environment") / f"{mcp.name}.mcp.json",
-                "build",
-                Provenance(f"runtime_mcp:{mcp.name}"),
-            )
-        )
     _render_environment(task, assets, images)
     _apply_environment(task, assets, environment)
     if not any(asset.destination == PurePosixPath("task.toml") for asset in assets):
@@ -518,6 +595,7 @@ def manifest(task: TaskIR) -> str:
                 "assets": {
                     asset.destination.as_posix(): {
                         "provenance": asset.provenance.declaration,
+                        "override_reason": asset.provenance.override_reason,
                         "sha256": hashlib.sha256(asset.source.read_bytes()).hexdigest(),
                         "source": _source_name(asset),
                     }
@@ -549,6 +627,30 @@ def _write_asset(asset: Asset, target: Path) -> None:
         target.chmod(asset.mode)
 
 
+def _write_dataset(suite: SuiteIR, emitted: list[Path], output_root: Path) -> None:
+    """Refresh emitted task digests in the generated Harbor dataset manifest."""
+    if suite.dataset_source is None:
+        return
+    document = tomlkit.parse(suite.dataset_source.read_text())
+    entries = document.get("tasks")
+    if entries is None:
+        entries = tomlkit.aot()
+        document["tasks"] = entries
+    for task, task_path in zip(suite.tasks, emitted, strict=True):
+        entry = next(
+            (candidate for candidate in entries if candidate.get("name") == task.name),
+            None,
+        )
+        if entry is None:
+            entry = tomlkit.table()
+            entry["name"] = task.name
+            entries.append(entry)
+        entry["digest"] = f"sha256:{content_hash(task_path)}"
+    suite_destination = (output_root / suite.name).resolve()
+    suite_destination.mkdir(parents=True, exist_ok=True)
+    (suite_destination / "dataset.toml").write_text(tomlkit.dumps(document))
+
+
 def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
     """RENDER, HASH, and EMIT self-contained Harbor task directories."""
     emitted = []
@@ -569,10 +671,7 @@ def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
             raise RuntimeError(f"Harbor hash changed while rendering {task.name}")
         emitted.append(task_destination)
 
-    if suite.dataset_source is not None:
-        suite_destination = (output_root / suite.name).resolve()
-        suite_destination.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(suite.dataset_source, suite_destination / "dataset.toml")
+    _write_dataset(suite, emitted, output_root)
     return emitted
 
 
@@ -601,6 +700,23 @@ def task_differences(source: Path, rendered: Path) -> list[str]:
     return sorted(differences)
 
 
+def _rendered_differences(task: TaskIR, rendered: Path) -> list[str]:
+    """Compare fully declared output to the assets currently lowered from it."""
+    expected = {
+        asset.destination.as_posix(): asset.source.read_bytes() for asset in task.assets
+    }
+    actual = {
+        path.relative_to(rendered).as_posix(): path.read_bytes()
+        for path in _existing_files(rendered)
+        if path.name != MANIFEST
+    }
+    differences = set(expected) ^ set(actual)
+    differences.update(
+        path for path in set(expected) & set(actual) if expected[path] != actual[path]
+    )
+    return sorted(differences)
+
+
 def diff(
     name: str,
     output_root: Path = ROOT / "generated",
@@ -609,9 +725,13 @@ def diff(
     """Report Harbor-definition diffs between source and rendered output."""
     suite = lower_suite(load_suite(name), lock_path)
     return {
-        task.name: task_differences(task.source, destination(output_root, suite, task))
+        task.name: (
+            task_differences(task.source, destination(output_root, suite, task))
+            if task.source is not None
+            else _rendered_differences(task, destination(output_root, suite, task))
+        )
         for task in suite.tasks
-        if task.source is not None and destination(output_root, suite, task).is_dir()
+        if destination(output_root, suite, task).is_dir()
     }
 
 

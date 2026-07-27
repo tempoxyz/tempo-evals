@@ -12,12 +12,13 @@ from unittest.mock import patch
 
 from evalkit.api import (
     AdapterContract,
+    Bake,
     Case,
     DockerBuild,
     Environment,
     Fixture,
     ImageRef,
-    Policy,
+    InstructionDoc,
     SharedVerifier,
     Solution,
     Suite,
@@ -30,11 +31,16 @@ from evalkit.api import (
     instruction_fragment,
     runtime_service,
 )
+from evalkit.api import (
+    Policy as ApiPolicy,
+)
 from evalkit.compiler.build import (
     MANIFEST,
+    _rendered_differences,
     _write_asset,
     check,
     destination,
+    diff,
     emit,
     load_suite,
     lower_suite,
@@ -44,6 +50,11 @@ from evalkit.compiler.build import (
     validate,
 )
 from evalkit.ir import Asset, Provenance, SourceRef, SuiteIR, TaskIR
+
+
+def Policy(**kwargs: object) -> ApiPolicy:
+    """Allow focused compiler tests to exercise incomplete declarations."""
+    return ApiPolicy(allow_incomplete_tasks=True, **kwargs)
 
 
 class BuildEdgeTest(unittest.TestCase):
@@ -77,6 +88,41 @@ class BuildEdgeTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing copied asset"):
             validate(
                 Suite("example", (Task("example/task", copies=(copy("nope", "x"),)),))
+            )
+        with self.assertRaisesRegex(ValueError, "fully declared tasks require"):
+            validate(Suite("example", (Task("example/task"),)))
+        for task in (
+            Task("example/task", instruction=InstructionDoc("# Task")),
+            Task(
+                "example/task",
+                environment=Environment(
+                    agent=DockerBuild(ImageRef("example/image", "v1"))
+                ),
+            ),
+            Task(
+                "example/task",
+                environment=Environment(
+                    verifier=DockerBuild(ImageRef("example/image", "v1"))
+                ),
+            ),
+            Task(
+                "example/task",
+                verifiers=(VerifierUse(SharedVerifier("shared", Path("."))),),
+            ),
+            Task("example/task", solution=Solution()),
+        ):
+            with (
+                self.subTest(task=task),
+                self.assertRaisesRegex(ValueError, "fully declared tasks require"),
+            ):
+                validate(Suite("example", (task,)))
+        with self.assertRaisesRegex(ValueError, "duplicate task output slugs"):
+            validate(
+                Suite(
+                    "example",
+                    (Task("first/shared"), Task("second/shared")),
+                    policy=Policy(),
+                )
             )
 
     def test_validate_rejects_missing_assets_in_every_declaration_kind(self) -> None:
@@ -127,6 +173,66 @@ class BuildEdgeTest(unittest.TestCase):
             ):
                 validate(Suite("example", (task,)))
 
+    def test_validate_rejects_unsupported_environment_and_escaping_destinations(
+        self,
+    ) -> None:
+        cases = (
+            (
+                "task asset destination",
+                Task(
+                    "example/task",
+                    instruction=InstructionDoc("# Task", PurePosixPath("../outside")),
+                ),
+            ),
+            (
+                "different environments",
+                Task(
+                    "example/task",
+                    cases=(Case("one", {"CASE": "one"}), Case("two", {"CASE": "two"})),
+                ),
+            ),
+        )
+        for message, task in cases:
+            with (
+                self.subTest(message=message),
+                self.assertRaisesRegex(ValueError, message),
+            ):
+                validate(Suite("example", (task,), policy=Policy()))
+
+    def test_rendering_rejects_bakes_assigned_to_the_wrong_build_role(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            source = Path(temporary_directory) / "payload"
+            source.write_text("payload")
+            task = Task(
+                "example/task",
+                environment=Environment(
+                    agent=DockerBuild(
+                        ImageRef("example/image", "v1"),
+                        (bake(source, "/opt/payload", into="verifier"),),
+                    )
+                ),
+            )
+            with self.assertRaisesRegex(ValueError, "cannot be used by agent"):
+                lower_suite(
+                    Suite(
+                        "example",
+                        (task,),
+                        policy=Policy(require_image_locks=False),
+                    )
+                )
+
+            invalid_role = Task(
+                "example/task",
+                environment=Environment(
+                    agent=DockerBuild(
+                        ImageRef("example/image", "v1"),
+                        (Bake(source, PurePosixPath("/opt/payload"), "runtime"),),  # type: ignore[arg-type]
+                    )
+                ),
+            )
+            with self.assertRaisesRegex(ValueError, "invalid bake role"):
+                validate(Suite("example", (invalid_role,), policy=Policy()))
+
     def test_validate_rejects_legacy_policy_duplicate_environment_and_adapter(
         self,
     ) -> None:
@@ -150,7 +256,7 @@ class BuildEdgeTest(unittest.TestCase):
                 environment=Environment(variables=(env("ONE"), env("ONE"))),
             )
             with self.assertRaisesRegex(ValueError, "variable declarations"):
-                validate(Suite("example", (duplicate_variables,)))
+                validate(Suite("example", (duplicate_variables,), policy=Policy()))
             duplicate_services = Task(
                 "example/task",
                 environment=Environment(
@@ -161,14 +267,20 @@ class BuildEdgeTest(unittest.TestCase):
                 ),
             )
             with self.assertRaisesRegex(ValueError, "service names"):
-                validate(Suite("example", (duplicate_services,)))
+                validate(Suite("example", (duplicate_services,), policy=Policy()))
 
             verifier = root / "verifier"
             verifier.mkdir()
             contract = AdapterContract(PurePosixPath("adapter.py"), ("run",))
             use = VerifierUse(SharedVerifier("shared", verifier, contract))
             with self.assertRaisesRegex(ValueError, "missing verifier adapter"):
-                validate(Suite("example", (Task("example/task", verifiers=(use,)),)))
+                validate(
+                    Suite(
+                        "example",
+                        (Task("example/task", verifiers=(use,)),),
+                        policy=Policy(),
+                    )
+                )
 
     def test_lowering_supports_cases_solutions_and_verifier_assets(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -303,9 +415,9 @@ class BuildEdgeTest(unittest.TestCase):
 
             self.assertEqual(target.read_text(), "#!/bin/sh\n")
             self.assertTrue(target.stat().st_mode & stat.S_IXUSR)
-            self.assertEqual(
-                (root / "output/example/dataset.toml").read_text(), "[dataset]\n"
-            )
+            dataset_output = (root / "output/example/dataset.toml").read_text()
+            self.assertIn('name = "example/task"', dataset_output)
+            self.assertIn('digest = "sha256:', dataset_output)
 
     def test_manifest_and_task_differences_handle_metadata_and_nested_files(
         self,
@@ -335,7 +447,7 @@ class BuildEdgeTest(unittest.TestCase):
                         SourceRef(content=b"generated"),
                         PurePosixPath("task.toml"),
                         "runtime",
-                        Provenance("generated"),
+                        Provenance("generated", "replace generated task TOML"),
                     ),
                 ),
                 {},
@@ -344,7 +456,16 @@ class BuildEdgeTest(unittest.TestCase):
             )
             parsed = json.loads(manifest(task))
             self.assertIsNone(parsed["assets"]["task.toml"]["source"])
+            self.assertEqual(
+                parsed["assets"]["task.toml"]["override_reason"],
+                "replace generated task TOML",
+            )
             self.assertEqual(parsed["aliases"], ["example/old"])
+
+            output = root / "declared"
+            output.mkdir()
+            (output / "task.toml").write_bytes(b"stale")
+            self.assertEqual(_rendered_differences(task, output), ["task.toml"])
 
     def test_task_slug_and_destination_reject_malformed_or_escaping_values(
         self,
@@ -386,6 +507,80 @@ class BuildEdgeTest(unittest.TestCase):
             self.assertRaisesRegex(TypeError, "must be an evalkit.api.Suite"),
         ):
             load_suite("example")
+
+    def test_solution_entrypoint_and_contract_adapter_paths_are_rendered(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            solution = root / "run.sh"
+            solution.write_text("#!/bin/sh\n")
+            verifier = root / "verifier"
+            verifier.mkdir()
+            adapter = root / "local_adapter.py"
+            adapter.write_text("def check():\n    pass\n")
+            task = Task(
+                "example/task",
+                solution=Solution((copy(solution, "run.sh"),), PurePosixPath("run.sh")),
+                verifiers=(
+                    VerifierUse(
+                        SharedVerifier(
+                            "shared",
+                            verifier,
+                            AdapterContract(
+                                PurePosixPath("adapters/task.py"), ("check",)
+                            ),
+                        ),
+                        adapter,
+                    ),
+                ),
+            )
+            ir = lower_suite(
+                Suite("example", (task,), policy=Policy(require_image_locks=False))
+            ).tasks[0]
+            assets = {
+                asset.destination.as_posix(): asset.source.read_bytes()
+                for asset in ir.assets
+            }
+            self.assertEqual(assets["solution/solve.sh"], b"#!/bin/sh\n")
+            self.assertEqual(assets["tests/adapters/task.py"], adapter.read_bytes())
+
+            direct_entrypoint = Task(
+                "example/direct",
+                solution=Solution(
+                    (copy(solution, "solve.sh"),), PurePosixPath("solve.sh")
+                ),
+            )
+            direct_ir = lower_suite(
+                Suite(
+                    "example",
+                    (direct_entrypoint,),
+                    policy=Policy(require_image_locks=False),
+                )
+            ).tasks[0]
+            self.assertEqual(
+                [asset.destination.as_posix() for asset in direct_ir.assets].count(
+                    "solution/solve.sh"
+                ),
+                1,
+            )
+
+    def test_solution_entrypoint_must_reference_an_asset(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            source = Path(temporary_directory) / "run.sh"
+            source.write_text("#!/bin/sh\n")
+            task = Task(
+                "example/task",
+                solution=Solution(
+                    (copy(source, "run.sh"),), PurePosixPath("missing.sh")
+                ),
+            )
+            with self.assertRaisesRegex(ValueError, "must name a solution asset"):
+                lower_suite(
+                    Suite(
+                        "example",
+                        (task,),
+                        policy=Policy(require_image_locks=False),
+                    )
+                )
 
     def test_emit_rejects_harbor_hash_changes_for_legacy_sources(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -432,3 +627,21 @@ class BuildEdgeTest(unittest.TestCase):
                 ),
             ):
                 check("example", output)
+
+    def test_diff_reports_stale_fully_declared_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory) / "output"
+            original = Suite(
+                "example",
+                (Task("example/task", instruction=InstructionDoc("original")),),
+                policy=Policy(require_image_locks=False),
+            )
+            changed = Suite(
+                "example",
+                (Task("example/task", instruction=InstructionDoc("changed")),),
+                policy=Policy(require_image_locks=False),
+            )
+            emit(lower_suite(original), output)
+            with patch("evalkit.compiler.build.load_suite", return_value=changed):
+                differences = diff("example", output)
+            self.assertEqual(differences, {"example/task": ["instruction.md"]})

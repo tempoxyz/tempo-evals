@@ -14,7 +14,6 @@ from evalkit.api import (
     instruction_fragment,
     override,
     path,
-    runtime_mcp,
     runtime_service,
 )
 
@@ -40,7 +39,6 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(fixture("sample.json", "sample").schema, None)
         self.assertEqual(env("TOKEN", required=False).name, "TOKEN")
         self.assertEqual(runtime_service("api", image).env, {})
-        self.assertEqual(runtime_mcp("mcp", "https://example.test", "default").env, {})
         self.assertEqual(
             instruction_fragment("\n# Title\n", "", " Body ").content,
             "# Title\n\nBody\n",

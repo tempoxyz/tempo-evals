@@ -15,7 +15,6 @@ from evalkit.api import (
     DockerBuild,
     Environment,
     ImageRef,
-    Policy,
     SharedVerifier,
     Suite,
     Task,
@@ -25,12 +24,19 @@ from evalkit.api import (
     env,
     instruction_fragment,
     override,
-    runtime_mcp,
     runtime_service,
+)
+from evalkit.api import (
+    Policy as ApiPolicy,
 )
 from evalkit.compiler import build, check, diff, load_suite, lower_suite, suite_names
 from evalkit.harbor_compat import content_hash
 from evalkit.lock import inspect_digest, load, update
+
+
+def Policy(**kwargs: object) -> ApiPolicy:
+    """Allow focused compiler tests to exercise incomplete declarations."""
+    return ApiPolicy(allow_incomplete_tasks=True, **kwargs)
 
 
 class BuildTest(unittest.TestCase):
@@ -72,7 +78,7 @@ class BuildTest(unittest.TestCase):
             self.assertTrue(all(not paths for paths in differences.values()))
             self.assertEqual(check("tempo-v1", output_root), differences)
 
-    def test_lowering_renders_environment_services_and_mcp(self) -> None:
+    def test_lowering_renders_environment_and_services(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             source = root / "source.txt"
@@ -93,12 +99,14 @@ class BuildTest(unittest.TestCase):
                     services=(
                         runtime_service("docs", ImageRef("example/service", "v1")),
                     ),
-                    mcps=(runtime_mcp("tempo", "https://example.test/mcp", "mcp"),),
                 ),
                 instruction=instruction_fragment("# Example", "Build it."),
                 extra_config={
                     "metadata": {"category": "integration"},
-                    "task": {"description": "Example task"},
+                    "task": {
+                        "description": "Example task",
+                        "name": "other/task",
+                    },
                 },
             )
             suite = Suite("example", (task,), policy=Policy(require_image_locks=True))
@@ -111,12 +119,13 @@ class BuildTest(unittest.TestCase):
 
             self.assertIn("environment/Dockerfile", assets)
             self.assertIn("environment/compose.yaml", assets)
-            self.assertIn("environment/tempo.mcp.json", assets)
             self.assertIn(b'ONE = "1"', assets["task.toml"])
             self.assertIn(b'TWO = ""', assets["task.toml"])
             self.assertNotIn(b"OPTIONAL", assets["task.toml"])
             self.assertIn(b'category = "integration"', assets["task.toml"])
             self.assertIn(b'description = "Example task"', assets["task.toml"])
+            self.assertIn(b'name = "example/task"', assets["task.toml"])
+            self.assertNotIn(b'name = "other/task"', assets["task.toml"])
             self.assertIn(b"# Example", assets["instruction.md"])
             self.assertEqual(
                 ir.tasks[0].resolved_images[0].digest, "sha256:" + "a" * 64
@@ -136,7 +145,9 @@ class BuildTest(unittest.TestCase):
                     agent=DockerBuild(ImageRef("example/image", "v1"), (build_spec,)),
                 ),
             )
-            ir = lower_suite(Suite("example", (task,)), lock_path).tasks[0]
+            ir = lower_suite(
+                Suite("example", (task,), policy=Policy()), lock_path
+            ).tasks[0]
             assets = {
                 asset.destination.as_posix(): asset.source.read_bytes()
                 for asset in ir.assets
@@ -154,7 +165,7 @@ class BuildTest(unittest.TestCase):
             environment=Environment(agent=DockerBuild(ImageRef("example/image", "v1"))),
         )
         with self.assertRaisesRegex(ValueError, "Image is not locked"):
-            lower_suite(Suite("example", (task,)))
+            lower_suite(Suite("example", (task,), policy=Policy()))
 
     def test_aliases_are_preserved_and_unique(self) -> None:
         task = Task("example/task", aliases=("example/old-task",))
