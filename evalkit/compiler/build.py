@@ -60,7 +60,7 @@ def task_slug(task: Task) -> str:
     prefix, separator, slug = task.name.rpartition("/")
     if not separator or not prefix or not slug:
         raise ValueError(f"Task names must be suite-qualified: {task.name!r}")
-    return slug
+    return task.source.name if task.source is not None else slug
 
 
 def _suite_component(name: str) -> str:

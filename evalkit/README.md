@@ -10,6 +10,10 @@ incremental rollout. Compiler output belongs in an ignored local directory,
 usually `.cache/evalkit`; do not edit it by hand. Modify a declaration or its
 source asset, rebuild, then review the generated diff before changing a task.
 
+Benchmark runners compile every registered suite into their per-run staging
+directory. Both local and Daytona jobs execute those compiled definitions, then
+apply ephemeral documentation, MCP, and image overrides to the staged copies.
+
 ## Commands
 
 Run commands from the repository root:

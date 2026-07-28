@@ -91,6 +91,12 @@ uv tool install 'harbor[daytona]'
 
 ## Run Benchmarks
 
+Every run compiles the registered EvalKit suites into an isolated staging
+directory before Harbor starts. Local and Daytona runs consume the same
+generated task definitions; runtime docs, MCP, and image overrides are applied
+after compilation. See [`evalkit/README.md`](evalkit/README.md) for the
+declaration and provenance model.
+
 ```bash
 # Validate a suite with its oracle.
 npm run bench:local:oracle -- --task-suite tempo
