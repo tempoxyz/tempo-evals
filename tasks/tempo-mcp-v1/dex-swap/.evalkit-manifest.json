@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "adf499a0f274926c13eb87b02501e2c16c6f6fdb9dea4bee3b59d8efa7c532a4",
+      "source": "tasks/tempo-mcp-v1/dex-swap/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/dex-swap/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "21b0b81165a3fa538daedb502208707081ee008f317ef072060b0bb467b53cb1",
+      "source": "tasks/tempo-mcp-v1/dex-swap/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/dex-swap/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "993aa17dac7247aa931e59b29ef89980e357b714d7a292adf9a02f6bad50cb30",
+      "source": "tasks/tempo-mcp-v1/dex-swap/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fd723b8de4cb75d47b9790a79e49207c6741c0b1d8840c71f4ff3f806b494e0e",
+      "source": "tasks/tempo-mcp-v1/dex-swap/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/dex-swap/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "5eb0a806f351a3ca689e9cf6771a5d5ca7c49b07fc8227e1dcbe8cb76a6a1f83",
+      "source": "tasks/tempo-mcp-v1/dex-swap/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/dex-swap/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/dex-swap"
+}

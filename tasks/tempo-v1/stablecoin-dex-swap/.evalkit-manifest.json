@@ -1,0 +1,97 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "d9cc825de247a044ff1d2991fd7d162f311d2e86fea5a194abef3f0bcb0bf4a1",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1f33692f9a4043a2b6473b3c6824d48cb03b38768e4dbf4c0b6b902acc3e7b6e",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/instruction.md"
+    },
+    "solution/package.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c3c89641af9c9de28376c94865dade7ea11e2843794bb3a415add10e5104d66e",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/solution/package.json"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44fa99d583156d362761873e87ccf1e8f5f3416390fa82c5794d94fc71c91bfc",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/solution/solve.sh"
+    },
+    "solution/src/index.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "eb9bbde3d39a43e7cd05e8aa80b933fcbf58b16e1b65102a1461e928d5f9ae7d",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/solution/src/index.ts"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4f4f25a1a7532444dd49c9315747b1cb8aa407827f4c7da020e308d014f5979d",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/solution/tsconfig.json"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "9e6207ccc36a3af82c6c2717431d2efd751948251b5d91534b668b460332fa5e",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/tests/Dockerfile"
+    },
+    "tests/correctness/criteria.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "6124c0430d065a4901be40f20b64e39d6bd99528bbd0b97c551352f9bff3efa1",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/tests/correctness/criteria.py"
+    },
+    "tests/correctness/verify-tempo.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "24e2d708a07b6e6a0a5542d31d37675c7e8bc947af95df05c6c185c7c1b3cec7",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/tests/correctness/verify-tempo.sh"
+    },
+    "tests/quality/check.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44652229c99a1d95b5dbb5b098159ad6190e9a5a18e2c66a24f01015ad63ee28",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/tests/quality/check.py"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "35d0e77348dad85d2febd7959f70c25227ca47a5d9e9ab53c6137f4f220ccb5b",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/tests/quality/reward.toml"
+    },
+    "tests/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "abcf188ead283ade1284122cc29aeead7cb6fa27011e6d409a05e9c5c3e61ae1",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/tests/reward.toml"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4568b58077d577c67e970ce3ec767f15a573c8d81010c5d12f781b7813ccb306",
+      "source": "tasks/tempo-v1/stablecoin-dex-swap/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-v1/stablecoin-dex-swap"
+}

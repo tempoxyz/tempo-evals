@@ -627,6 +627,49 @@ def _write_asset(asset: Asset, target: Path) -> None:
         target.chmod(asset.mode)
 
 
+def _materialize_asset(asset: Asset) -> Asset:
+    """Read an asset before an in-place build can overwrite its source."""
+    mode = asset.mode
+    if mode is None and asset.source.path is not None:
+        mode = asset.source.path.stat().st_mode & 0o777
+    return Asset(
+        SourceRef(content=asset.source.read_bytes()),
+        asset.destination,
+        asset.lifecycle,
+        asset.provenance,
+        mode,
+    )
+
+
+def _remove_stale_assets(task_destination: Path, expected: set[PurePosixPath]) -> None:
+    """Remove files absent from the lowered task before rewriting it in place."""
+    for existing in _existing_files(task_destination):
+        relative = PurePosixPath(existing.relative_to(task_destination).as_posix())
+        if relative not in expected:
+            existing.unlink()
+    for directory in sorted(
+        (path for path in task_destination.rglob("*") if path.is_dir()),
+        reverse=True,
+    ):
+        if not any(directory.iterdir()):
+            directory.rmdir()
+
+
+def _emit_in_place(task: TaskIR, task_destination: Path) -> None:
+    """Overwrite one canonical task after materializing all source assets."""
+    source_hash = content_hash(task.source) if task.source is not None else None
+    rendered_manifest = manifest(task)
+    assets = tuple(_materialize_asset(asset) for asset in task.assets)
+    expected = {asset.destination for asset in assets}
+    expected.add(PurePosixPath(MANIFEST))
+    _remove_stale_assets(task_destination, expected)
+    for asset in assets:
+        _write_asset(asset, task_destination / asset.destination)
+    (task_destination / MANIFEST).write_text(rendered_manifest)
+    if source_hash is not None and source_hash != content_hash(task_destination):
+        raise RuntimeError(f"Harbor hash changed while rendering {task.name}")
+
+
 def _write_dataset(suite: SuiteIR, emitted: list[Path], output_root: Path) -> None:
     """Refresh emitted task digests in the generated Harbor dataset manifest."""
     if suite.dataset_source is None:
@@ -656,7 +699,15 @@ def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
     emitted = []
     for task in suite.tasks:
         task_destination = destination(output_root, suite, task)
+        in_place = (
+            task.source is not None
+            and task.source.resolve() == task_destination.resolve()
+        )
         if task_destination.exists():
+            if in_place:
+                _emit_in_place(task, task_destination)
+                emitted.append(task_destination)
+                continue
             if not (task_destination / MANIFEST).is_file():
                 raise ValueError(
                     f"Refusing to replace unmanaged output: {task_destination}"
@@ -677,7 +728,7 @@ def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
 
 def build(
     name: str,
-    output_root: Path = ROOT / "generated",
+    output_root: Path = ROOT / "tasks",
     lock_path: Path = LOCK_PATH,
 ) -> list[Path]:
     """Build a suite into plain Harbor task directories."""
@@ -703,12 +754,15 @@ def task_differences(source: Path, rendered: Path) -> list[str]:
 def _rendered_differences(task: TaskIR, rendered: Path) -> list[str]:
     """Compare fully declared output to the assets currently lowered from it."""
     expected = {
-        asset.destination.as_posix(): asset.source.read_bytes() for asset in task.assets
+        **{
+            asset.destination.as_posix(): asset.source.read_bytes()
+            for asset in task.assets
+        },
+        MANIFEST: manifest(task).encode(),
     }
     actual = {
         path.relative_to(rendered).as_posix(): path.read_bytes()
         for path in _existing_files(rendered)
-        if path.name != MANIFEST
     }
     differences = set(expected) ^ set(actual)
     differences.update(
@@ -719,16 +773,17 @@ def _rendered_differences(task: TaskIR, rendered: Path) -> list[str]:
 
 def diff(
     name: str,
-    output_root: Path = ROOT / "generated",
+    output_root: Path = ROOT / "tasks",
     lock_path: Path = LOCK_PATH,
 ) -> dict[str, list[str]]:
     """Report Harbor-definition diffs between source and rendered output."""
     suite = lower_suite(load_suite(name), lock_path)
     return {
         task.name: (
-            task_differences(task.source, destination(output_root, suite, task))
-            if task.source is not None
-            else _rendered_differences(task, destination(output_root, suite, task))
+            _rendered_differences(task, destination(output_root, suite, task))
+            if task.source is None
+            or task.source.resolve() == destination(output_root, suite, task).resolve()
+            else task_differences(task.source, destination(output_root, suite, task))
         )
         for task in suite.tasks
         if destination(output_root, suite, task).is_dir()
@@ -737,7 +792,7 @@ def diff(
 
 def check(
     name: str,
-    output_root: Path = ROOT / "generated",
+    output_root: Path = ROOT / "tasks",
     lock_path: Path = LOCK_PATH,
 ) -> dict[str, list[str]]:
     """Validate declarations and fail if generated definitions are stale."""

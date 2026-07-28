@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4441238e130861002c51cfda9671c076a06a63e2c9eec592c0b8b1ed736faf0f",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dbc44a9f4f4a4db308d0145f336edcf468f6eff6af785d6fc5462254f3c0efbb",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c8cb31696ffe614a9aac6513970542597b650444fefa053554e1c5a6e0d80326",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4d567a2817d881f332f4b2c8d6d2e288c28d7d0be99d6842d80ac9676b8b85b2",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "8e818a0206a2cc15cdf847d9de68be589aac3b8046e6d2ecac5b69ca54d3b5b0",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/policy-authorization/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/policy-authorization"
+}

@@ -5,34 +5,36 @@ this repository. It compiles typed suite declarations into ordinary Harbor task
 directories. Harbor remains responsible for executing, validating, packaging,
 and publishing those directories.
 
-The existing [`tasks/`](../tasks) tree remains the source of truth during this
-incremental rollout. Compiler output belongs in an ignored local directory,
-usually `.cache/evalkit`; do not edit it by hand. Modify a declaration or its
-source asset, rebuild, then review the generated diff before changing a task.
+The checked-in [`tasks/`](../tasks) tree is the canonical benchmark tree.
+`evalkit build` overwrites it in place, and Harbor runs those files directly.
+During the incremental rollout, exact-parity declarations read task-owned files
+before rewriting them; migrated declarations render typed assets into the same
+paths. An explicit `--output-root` may still be used for a disposable preview.
 
-Benchmark runners compile every registered suite into their per-run staging
-directory. Both local and Daytona jobs execute those compiled definitions, then
-apply ephemeral documentation, MCP, and image overrides to the staged copies.
+Run staging is separate from compilation. The benchmark runner copies canonical
+tasks only when it must inject ephemeral documentation, MCP, or Daytona image
+overrides.
 
 ## Commands
 
 Run commands from the repository root:
 
 ```bash
-# Build every registered suite, or name one or more suites.
+# Refresh every canonical suite, or name one or more suites.
 uv run python -m evalkit.cli build
 uv run python -m evalkit.cli build tempo-v1
 
-# Build a local mirror, verify it, then show definition differences.
+# Optionally build and inspect a disposable preview.
 uv run python -m evalkit.cli build --output-root .cache/evalkit
 uv run python -m evalkit.cli check --output-root .cache/evalkit
 uv run python -m evalkit.cli diff --output-root .cache/evalkit
 
-# Validate declarations without writing output.
+# Check canonical output or validate declarations without writing output.
+uv run python -m evalkit.cli check tempo-v1
 uv run python -m evalkit.cli lint tempo-v1
 
 # Explain the files, source paths, locks, and overrides behind one output task.
-uv run python -m evalkit.cli explain .cache/evalkit/tempo-v1/faucet-funded-transfer
+uv run python -m evalkit.cli explain tasks/tempo-v1/faucet-funded-transfer
 
 # Resolve and pin a tag to an OCI index digest.
 uv run python -m evalkit.cli lock --update image=ghcr.io/example/image:v1
@@ -46,11 +48,11 @@ suite argument they operate on `tempo-v1`, `tempo-mcp-v1`, and `mpp`.
 
 ## Local Harbor smoke
 
-After building a local mirror, run a representative task directly from it:
+Run a representative canonical task directly:
 
 ```bash
 DOCKER_DEFAULT_PLATFORM=linux/amd64 uv run harbor run \
-  --path .cache/evalkit/tempo-v1/faucet-funded-transfer \
+  --path tasks/tempo-v1/faucet-funded-transfer \
   --agent oracle --env docker --n-concurrent 1 --yes
 ```
 
@@ -71,9 +73,9 @@ The compiler runs six deterministic stages:
 4. **Render** ordinary Harbor files.
 5. **Hash** the rendered Harbor definition with Harbor-compatible file
    collection and hashing semantics.
-6. **Emit** generated task directories and a provenance manifest.
+6. **Emit** canonical task directories and provenance manifests in place.
 
-Every generated task has `.evalkit-manifest.json`. It records each output asset,
+Every managed task has `.evalkit-manifest.json`. It records each output asset,
 its source and SHA-256, resolved image digests, aliases, and explicit override
 reasons. Harbor does not include this manifest in its task content hash.
 

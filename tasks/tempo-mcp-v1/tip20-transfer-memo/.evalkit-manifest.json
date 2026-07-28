@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "8d070420b65292861e5fe5aa5e7f7124a351a38f6d9f1156000b050d2c40d72b",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "a3463923a1643dbf05a0802d8b47cdd409aa26dee61439790ac2a8fbbbcf66d5",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "a16348e953fbff578807f53df1f545c36177032b20c84cb7031d47cc2e6eac7d",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "54fc0c2a50e61d4350af2d0735c3743f2f55b8d1a79faea3ec37094d8d30df06",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "07e76e51b04e62cfa6c042435a9dbae5b0c306cbe44af4e911d2d622bb942577",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/tip20-transfer-memo/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/tip20-transfer-memo"
+}

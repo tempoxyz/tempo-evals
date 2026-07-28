@@ -25,6 +25,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from evalkit.compiler.build import build as build_evalkit_suite  # noqa: E402
+from evalkit.compiler.build import suite_names as evalkit_suite_names  # noqa: E402
 
 
 class BenchmarkKey(StrEnum):
@@ -464,6 +465,8 @@ def validate_run_options(variant_name: str, options: dict[str, Any]) -> dict[str
 
 def sync_generated() -> None:
     run_python("scripts/sync_shared.py")
+    for suite in evalkit_suite_names():
+        build_evalkit_suite(suite, Path("tasks"))
     compile_job_configs()
 
 
@@ -935,6 +938,17 @@ def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
         raise RuntimeError(msg)
 
 
+def copy_tasks(source: Path, destination: Path) -> None:
+    shutil.copytree(
+        source,
+        destination,
+        symlinks=False,
+        ignore=lambda _directory, names: [
+            name for name in names if name in {"node_modules", "package-lock.json"}
+        ],
+    )
+
+
 def run_openssl(args: list[str]) -> None:
     result = subprocess.run(
         ["openssl", *args],
@@ -1138,56 +1152,60 @@ def stage_task_datasets(
     mpp_docs_bundle: str | None = None,
     images: dict[str, str] | None = None,
 ) -> None:
-    output_root = staging_root / "tasks"
-    for suite in ("tempo-v1", "tempo-mcp-v1", "mpp"):
-        build_evalkit_suite(suite, output_root)
-
     staged_tasks = staging_root / "tasks" / "tempo-v1"
-    mcp_tasks = staging_root / "tasks" / "tempo-mcp-v1"
-    for task_dir in mcp_tasks.iterdir():
-        if not task_dir.is_dir() or not (task_dir / "task.toml").exists():
-            continue
-        environment_dir = task_dir / "environment"
-        shutil.copyfile(
-            "shared/tempo/docker/compose/tempo-mcp-eval.yaml",
-            environment_dir / "docker-compose.yaml",
-        )
-        upstream_url = os.environ.get("TEMPO_MCP_EVAL_URL")
-        if upstream_url:
-            compose_path = environment_dir / "docker-compose.yaml"
-            compose_path.write_text(
-                compose_path.read_text().replace(
-                    MCP_UPSTREAM_PLACEHOLDER,
-                    upstream_url,
-                )
+    staged_tasks.parent.mkdir(parents=True, exist_ok=True)
+    copy_tasks(Path("tasks/tempo-v1"), staged_tasks)
+    if Path("tasks/tempo-mcp-v1").exists():
+        mcp_tasks = staging_root / "tasks" / "tempo-mcp-v1"
+        copy_tasks(Path("tasks/tempo-mcp-v1"), mcp_tasks)
+        for task_dir in mcp_tasks.iterdir():
+            if not task_dir.is_dir() or not (task_dir / "task.toml").exists():
+                continue
+            environment_dir = task_dir / "environment"
+            shutil.copyfile(
+                "shared/tempo/docker/compose/tempo-mcp-eval.yaml",
+                environment_dir / "docker-compose.yaml",
             )
-        shutil.copytree(
-            "shared/tempo/mcp-bridge",
-            environment_dir / "mcp-bridge",
-            dirs_exist_ok=True,
-        )
-        shutil.copyfile(
-            "shared/tempo/mcp-eval/check.py", task_dir / "tests" / "check.py"
-        )
-        shutil.copyfile(
-            "shared/tempo/mcp-eval/validation.py",
-            task_dir / "tests" / "validation.py",
-        )
-        shutil.copyfile("shared/tempo/mcp-eval/test.sh", task_dir / "tests" / "test.sh")
-        (task_dir / "tests" / "test.sh").chmod(0o755)
-        shutil.copyfile(
-            task_dir / "instruction.md", task_dir / "tests" / "instruction.md"
-        )
-        shutil.copytree(
-            "shared/tempo/mcp-eval/quality",
-            task_dir / "tests" / "quality",
-            dirs_exist_ok=True,
-        )
-    mpp_tasks = staging_root / "tasks" / "mpp"
-    if mpp_docs_bundle is not None:
-        for task_dir in mpp_tasks.iterdir():
-            if task_dir.is_dir() and (task_dir / "task.toml").exists():
-                stage_mpp_docs_task(task_dir, mpp_docs_bundle)
+            upstream_url = os.environ.get("TEMPO_MCP_EVAL_URL")
+            if upstream_url:
+                compose_path = environment_dir / "docker-compose.yaml"
+                compose_path.write_text(
+                    compose_path.read_text().replace(
+                        MCP_UPSTREAM_PLACEHOLDER,
+                        upstream_url,
+                    )
+                )
+            shutil.copytree(
+                "shared/tempo/mcp-bridge",
+                environment_dir / "mcp-bridge",
+                dirs_exist_ok=True,
+            )
+            shutil.copyfile(
+                "shared/tempo/mcp-eval/check.py", task_dir / "tests" / "check.py"
+            )
+            shutil.copyfile(
+                "shared/tempo/mcp-eval/validation.py",
+                task_dir / "tests" / "validation.py",
+            )
+            shutil.copyfile(
+                "shared/tempo/mcp-eval/test.sh", task_dir / "tests" / "test.sh"
+            )
+            (task_dir / "tests" / "test.sh").chmod(0o755)
+            shutil.copyfile(
+                task_dir / "instruction.md", task_dir / "tests" / "instruction.md"
+            )
+            shutil.copytree(
+                "shared/tempo/mcp-eval/quality",
+                task_dir / "tests" / "quality",
+                dirs_exist_ok=True,
+            )
+    if Path("tasks/mpp").exists():
+        mpp_tasks = staging_root / "tasks" / "mpp"
+        copy_tasks(Path("tasks/mpp"), mpp_tasks)
+        if mpp_docs_bundle is not None:
+            for task_dir in mpp_tasks.iterdir():
+                if task_dir.is_dir() and (task_dir / "task.toml").exists():
+                    stage_mpp_docs_task(task_dir, mpp_docs_bundle)
     if images is not None:
         override_staged_images(staging_root, images)
     if docs_bundle is not None:
@@ -1245,8 +1263,14 @@ def stage_filtered_config(
         apply_profile(finalize_config(config, options), options["profile"]),
         options.get("pair_id"),
     )
-    stage_task_datasets(staging_root, docs_bundle, mpp_docs_bundle)
-    redirect_dataset_paths(config, staging_root)
+    if (
+        docs_bundle is not None
+        or mpp_docs_bundle is not None
+        or options["profile"] in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}
+        or options.get("task_suite") in {"tempo-mcp", "all"}
+    ):
+        stage_task_datasets(staging_root, docs_bundle, mpp_docs_bundle)
+        redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
 
@@ -1257,6 +1281,9 @@ def stage_direct_task_path(
     docs_bundle: str | None,
     mpp_docs_bundle: str | None,
 ) -> str:
+    if docs_bundle is None and mpp_docs_bundle is None:
+        return task_path
+
     if is_mpp_tasks_path(task_path):
         staged_path = "tasks/mpp"
     elif is_tempo_tasks_path(task_path):

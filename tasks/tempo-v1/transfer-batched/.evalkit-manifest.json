@@ -1,0 +1,97 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe636524624338cf60fdcb99670e3fb84b2aebb1d49fbfe79d54527682055587",
+      "source": "tasks/tempo-v1/transfer-batched/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-v1/transfer-batched/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1655b3d04761e702562f1bca3fe55b9f1221e3ef126a325413caa463c073a30b",
+      "source": "tasks/tempo-v1/transfer-batched/instruction.md"
+    },
+    "solution/package.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c3c89641af9c9de28376c94865dade7ea11e2843794bb3a415add10e5104d66e",
+      "source": "tasks/tempo-v1/transfer-batched/solution/package.json"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e35d4218dcf02c9cdc5ce6fbef1f35027491d85a88ae44ce2e4dd534a373f174",
+      "source": "tasks/tempo-v1/transfer-batched/solution/solve.sh"
+    },
+    "solution/src/index.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "d63fd0fc48a2bf8d178bba9df971c2bf54f461f0ee134863f0f735a715b1f905",
+      "source": "tasks/tempo-v1/transfer-batched/solution/src/index.ts"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4bf27b2c85faba4cbb96a36968859dbf8c2f8a9fe64a4a9950e32df7669917d3",
+      "source": "tasks/tempo-v1/transfer-batched/solution/tsconfig.json"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e3b3b95644a8901844bd40e80847183e3168da1f417c8928fb2eaab0af48e416",
+      "source": "tasks/tempo-v1/transfer-batched/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-v1/transfer-batched/tests/Dockerfile"
+    },
+    "tests/correctness/criteria.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4a9f9f726e306efbc45f893178f8dfd10944dd630ac30deb24a567b9816433e4",
+      "source": "tasks/tempo-v1/transfer-batched/tests/correctness/criteria.py"
+    },
+    "tests/correctness/verify-tempo.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "24e2d708a07b6e6a0a5542d31d37675c7e8bc947af95df05c6c185c7c1b3cec7",
+      "source": "tasks/tempo-v1/transfer-batched/tests/correctness/verify-tempo.sh"
+    },
+    "tests/quality/check.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44652229c99a1d95b5dbb5b098159ad6190e9a5a18e2c66a24f01015ad63ee28",
+      "source": "tasks/tempo-v1/transfer-batched/tests/quality/check.py"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "35d0e77348dad85d2febd7959f70c25227ca47a5d9e9ab53c6137f4f220ccb5b",
+      "source": "tasks/tempo-v1/transfer-batched/tests/quality/reward.toml"
+    },
+    "tests/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "abcf188ead283ade1284122cc29aeead7cb6fa27011e6d409a05e9c5c3e61ae1",
+      "source": "tasks/tempo-v1/transfer-batched/tests/reward.toml"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4568b58077d577c67e970ce3ec767f15a573c8d81010c5d12f781b7813ccb306",
+      "source": "tasks/tempo-v1/transfer-batched/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-v1/transfer-batched"
+}

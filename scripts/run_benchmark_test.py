@@ -8,9 +8,8 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import call, patch
 
-from evalkit.harbor_compat import content_hash
 from scripts.run_benchmark import (
     MCP_CODE_PROFILE,
     MCP_DIRECT_PROFILE,
@@ -32,12 +31,11 @@ from scripts.run_benchmark import (
     run_benchmark_key,
     run_benchmark_variant,
     run_production_variant,
-    stage_direct_task_path,
     stage_filtered_config,
     stage_mpp_docs_task,
     stage_pinned_docs_task,
-    stage_task_datasets,
     sync_dataset,
+    sync_generated,
     uses_live_mcp_eval,
     validate_run_options,
     versioned_name,
@@ -480,10 +478,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
         self.assertEqual(
             run.call_args.args[1][3:5],
-            [
-                "--path",
-                ".cache/harbor-model/mpp-model-test/tasks/mpp",
-            ],
+            ["--path", "tasks/mpp"],
         )
 
     def test_suite_profiles_are_validated_before_running(self) -> None:
@@ -776,49 +771,24 @@ class RunBenchmarkTest(unittest.TestCase):
         stage_tasks.assert_called_once()
         redirect.assert_called_once()
 
-    def test_local_config_always_stages_evalkit_tasks(self) -> None:
-        config = {"agents": [{"name": "oracle"}], "datasets": []}
-        options = {"profile": "docs", "task_suite": "mpp"}
+    def test_sync_generated_refreshes_canonical_evalkit_suites(self) -> None:
         with (
-            patch("scripts.run_benchmark.stage_task_datasets") as stage_tasks,
-            patch("scripts.run_benchmark.redirect_dataset_paths") as redirect,
+            patch("scripts.run_benchmark.run_python") as run_python,
+            patch(
+                "scripts.run_benchmark.evalkit_suite_names",
+                return_value=("mpp", "tempo-v1"),
+            ),
+            patch("scripts.run_benchmark.build_evalkit_suite") as build,
+            patch("scripts.run_benchmark.compile_job_configs") as compile_configs,
         ):
-            stage_filtered_config(config, "mpp-suite", options, None, None)
+            sync_generated()
 
-        stage_tasks.assert_called_once()
-        redirect.assert_called_once()
-
-    def test_direct_suite_path_always_stages_evalkit_tasks(self) -> None:
-        with (
-            patch("scripts.run_benchmark.stage_task_datasets") as stage_tasks,
-            patch("scripts.run_benchmark.shutil.rmtree"),
-        ):
-            path = stage_direct_task_path("model-run", "tasks/tempo-v1", None, None)
-
-        stage_tasks.assert_called_once_with(
-            Path(".cache/harbor-model/model-run"), None, None
+        run_python.assert_called_once_with("scripts/sync_shared.py")
+        self.assertEqual(
+            build.call_args_list,
+            [call("mpp", Path("tasks")), call("tempo-v1", Path("tasks"))],
         )
-        self.assertEqual(path, ".cache/harbor-model/model-run/tasks/tempo-v1")
-
-    def test_task_staging_compiles_all_evalkit_suites(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            staging_root = Path(directory)
-
-            stage_task_datasets(staging_root, None)
-
-            for suite, representative in (
-                ("tempo-v1", "faucet-funded-transfer"),
-                ("tempo-mcp-v1", "access-keys"),
-                ("mpp", "server-charge-pathusd"),
-            ):
-                with self.subTest(suite=suite):
-                    task = staging_root / "tasks" / suite / representative
-                    self.assertTrue((task / ".evalkit-manifest.json").is_file())
-                    if suite != "tempo-mcp-v1":
-                        self.assertEqual(
-                            content_hash(task),
-                            content_hash(Path("tasks") / suite / representative),
-                        )
+        compile_configs.assert_called_once()
 
     def test_staged_pinned_docs_proxy_only_docs_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

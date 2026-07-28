@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "9a0939f73edc905bb144ae28a4db92aa79d08d6d000a4c824c50e2ea9a6f62ff",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "3a289affaa06ba4d9eced3c230fde04afe03fb6d50b9810f95ac4dd0f84749ce",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "791aa11b490731c768d3fe8ded6408b993c56cc897bceef0804819c9b6183af1",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "206122e1716e2612b46dfb895dd035015618fb78e58f821a9dec4c19a5907a57",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "01fe2ded6108516b2ebc33b6c3427776abd051b6983b7eb2995524fddc53d208",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/fee-token-configuration/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/fee-token-configuration"
+}

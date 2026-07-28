@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fac925c67f0f0417d2c4732a89d53f833a1db12202149cec8239e7dc60123abc",
+      "source": "tasks/tempo-mcp-v1/passkey-account/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/passkey-account/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "353cd9b8d048d6ab5be90a1ba17baf9ba5124841f36a5a3a0457ae0e30255b18",
+      "source": "tasks/tempo-mcp-v1/passkey-account/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/passkey-account/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "05913db409b12bee1f5a867a117a586ba4ae606d37f8dc843c44e396d0fefc56",
+      "source": "tasks/tempo-mcp-v1/passkey-account/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "8678a81ba5b70c4d5d8134540d313104d23488662824821002306fb8455135f7",
+      "source": "tasks/tempo-mcp-v1/passkey-account/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/passkey-account/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "07e76e51b04e62cfa6c042435a9dbae5b0c306cbe44af4e911d2d622bb942577",
+      "source": "tasks/tempo-mcp-v1/passkey-account/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/passkey-account/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/passkey-account"
+}

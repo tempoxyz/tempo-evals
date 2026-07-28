@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "3719428f409651a68cb4e883b20cf27729ebb7b06645ce01c96e47828e12b03b",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1286af53ed7dbfc9071d398d1b28134d52a4bad8485f149b0c244d66fe5a4d6a",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "3c02f7447af88073929133649c04e72f7088bc6833741edfe791e01440061662",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "a0c163950334b449a9a5454ebb1e13a2bf7958a2f27ad056e820348c4bdaa649",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "73c56ee76d9bd387627810c8ae868ee551d82c2fd051f176834df51229fd8011",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/fee-token-and-payer/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/fee-token-and-payer"
+}

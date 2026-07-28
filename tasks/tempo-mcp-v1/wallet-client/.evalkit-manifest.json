@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c2849ace89104a32ac73ab3c6336dc7b1a9077c23b2e7b4535120b7ec7dabf83",
+      "source": "tasks/tempo-mcp-v1/wallet-client/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/wallet-client/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "5279f0d60b3e146c107f173fbbec178019b8915a34cc01a1b37028c6c6fbdc1f",
+      "source": "tasks/tempo-mcp-v1/wallet-client/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/wallet-client/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe264db13b15e8de6037d6b3a9ec5206251fca78f00398c1c012baa9604657f2",
+      "source": "tasks/tempo-mcp-v1/wallet-client/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "41080bc5e03b3b59de895f104d305e2ec0ca6a7dd62cad72cce4a5b414f3d924",
+      "source": "tasks/tempo-mcp-v1/wallet-client/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/wallet-client/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "6c9e53c2f95983a94e115a9d00f4826cc992d0849a12e0bd8025d766e9d558a7",
+      "source": "tasks/tempo-mcp-v1/wallet-client/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/wallet-client/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/wallet-client"
+}

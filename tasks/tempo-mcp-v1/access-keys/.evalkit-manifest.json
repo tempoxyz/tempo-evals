@@ -1,0 +1,61 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e5fd52463bf72b9accae909c56a8e803f1c179d6fde382513b5cf77c2c1aa257",
+      "source": "tasks/tempo-mcp-v1/access-keys/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/tempo-mcp-v1/access-keys/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "ce336dc945df479972ca19114d625951641bb5e1ab7e79efbb69d4f670f63765",
+      "source": "tasks/tempo-mcp-v1/access-keys/instruction.md"
+    },
+    "solution/oracle.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
+      "source": "tasks/tempo-mcp-v1/access-keys/solution/oracle.ts"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "8983d1f9d2ae02a14bf94990634d1cd240bcbe926409868e42be58bdd9581ec9",
+      "source": "tasks/tempo-mcp-v1/access-keys/solution/solve.sh"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "f76d5e0ac4ae36938e9d4bcb962c5cf590d0200c5461550e95844b0d61d398ac",
+      "source": "tasks/tempo-mcp-v1/access-keys/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/tempo-mcp-v1/access-keys/tests/Dockerfile"
+    },
+    "tests/expected.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "36fa3ae89405561c299ae7daa8563989c406e39a2e298d1544a592266046e12c",
+      "source": "tasks/tempo-mcp-v1/access-keys/tests/expected.json"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
+      "source": "tasks/tempo-mcp-v1/access-keys/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo-mcp-v1/access-keys"
+}

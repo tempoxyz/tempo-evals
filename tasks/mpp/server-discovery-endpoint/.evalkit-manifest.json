@@ -1,0 +1,109 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "0cfd30c7c8603b56ffe8ed71c761bae309ff437d386b9f0446e82ddc80c59f42",
+      "source": "tasks/mpp/server-discovery-endpoint/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": "tasks/mpp/server-discovery-endpoint/environment/Dockerfile"
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "cdd9508ec2f711e511f93e825758c977502cee152ff6eaf924f7238b973d89c9",
+      "source": "tasks/mpp/server-discovery-endpoint/instruction.md"
+    },
+    "solution/package.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "bd7eedb5a108411ff8544ae39a30fb3e6833276a9ac5492473334754537e952c",
+      "source": "tasks/mpp/server-discovery-endpoint/solution/package.json"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4b6ab8bf11be8cd111f05b2744acd3d7936011ed039f0fe8e97feabf45be4156",
+      "source": "tasks/mpp/server-discovery-endpoint/solution/solve.sh"
+    },
+    "solution/src/index.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "830f391ccf9f42e1a1130bbbe839d84b53f1388e0928f17b29afe8728c8ca3fb",
+      "source": "tasks/mpp/server-discovery-endpoint/solution/src/index.ts"
+    },
+    "solution/src/tempo-rpc.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "9c657526b4e1fb06e66318c63abf80c2b46c98eee7a399426c76af9b3c7a6e6f",
+      "source": "tasks/mpp/server-discovery-endpoint/solution/src/tempo-rpc.ts"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "9aa26d7ed8293bf09f3eae5694df98e65effdaf3f747c6ea949cb4cdbe32607f",
+      "source": "tasks/mpp/server-discovery-endpoint/solution/tsconfig.json"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "afb6865134cd9e2d8a3da90899aeddc9e38056190463e61148ec49131e0ed44c",
+      "source": "tasks/mpp/server-discovery-endpoint/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/Dockerfile"
+    },
+    "tests/correctness/criteria.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "13c7f0eeff3e04b5a0083eee800429a0cd18901363297627708ba308f1457515",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/correctness/criteria.py"
+    },
+    "tests/correctness/verify.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "392d25860564a241bdd954091006e9a4d3a50b59a0f2296d10d15fe0f2a4fcaf",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/correctness/verify.sh"
+    },
+    "tests/quality/check.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c20021fe287836e986ad51fd166885b75cdbe20ade22b2edacc3cc0c3cff95db",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/quality/check.py"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1406b161a1f0e42fa1049da72208bff4dd55e97d798a37592adfbaf3eacd78bc",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/quality/reward.toml"
+    },
+    "tests/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "6eec1e0f8fc3ba337a65f3810693307963369e3be6aaf78e79db479e71941ea7",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/reward.toml"
+    },
+    "tests/support/client.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "53d07bc606ef0b296ab628042fd1baa7d12494c48097fee95a1340f4cbdb75ad",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/support/client.py"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "0fb432ede90609b4426de1982ade96e4a86dece1ab80a5c459999cf7da3858cb",
+      "source": "tasks/mpp/server-discovery-endpoint/tests/test.sh"
+    }
+  },
+  "images": {},
+  "task": "tempo/mpp-server-discovery-endpoint"
+}
