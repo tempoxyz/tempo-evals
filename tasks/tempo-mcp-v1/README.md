@@ -21,9 +21,9 @@ with protocol documentation.
 
 ## Harness
 
-Tasks write `/app/answer.json` rather than submitting a transaction. At run
-time, the runner stages the shared MCP bridge, compose configuration, and MCP
-evaluator into each task environment. The direct and code bridges write their
+Tasks write `/app/answer.json` rather than submitting a transaction. EvalKit
+compiles the shared MCP bridge, compose configuration, and evaluator into every
+canonical task during `npm run sync`. The direct and code bridges write their
 tool calls to separate JSONL trace files. Agents use Tempo's native progressive
 tool discovery; the bridge filters the underlying tools for each arm.
 
@@ -64,8 +64,8 @@ Live data changes. Do not encode frozen chain snapshots or assume a particular
 transaction remains available. Grade the grounding and provenance of the
 reported answer instead.
 
-Task directories own their prompts, expected-answer requirements, oracle
-solutions, and metadata. `npm run sync` writes their agent and verifier
-Dockerfiles from the image configuration. The runner injects
-`shared/tempo/mcp-bridge` and `shared/tempo/mcp-eval` at staging time, so make
-shared evaluator changes there rather than copying them into individual tasks.
+Task directories own their prompts, expected-answer requirements, and metadata.
+EvalKit writes their Dockerfiles, oracle runtime, bridge, and shared verifier
+assets from `config/tasks.yaml`, `shared/tempo/mcp-bridge`, and
+`shared/tempo/mcp-eval`. Make shared harness changes there and run
+`npm run sync`; do not hand-edit the compiled task copies.

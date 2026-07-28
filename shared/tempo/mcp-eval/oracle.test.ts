@@ -5,7 +5,7 @@ import { docsRequest } from "./oracle.ts";
 
 test("builds profile-specific oracle documentation calls", () => {
   assert.deepEqual(docsRequest("docs_search", "Tempo fees"), {
-    name: "call_write_tool",
+    name: "call_read_tool",
     arguments: { name: "docs_search", arguments: { query: "Tempo fees", max_results: 1 } },
   });
   assert.deepEqual(docsRequest("docs_code", "Tempo fees"), {

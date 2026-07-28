@@ -44,6 +44,8 @@ class DockerBuild:
 
     image: ImageRef
     assets: tuple[Bake, ...] = ()
+    header: str | None = None
+    instructions: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -72,6 +74,28 @@ class Copy:
 
     source: Path
     destination: PurePosixPath
+    mode: int | None = None
+
+
+@dataclass(frozen=True)
+class RuntimeDocs:
+    """An ephemeral documentation bundle materialized only for a benchmark run."""
+
+    input_name: str
+    compose_source: Path
+    proxy_source: Path
+    bundle_destination: PurePosixPath
+    tls_destination: PurePosixPath
+    hostname: str
+    access_log_source: str
+    service: str
+
+
+@dataclass(frozen=True)
+class RuntimeMaterialization:
+    """Inputs that cannot be checked into a canonical Harbor task."""
+
+    docs: RuntimeDocs | None = None
 
 
 @dataclass(frozen=True)
@@ -178,6 +202,7 @@ class Task:
     solution: Solution | None = None
     extra_config: Mapping[str, object] = field(default_factory=dict)
     overrides: tuple[Override, ...] = ()
+    runtime: RuntimeMaterialization = RuntimeMaterialization()
 
 
 @dataclass(frozen=True)
@@ -204,9 +229,11 @@ def bake(
     return Bake(Path(source), image_destination, into, mode)
 
 
-def copy(source: str | Path, destination: str | Path) -> Copy:
+def copy(
+    source: str | Path, destination: str | Path, *, mode: int | None = None
+) -> Copy:
     """Declare a file or directory copy into a task-relative destination."""
-    return Copy(Path(source), path(destination))
+    return Copy(Path(source), path(destination), mode)
 
 
 def fixture(source: str | Path, name: str, schema: str | None = None) -> Fixture:
@@ -269,6 +296,8 @@ __all__ = [
     "InstructionDoc",
     "Override",
     "Policy",
+    "RuntimeDocs",
+    "RuntimeMaterialization",
     "RuntimeService",
     "SharedVerifier",
     "Solution",

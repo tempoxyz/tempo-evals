@@ -8,10 +8,10 @@
       "source": "tasks/mpp/server-discovery-endpoint/README.md"
     },
     "environment/Dockerfile": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:agent",
       "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
-      "source": "tasks/mpp/server-discovery-endpoint/environment/Dockerfile"
+      "source": null
     },
     "instruction.md": {
       "override_reason": null,
@@ -20,16 +20,16 @@
       "source": "tasks/mpp/server-discovery-endpoint/instruction.md"
     },
     "solution/package.json": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "bd7eedb5a108411ff8544ae39a30fb3e6833276a9ac5492473334754537e952c",
-      "source": "tasks/mpp/server-discovery-endpoint/solution/package.json"
+      "source": "shared/mpp/solution/package.json"
     },
     "solution/solve.sh": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "4b6ab8bf11be8cd111f05b2744acd3d7936011ed039f0fe8e97feabf45be4156",
-      "source": "tasks/mpp/server-discovery-endpoint/solution/solve.sh"
+      "source": "shared/mpp/solution/solve.sh"
     },
     "solution/src/index.ts": {
       "override_reason": null,
@@ -38,16 +38,16 @@
       "source": "tasks/mpp/server-discovery-endpoint/solution/src/index.ts"
     },
     "solution/src/tempo-rpc.ts": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "9c657526b4e1fb06e66318c63abf80c2b46c98eee7a399426c76af9b3c7a6e6f",
-      "source": "tasks/mpp/server-discovery-endpoint/solution/src/tempo-rpc.ts"
+      "source": "shared/mpp/solution/src/tempo-rpc.ts"
     },
     "solution/tsconfig.json": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "9aa26d7ed8293bf09f3eae5694df98e65effdaf3f747c6ea949cb4cdbe32607f",
-      "source": "tasks/mpp/server-discovery-endpoint/solution/tsconfig.json"
+      "source": "shared/mpp/solution/tsconfig.json"
     },
     "task.toml": {
       "override_reason": null,
@@ -56,10 +56,10 @@
       "source": "tasks/mpp/server-discovery-endpoint/task.toml"
     },
     "tests/Dockerfile": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:verifier",
       "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
-      "source": "tasks/mpp/server-discovery-endpoint/tests/Dockerfile"
+      "source": null
     },
     "tests/correctness/criteria.py": {
       "override_reason": null,
@@ -68,28 +68,28 @@
       "source": "tasks/mpp/server-discovery-endpoint/tests/correctness/criteria.py"
     },
     "tests/correctness/verify.sh": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "392d25860564a241bdd954091006e9a4d3a50b59a0f2296d10d15fe0f2a4fcaf",
-      "source": "tasks/mpp/server-discovery-endpoint/tests/correctness/verify.sh"
+      "source": "shared/mpp/tests/correctness/verify.sh"
     },
     "tests/quality/check.py": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "c20021fe287836e986ad51fd166885b75cdbe20ade22b2edacc3cc0c3cff95db",
-      "source": "tasks/mpp/server-discovery-endpoint/tests/quality/check.py"
+      "source": "shared/mpp/tests/quality/check.py"
     },
     "tests/quality/reward.toml": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "1406b161a1f0e42fa1049da72208bff4dd55e97d798a37592adfbaf3eacd78bc",
-      "source": "tasks/mpp/server-discovery-endpoint/tests/quality/reward.toml"
+      "source": "shared/mpp/tests/quality/reward.toml"
     },
     "tests/reward.toml": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "6eec1e0f8fc3ba337a65f3810693307963369e3be6aaf78e79db479e71941ea7",
-      "source": "tasks/mpp/server-discovery-endpoint/tests/reward.toml"
+      "source": "shared/mpp/tests/reward.toml"
     },
     "tests/support/client.py": {
       "override_reason": null,
@@ -98,12 +98,28 @@
       "source": "tasks/mpp/server-discovery-endpoint/tests/support/client.py"
     },
     "tests/test.sh": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
       "sha256": "0fb432ede90609b4426de1982ade96e4a86dece1ab80a5c459999cf7da3858cb",
-      "source": "tasks/mpp/server-discovery-endpoint/tests/test.sh"
+      "source": "shared/mpp/tests/test.sh"
     }
   },
   "images": {},
+  "runtime": {
+    "docs": {
+      "access_log_source": "/var/log/mpp-docs/access.log",
+      "bundle_destination": "environment/mpp-docs-bundle",
+      "compose_source": "shared/mpp/docker/compose/mpp-docs.yaml",
+      "hostname": "mpp.dev",
+      "input": "mpp_docs",
+      "proxy_source": "shared/docs/static-docs-proxy",
+      "service": "mpp-docs",
+      "tls_destination": "environment/mpp-docs-tls"
+    },
+    "images": {
+      "agent": "ghcr.io/tempoxyz/stable-bench-base:agent-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a",
+      "verifier": "ghcr.io/tempoxyz/stable-bench-base:verifier-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a"
+    }
+  },
   "task": "tempo/mpp-server-discovery-endpoint"
 }

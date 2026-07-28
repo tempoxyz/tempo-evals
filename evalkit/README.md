@@ -12,8 +12,8 @@ before rewriting them; migrated declarations render typed assets into the same
 paths. An explicit `--output-root` may still be used for a disposable preview.
 
 Run staging is separate from compilation. The benchmark runner copies canonical
-tasks only when it must inject ephemeral documentation, MCP, or Daytona image
-overrides.
+tasks only when EvalKit must materialize ephemeral documentation bundles, TLS
+certificates, or Daytona image overrides.
 
 ## Commands
 
@@ -117,10 +117,10 @@ SUITE = Suite(
 )
 ```
 
-Use `source=Path("tasks/.../my-task")` only for exact-parity migration. It
-copies the task definition byte-for-byte, apart from the provenance manifest.
-The current Tempo, Tempo MCP, and MPP suites use this bridge while their source
-declarations are progressively made more granular.
+Use `source=Path("tasks/.../my-task")` to retain task-owned files while typed
+declarations overlay generated assets. The current suites use this bridge for
+prompts and task-specific verifiers; shared Dockerfiles, MCP assets, and MPP
+harness files are compiler-owned.
 
 ### Public declaration reference
 
@@ -129,6 +129,7 @@ declarations are progressively made more granular.
 | `Suite`, `Policy` | Registered task collection and suite-wide lock/migration policy. |
 | `Task`, `InstructionDoc`, `Solution` | One Harbor task, its prompt, and oracle assets. |
 | `ImageRef`, `DockerBuild`, `Environment` | Locked images, Docker build inputs, variables, and sidecars. |
+| `RuntimeDocs`, `RuntimeMaterialization` | Ephemeral inputs applied to a copied run tree. |
 | `Copy`, `Bake`, `Fixture`, `Case` | Filesystem assets, image-layer assets, and explicit test parameterization. |
 | `SharedVerifier`, `VerifierUse`, `AdapterContract` | Reusable verifier content and static adapter-symbol validation. |
 | `Override` | Required rationale for intentionally replacing an output path. |
@@ -161,12 +162,16 @@ Task(
 resolves it through `evalkit.lock` and renders the OCI index digest into the
 Dockerfile or service configuration. Inline digests are intentionally not part
 of declarations. `evalkit lock --update` writes the required digest. Exact-parity
-`source=` migration declarations preserve their existing Dockerfiles and do not
-declare `ImageRef`s until those files are migrated.
+`source=` declarations may preserve existing Dockerfiles or explicitly replace
+them with declared builds.
 
 `runtime_service()` declares a Docker sidecar. MCP access profiles remain
 owned by `config/tasks.yaml` and the benchmark job configuration, so EvalKit
 does not duplicate or override that runtime selection.
+
+`RuntimeDocs` records how a run-time documentation bundle is materialized.
+The compiler writes that recipe into the task manifest; `evalkit.runtime`
+applies it only to a copied run tree.
 
 ## Verifiers and cases
 

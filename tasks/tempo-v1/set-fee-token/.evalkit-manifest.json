@@ -8,10 +8,10 @@
       "source": "tasks/tempo-v1/set-fee-token/README.md"
     },
     "environment/Dockerfile": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:agent",
       "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
-      "source": "tasks/tempo-v1/set-fee-token/environment/Dockerfile"
+      "source": null
     },
     "instruction.md": {
       "override_reason": null,
@@ -50,10 +50,10 @@
       "source": "tasks/tempo-v1/set-fee-token/task.toml"
     },
     "tests/Dockerfile": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:verifier",
       "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
-      "source": "tasks/tempo-v1/set-fee-token/tests/Dockerfile"
+      "source": null
     },
     "tests/correctness/criteria.py": {
       "override_reason": null,
@@ -93,5 +93,21 @@
     }
   },
   "images": {},
+  "runtime": {
+    "docs": {
+      "access_log_source": "/var/log/tempo-docs/access.log",
+      "bundle_destination": "environment/tempo-docs-bundle",
+      "compose_source": "shared/tempo/docker/compose/tempo-docs.yaml",
+      "hostname": "docs.tempo.xyz",
+      "input": "tempo_docs",
+      "proxy_source": "shared/docs/static-docs-proxy",
+      "service": "tempo-docs",
+      "tls_destination": "environment/docs-tls"
+    },
+    "images": {
+      "agent": "ghcr.io/tempoxyz/stable-bench-base:agent-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a",
+      "verifier": "ghcr.io/tempoxyz/stable-bench-base:verifier-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a"
+    }
+  },
   "task": "tempo-v1/set-fee-token"
 }

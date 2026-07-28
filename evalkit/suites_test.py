@@ -53,7 +53,7 @@ class TempoSuiteTest(unittest.TestCase):
             ),
         ):
             tasks = tempo_v1._tasks()
-        self.assertIn(discovered, tasks)
+        self.assertIn(discovered.name, {task.name for task in tasks})
 
         with (
             patch.object(tempo_v1, "Path", return_value=file_path),

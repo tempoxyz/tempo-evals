@@ -8,10 +8,40 @@
       "source": "tasks/tempo-mcp-v1/stablecoin-creation/README.md"
     },
     "environment/Dockerfile": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:agent",
       "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
-      "source": "tasks/tempo-mcp-v1/stablecoin-creation/environment/Dockerfile"
+      "source": null
+    },
+    "environment/docker-compose.yaml": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "421ebc0507e3153bdab136f289deea043ed087951c57b0a856f4bf0e65305f08",
+      "source": "shared/tempo/docker/compose/tempo-mcp-eval.yaml"
+    },
+    "environment/mcp-bridge/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "b6ca8a81a4bff91f5b619fbc7c36a0ce1a72db589af3bc6c3c3e04638d41e1ce",
+      "source": "shared/tempo/mcp-bridge/Dockerfile"
+    },
+    "environment/mcp-bridge/server.test.ts": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "73b59021f7788ce73d2d36bc0262477c486460120640d6eb1a7f0f5cf4f22ad9",
+      "source": "shared/tempo/mcp-bridge/server.test.ts"
+    },
+    "environment/mcp-bridge/server.ts": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "96d88dad2668e90d6264dd67e2e72bf51a7f1036c27e6894094dc2f017ae43f4",
+      "source": "shared/tempo/mcp-bridge/server.ts"
+    },
+    "environment/mcp-bridge/tsconfig.json": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "f0175791eb4aa0f8cd96562c60d4ce0438f9fb1adcff89d62eb8d066c391e426",
+      "source": "shared/tempo/mcp-bridge/tsconfig.json"
     },
     "instruction.md": {
       "override_reason": null,
@@ -20,16 +50,28 @@
       "source": "tasks/tempo-mcp-v1/stablecoin-creation/instruction.md"
     },
     "solution/oracle.ts": {
-      "override_reason": null,
-      "provenance": "legacy source",
-      "sha256": "1a375e47588237633e4ebe7d73f9ba975ab048646996e3d94e6b11f8168a9b22",
-      "source": "tasks/tempo-mcp-v1/stablecoin-creation/solution/oracle.ts"
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "f77fb2411d63f6f929f03dcebfc2ea0d3c5eec585eb63ebacba75e31d223714d",
+      "source": "shared/tempo/mcp-eval/oracle.ts"
+    },
+    "solution/package.json": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "faec0e0fe3ec027d2002bd6f5d9a053da547bdb1552bff3f00ca98183abf71e3",
+      "source": "shared/tempo/mcp-eval/package.json"
     },
     "solution/solve.sh": {
       "override_reason": null,
       "provenance": "legacy source",
       "sha256": "8ed787dc91ef76142934c7feb53bd624588c54b5865d1a7092fbefb8d0e69e22",
       "source": "tasks/tempo-mcp-v1/stablecoin-creation/solution/solve.sh"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "f0175791eb4aa0f8cd96562c60d4ce0438f9fb1adcff89d62eb8d066c391e426",
+      "source": "shared/tempo/mcp-eval/tsconfig.json"
     },
     "task.toml": {
       "override_reason": null,
@@ -38,10 +80,16 @@
       "source": "tasks/tempo-mcp-v1/stablecoin-creation/task.toml"
     },
     "tests/Dockerfile": {
-      "override_reason": null,
-      "provenance": "legacy source",
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:verifier",
       "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
-      "source": "tasks/tempo-mcp-v1/stablecoin-creation/tests/Dockerfile"
+      "source": null
+    },
+    "tests/check.py": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "b93268ba77e09e23cc07c972468a3240016961de134d3d111d3b62c92a3c5eb5",
+      "source": "shared/tempo/mcp-eval/check.py"
     },
     "tests/expected.json": {
       "override_reason": null,
@@ -49,13 +97,37 @@
       "sha256": "1b5b4c42c076d8e776d6dcf4abd9a730f671d0e87b1ace943cd9bd488ef747a1",
       "source": "tasks/tempo-mcp-v1/stablecoin-creation/tests/expected.json"
     },
+    "tests/instruction.md": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "bdb51700b902a3ebea9575f8c7ac0cabdf4c825fabe60f1be3b3af5345c527b6",
+      "source": "tasks/tempo-mcp-v1/stablecoin-creation/instruction.md"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "f6bcd6003982daa064c1f405bd5a08b68be70a8c6dffdf2dfcbedf44b640304c",
+      "source": "shared/tempo/mcp-eval/quality/reward.toml"
+    },
     "tests/test.sh": {
-      "override_reason": null,
-      "provenance": "legacy source",
-      "sha256": "fe13fa06b149c6e4a792db477c080c1b9e1b58e11a2f4a3b0647dfe3521a2bca",
-      "source": "tasks/tempo-mcp-v1/stablecoin-creation/tests/test.sh"
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "ad3aeb42f4644149b62b466057128d6dc474fb6cef01ec39cfdfcad6dbc02e51",
+      "source": "shared/tempo/mcp-eval/test.sh"
+    },
+    "tests/validation.py": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "fde731fc1fd4ffd91c2efdf72365a21ae5f45b2d33bcdd1be1a8c588ba0b6b71",
+      "source": "shared/tempo/mcp-eval/validation.py"
     }
   },
   "images": {},
+  "runtime": {
+    "images": {
+      "agent": "ghcr.io/tempoxyz/stable-bench-base:agent-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a",
+      "verifier": "ghcr.io/tempoxyz/stable-bench-base:verifier-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a"
+    }
+  },
   "task": "tempo-mcp-v1/stablecoin-creation"
 }

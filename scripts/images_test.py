@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from os import chmod
@@ -7,6 +8,7 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from unittest.mock import patch
 
+from evalkit.runtime import materialize_task_tree
 from scripts.images import (
     INPUTS,
     configured_image_ref,
@@ -17,7 +19,7 @@ from scripts.images import (
     source_image_ref,
     source_image_tag,
 )
-from scripts.run_benchmark import image_ref, override_staged_images
+from scripts.run_benchmark import image_ref
 
 
 class ImagesTest(unittest.TestCase):
@@ -101,10 +103,22 @@ class ImagesTest(unittest.TestCase):
             for image, dockerfile in dockerfiles.items():
                 dockerfile.parent.mkdir(parents=True)
                 dockerfile.write_text(f"FROM {image_ref(image)}\n")
+            (task / ".evalkit-manifest.json").write_text(
+                json.dumps(
+                    {
+                        "runtime": {
+                            "images": {
+                                "agent": image_ref("agent"),
+                                "verifier": image_ref("verifier"),
+                            }
+                        }
+                    }
+                )
+            )
 
-            override_staged_images(
-                Path(directory),
-                {
+            materialize_task_tree(
+                Path(directory) / "tasks",
+                images={
                     "agent": "ghcr.io/test/agent@sha256:abc",
                     "verifier": "ghcr.io/test/verifier@sha256:def",
                 },

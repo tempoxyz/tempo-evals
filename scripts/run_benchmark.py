@@ -17,7 +17,6 @@ from threading import Lock
 from typing import Any
 
 import jinja2
-import tomlkit
 import yaml
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +25,7 @@ if str(REPOSITORY_ROOT) not in sys.path:
 
 from evalkit.compiler.build import build as build_evalkit_suite  # noqa: E402
 from evalkit.compiler.build import suite_names as evalkit_suite_names  # noqa: E402
+from evalkit.runtime import materialize_task_tree  # noqa: E402
 
 
 class BenchmarkKey(StrEnum):
@@ -243,16 +243,7 @@ DOCS_SHA_PATTERN = re.compile(r"[0-9a-fA-F]{7,40}")
 FULL_GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
 PINNED_JUDGE_MODEL = "anthropic/claude-haiku-4-5-20251001"
 DEFAULT_JUDGE_MODEL = f"${{REWARDKIT_JUDGE:-{PINNED_JUDGE_MODEL}}}"
-DOCS_ACCESS_LOG = "/var/log/tempo-docs/access.log"
-DOCS_TLS_DIR = "docs-tls"
-DOCS_CA_FILE = "ca.crt"
-DOCS_CA_DESTINATION = "/usr/local/share/ca-certificates/stable-bench-docs.crt"
-MCP_UPSTREAM_PLACEHOLDER = "${TEMPO_MCP_EVAL_URL:-https://api.tempo.xyz/mcp}"
-DOCS_TLS_VALIDITY_DAYS = "30"
-MPP_DOCS_ACCESS_LOG = "/var/log/mpp-docs/access.log"
-MPP_DOCS_TLS_DIR = "mpp-docs-tls"
 MPP_DOCS_BUNDLE_PATH = Path(".cache") / "mpp-docs" / "local" / "public"
-DOCS_PROXY_SOURCE = "shared/docs/static-docs-proxy"
 
 
 def read_docs_lock() -> dict[str, Any]:
@@ -464,7 +455,6 @@ def validate_run_options(variant_name: str, options: dict[str, Any]) -> dict[str
 
 
 def sync_generated() -> None:
-    run_python("scripts/sync_shared.py")
     for suite in evalkit_suite_names():
         build_evalkit_suite(suite, Path("tasks"))
     compile_job_configs()
@@ -949,269 +939,27 @@ def copy_tasks(source: Path, destination: Path) -> None:
     )
 
 
-def run_openssl(args: list[str]) -> None:
-    result = subprocess.run(
-        ["openssl", *args],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        output = (result.stderr or result.stdout).strip()
-        raise RuntimeError(f"openssl {' '.join(args)} failed: {output}")
-
-
-def generate_docs_tls_assets(
-    environment_dir: Path,
-    *,
-    hostname: str = "docs.tempo.xyz",
-    tls_dir_name: str = DOCS_TLS_DIR,
-) -> Path:
-    """Create an ephemeral CA and docs leaf certificate for one run."""
-    tls_dir = environment_dir / tls_dir_name
-    shutil.rmtree(tls_dir, ignore_errors=True)
-    tls_dir.mkdir(parents=True)
-
-    ca_key = tls_dir / "ca.key"
-    ca_cert = tls_dir / DOCS_CA_FILE
-    leaf_key = tls_dir / "docs.key"
-    leaf_csr = tls_dir / "docs.csr"
-    leaf_cert = tls_dir / "docs.crt"
-    extensions = tls_dir / "docs.ext"
-
-    run_openssl(
-        [
-            "req",
-            "-x509",
-            "-newkey",
-            "rsa:2048",
-            "-nodes",
-            "-keyout",
-            str(ca_key),
-            "-out",
-            str(ca_cert),
-            "-days",
-            DOCS_TLS_VALIDITY_DAYS,
-            "-subj",
-            "/CN=Stable Bench Ephemeral Docs CA",
-            "-addext",
-            "basicConstraints=critical,CA:TRUE",
-            "-addext",
-            "keyUsage=critical,keyCertSign,cRLSign",
-        ]
-    )
-    run_openssl(
-        [
-            "req",
-            "-newkey",
-            "rsa:2048",
-            "-nodes",
-            "-keyout",
-            str(leaf_key),
-            "-out",
-            str(leaf_csr),
-            "-subj",
-            f"/CN={hostname}",
-        ]
-    )
-    extensions.write_text(
-        "basicConstraints=critical,CA:FALSE\n"
-        "keyUsage=critical,digitalSignature,keyEncipherment\n"
-        "extendedKeyUsage=serverAuth\n"
-        f"subjectAltName=DNS:{hostname}\n"
-    )
-    run_openssl(
-        [
-            "x509",
-            "-req",
-            "-in",
-            str(leaf_csr),
-            "-CA",
-            str(ca_cert),
-            "-CAkey",
-            str(ca_key),
-            "-CAserial",
-            str(tls_dir / "ca.srl"),
-            "-CAcreateserial",
-            "-out",
-            str(leaf_cert),
-            "-days",
-            DOCS_TLS_VALIDITY_DAYS,
-            "-extfile",
-            str(extensions),
-        ]
-    )
-    ca_key.unlink()
-    leaf_csr.unlink()
-    extensions.unlink()
-    (tls_dir / "ca.srl").unlink(missing_ok=True)
-    return tls_dir
-
-
-def trust_docs_ca(environment_dir: Path, tls_dir: Path) -> None:
-    dockerfile = environment_dir / "Dockerfile"
-    ca_path = tls_dir.relative_to(environment_dir) / DOCS_CA_FILE
-    dockerignore = environment_dir / ".dockerignore"
-    ignore_entry = f"{tls_dir.name}/*\n!{tls_dir.name}/{DOCS_CA_FILE}\n"
-    existing_ignore = dockerignore.read_text() if dockerignore.exists() else ""
-    if existing_ignore and not existing_ignore.endswith("\n"):
-        existing_ignore = f"{existing_ignore}\n"
-    content = dockerfile.read_text().rstrip()
-    dockerfile.write_text(
-        f"{content}\n\n"
-        f"COPY {ca_path.as_posix()} {DOCS_CA_DESTINATION}\n"
-        "RUN update-ca-certificates\n"
-        f"ENV NODE_EXTRA_CA_CERTS={DOCS_CA_DESTINATION}\n"
-    )
-    dockerignore.write_text(f"{existing_ignore}{ignore_entry}")
-
-
-def stage_docs_proxy_task(
-    task_dir: Path,
-    *,
-    docs_bundle: str,
-    compose_source: str,
-    bundle_dir_name: str,
-    access_log_path: str,
-    service: str,
-    hostname: str,
-    tls_dir_name: str,
-) -> None:
-    task_config_path = task_dir / "task.toml"
-    config = tomlkit.parse(task_config_path.read_text())
-    artifacts = config.get("artifacts")
-    if not isinstance(artifacts, list):
-        raise RuntimeError(f"Missing artifacts array in staged task: {task_dir}")
-    access_log = tomlkit.inline_table()
-    access_log["source"] = access_log_path
-    access_log["service"] = service
-    artifacts.append(access_log)
-    task_config_path.write_text(tomlkit.dumps(config))
-
-    environment_dir = task_dir / "environment"
-    shutil.copyfile(compose_source, environment_dir / "docker-compose.yaml")
-    shutil.copytree(
-        DOCS_PROXY_SOURCE,
-        environment_dir / "docs-proxy",
-        dirs_exist_ok=True,
-    )
-    shutil.copytree(docs_bundle, environment_dir / bundle_dir_name, dirs_exist_ok=True)
-    tls_dir = generate_docs_tls_assets(
-        environment_dir,
-        hostname=hostname,
-        tls_dir_name=tls_dir_name,
-    )
-    trust_docs_ca(environment_dir, tls_dir)
-
-
-def stage_pinned_docs_task(task_dir: Path, docs_bundle: str) -> None:
-    stage_docs_proxy_task(
-        task_dir,
-        docs_bundle=docs_bundle,
-        compose_source="shared/tempo/docker/compose/tempo-docs.yaml",
-        bundle_dir_name="tempo-docs-bundle",
-        access_log_path=DOCS_ACCESS_LOG,
-        service="tempo-docs",
-        hostname="docs.tempo.xyz",
-        tls_dir_name=DOCS_TLS_DIR,
-    )
-
-
-def stage_mpp_docs_task(task_dir: Path, mpp_docs_bundle: str) -> None:
-    stage_docs_proxy_task(
-        task_dir,
-        docs_bundle=mpp_docs_bundle,
-        compose_source="shared/mpp/docker/compose/mpp-docs.yaml",
-        bundle_dir_name="mpp-docs-bundle",
-        access_log_path=MPP_DOCS_ACCESS_LOG,
-        service="mpp-docs",
-        hostname="mpp.dev",
-        tls_dir_name=MPP_DOCS_TLS_DIR,
-    )
-
-
-def override_staged_images(staging_root: Path, images: dict[str, str]) -> None:
-    dockerfiles = {"agent": "environment", "verifier": "tests"}
-    for task_config in staging_root.glob("tasks/*/*/task.toml"):
-        for image, directory in dockerfiles.items():
-            dockerfile = task_config.parent / directory / "Dockerfile"
-            if not dockerfile.exists():
-                raise RuntimeError(f"Missing staged {image} Dockerfile: {dockerfile}")
-            expected = f"FROM {image_ref(image)}"
-            content = dockerfile.read_text()
-            if expected not in content:
-                raise RuntimeError(f"Unexpected {image} image in {dockerfile}")
-            dockerfile.write_text(
-                content.replace(expected, f"FROM {images[image]}", count=1)
-            )
-
-
 def stage_task_datasets(
     staging_root: Path,
     docs_bundle: str | None,
     mpp_docs_bundle: str | None = None,
     images: dict[str, str] | None = None,
 ) -> None:
-    staged_tasks = staging_root / "tasks" / "tempo-v1"
-    staged_tasks.parent.mkdir(parents=True, exist_ok=True)
-    copy_tasks(Path("tasks/tempo-v1"), staged_tasks)
-    if Path("tasks/tempo-mcp-v1").exists():
-        mcp_tasks = staging_root / "tasks" / "tempo-mcp-v1"
-        copy_tasks(Path("tasks/tempo-mcp-v1"), mcp_tasks)
-        for task_dir in mcp_tasks.iterdir():
-            if not task_dir.is_dir() or not (task_dir / "task.toml").exists():
-                continue
-            environment_dir = task_dir / "environment"
-            shutil.copyfile(
-                "shared/tempo/docker/compose/tempo-mcp-eval.yaml",
-                environment_dir / "docker-compose.yaml",
-            )
-            upstream_url = os.environ.get("TEMPO_MCP_EVAL_URL")
-            if upstream_url:
-                compose_path = environment_dir / "docker-compose.yaml"
-                compose_path.write_text(
-                    compose_path.read_text().replace(
-                        MCP_UPSTREAM_PLACEHOLDER,
-                        upstream_url,
-                    )
-                )
-            shutil.copytree(
-                "shared/tempo/mcp-bridge",
-                environment_dir / "mcp-bridge",
-                dirs_exist_ok=True,
-            )
-            shutil.copyfile(
-                "shared/tempo/mcp-eval/check.py", task_dir / "tests" / "check.py"
-            )
-            shutil.copyfile(
-                "shared/tempo/mcp-eval/validation.py",
-                task_dir / "tests" / "validation.py",
-            )
-            shutil.copyfile(
-                "shared/tempo/mcp-eval/test.sh", task_dir / "tests" / "test.sh"
-            )
-            (task_dir / "tests" / "test.sh").chmod(0o755)
-            shutil.copyfile(
-                task_dir / "instruction.md", task_dir / "tests" / "instruction.md"
-            )
-            shutil.copytree(
-                "shared/tempo/mcp-eval/quality",
-                task_dir / "tests" / "quality",
-                dirs_exist_ok=True,
-            )
-    if Path("tasks/mpp").exists():
-        mpp_tasks = staging_root / "tasks" / "mpp"
-        copy_tasks(Path("tasks/mpp"), mpp_tasks)
-        if mpp_docs_bundle is not None:
-            for task_dir in mpp_tasks.iterdir():
-                if task_dir.is_dir() and (task_dir / "task.toml").exists():
-                    stage_mpp_docs_task(task_dir, mpp_docs_bundle)
-    if images is not None:
-        override_staged_images(staging_root, images)
-    if docs_bundle is not None:
-        for task_dir in staged_tasks.iterdir():
-            if task_dir.is_dir() and (task_dir / "task.toml").exists():
-                stage_pinned_docs_task(task_dir, docs_bundle)
+    tasks_root = staging_root / "tasks"
+    tasks_root.mkdir(parents=True, exist_ok=True)
+    for suite in evalkit_suite_names():
+        source = Path("tasks") / suite
+        if source.exists():
+            copy_tasks(source, tasks_root / suite)
+    bundles = {
+        name: Path(bundle)
+        for name, bundle in (
+            ("tempo_docs", docs_bundle),
+            ("mpp_docs", mpp_docs_bundle),
+        )
+        if bundle is not None
+    }
+    materialize_task_tree(tasks_root, bundles=bundles, images=images)
 
 
 def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
@@ -1263,12 +1011,7 @@ def stage_filtered_config(
         apply_profile(finalize_config(config, options), options["profile"]),
         options.get("pair_id"),
     )
-    if (
-        docs_bundle is not None
-        or mpp_docs_bundle is not None
-        or options["profile"] in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}
-        or options.get("task_suite") in {"tempo-mcp", "all"}
-    ):
+    if docs_bundle is not None or mpp_docs_bundle is not None:
         stage_task_datasets(staging_root, docs_bundle, mpp_docs_bundle)
         redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))

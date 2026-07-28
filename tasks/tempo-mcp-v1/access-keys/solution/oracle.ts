@@ -191,16 +191,19 @@ function recordSubject(record: any): string {
 
 export function docsRequest(tool: string, query: string): { name: string; arguments: { name: string; arguments: Record<string, unknown> } } {
   let args: Record<string, unknown>;
+  let gateway: "call_read_tool" | "call_write_tool";
   if (tool === "docs_search") {
     args = { query, max_results: 1 };
+    gateway = "call_read_tool";
   } else if (tool === "docs_code") {
     args = {
       code: `async () => codemode.search({ query: ${JSON.stringify(query)}, source: "tempo", max_results: 1 })`,
     };
+    gateway = "call_write_tool";
   } else {
     throw new Error(`Unknown MCP oracle docs tool: ${tool}`);
   }
-  return { name: "call_write_tool", arguments: { name: tool, arguments: args } };
+  return { name: gateway, arguments: { name: tool, arguments: args } };
 }
 
 async function main(): Promise<void> {

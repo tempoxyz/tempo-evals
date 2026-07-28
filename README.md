@@ -93,7 +93,7 @@ uv tool install 'harbor[daytona]'
 
 `npm run sync` uses EvalKit to refresh the checked-in `tasks/` tree in place.
 Harbor runs those canonical files directly. Temporary run staging is limited to
-ephemeral docs, MCP, and Daytona image overrides. See
+ephemeral docs/TLS inputs and Daytona image overrides. See
 [`evalkit/README.md`](evalkit/README.md) for the declaration and provenance
 model.
 
