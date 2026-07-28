@@ -178,6 +178,28 @@ npm run check            # Run the full repository check.
 npm run clean            # Remove local job output and staging caches.
 ```
 
+`evalkit` is the typed authoring compiler. It validates image locks,
+environment unions, verifier adapters, asset collisions, and deterministic
+Harbor output. The representative `tempo-v1/faucet-funded-transfer` task has
+byte and Harbor content-hash parity:
+
+See [evalkit/README.md](evalkit/README.md) for the declaration reference,
+compiler model, local smoke command, and migration workflow.
+
+```bash
+uv run python -m evalkit.cli build tempo-v1 --output-root .cache/evalkit
+uv run python -m evalkit.cli diff tempo-v1 --output-root .cache/evalkit
+uv run python -m evalkit.cli check tempo-v1 --output-root .cache/evalkit
+uv run python -m evalkit.cli lint tempo-v1
+uv run python -m evalkit.cli explain .cache/evalkit/tempo-v1/faucet-funded-transfer
+uv run python -m evalkit.cli lock --update image=ghcr.io/example/image:v1
+uv run python -m evalkit.cli new tempo-v1/my-task
+```
+
+`tempo-v1`, `tempo-mcp-v1`, and `mpp` are registered suites. Their existing
+`tasks/` directories remain the source of truth; use evalkit to produce and
+review an on-demand generated mirror during migration work.
+
 Do not hand-edit generated configs or synchronized MPP harness files. See
 [AGENTS.md](AGENTS.md) for source ownership, benchmark versioning, validation,
 and contribution rules.
