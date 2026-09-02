@@ -26,7 +26,7 @@ jobs:
           python-version: "3.13"
 
       - name: Set up uv
-        uses: tempoxyz/gh-actions/vendor/astral-sh/setup-uv@6f436eb3a168279692739e8c0c9fdb52b94bfae7
+        uses: tempoxyz/gh-actions/vendor/astral-sh/setup-uv@3626124474a987bc74b41fc7ae65b2e23f8e4e4e
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
