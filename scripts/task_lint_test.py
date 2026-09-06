@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.sync_shared import ENVIRONMENT_DOCKERFILE, VERIFIER_DOCKERFILE
+from evalkit.suites.canonical import ENVIRONMENT_DOCKERFILE, VERIFIER_DOCKERFILE
 from scripts.task_lint import SUITES, lint
 from scripts.task_new import create_task
 

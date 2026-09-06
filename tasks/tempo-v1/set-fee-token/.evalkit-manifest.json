@@ -1,0 +1,113 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "514b9a4aa177b22e9877b853da85d363ed4d5016e8792783dbe052bcb645a76f",
+      "source": "tasks/tempo-v1/set-fee-token/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:agent",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": null
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "0dcc07a0710df0be5c6471184e995302da7494d44d1d2c0c65c892eb72936e71",
+      "source": "tasks/tempo-v1/set-fee-token/instruction.md"
+    },
+    "solution/package.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c3c89641af9c9de28376c94865dade7ea11e2843794bb3a415add10e5104d66e",
+      "source": "tasks/tempo-v1/set-fee-token/solution/package.json"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44fa99d583156d362761873e87ccf1e8f5f3416390fa82c5794d94fc71c91bfc",
+      "source": "tasks/tempo-v1/set-fee-token/solution/solve.sh"
+    },
+    "solution/src/index.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "6974d2bcbe4cb43ce0e6aab2130c4c7e5517027db89be8fe35a6dd7b672d31ef",
+      "source": "tasks/tempo-v1/set-fee-token/solution/src/index.ts"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4f4f25a1a7532444dd49c9315747b1cb8aa407827f4c7da020e308d014f5979d",
+      "source": "tasks/tempo-v1/set-fee-token/solution/tsconfig.json"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c3dc941a9fbe281d2f03560a09d1c15b520832a494e0bb466aaf4bd8570e3fb9",
+      "source": "tasks/tempo-v1/set-fee-token/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:verifier",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": null
+    },
+    "tests/correctness/criteria.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "50db8e01650fd628be4befa57c2fda9ab6bd0f43042468db89eec279fcbcbf67",
+      "source": "tasks/tempo-v1/set-fee-token/tests/correctness/criteria.py"
+    },
+    "tests/correctness/verify-tempo.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "24e2d708a07b6e6a0a5542d31d37675c7e8bc947af95df05c6c185c7c1b3cec7",
+      "source": "tasks/tempo-v1/set-fee-token/tests/correctness/verify-tempo.sh"
+    },
+    "tests/quality/check.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44652229c99a1d95b5dbb5b098159ad6190e9a5a18e2c66a24f01015ad63ee28",
+      "source": "tasks/tempo-v1/set-fee-token/tests/quality/check.py"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "35d0e77348dad85d2febd7959f70c25227ca47a5d9e9ab53c6137f4f220ccb5b",
+      "source": "tasks/tempo-v1/set-fee-token/tests/quality/reward.toml"
+    },
+    "tests/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "abcf188ead283ade1284122cc29aeead7cb6fa27011e6d409a05e9c5c3e61ae1",
+      "source": "tasks/tempo-v1/set-fee-token/tests/reward.toml"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4568b58077d577c67e970ce3ec767f15a573c8d81010c5d12f781b7813ccb306",
+      "source": "tasks/tempo-v1/set-fee-token/tests/test.sh"
+    }
+  },
+  "images": {},
+  "runtime": {
+    "docs": {
+      "access_log_source": "/var/log/tempo-docs/access.log",
+      "bundle_destination": "environment/tempo-docs-bundle",
+      "compose_source": "shared/tempo/docker/compose/tempo-docs.yaml",
+      "hostname": "docs.tempo.xyz",
+      "input": "tempo_docs",
+      "proxy_source": "shared/docs/static-docs-proxy",
+      "service": "tempo-docs",
+      "tls_destination": "environment/docs-tls"
+    },
+    "images": {
+      "agent": "ghcr.io/tempoxyz/stable-bench-base:agent-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a",
+      "verifier": "ghcr.io/tempoxyz/stable-bench-base:verifier-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a"
+    }
+  },
+  "task": "tempo-v1/set-fee-token"
+}

@@ -78,6 +78,17 @@ class BuildTest(unittest.TestCase):
             self.assertTrue(all(not paths for paths in differences.values()))
             self.assertEqual(check("tempo-v1", output_root), differences)
 
+    def test_legacy_build_preserves_source_directory_slugs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_root = Path(temporary_directory) / "generated"
+
+            rendered = build("mpp", output_root)
+
+            self.assertIn("server-charge-pathusd", {path.name for path in rendered})
+            self.assertNotIn(
+                "mpp-server-charge-pathusd", {path.name for path in rendered}
+            )
+
     def test_lowering_renders_environment_and_services(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

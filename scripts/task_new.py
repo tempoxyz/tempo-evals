@@ -9,11 +9,11 @@ import re
 import uuid
 from pathlib import Path
 
+from evalkit.suites.canonical import ENVIRONMENT_DOCKERFILE, VERIFIER_DOCKERFILE
+
 if __package__:
-    from .sync_shared import ENVIRONMENT_DOCKERFILE, VERIFIER_DOCKERFILE
     from .task_lint import ROOT, SUITES, Suite
 else:
-    from sync_shared import ENVIRONMENT_DOCKERFILE, VERIFIER_DOCKERFILE
     from task_lint import ROOT, SUITES, Suite
 
 SLUG_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*$")

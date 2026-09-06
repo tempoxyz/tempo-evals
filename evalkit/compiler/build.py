@@ -19,6 +19,7 @@ from evalkit.ir import (
     Asset,
     Provenance,
     ResolvedImage,
+    RuntimeDocsSpec,
     ServiceSpec,
     SourceRef,
     SuiteIR,
@@ -60,7 +61,7 @@ def task_slug(task: Task) -> str:
     prefix, separator, slug = task.name.rpartition("/")
     if not separator or not prefix or not slug:
         raise ValueError(f"Task names must be suite-qualified: {task.name!r}")
-    return slug
+    return task.source.name if task.source is not None else slug
 
 
 def _suite_component(name: str) -> str:
@@ -209,6 +210,11 @@ def validate(suite: Suite) -> None:
                 _validate_asset_destination(task, use.verifier.contract.path)
         if task.instruction is not None:
             _validate_asset_destination(task, task.instruction.destination)
+        if docs := task.runtime.docs:
+            _validate_asset_source(task, docs.compose_source, "runtime compose")
+            _validate_asset_source(task, docs.proxy_source, "runtime proxy")
+            _validate_asset_destination(task, docs.bundle_destination)
+            _validate_asset_destination(task, docs.tls_destination)
         case_environments = {
             tuple(sorted(case.environment.items())) for case in task.cases
         }
@@ -347,12 +353,17 @@ def _render_environment(
     for role, build in builds:
         if build is None:
             continue
-        if task.source is not None and not build.assets:
+        if (
+            task.source is not None
+            and not build.assets
+            and build.header is None
+            and not build.instructions
+        ):
             continue
         context = PurePosixPath("environment" if role == "agent" else "tests")
         digest = image_digests[build.image.reference]
         image = f"{build.image.reference}@{digest}" if digest else build.image.reference
-        lines = [f"FROM {image}"]
+        lines = [line for line in (build.header, f"FROM {image}") if line is not None]
         for baked in build.assets:
             if baked.into != role:
                 raise ValueError(
@@ -370,6 +381,7 @@ def _render_environment(
             lines.append(
                 f"COPY baked/{role}/{relative_destination} {baked.destination}"
             )
+        lines.extend(build.instructions)
         assets.append(
             Asset(
                 SourceRef(content=("\n".join(lines) + "\n").encode()),
@@ -470,7 +482,7 @@ def _lower_task(task: Task, locks: dict[str, str], require_locks: bool) -> TaskI
             destination = PurePosixPath(source.relative_to(task.source).as_posix())
             assets.append(_asset(source, destination, "legacy source"))
     for copy in task.copies:
-        _add_copy(assets, copy.source, copy.destination, "copy")
+        _add_copy(assets, copy.source, copy.destination, "copy", copy.mode)
     for case in task.cases:
         for fixture in case.fixtures:
             _add_copy(
@@ -541,6 +553,28 @@ def _lower_task(task: Task, locks: dict[str, str], require_locks: bool) -> TaskI
     _apply_environment(task, assets, environment)
     if not any(asset.destination == PurePosixPath("task.toml") for asset in assets):
         assets.append(_render_task_toml(task, environment))
+    builds = {
+        role: build.image.reference
+        for role, build in (
+            ("agent", task.environment.agent),
+            ("verifier", task.environment.verifier),
+        )
+        if build is not None
+    }
+    runtime_docs = (
+        RuntimeDocsSpec(
+            docs.input_name,
+            docs.compose_source,
+            docs.proxy_source,
+            docs.bundle_destination,
+            docs.tls_destination,
+            docs.hostname,
+            docs.access_log_source,
+            docs.service,
+        )
+        if (docs := task.runtime.docs) is not None
+        else None
+    )
     return TaskIR(
         task.name,
         task_slug(task),
@@ -549,6 +583,8 @@ def _lower_task(task: Task, locks: dict[str, str], require_locks: bool) -> TaskI
         environment,
         _services(task),
         images,
+        builds,
+        runtime_docs,
         task.source,
     )
 
@@ -589,6 +625,18 @@ def _source_name(asset: Asset) -> str | None:
 
 def manifest(task: TaskIR) -> str:
     """Render stable provenance JSON excluded from Harbor content hashes."""
+    runtime: dict[str, object] = {"images": dict(task.image_roles)}
+    if task.runtime_docs is not None:
+        runtime["docs"] = {
+            "access_log_source": task.runtime_docs.access_log_source,
+            "bundle_destination": task.runtime_docs.bundle_destination.as_posix(),
+            "compose_source": _repository_path(task.runtime_docs.compose_source),
+            "hostname": task.runtime_docs.hostname,
+            "input": task.runtime_docs.input_name,
+            "proxy_source": _repository_path(task.runtime_docs.proxy_source),
+            "service": task.runtime_docs.service,
+            "tls_destination": task.runtime_docs.tls_destination.as_posix(),
+        }
     return (
         json.dumps(
             {
@@ -607,6 +655,7 @@ def manifest(task: TaskIR) -> str:
                     if image.digest
                 },
                 "aliases": list(task.aliases),
+                "runtime": runtime,
                 "task": task.name,
             },
             indent=2,
@@ -614,6 +663,16 @@ def manifest(task: TaskIR) -> str:
         )
         + "\n"
     )
+
+
+def _repository_path(path: Path) -> str:
+    """Return a repository-relative path required by runtime materialization."""
+    try:
+        return path.resolve().relative_to(ROOT.resolve()).as_posix()
+    except ValueError as error:
+        raise ValueError(
+            f"Runtime source must be inside the repository: {path}"
+        ) from error
 
 
 def _write_asset(asset: Asset, target: Path) -> None:
@@ -625,6 +684,46 @@ def _write_asset(asset: Asset, target: Path) -> None:
         target.write_bytes(asset.source.read_bytes())
     if asset.mode is not None:
         target.chmod(asset.mode)
+
+
+def _materialize_asset(asset: Asset) -> Asset:
+    """Read an asset before an in-place build can overwrite its source."""
+    mode = asset.mode
+    if mode is None and asset.source.path is not None:
+        mode = asset.source.path.stat().st_mode & 0o777
+    return Asset(
+        SourceRef(content=asset.source.read_bytes()),
+        asset.destination,
+        asset.lifecycle,
+        asset.provenance,
+        mode,
+    )
+
+
+def _remove_stale_assets(task_destination: Path, expected: set[PurePosixPath]) -> None:
+    """Remove files absent from the lowered task before rewriting it in place."""
+    for existing in _existing_files(task_destination):
+        relative = PurePosixPath(existing.relative_to(task_destination).as_posix())
+        if relative not in expected:
+            existing.unlink()
+    for directory in sorted(
+        (path for path in task_destination.rglob("*") if path.is_dir()),
+        reverse=True,
+    ):
+        if not any(directory.iterdir()):
+            directory.rmdir()
+
+
+def _emit_in_place(task: TaskIR, task_destination: Path) -> None:
+    """Overwrite one canonical task after materializing all source assets."""
+    rendered_manifest = manifest(task)
+    assets = tuple(_materialize_asset(asset) for asset in task.assets)
+    expected = {asset.destination for asset in assets}
+    expected.add(PurePosixPath(MANIFEST))
+    _remove_stale_assets(task_destination, expected)
+    for asset in assets:
+        _write_asset(asset, task_destination / asset.destination)
+    (task_destination / MANIFEST).write_text(rendered_manifest)
 
 
 def _write_dataset(suite: SuiteIR, emitted: list[Path], output_root: Path) -> None:
@@ -656,7 +755,15 @@ def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
     emitted = []
     for task in suite.tasks:
         task_destination = destination(output_root, suite, task)
+        in_place = (
+            task.source is not None
+            and task.source.resolve() == task_destination.resolve()
+        )
         if task_destination.exists():
+            if in_place:
+                _emit_in_place(task, task_destination)
+                emitted.append(task_destination)
+                continue
             if not (task_destination / MANIFEST).is_file():
                 raise ValueError(
                     f"Refusing to replace unmanaged output: {task_destination}"
@@ -665,10 +772,6 @@ def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
         for asset in task.assets:
             _write_asset(asset, task_destination / asset.destination)
         (task_destination / MANIFEST).write_text(manifest(task))
-        if task.source is not None and content_hash(task.source) != content_hash(
-            task_destination
-        ):
-            raise RuntimeError(f"Harbor hash changed while rendering {task.name}")
         emitted.append(task_destination)
 
     _write_dataset(suite, emitted, output_root)
@@ -677,7 +780,7 @@ def emit(suite: SuiteIR, output_root: Path) -> list[Path]:
 
 def build(
     name: str,
-    output_root: Path = ROOT / "generated",
+    output_root: Path = ROOT / "tasks",
     lock_path: Path = LOCK_PATH,
 ) -> list[Path]:
     """Build a suite into plain Harbor task directories."""
@@ -703,12 +806,15 @@ def task_differences(source: Path, rendered: Path) -> list[str]:
 def _rendered_differences(task: TaskIR, rendered: Path) -> list[str]:
     """Compare fully declared output to the assets currently lowered from it."""
     expected = {
-        asset.destination.as_posix(): asset.source.read_bytes() for asset in task.assets
+        **{
+            asset.destination.as_posix(): asset.source.read_bytes()
+            for asset in task.assets
+        },
+        MANIFEST: manifest(task).encode(),
     }
     actual = {
         path.relative_to(rendered).as_posix(): path.read_bytes()
         for path in _existing_files(rendered)
-        if path.name != MANIFEST
     }
     differences = set(expected) ^ set(actual)
     differences.update(
@@ -719,16 +825,17 @@ def _rendered_differences(task: TaskIR, rendered: Path) -> list[str]:
 
 def diff(
     name: str,
-    output_root: Path = ROOT / "generated",
+    output_root: Path = ROOT / "tasks",
     lock_path: Path = LOCK_PATH,
 ) -> dict[str, list[str]]:
     """Report Harbor-definition diffs between source and rendered output."""
     suite = lower_suite(load_suite(name), lock_path)
     return {
         task.name: (
-            task_differences(task.source, destination(output_root, suite, task))
-            if task.source is not None
-            else _rendered_differences(task, destination(output_root, suite, task))
+            _rendered_differences(task, destination(output_root, suite, task))
+            if task.source is None
+            or task.source.resolve() == destination(output_root, suite, task).resolve()
+            else task_differences(task.source, destination(output_root, suite, task))
         )
         for task in suite.tasks
         if destination(output_root, suite, task).is_dir()
@@ -737,7 +844,7 @@ def diff(
 
 def check(
     name: str,
-    output_root: Path = ROOT / "generated",
+    output_root: Path = ROOT / "tasks",
     lock_path: Path = LOCK_PATH,
 ) -> dict[str, list[str]]:
     """Validate declarations and fail if generated definitions are stale."""

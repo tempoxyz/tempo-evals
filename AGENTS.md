@@ -34,11 +34,13 @@ of the evaluation contract.
 
 ## Sources of Truth and Generated Files
 
-Task directories are authored source. The access profiles, image references,
-and shared MPP synchronization rules live in `config/tasks.yaml`; benchmark
-identities live in `config/benchmarks.yaml`. Job configs in `config/generated/`
-are compiled from `config/job.yaml.j2`, `config/variants.yaml`,
-`config/datasets.yaml`, and `config/benchmarks.yaml`.
+Task directories are the canonical checked-in benchmark tree. EvalKit refreshes
+them in place during `npm run sync`; exact-parity declarations continue to use
+task-owned files as authoring source until migrated to typed declarations. The
+access profiles, image references, and shared MPP synchronization rules live in
+`config/tasks.yaml`; benchmark identities live in `config/benchmarks.yaml`. Job
+configs in `config/generated/` are compiled from `config/job.yaml.j2`,
+`config/variants.yaml`, `config/datasets.yaml`, and `config/benchmarks.yaml`.
 
 Use `npm run sync` after changing shared MPP assets or job-config sources. Do
 not hand-edit generated MPP harness copies or generated job configs. A suite

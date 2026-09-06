@@ -67,6 +67,20 @@ class ResolvedImage:
 
 
 @dataclass(frozen=True)
+class RuntimeDocsSpec:
+    """Lowered recipe for materializing one ephemeral documentation bundle."""
+
+    input_name: str
+    compose_source: Path
+    proxy_source: Path
+    bundle_destination: PurePosixPath
+    tls_destination: PurePosixPath
+    hostname: str
+    access_log_source: str
+    service: str
+
+
+@dataclass(frozen=True)
 class TaskIR:
     """Complete immutable compiler state for one task before it is rendered."""
 
@@ -77,6 +91,8 @@ class TaskIR:
     environment: Mapping[str, str]
     services: tuple[ServiceSpec, ...]
     resolved_images: tuple[ResolvedImage, ...]
+    image_roles: Mapping[str, str] = field(default_factory=dict)
+    runtime_docs: RuntimeDocsSpec | None = None
     source: Path | None = None
 
 

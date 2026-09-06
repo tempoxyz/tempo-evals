@@ -5,30 +5,36 @@ this repository. It compiles typed suite declarations into ordinary Harbor task
 directories. Harbor remains responsible for executing, validating, packaging,
 and publishing those directories.
 
-The existing [`tasks/`](../tasks) tree remains the source of truth during this
-incremental rollout. Compiler output belongs in an ignored local directory,
-usually `.cache/evalkit`; do not edit it by hand. Modify a declaration or its
-source asset, rebuild, then review the generated diff before changing a task.
+The checked-in [`tasks/`](../tasks) tree is the canonical benchmark tree.
+`evalkit build` overwrites it in place, and Harbor runs those files directly.
+During the incremental rollout, exact-parity declarations read task-owned files
+before rewriting them; migrated declarations render typed assets into the same
+paths. An explicit `--output-root` may still be used for a disposable preview.
+
+Run staging is separate from compilation. The benchmark runner copies canonical
+tasks only when EvalKit must materialize ephemeral documentation bundles, TLS
+certificates, or Daytona image overrides.
 
 ## Commands
 
 Run commands from the repository root:
 
 ```bash
-# Build every registered suite, or name one or more suites.
+# Refresh every canonical suite, or name one or more suites.
 uv run python -m evalkit.cli build
 uv run python -m evalkit.cli build tempo-v1
 
-# Build a local mirror, verify it, then show definition differences.
+# Optionally build and inspect a disposable preview.
 uv run python -m evalkit.cli build --output-root .cache/evalkit
 uv run python -m evalkit.cli check --output-root .cache/evalkit
 uv run python -m evalkit.cli diff --output-root .cache/evalkit
 
-# Validate declarations without writing output.
+# Check canonical output or validate declarations without writing output.
+uv run python -m evalkit.cli check tempo-v1
 uv run python -m evalkit.cli lint tempo-v1
 
 # Explain the files, source paths, locks, and overrides behind one output task.
-uv run python -m evalkit.cli explain .cache/evalkit/tempo-v1/faucet-funded-transfer
+uv run python -m evalkit.cli explain tasks/tempo-v1/faucet-funded-transfer
 
 # Resolve and pin a tag to an OCI index digest.
 uv run python -m evalkit.cli lock --update image=ghcr.io/example/image:v1
@@ -42,11 +48,11 @@ suite argument they operate on `tempo-v1`, `tempo-mcp-v1`, and `mpp`.
 
 ## Local Harbor smoke
 
-After building a local mirror, run a representative task directly from it:
+Run a representative canonical task directly:
 
 ```bash
 DOCKER_DEFAULT_PLATFORM=linux/amd64 uv run harbor run \
-  --path .cache/evalkit/tempo-v1/faucet-funded-transfer \
+  --path tasks/tempo-v1/faucet-funded-transfer \
   --agent oracle --env docker --n-concurrent 1 --yes
 ```
 
@@ -67,9 +73,9 @@ The compiler runs six deterministic stages:
 4. **Render** ordinary Harbor files.
 5. **Hash** the rendered Harbor definition with Harbor-compatible file
    collection and hashing semantics.
-6. **Emit** generated task directories and a provenance manifest.
+6. **Emit** canonical task directories and provenance manifests in place.
 
-Every generated task has `.evalkit-manifest.json`. It records each output asset,
+Every managed task has `.evalkit-manifest.json`. It records each output asset,
 its source and SHA-256, resolved image digests, aliases, and explicit override
 reasons. Harbor does not include this manifest in its task content hash.
 
@@ -111,10 +117,10 @@ SUITE = Suite(
 )
 ```
 
-Use `source=Path("tasks/.../my-task")` only for exact-parity migration. It
-copies the task definition byte-for-byte, apart from the provenance manifest.
-The current Tempo, Tempo MCP, and MPP suites use this bridge while their source
-declarations are progressively made more granular.
+Use `source=Path("tasks/.../my-task")` to retain task-owned files while typed
+declarations overlay generated assets. The current suites use this bridge for
+prompts and task-specific verifiers; shared Dockerfiles, MCP assets, and MPP
+harness files are compiler-owned.
 
 ### Public declaration reference
 
@@ -123,6 +129,7 @@ declarations are progressively made more granular.
 | `Suite`, `Policy` | Registered task collection and suite-wide lock/migration policy. |
 | `Task`, `InstructionDoc`, `Solution` | One Harbor task, its prompt, and oracle assets. |
 | `ImageRef`, `DockerBuild`, `Environment` | Locked images, Docker build inputs, variables, and sidecars. |
+| `RuntimeDocs`, `RuntimeMaterialization` | Ephemeral inputs applied to a copied run tree. |
 | `Copy`, `Bake`, `Fixture`, `Case` | Filesystem assets, image-layer assets, and explicit test parameterization. |
 | `SharedVerifier`, `VerifierUse`, `AdapterContract` | Reusable verifier content and static adapter-symbol validation. |
 | `Override` | Required rationale for intentionally replacing an output path. |
@@ -155,12 +162,16 @@ Task(
 resolves it through `evalkit.lock` and renders the OCI index digest into the
 Dockerfile or service configuration. Inline digests are intentionally not part
 of declarations. `evalkit lock --update` writes the required digest. Exact-parity
-`source=` migration declarations preserve their existing Dockerfiles and do not
-declare `ImageRef`s until those files are migrated.
+`source=` declarations may preserve existing Dockerfiles or explicitly replace
+them with declared builds.
 
 `runtime_service()` declares a Docker sidecar. MCP access profiles remain
 owned by `config/tasks.yaml` and the benchmark job configuration, so EvalKit
 does not duplicate or override that runtime selection.
+
+`RuntimeDocs` records how a run-time documentation bundle is materialized.
+The compiler writes that recipe into the task manifest; `evalkit.runtime`
+applies it only to a copied run tree.
 
 ## Verifiers and cases
 

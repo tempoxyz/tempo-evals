@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import json
 import os
-import subprocess
-import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from scripts.run_benchmark import (
     MCP_CODE_PROFILE,
@@ -32,9 +29,8 @@ from scripts.run_benchmark import (
     run_benchmark_variant,
     run_production_variant,
     stage_filtered_config,
-    stage_mpp_docs_task,
-    stage_pinned_docs_task,
     sync_dataset,
+    sync_generated,
     uses_live_mcp_eval,
     validate_run_options,
     versioned_name,
@@ -758,7 +754,7 @@ class RunBenchmarkTest(unittest.TestCase):
         ):
             daytona_images({})
 
-    def test_all_suite_stages_mcp_tasks_without_a_pinned_docs_bundle(self) -> None:
+    def test_all_suite_uses_canonical_tasks_without_runtime_inputs(self) -> None:
         config = {"agents": [{"name": "oracle"}], "datasets": []}
         options = {"profile": "docs", "task_suite": "all"}
         with (
@@ -767,146 +763,25 @@ class RunBenchmarkTest(unittest.TestCase):
         ):
             stage_filtered_config(config, "all-suite", options, None, None)
 
-        stage_tasks.assert_called_once()
-        redirect.assert_called_once()
+        stage_tasks.assert_not_called()
+        redirect.assert_not_called()
 
-    def test_staged_pinned_docs_proxy_only_docs_hostname(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            task_dir = Path(directory) / "transfer-with-memo"
-            environment_dir = task_dir / "environment"
-            environment_dir.mkdir(parents=True)
-            (task_dir / "task.toml").write_text(
-                'artifacts = ["/app/package.json"]\n\n'
-                "[environment]\n"
-                "[environment.env]\n"
-                'TEMPO_TOKEN = "0x20c0000000000000000000000000000000000001"\n'
-            )
-            (environment_dir / "Dockerfile").write_text("FROM node:22-bookworm\n")
-            bundle_dir = Path(directory) / "bundle"
-            (bundle_dir / "developers").mkdir(parents=True)
-            (bundle_dir / "developers" / "llms.txt").write_text("# Tempo Docs\n")
-            (bundle_dir / "manifest.json").write_text(json.dumps({"sha": "docs123"}))
+    def test_sync_generated_refreshes_canonical_evalkit_suites(self) -> None:
+        with (
+            patch(
+                "scripts.run_benchmark.evalkit_suite_names",
+                return_value=("mpp", "tempo-v1"),
+            ),
+            patch("scripts.run_benchmark.build_evalkit_suite") as build,
+            patch("scripts.run_benchmark.compile_job_configs") as compile_configs,
+        ):
+            sync_generated()
 
-            stage_pinned_docs_task(task_dir, str(bundle_dir))
-
-            config = (task_dir / "task.toml").read_text()
-            self.assertNotIn("TEMPO_DOCS_URL", config)
-            self.assertIn('source = "/var/log/tempo-docs/access.log"', config)
-            self.assertIn('service = "tempo-docs"', config)
-            self.assertIn(
-                "COPY docs-tls/ca.crt "
-                "/usr/local/share/ca-certificates/stable-bench-docs.crt",
-                (environment_dir / "Dockerfile").read_text(),
-            )
-            self.assertEqual(
-                (environment_dir / ".dockerignore").read_text(),
-                "docs-tls/*\n!docs-tls/ca.crt\n",
-            )
-            self.assertTrue((environment_dir / "docs-tls" / "ca.crt").exists())
-            self.assertTrue((environment_dir / "docs-tls" / "docs.crt").exists())
-            self.assertTrue((environment_dir / "docs-tls" / "docs.key").exists())
-            self.assertFalse((environment_dir / "docs-tls" / "ca.key").exists())
-            certificate_check = subprocess.run(
-                [
-                    "openssl",
-                    "x509",
-                    "-checkend",
-                    str(2 * 24 * 60 * 60),
-                    "-noout",
-                    "-in",
-                    str(environment_dir / "docs-tls" / "docs.crt"),
-                ],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(certificate_check.returncode, 0)
-            certificate = subprocess.run(
-                [
-                    "openssl",
-                    "x509",
-                    "-in",
-                    str(environment_dir / "docs-tls" / "docs.crt"),
-                    "-noout",
-                    "-text",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            self.assertIn("DNS:docs.tempo.xyz", certificate.stdout)
-            self.assertNotIn("DNS:tempo.xyz", certificate.stdout)
-            self.assertIn(
-                "- docs.tempo.xyz",
-                (environment_dir / "docker-compose.yaml").read_text(),
-            )
-            self.assertTrue((environment_dir / "docs-proxy" / "server.mjs").exists())
-            self.assertFalse((environment_dir / "tempo-docs").exists())
-            self.assertNotIn(
-                "- tempo.xyz",
-                (environment_dir / "docker-compose.yaml").read_text(),
-            )
-
-    def test_staged_mpp_docs_proxy_only_mpp_hostname(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            task_dir = Path(directory) / "server-charge-pathusd"
-            environment_dir = task_dir / "environment"
-            environment_dir.mkdir(parents=True)
-            (task_dir / "task.toml").write_text(
-                'artifacts = ["/app/package.json"]\n\n'
-                "[environment]\n"
-                "[environment.env]\n"
-                'TEMPO_MPP_PAYER_PRIVATE_KEY = "0x1"\n'
-            )
-            (environment_dir / "Dockerfile").write_text("FROM node:22-bookworm\n")
-            bundle_dir = Path(directory) / "bundle"
-            bundle_dir.mkdir()
-            (bundle_dir / "llms-full.txt").write_text("# MPP Docs\n")
-            (bundle_dir / "manifest.json").write_text(json.dumps({"sha": "mpp123"}))
-
-            stage_mpp_docs_task(task_dir, str(bundle_dir))
-
-            config = (task_dir / "task.toml").read_text()
-            self.assertIn('source = "/var/log/mpp-docs/access.log"', config)
-            self.assertIn('service = "mpp-docs"', config)
-            self.assertIn(
-                "COPY mpp-docs-tls/ca.crt "
-                "/usr/local/share/ca-certificates/stable-bench-docs.crt",
-                (environment_dir / "Dockerfile").read_text(),
-            )
-            self.assertEqual(
-                (environment_dir / ".dockerignore").read_text(),
-                "mpp-docs-tls/*\n!mpp-docs-tls/ca.crt\n",
-            )
-            self.assertTrue((environment_dir / "mpp-docs-tls" / "ca.crt").exists())
-            self.assertTrue((environment_dir / "mpp-docs-tls" / "docs.crt").exists())
-            self.assertTrue((environment_dir / "mpp-docs-tls" / "docs.key").exists())
-            self.assertFalse((environment_dir / "mpp-docs-tls" / "ca.key").exists())
-            certificate = subprocess.run(
-                [
-                    "openssl",
-                    "x509",
-                    "-in",
-                    str(environment_dir / "mpp-docs-tls" / "docs.crt"),
-                    "-noout",
-                    "-text",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            self.assertIn("DNS:mpp.dev", certificate.stdout)
-            self.assertNotIn("DNS:docs.tempo.xyz", certificate.stdout)
-            self.assertIn(
-                "- mpp.dev",
-                (environment_dir / "docker-compose.yaml").read_text(),
-            )
-            self.assertTrue((environment_dir / "docs-proxy" / "server.mjs").exists())
-            self.assertFalse((environment_dir / "mpp-docs").exists())
-            self.assertNotIn(
-                "- docs.tempo.xyz",
-                (environment_dir / "docker-compose.yaml").read_text(),
-            )
+        self.assertEqual(
+            build.call_args_list,
+            [call("mpp", Path("tasks")), call("tempo-v1", Path("tasks"))],
+        )
+        compile_configs.assert_called_once()
 
 
 if __name__ == "__main__":

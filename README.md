@@ -91,6 +91,12 @@ uv tool install 'harbor[daytona]'
 
 ## Run Benchmarks
 
+`npm run sync` uses EvalKit to refresh the checked-in `tasks/` tree in place.
+Harbor runs those canonical files directly. Temporary run staging is limited to
+ephemeral docs/TLS inputs and Daytona image overrides. See
+[`evalkit/README.md`](evalkit/README.md) for the declaration and provenance
+model.
+
 ```bash
 # Validate a suite with its oracle.
 npm run bench:local:oracle -- --task-suite tempo
@@ -171,7 +177,7 @@ Read the relevant suite guide before editing a task. The usual workflow is:
 Useful repository-wide commands:
 
 ```bash
-npm run sync             # Refresh shared assets and generated job configs.
+npm run sync             # Refresh canonical tasks and generated job configs.
 npm run task:lint        # Validate task structure, metadata, and canaries.
 npm run check:generated  # Check generated artifacts are current.
 npm run check            # Run the full repository check.
@@ -187,18 +193,20 @@ See [evalkit/README.md](evalkit/README.md) for the declaration reference,
 compiler model, local smoke command, and migration workflow.
 
 ```bash
-uv run python -m evalkit.cli build tempo-v1 --output-root .cache/evalkit
-uv run python -m evalkit.cli diff tempo-v1 --output-root .cache/evalkit
-uv run python -m evalkit.cli check tempo-v1 --output-root .cache/evalkit
+uv run python -m evalkit.cli build tempo-v1
+uv run python -m evalkit.cli diff tempo-v1
+uv run python -m evalkit.cli check tempo-v1
 uv run python -m evalkit.cli lint tempo-v1
-uv run python -m evalkit.cli explain .cache/evalkit/tempo-v1/faucet-funded-transfer
+uv run python -m evalkit.cli explain tasks/tempo-v1/faucet-funded-transfer
 uv run python -m evalkit.cli lock --update image=ghcr.io/example/image:v1
 uv run python -m evalkit.cli new tempo-v1/my-task
 ```
 
-`tempo-v1`, `tempo-mcp-v1`, and `mpp` are registered suites. Their existing
-`tasks/` directories remain the source of truth; use evalkit to produce and
-review an on-demand generated mirror during migration work.
+`tempo-v1`, `tempo-mcp-v1`, and `mpp` are registered suites. Their checked-in
+`tasks/` directories are the single canonical benchmark tree. During the
+incremental rollout, exact-parity declarations read task-owned files before
+EvalKit rewrites them in place; migrated declarations render typed assets into
+the same paths.
 
 Do not hand-edit generated configs or synchronized MPP harness files. See
 [AGENTS.md](AGENTS.md) for source ownership, benchmark versioning, validation,

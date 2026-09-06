@@ -3,8 +3,9 @@
 from importlib import import_module
 from pathlib import Path
 
-from evalkit.api import Suite, Task
+from evalkit.api import Policy, Suite, Task
 from evalkit.compiler.build import ROOT
+from evalkit.suites.canonical import tempo_task
 from evalkit.suites.legacy import suite_from_directory
 from evalkit.suites.tempo_v1_faucet_funded_transfer import TASK as REPRESENTATIVE_TASK
 
@@ -28,11 +29,12 @@ def _tasks() -> tuple[Task, ...]:
         if not isinstance(task, Task):
             raise TypeError(f"{module.__name__}.TASK must be an evalkit.api.Task")
         tasks.append(task)
-    return tuple(tasks)
+    return tuple(tempo_task(task) for task in tasks)
 
 
 SUITE = Suite(
     name="tempo-v1",
     dataset_source=LEGACY.dataset_source,
     tasks=_tasks(),
+    policy=Policy(require_image_locks=False),
 )

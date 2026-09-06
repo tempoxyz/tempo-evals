@@ -1,0 +1,113 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "2e0c64ad51c00f854140d9b7c776a139fc9fa0cb2ebbdcd69f427e1de9dfe5c9",
+      "source": "tasks/tempo-v1/transfer-with-memo/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:agent",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": null
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "058affaa2477efa70cc156c1052351d76fb48c30bf6a5f00b3d0837f61c396fc",
+      "source": "tasks/tempo-v1/transfer-with-memo/instruction.md"
+    },
+    "solution/package.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c3c89641af9c9de28376c94865dade7ea11e2843794bb3a415add10e5104d66e",
+      "source": "tasks/tempo-v1/transfer-with-memo/solution/package.json"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44fa99d583156d362761873e87ccf1e8f5f3416390fa82c5794d94fc71c91bfc",
+      "source": "tasks/tempo-v1/transfer-with-memo/solution/solve.sh"
+    },
+    "solution/src/index.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c56f93dbb4d38267524d92296a53c86a7e5080c017f73fa0020bf314d3e7a008",
+      "source": "tasks/tempo-v1/transfer-with-memo/solution/src/index.ts"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4f4f25a1a7532444dd49c9315747b1cb8aa407827f4c7da020e308d014f5979d",
+      "source": "tasks/tempo-v1/transfer-with-memo/solution/tsconfig.json"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "8c20a1fec5b66c7df2f6d5c688a5416a299ef23eebc5baa41a4a8c0e59299100",
+      "source": "tasks/tempo-v1/transfer-with-memo/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:verifier",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": null
+    },
+    "tests/correctness/criteria.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "7a170e19e070072a1809cdb05e79ff40702934e9fd8b28409aa0d83994e067f7",
+      "source": "tasks/tempo-v1/transfer-with-memo/tests/correctness/criteria.py"
+    },
+    "tests/correctness/verify-tempo.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "24e2d708a07b6e6a0a5542d31d37675c7e8bc947af95df05c6c185c7c1b3cec7",
+      "source": "tasks/tempo-v1/transfer-with-memo/tests/correctness/verify-tempo.sh"
+    },
+    "tests/quality/check.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44652229c99a1d95b5dbb5b098159ad6190e9a5a18e2c66a24f01015ad63ee28",
+      "source": "tasks/tempo-v1/transfer-with-memo/tests/quality/check.py"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "35d0e77348dad85d2febd7959f70c25227ca47a5d9e9ab53c6137f4f220ccb5b",
+      "source": "tasks/tempo-v1/transfer-with-memo/tests/quality/reward.toml"
+    },
+    "tests/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "abcf188ead283ade1284122cc29aeead7cb6fa27011e6d409a05e9c5c3e61ae1",
+      "source": "tasks/tempo-v1/transfer-with-memo/tests/reward.toml"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4568b58077d577c67e970ce3ec767f15a573c8d81010c5d12f781b7813ccb306",
+      "source": "tasks/tempo-v1/transfer-with-memo/tests/test.sh"
+    }
+  },
+  "images": {},
+  "runtime": {
+    "docs": {
+      "access_log_source": "/var/log/tempo-docs/access.log",
+      "bundle_destination": "environment/tempo-docs-bundle",
+      "compose_source": "shared/tempo/docker/compose/tempo-docs.yaml",
+      "hostname": "docs.tempo.xyz",
+      "input": "tempo_docs",
+      "proxy_source": "shared/docs/static-docs-proxy",
+      "service": "tempo-docs",
+      "tls_destination": "environment/docs-tls"
+    },
+    "images": {
+      "agent": "ghcr.io/tempoxyz/stable-bench-base:agent-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a",
+      "verifier": "ghcr.io/tempoxyz/stable-bench-base:verifier-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a"
+    }
+  },
+  "task": "tempo-v1/transfer-with-memo"
+}

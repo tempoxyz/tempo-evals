@@ -1,0 +1,131 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "8ea98641219e1181c3105b42a424fdc88c78b63f2a0ecd7f37ac9d07446158d3",
+      "source": "tasks/mpp/server-mcp-pathusd/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:agent",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": null
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "45013a94428ceb19d8a281c9d69b018a0ab6affb831a73215bdf5d68fc5744cf",
+      "source": "tasks/mpp/server-mcp-pathusd/instruction.md"
+    },
+    "solution/package.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "7d4e4ba79faa0a72f1ab91e9d89fafc1956930578a52c687e8277d7eefd119e5",
+      "source": "tasks/mpp/server-mcp-pathusd/solution/package.json"
+    },
+    "solution/solve.sh": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "4b6ab8bf11be8cd111f05b2744acd3d7936011ed039f0fe8e97feabf45be4156",
+      "source": "shared/mpp/solution/solve.sh"
+    },
+    "solution/src/index.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c123fc022673c014ea0d54fd62f56d315e92c35a40d9aaf42c266b5ba75aee96",
+      "source": "tasks/mpp/server-mcp-pathusd/solution/src/index.ts"
+    },
+    "solution/src/tempo-rpc.ts": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "9c657526b4e1fb06e66318c63abf80c2b46c98eee7a399426c76af9b3c7a6e6f",
+      "source": "shared/mpp/solution/src/tempo-rpc.ts"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "9aa26d7ed8293bf09f3eae5694df98e65effdaf3f747c6ea949cb4cdbe32607f",
+      "source": "shared/mpp/solution/tsconfig.json"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "ac5a1ac5e3555f0ffdb843be29e4a03169368130cc3ea2a791523503032e7edb",
+      "source": "tasks/mpp/server-mcp-pathusd/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:verifier",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": null
+    },
+    "tests/correctness/criteria.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "13c7f0eeff3e04b5a0083eee800429a0cd18901363297627708ba308f1457515",
+      "source": "tasks/mpp/server-mcp-pathusd/tests/correctness/criteria.py"
+    },
+    "tests/correctness/verify.sh": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "392d25860564a241bdd954091006e9a4d3a50b59a0f2296d10d15fe0f2a4fcaf",
+      "source": "shared/mpp/tests/correctness/verify.sh"
+    },
+    "tests/quality/check.py": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "c20021fe287836e986ad51fd166885b75cdbe20ade22b2edacc3cc0c3cff95db",
+      "source": "shared/mpp/tests/quality/check.py"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "1406b161a1f0e42fa1049da72208bff4dd55e97d798a37592adfbaf3eacd78bc",
+      "source": "shared/mpp/tests/quality/reward.toml"
+    },
+    "tests/reward.toml": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "6eec1e0f8fc3ba337a65f3810693307963369e3be6aaf78e79db479e71941ea7",
+      "source": "shared/mpp/tests/reward.toml"
+    },
+    "tests/support/client.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "593b8f3a7f6839113e2a1192f4ce7f0721d5dcc9f7b71eae14b8c694764ea83d",
+      "source": "tasks/mpp/server-mcp-pathusd/tests/support/client.py"
+    },
+    "tests/support/mcp_client.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "ca4af88f08cb5f4788b8a948516ceb75e34bd014ffc9443b31b119bf218de0fe",
+      "source": "tasks/mpp/server-mcp-pathusd/tests/support/mcp_client.ts"
+    },
+    "tests/test.sh": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "copy",
+      "sha256": "0fb432ede90609b4426de1982ade96e4a86dece1ab80a5c459999cf7da3858cb",
+      "source": "shared/mpp/tests/test.sh"
+    }
+  },
+  "images": {},
+  "runtime": {
+    "docs": {
+      "access_log_source": "/var/log/mpp-docs/access.log",
+      "bundle_destination": "environment/mpp-docs-bundle",
+      "compose_source": "shared/mpp/docker/compose/mpp-docs.yaml",
+      "hostname": "mpp.dev",
+      "input": "mpp_docs",
+      "proxy_source": "shared/docs/static-docs-proxy",
+      "service": "mpp-docs",
+      "tls_destination": "environment/mpp-docs-tls"
+    },
+    "images": {
+      "agent": "ghcr.io/tempoxyz/stable-bench-base:agent-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a",
+      "verifier": "ghcr.io/tempoxyz/stable-bench-base:verifier-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a"
+    }
+  },
+  "task": "tempo/mpp-server-mcp-pathusd"
+}

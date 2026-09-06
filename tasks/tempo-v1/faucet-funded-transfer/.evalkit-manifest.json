@@ -1,0 +1,113 @@
+{
+  "aliases": [],
+  "assets": {
+    "README.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "1dc98a7bedf3a8306d2f803fced51304dfe5190fbdc2302d67bd878d054a5c77",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/README.md"
+    },
+    "environment/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:agent",
+      "sha256": "e01735e57ff8a0504ac1a0664baf3b24191ce9fa36dd95a2fbe28d6ab2013e07",
+      "source": null
+    },
+    "instruction.md": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "3d91bbb3d09e664068031c5e3086ca9e8a76ace1689d0927a13930f6ea5a7d71",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/instruction.md"
+    },
+    "solution/package.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c3c89641af9c9de28376c94865dade7ea11e2843794bb3a415add10e5104d66e",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/solution/package.json"
+    },
+    "solution/solve.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44fa99d583156d362761873e87ccf1e8f5f3416390fa82c5794d94fc71c91bfc",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/solution/solve.sh"
+    },
+    "solution/src/index.ts": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c5caf2e7b9f6df6f444b738e59d68c4229819978b2a47a226f315c0e6881d59c",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/solution/src/index.ts"
+    },
+    "solution/tsconfig.json": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4f4f25a1a7532444dd49c9315747b1cb8aa407827f4c7da020e308d014f5979d",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/solution/tsconfig.json"
+    },
+    "task.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "19a2eaf23d931772ed7c30c7c5eb9b2220187c5d55bfe0d0c0a4e4f4c3051937",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/task.toml"
+    },
+    "tests/Dockerfile": {
+      "override_reason": "EvalKit owns canonical generated task assets",
+      "provenance": "docker build:verifier",
+      "sha256": "dc40e100f79d88d71d9132cb8061991e330a710a7a371f2cb1e0d07d6cf504a5",
+      "source": null
+    },
+    "tests/correctness/criteria.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "c6e98c18ae08ff30d11e65507f363bb9e02f9c8b07aa94750b2f9180e953a13d",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/tests/correctness/criteria.py"
+    },
+    "tests/correctness/verify-tempo.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "24e2d708a07b6e6a0a5542d31d37675c7e8bc947af95df05c6c185c7c1b3cec7",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/tests/correctness/verify-tempo.sh"
+    },
+    "tests/quality/check.py": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "44652229c99a1d95b5dbb5b098159ad6190e9a5a18e2c66a24f01015ad63ee28",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/tests/quality/check.py"
+    },
+    "tests/quality/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "35d0e77348dad85d2febd7959f70c25227ca47a5d9e9ab53c6137f4f220ccb5b",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/tests/quality/reward.toml"
+    },
+    "tests/reward.toml": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "abcf188ead283ade1284122cc29aeead7cb6fa27011e6d409a05e9c5c3e61ae1",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/tests/reward.toml"
+    },
+    "tests/test.sh": {
+      "override_reason": null,
+      "provenance": "legacy source",
+      "sha256": "4568b58077d577c67e970ce3ec767f15a573c8d81010c5d12f781b7813ccb306",
+      "source": "tasks/tempo-v1/faucet-funded-transfer/tests/test.sh"
+    }
+  },
+  "images": {},
+  "runtime": {
+    "docs": {
+      "access_log_source": "/var/log/tempo-docs/access.log",
+      "bundle_destination": "environment/tempo-docs-bundle",
+      "compose_source": "shared/tempo/docker/compose/tempo-docs.yaml",
+      "hostname": "docs.tempo.xyz",
+      "input": "tempo_docs",
+      "proxy_source": "shared/docs/static-docs-proxy",
+      "service": "tempo-docs",
+      "tls_destination": "environment/docs-tls"
+    },
+    "images": {
+      "agent": "ghcr.io/tempoxyz/stable-bench-base:agent-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a",
+      "verifier": "ghcr.io/tempoxyz/stable-bench-base:verifier-source-adb6f0d2379a8bbefd0a9877d8b4d46c297987b814f2e8f53455bf47a8a9635a"
+    }
+  },
+  "task": "tempo-v1/faucet-funded-transfer"
+}

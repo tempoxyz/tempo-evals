@@ -68,7 +68,7 @@ class CliTest(unittest.TestCase):
         ):
             stdout, _ = self.run_cli("diff", "example")
         self.assertEqual(stdout, "example/task: task.toml\n")
-        diff.assert_called_once_with("example", Path("generated"))
+        diff.assert_called_once_with("example", Path("tasks"))
 
         with (
             patch.object(cli, "suite_names", return_value=("example",)),
@@ -76,7 +76,7 @@ class CliTest(unittest.TestCase):
         ):
             stdout, _ = self.run_cli("check", "example")
         self.assertEqual(stdout, "No task-definition differences.\n")
-        check.assert_called_once_with("example", Path("generated"))
+        check.assert_called_once_with("example", Path("tasks"))
 
     def test_new_writes_one_declaration_and_rejects_invalid_or_existing_targets(
         self,

@@ -36,7 +36,9 @@ from evalkit.api import (
 )
 from evalkit.compiler.build import (
     MANIFEST,
+    _remove_stale_assets,
     _rendered_differences,
+    _repository_path,
     _write_asset,
     check,
     destination,
@@ -58,6 +60,24 @@ def Policy(**kwargs: object) -> ApiPolicy:
 
 
 class BuildEdgeTest(unittest.TestCase):
+    def test_runtime_sources_must_be_repository_relative(self) -> None:
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            self.assertRaisesRegex(ValueError, "inside the repository"),
+        ):
+            _repository_path(Path(directory) / "outside")
+
+    def test_remove_stale_assets_removes_empty_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            task = Path(directory)
+            stale = task / "stale" / "file"
+            stale.parent.mkdir()
+            stale.write_text("stale")
+
+            _remove_stale_assets(task, set())
+
+            self.assertFalse(stale.parent.exists())
+
     def test_validate_rejects_invalid_suite_declarations(self) -> None:
         with self.assertRaisesRegex(ValueError, "has no tasks"):
             validate(Suite("example", ()))
@@ -395,6 +415,27 @@ class BuildEdgeTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "unmanaged"):
                 emit(SuiteIR("example", (other,), None), output)
 
+    def test_emit_overwrites_a_legacy_source_in_place(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output = Path(temporary_directory) / "tasks"
+            source = output / "example" / "task"
+            solution = source / "solution" / "solve.sh"
+            solution.parent.mkdir(parents=True)
+            solution.write_text("#!/bin/sh\n")
+            solution.chmod(0o755)
+            (source / "task.toml").write_text("[task]\nname = 'example/task'\n")
+            (source / "empty").mkdir()
+            suite = lower_suite(
+                Suite("example", (Task("example/task", source=source),))
+            )
+
+            rendered = emit(suite, output)
+
+            self.assertEqual(rendered, [source.resolve()])
+            self.assertTrue((source / MANIFEST).is_file())
+            self.assertTrue(solution.stat().st_mode & stat.S_IXUSR)
+            self.assertFalse((source / "empty").exists())
+
     def test_emit_copies_dataset_and_preserves_declared_file_mode(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -465,7 +506,10 @@ class BuildEdgeTest(unittest.TestCase):
             output = root / "declared"
             output.mkdir()
             (output / "task.toml").write_bytes(b"stale")
-            self.assertEqual(_rendered_differences(task, output), ["task.toml"])
+            self.assertEqual(
+                _rendered_differences(task, output),
+                [MANIFEST, "task.toml"],
+            )
 
     def test_task_slug_and_destination_reject_malformed_or_escaping_values(
         self,
@@ -582,7 +626,7 @@ class BuildEdgeTest(unittest.TestCase):
                     )
                 )
 
-    def test_emit_rejects_harbor_hash_changes_for_legacy_sources(self) -> None:
+    def test_emit_allows_declared_changes_to_legacy_sources(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
             source = root / "source"
@@ -591,14 +635,8 @@ class BuildEdgeTest(unittest.TestCase):
             suite = lower_suite(
                 Suite("example", (Task("example/task", source=source),))
             )
-            with (
-                patch(
-                    "evalkit.compiler.build.content_hash",
-                    side_effect=("source", "output"),
-                ),
-                self.assertRaisesRegex(RuntimeError, "Harbor hash changed"),
-            ):
-                emit(suite, root / "output")
+            emitted = emit(suite, root / "output")
+            self.assertEqual(len(emitted), 1)
 
     def test_check_reports_missing_and_changed_generated_tasks(self) -> None:
         task = TaskIR("example/task", "task", (), (), {}, (), ())
@@ -644,4 +682,7 @@ class BuildEdgeTest(unittest.TestCase):
             emit(lower_suite(original), output)
             with patch("evalkit.compiler.build.load_suite", return_value=changed):
                 differences = diff("example", output)
-            self.assertEqual(differences, {"example/task": ["instruction.md"]})
+            self.assertEqual(
+                differences,
+                {"example/task": [MANIFEST, "instruction.md"]},
+            )

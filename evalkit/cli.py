@@ -14,7 +14,7 @@ from evalkit.lock import update as update_lock
 def _suite_arguments(parser: argparse.ArgumentParser) -> None:
     """Attach shared optional-suite and output-root arguments to a subcommand."""
     parser.add_argument("suite", nargs="*", choices=suite_names())
-    parser.add_argument("--output-root", type=Path, default=Path("generated"))
+    parser.add_argument("--output-root", type=Path, default=Path("tasks"))
 
 
 def _print_differences(differences: dict[str, list[str]]) -> None:
