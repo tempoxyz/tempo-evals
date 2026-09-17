@@ -11,37 +11,36 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:3e45ba0bdbab606d17e2ae86332be4e3cbe2ab99fc508a792293cc11a3321687"
+digest = "sha256:c6ec33b8db865ddabd5475a97a7033c7fdb882f6926ef4a03581cb650fc875d4"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:af63b85ca9b08a2fdd62250d6748c12d61c8f962cb5d56841bb9d9ad768a6a5a"
+digest = "sha256:ba6fbbe28b114291215f4653752bee49274b95e15ed4053b41c1d93239d6183c"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:36a3a13684605f78466ffe70878cde594896437839e5d0e0cdde3f54fbb3c3f2"
+digest = "sha256:c2dcd43f4fcbf4d930903aaf1b65d68ec478f9651993a355bb3c56d818a189c3"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:b8e0af6401d09690cdb35abd167fde69d64b186b27e0bc5e42dfdf0631a638ca"
+digest = "sha256:f4a9495ca234c342d778ad6a6323aa2cc5bb5646414441be8efe2157564ee24c"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:143cfae983f03235e8dad26b97078a72f9dd3987dbfe0504d0246fcd7fdfb4c1"
+digest = "sha256:19585a527c8bc4f83ac099c3fe289ec722effd82b84692fbb69314d608fd5178"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:e677eefb58a275b7c0f44d2133df342e36dd463fc806af28bff89528e6fbf9ee"
+digest = "sha256:add2a6d3f31219ab400c7989bba6ffed9d29b59fcc671a1ef92c544a8c8d60e5"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:fb992e31bbc1dfad370cc47971dbc3164afb433a5a94884af427228c1d3b4b72"
+digest = "sha256:d4b9dcc403a19affb6be9c8f2bd9c0118fecb3b564809ab8a901af6e0ff5c311"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:a262c39d341ae5139428f504f8fb1d8e6936f2d8ced7e2610187ea79548a9cef"
+digest = "sha256:d9169d2db0b34cbd9b36614bee0d3bfdab98c0b533ac879eefd8a4c0a95c6f52"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:092b12f83cc1a9b7ec9894cc8fbd4e18123df0f9ddc142f8006f31d5c9a54e43"
-
+digest = "sha256:e8fefa5558164e7268d4c048aea0dfa0a89041a7016aa8e36dbe701789aa250a"
