@@ -44,3 +44,4 @@ digest = "sha256:d9169d2db0b34cbd9b36614bee0d3bfdab98c0b533ac879eefd8a4c0a95c6f5
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
 digest = "sha256:e8fefa5558164e7268d4c048aea0dfa0a89041a7016aa8e36dbe701789aa250a"
+

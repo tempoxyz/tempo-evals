@@ -56,3 +56,4 @@ digest = "sha256:e2b4541abcfe484b223c4997064898aab57ae1c563dc696a51ed87a54209146
 [[tasks]]
 name = "tempo-mcp-v1/wallet-client"
 digest = "sha256:e777d7344d3b9ab950621010e4d9a912d72054a72f08ff5c072cbc84e755030e"
+

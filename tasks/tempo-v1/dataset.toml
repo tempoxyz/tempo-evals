@@ -44,3 +44,4 @@ digest = "sha256:2857df107e4d411ce7307c49921e73109b214494a5334bc66851b73a453dc1c
 [[tasks]]
 name = "tempo-v1/transfer-with-memo-fee-payer"
 digest = "sha256:fb9d65152c8a48c8a995ad95ae8f07f7bb2f7aba81cac0eb081199d1acab58f1"
+
