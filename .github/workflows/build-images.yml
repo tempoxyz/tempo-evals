@@ -32,7 +32,13 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
+      - name: Secure runner
+        uses: tempoxyz/gh-actions/actions/secure-runner@05c669ce878b8719779a28fe7375ba85822403f8
+
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
@@ -59,8 +65,12 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      id-token: write
       packages: write
     steps:
+      - name: Secure runner
+        uses: tempoxyz/gh-actions/actions/secure-runner@05c669ce878b8719779a28fe7375ba85822403f8
+
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
@@ -124,12 +134,15 @@ jobs:
 
       - name: Resolve agent digest
         id: agent
+        env:
+          IMAGE_REF: ${{ steps.images.outputs.agent_ref }}
+          REPOSITORY: ${{ steps.images.outputs.repository }}
         run: |
           set -euo pipefail
           digest=$(docker buildx imagetools inspect \
-            "${{ steps.images.outputs.agent_ref }}" --format '{{.Manifest.Digest}}')
+            "$IMAGE_REF" --format '{{.Manifest.Digest}}')
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-          echo "ref=${{ steps.images.outputs.repository }}@$digest" >> "$GITHUB_OUTPUT"
+          echo "ref=$REPOSITORY@$digest" >> "$GITHUB_OUTPUT"
 
       - name: Build and push verifier image
         if: steps.images.outputs.verifier_exists != 'true'
@@ -146,27 +159,36 @@ jobs:
 
       - name: Resolve verifier digest
         id: verifier
+        env:
+          IMAGE_REF: ${{ steps.images.outputs.verifier_ref }}
+          REPOSITORY: ${{ steps.images.outputs.repository }}
         run: |
           set -euo pipefail
           digest=$(docker buildx imagetools inspect \
-            "${{ steps.images.outputs.verifier_ref }}" --format '{{.Manifest.Digest}}')
+            "$IMAGE_REF" --format '{{.Manifest.Digest}}')
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
-          echo "ref=${{ steps.images.outputs.repository }}@$digest" >> "$GITHUB_OUTPUT"
+          echo "ref=$REPOSITORY@$digest" >> "$GITHUB_OUTPUT"
 
       - name: Verify anonymous pulls
+        env:
+          AGENT_REF: ${{ steps.agent.outputs.ref }}
+          VERIFIER_REF: ${{ steps.verifier.outputs.ref }}
         run: |
           set -euo pipefail
           docker logout ghcr.io
-          docker buildx imagetools inspect "${{ steps.agent.outputs.ref }}" >/dev/null
-          docker buildx imagetools inspect "${{ steps.verifier.outputs.ref }}" >/dev/null
+          docker buildx imagetools inspect "$AGENT_REF" >/dev/null
+          docker buildx imagetools inspect "$VERIFIER_REF" >/dev/null
 
       - name: Verify image boundary
-        run: >-
-          bash ci_checks/check-image-boundary.sh
-          "${{ steps.agent.outputs.ref }}"
-          "${{ steps.verifier.outputs.ref }}"
+        env:
+          AGENT_REF: ${{ steps.agent.outputs.ref }}
+          VERIFIER_REF: ${{ steps.verifier.outputs.ref }}
+        run: bash ci_checks/check-image-boundary.sh "$AGENT_REF" "$VERIFIER_REF"
 
       - name: Publish image references
+        env:
+          AGENT_REF: ${{ steps.agent.outputs.ref }}
+          VERIFIER_REF: ${{ steps.verifier.outputs.ref }}
         run: |
-          echo "Agent image: \`${{ steps.agent.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "Verifier image: \`${{ steps.verifier.outputs.ref }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Agent image: \`$AGENT_REF\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Verifier image: \`$VERIFIER_REF\`" >> "$GITHUB_STEP_SUMMARY"

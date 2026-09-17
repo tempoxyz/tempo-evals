@@ -1,0 +1,10 @@
+rules:
+  dangerous-triggers:
+    ignore:
+      # This workflow checks out executable checks from the trusted base revision
+      # and only sparse-checks untrusted task data into a separate directory.
+      - static-checks.yml
+  ref-version-mismatch:
+    # tempoxyz/gh-actions publishes no version tags, so comments cannot match its pins.
+    # Third-party pins retain their version comments for reviewability.
+    disable: true
