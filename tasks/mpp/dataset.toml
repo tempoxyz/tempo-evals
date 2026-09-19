@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:c6ec33b8db865ddabd5475a97a7033c7fdb882f6926ef4a03581cb650fc875d4"
+digest = "sha256:af6e73d8a2391457e2ab6c46f7867a14cb53a83138fa71c46e224ebdbf2b6098"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:ba6fbbe28b114291215f4653752bee49274b95e15ed4053b41c1d93239d6183c"
+digest = "sha256:18dfeebca08fa5cb867291f3d74b3f7240205bbb17afc7502d6f61e8cd8cc014"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:c2dcd43f4fcbf4d930903aaf1b65d68ec478f9651993a355bb3c56d818a189c3"
+digest = "sha256:5212de2042cbcc986eed064c925324f0e96c22eb6cef22f0663a9d92e0b41560"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:f4a9495ca234c342d778ad6a6323aa2cc5bb5646414441be8efe2157564ee24c"
+digest = "sha256:31eba77140cea830e77e607a487597ca5d041f59b379c72287eaff5960f41c06"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:19585a527c8bc4f83ac099c3fe289ec722effd82b84692fbb69314d608fd5178"
+digest = "sha256:5f519092ac368f23cec6384e671a6c3971d95e65b5406eeb74f5c34d2dd0a0ae"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:add2a6d3f31219ab400c7989bba6ffed9d29b59fcc671a1ef92c544a8c8d60e5"
+digest = "sha256:66ce60718f995e2da4b70901c772df7024d16e14197d805a219566f0557213af"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:d4b9dcc403a19affb6be9c8f2bd9c0118fecb3b564809ab8a901af6e0ff5c311"
+digest = "sha256:7610375f46dcc369d8ef525a82cf1bf6344c08e2faf164a8234e32a381a6af6b"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:d9169d2db0b34cbd9b36614bee0d3bfdab98c0b533ac879eefd8a4c0a95c6f52"
+digest = "sha256:07bae50ba3237784478ee0ba39968cc9c270f293e60d85ac52eb59171b228df6"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:e8fefa5558164e7268d4c048aea0dfa0a89041a7016aa8e36dbe701789aa250a"
+digest = "sha256:eaa7bcf7b02b121b441eef22f6b43cd67fbb131ae61bd56b9bfaecc014bf00f7"
 
