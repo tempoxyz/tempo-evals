@@ -5,6 +5,6 @@ rules:
       # and only sparse-checks untrusted task data into a separate directory.
       - static-checks.yml
   ref-version-mismatch:
-    # tempoxyz/gh-actions publishes no version tags, so comments cannot match its pins.
+    # tempoxyz/gh-actions uses dated tag comments for its SHA pins.
     # Third-party pins retain their version comments for reviewability.
     disable: true
