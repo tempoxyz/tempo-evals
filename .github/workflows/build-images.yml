@@ -37,7 +37,7 @@ jobs:
       id-token: write
     steps:
       - name: Secure runner
-        uses: tempoxyz/gh-actions/actions/secure-runner@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
+        uses: tempoxyz/gh-actions/actions/secure-runner@bd66336ead0e97e3939428f526dc61fb43db0996 # 2026-09-25T20-13-44Z-bd66336e
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -69,17 +69,17 @@ jobs:
       packages: write
     steps:
       - name: Secure runner
-        uses: tempoxyz/gh-actions/actions/secure-runner@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
+        uses: tempoxyz/gh-actions/actions/secure-runner@bd66336ead0e97e3939428f526dc61fb43db0996 # 2026-09-25T20-13-44Z-bd66336e
 
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
-      - uses: tempoxyz/gh-actions/vendor/astral-sh/setup-uv@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
+      - uses: tempoxyz/gh-actions/vendor/astral-sh/setup-uv@bd66336ead0e97e3939428f526dc61fb43db0996 # 2026-09-25T20-13-44Z-bd66336e
 
-      - uses: tempoxyz/gh-actions/vendor/docker/setup-buildx-action@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
+      - uses: tempoxyz/gh-actions/vendor/docker/setup-buildx-action@bd66336ead0e97e3939428f526dc61fb43db0996 # 2026-09-25T20-13-44Z-bd66336e
 
-      - uses: tempoxyz/gh-actions/vendor/docker/login-action@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
+      - uses: tempoxyz/gh-actions/vendor/docker/login-action@bd66336ead0e97e3939428f526dc61fb43db0996 # 2026-09-25T20-13-44Z-bd66336e
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -123,7 +123,7 @@ jobs:
 
       - name: Build and push agent image
         if: steps.images.outputs.agent_exists != 'true'
-        uses: tempoxyz/gh-actions/vendor/docker/build-push-action@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
+        uses: tempoxyz/gh-actions/vendor/docker/build-push-action@bd66336ead0e97e3939428f526dc61fb43db0996 # 2026-09-25T20-13-44Z-bd66336e
         with:
           context: .
           file: shared/global/docker/agent/Dockerfile
@@ -146,7 +146,7 @@ jobs:
 
       - name: Build and push verifier image
         if: steps.images.outputs.verifier_exists != 'true'
-        uses: tempoxyz/gh-actions/vendor/docker/build-push-action@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
+        uses: tempoxyz/gh-actions/vendor/docker/build-push-action@bd66336ead0e97e3939428f526dc61fb43db0996 # 2026-09-25T20-13-44Z-bd66336e
         with:
           context: .
           file: shared/global/docker/verifier/Dockerfile
