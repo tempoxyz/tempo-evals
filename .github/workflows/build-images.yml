@@ -2,6 +2,15 @@ name: Build task images
 
 on:
   pull_request:
+    paths:
+      - .dockerignore
+      - shared/global/docker/**
+      - shared/global/rewardkit-lib/**
+      - shared/tempo/verifier/**
+      - scripts/images.py
+      - config/tasks.yaml
+      - ci_checks/check-image-boundary.sh
+      - .github/workflows/build-images.yml
   push:
     branches: [main]
     paths:
@@ -18,50 +27,8 @@ permissions:
   contents: read
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-      id-token: write
-    outputs:
-      images: ${{ steps.detect.outputs.images }}
-    steps:
-      - name: Secure runner
-        uses: tempoxyz/gh-actions/actions/secure-runner@d39baa2b43f5eba5d261c047521a4fbd56101129 # 2026-09-23T04-31-11Z-d39baa2b
-
-      - name: Detect image input changes
-        id: detect
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          EVENT_NAME: ${{ github.event_name }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "$EVENT_NAME" = push ]; then
-            echo "images=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # The files API is capped at 3,000 files. Build conservatively at that limit.
-          count=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.changed_files')
-          if [ "$count" -ge 3000 ]; then
-            echo "images=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          changed=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --slurp | jq '
-            [ .[][] | .filename, .previous_filename // empty ] |
-            any(test("^(\\.dockerignore$|shared/global/(docker|rewardkit-lib)/|shared/tempo/verifier/|scripts/images\\.py$|config/tasks\\.yaml$|ci_checks/check-image-boundary\\.sh$|\\.github/workflows/build-images\\.yml$)"))
-          ')
-          echo "images=$changed" >> "$GITHUB_OUTPUT"
-
   validate:
-    needs: changes
     if: >-
-      needs.changes.outputs.images == 'true' &&
       github.event_name == 'pull_request' &&
       github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
@@ -88,12 +55,10 @@ jobs:
       - name: Verify image boundary
         run: bash ci_checks/check-image-boundary.sh stable-bench-agent:ci stable-bench-verifier:ci
 
-  publish:
-    needs: changes
+  build-and-push:
     if: >-
-      needs.changes.outputs.images == 'true' &&
-      (github.event_name == 'push' ||
-      github.event.pull_request.head.repo.full_name == github.repository)
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     concurrency:
       group: build-task-images
@@ -227,34 +192,3 @@ jobs:
         run: |
           echo "Agent image: \`$AGENT_REF\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Verifier image: \`$VERIFIER_REF\`" >> "$GITHUB_STEP_SUMMARY"
-
-  # Keep the required check present, including for unrelated changes and forks.
-  build-and-push:
-    needs: [changes, validate, publish]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Check image job results
-        env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-          IMAGES_CHANGED: ${{ needs.changes.outputs.images }}
-          VALIDATE_RESULT: ${{ needs.validate.result }}
-          PUBLISH_RESULT: ${{ needs.publish.result }}
-          IS_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$CHANGES_RESULT" = success
-          if [ "$IMAGES_CHANGED" = false ]; then
-            echo "No image inputs changed."
-          elif [ "$IMAGES_CHANGED" = true ]; then
-            if [ "$IS_FORK" = true ]; then
-              test "$VALIDATE_RESULT" = success
-            else
-              test "$PUBLISH_RESULT" = success
-            fi
-          else
-            echo "Image change detection did not return a valid result."
-            exit 1
-          fi
