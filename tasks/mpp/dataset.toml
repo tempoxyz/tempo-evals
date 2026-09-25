@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:633bb92a55166c54f81b8fbb9118f75fd6b92e46928068a8b5bc200adb3abd7e"
+digest = "sha256:54263d2f2010c10f1c1f01381c60cb721a58bbd6de430b9155de119d05a484ca"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:c94e93cf13e9f7cee3e18621ba876c444f909a8a047fbfade65feb9dc4a21ceb"
+digest = "sha256:a5205a402d3497d1332cce13a1d4d4dc19c577317ff32255b1252f923c1354ee"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:21dc85ffd2544188f90deb5a2fe26f60f1fb360b5d63b40666fa1fcbdec9ea15"
+digest = "sha256:9aafdad596be606204dd88e0f9b9c1cebfbde20dfb0f254f8db2844dd680a378"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:46f23b90ca0da48c6e1207d84dbbc61f82d291438763cb8ce5f32289a628f7b5"
+digest = "sha256:a2b67dd93f019f71da3cfd35dabb18c239b63680416566cdf6fd5a8131ef2258"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b7d58692bcefa090ae71c76683dcf995e76f9197e587894794f3c7d7b9bd068d"
+digest = "sha256:e77a3d77470ec567d044a9448f22d67bfb6087b3f927291e2bbe4ee628c3738d"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:06bd0ce9df77d24d35897bab0dc3407e8d4ab806b6d5e6a3ef4d18323e5bcba9"
+digest = "sha256:56979eada0b7132b7eb68d0495a6e4222ae03f83ff7f972b7f5973ccb87e89d7"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:7b4e34788d503fed3c02899048a225f57d40aadd79b90d3e37e206c35d51f267"
+digest = "sha256:1eead24b9db8061c13b8e1875269114549cb185653085cf7423de2dd8eef462f"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:73931be16b9850c8ab2a19f7332706e69eb2baa3333add9173fb30b8a5a6d227"
+digest = "sha256:f3fc186739412f9b0e3dcf9d782bc6eccdbaed3368bc4719805f9d4cab507f5d"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:26a79550ff28bd038010e9812d5d68618348be8cd1d92967331fad83943b29b5"
+digest = "sha256:1362af018a677ea10a4c00c162643fc43a3e25b6f2b641ca59694f693a45ca27"
 
