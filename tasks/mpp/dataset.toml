@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:633bb92a55166c54f81b8fbb9118f75fd6b92e46928068a8b5bc200adb3abd7e"
+digest = "sha256:97d7ad994f859e4e2db56e84698ad2abfa7385867a4a62567d071ee155e55161"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:c94e93cf13e9f7cee3e18621ba876c444f909a8a047fbfade65feb9dc4a21ceb"
+digest = "sha256:acdb451bcb8d2b4a45261533ee722851747c91ed1a2e04799ac6f2f87705184c"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:21dc85ffd2544188f90deb5a2fe26f60f1fb360b5d63b40666fa1fcbdec9ea15"
+digest = "sha256:1514cc8303245da9afd84ec43c2e07dd3eaf9d8f3db01e57d0ec6ff819e2e799"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:46f23b90ca0da48c6e1207d84dbbc61f82d291438763cb8ce5f32289a628f7b5"
+digest = "sha256:f1d20c2c5612634fa6ad0231ddf8dd533e6b76202fd922b6322f8619ce5ee58b"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b7d58692bcefa090ae71c76683dcf995e76f9197e587894794f3c7d7b9bd068d"
+digest = "sha256:03290d220d5921f858e2399b6297995b3efd83b2ecb29b555a2b543c9d6f62bb"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:06bd0ce9df77d24d35897bab0dc3407e8d4ab806b6d5e6a3ef4d18323e5bcba9"
+digest = "sha256:cb5685108275d28cad9aac26a324fe331735192c2ee6c14fc1236a3d822d6e33"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:7b4e34788d503fed3c02899048a225f57d40aadd79b90d3e37e206c35d51f267"
+digest = "sha256:8f4b7039898ab81f8c2a2682c77ebfd364c6cc76903a77634937d74a74b1368b"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:73931be16b9850c8ab2a19f7332706e69eb2baa3333add9173fb30b8a5a6d227"
+digest = "sha256:774477e5c9e70fd4e626d3b70058507ef931892a9b4464bcdab80fccf558f4b5"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:26a79550ff28bd038010e9812d5d68618348be8cd1d92967331fad83943b29b5"
+digest = "sha256:3c27294483036c5281b861c472026c6fc80150b0c3182e703da684c7dee5bb26"
 
