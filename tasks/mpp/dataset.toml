@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:633bb92a55166c54f81b8fbb9118f75fd6b92e46928068a8b5bc200adb3abd7e"
+digest = "sha256:2b42afc0a61907628a6c241d06a42bf33e9388f9e9046bf1784c3e675b8dc9a9"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:c94e93cf13e9f7cee3e18621ba876c444f909a8a047fbfade65feb9dc4a21ceb"
+digest = "sha256:8c754c0afc901e4c0c836fdb09edd24756ff101ea20df3031c7e71ca2862c927"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:21dc85ffd2544188f90deb5a2fe26f60f1fb360b5d63b40666fa1fcbdec9ea15"
+digest = "sha256:916fe4abee48937925a6dbccb1ad92717c45bfb91632059c464c26139d8489c2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:46f23b90ca0da48c6e1207d84dbbc61f82d291438763cb8ce5f32289a628f7b5"
+digest = "sha256:ed0d3ddca7926fbcf16698eef1b9ce3cee41775c67f8c6416056dd10441ebc9b"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:b7d58692bcefa090ae71c76683dcf995e76f9197e587894794f3c7d7b9bd068d"
+digest = "sha256:43f480cf55139716571b3fdfe95924ef1a8d3d2d768735e46b502782e9dc902c"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:06bd0ce9df77d24d35897bab0dc3407e8d4ab806b6d5e6a3ef4d18323e5bcba9"
+digest = "sha256:291da9636a2d5a02b0bdb1205064c781016f1a1ef03c7c673c905e14a5e863bd"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:7b4e34788d503fed3c02899048a225f57d40aadd79b90d3e37e206c35d51f267"
+digest = "sha256:84d7029f71dc360834d37965d2e43380d98da578041b033daeb2d59a6a8793f4"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:73931be16b9850c8ab2a19f7332706e69eb2baa3333add9173fb30b8a5a6d227"
+digest = "sha256:c40d586fe802c43b696f795bbee179d70d16ef2ad6695c1009c65a0f7b7c2c16"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:26a79550ff28bd038010e9812d5d68618348be8cd1d92967331fad83943b29b5"
+digest = "sha256:3c2ce110730c044d3526ec2aea16aa3d99fe305c306067f75dab20f05342cdf3"
 
