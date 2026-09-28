@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:2b42afc0a61907628a6c241d06a42bf33e9388f9e9046bf1784c3e675b8dc9a9"
+digest = "sha256:3c963e08d7fbee36e5e9b4c08bc5ca0f2fe3ba115e56dd6fa693f9250e09d8c2"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:8c754c0afc901e4c0c836fdb09edd24756ff101ea20df3031c7e71ca2862c927"
+digest = "sha256:b7b630963c18614f6ad6a787a74dc54dc822b81e3e13899df082814d6c47b301"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:916fe4abee48937925a6dbccb1ad92717c45bfb91632059c464c26139d8489c2"
+digest = "sha256:b13cfbf4bd39e9eaf46a60d7f7dcaa838acef01fe072df539b9cd555cb39371a"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:ed0d3ddca7926fbcf16698eef1b9ce3cee41775c67f8c6416056dd10441ebc9b"
+digest = "sha256:5d149128f693a5afee69916808bac0e5312da66636ad799cadab6966853bfa99"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:43f480cf55139716571b3fdfe95924ef1a8d3d2d768735e46b502782e9dc902c"
+digest = "sha256:4d972055efbe0e775433152de17f0b71b1f71178abb601bfbb92e1d8fb3d99fb"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:291da9636a2d5a02b0bdb1205064c781016f1a1ef03c7c673c905e14a5e863bd"
+digest = "sha256:642aba6dc27dbc59b697d2274e0fdb9896b327cb01b72b2179343d24e5c61ccb"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:84d7029f71dc360834d37965d2e43380d98da578041b033daeb2d59a6a8793f4"
+digest = "sha256:d05b825f127d2eee6a6665b353905f11e32feeb9f14791bd300822a02626c006"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:c40d586fe802c43b696f795bbee179d70d16ef2ad6695c1009c65a0f7b7c2c16"
+digest = "sha256:55d5e6b3889a58aecf89d05a44705b38e7abfa711df97ef61f3e7b640310296c"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:3c2ce110730c044d3526ec2aea16aa3d99fe305c306067f75dab20f05342cdf3"
+digest = "sha256:d9c50d06d4eccf691027e8c6239d3d93c85c75d377cc875ffbac47d455ed7352"
 
