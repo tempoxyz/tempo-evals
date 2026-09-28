@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:3c963e08d7fbee36e5e9b4c08bc5ca0f2fe3ba115e56dd6fa693f9250e09d8c2"
+digest = "sha256:8cbe6c17a3aa3620114e266679c50522363c59d20fefc8b8e9b450c9b8dc6c51"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:b7b630963c18614f6ad6a787a74dc54dc822b81e3e13899df082814d6c47b301"
+digest = "sha256:6a8dace40fe5e2097180b18e6b76cbd9869487d4c5c86ea789eb8fdc2725ebb9"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:b13cfbf4bd39e9eaf46a60d7f7dcaa838acef01fe072df539b9cd555cb39371a"
+digest = "sha256:939640450788b31f0a12fd05a44538e5b99fd0dac5d355c8661859663b873054"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:5d149128f693a5afee69916808bac0e5312da66636ad799cadab6966853bfa99"
+digest = "sha256:3c6fac73e2b09a77303beef6ea75bd5790b1d67ff0a75c493d941085f1608e9e"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:4d972055efbe0e775433152de17f0b71b1f71178abb601bfbb92e1d8fb3d99fb"
+digest = "sha256:113216527da4b20fe760c7e102d68847b1a9b1e853246befbd30e8ed72b3c20f"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:642aba6dc27dbc59b697d2274e0fdb9896b327cb01b72b2179343d24e5c61ccb"
+digest = "sha256:d2a83f01fa3ecc439e515744fea6c8eec47b55bcdb57b982f31cc4a8892f0aef"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:d05b825f127d2eee6a6665b353905f11e32feeb9f14791bd300822a02626c006"
+digest = "sha256:f30fcaa916464ac1c231c7659b2b8e9149f01cd5ff8ec5bee35113b21039f733"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:55d5e6b3889a58aecf89d05a44705b38e7abfa711df97ef61f3e7b640310296c"
+digest = "sha256:efb47c914d1f40b3c72c0fa4ad576d3dc2278a616fddee7d9ede99cca95ef942"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:d9c50d06d4eccf691027e8c6239d3d93c85c75d377cc875ffbac47d455ed7352"
+digest = "sha256:f890e93d0e65084fc6d95c812e5d2f95b1bd5621bf8f28791fe6140643a993a0"
 
