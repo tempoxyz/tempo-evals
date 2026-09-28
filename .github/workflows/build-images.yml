@@ -2,15 +2,6 @@ name: Build task images
 
 on:
   pull_request:
-    paths:
-      - .dockerignore
-      - shared/global/docker/**
-      - shared/global/rewardkit-lib/**
-      - shared/tempo/verifier/**
-      - scripts/images.py
-      - config/tasks.yaml
-      - ci_checks/check-image-boundary.sh
-      - .github/workflows/build-images.yml
   push:
     branches: [main]
     paths:

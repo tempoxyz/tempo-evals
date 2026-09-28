@@ -6,8 +6,6 @@ name: Static Checks
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
-    paths:
-      - "tasks/**"
 
 concurrency:
   group: static-checks-${{ github.event.pull_request.number }}
