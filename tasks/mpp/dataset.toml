@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:8cbe6c17a3aa3620114e266679c50522363c59d20fefc8b8e9b450c9b8dc6c51"
+digest = "sha256:72b619d5c7958bce319f9302551c4cd868be9cbeac2c75fb354b1af55a3f3e99"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:6a8dace40fe5e2097180b18e6b76cbd9869487d4c5c86ea789eb8fdc2725ebb9"
+digest = "sha256:d9c7616c360b79e32761e2752406f09e41302c2c5a4e59219df727c3c976c218"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:939640450788b31f0a12fd05a44538e5b99fd0dac5d355c8661859663b873054"
+digest = "sha256:86c35ce90cff978ce8046fb59f8ee2403a854b25d65eaab11d57f6631945132a"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:3c6fac73e2b09a77303beef6ea75bd5790b1d67ff0a75c493d941085f1608e9e"
+digest = "sha256:8cfdafd1c4a380154db323fd6effa983e6c2f233c973009d3ecabbc467143ba9"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:113216527da4b20fe760c7e102d68847b1a9b1e853246befbd30e8ed72b3c20f"
+digest = "sha256:38fb041031236dc5c7a43f41bc6a19075e707d1f56524ffca9cb1f1ee20a4407"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:d2a83f01fa3ecc439e515744fea6c8eec47b55bcdb57b982f31cc4a8892f0aef"
+digest = "sha256:9a8aae74e07c536153b7aeaae0491ceeb676e15b28d3c3c4b2e4225d815ac4a5"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:f30fcaa916464ac1c231c7659b2b8e9149f01cd5ff8ec5bee35113b21039f733"
+digest = "sha256:82f1b3a743a086fca1ce85a980f7c6dbd29ea0e1833b02bf537f3aeba21f2eee"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:efb47c914d1f40b3c72c0fa4ad576d3dc2278a616fddee7d9ede99cca95ef942"
+digest = "sha256:f98226a2075fc8e7414052fdf3a7d4360794af77a0e6d56d8856c6791ae8a450"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:f890e93d0e65084fc6d95c812e5d2f95b1bd5621bf8f28791fe6140643a993a0"
+digest = "sha256:1dbf3121074e3fc70bc967f6a5a4d43d6a03daec9f4ad34b13136b9bf246d851"
 
