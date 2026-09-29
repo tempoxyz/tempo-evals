@@ -3,8 +3,8 @@
 # Both roles use write-once tags in the existing public GHCR package. Local
 # runs build those tags from the checkout; Daytona resolves them to digests.
 images:
-  agent: ghcr.io/tempoxyz/stable-bench-base:agent-source-5f211a238514bd05f60cf5264e2a4fdefedcc3507ccc0adabf71ba237a809c6c
-  verifier: ghcr.io/tempoxyz/stable-bench-base:verifier-source-5f211a238514bd05f60cf5264e2a4fdefedcc3507ccc0adabf71ba237a809c6c
+  agent: ghcr.io/tempoxyz/stable-bench-base:agent-source-4094a792e6603657a9f3f6c34f56e8aa615d12b27f427a172f88828915939295
+  verifier: ghcr.io/tempoxyz/stable-bench-base:verifier-source-4094a792e6603657a9f3f6c34f56e8aa615d12b27f427a172f88828915939295
 
 # MCP servers may expose tools directly or through a progressive catalog. The
 # MCP efficiency suite preserves its profile allowlists in either mode.
