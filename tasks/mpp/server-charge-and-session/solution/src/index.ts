@@ -32,6 +32,7 @@ const mppx = Mppx.create({
     }),
     tempo.session({
       account,
+      chainId: Chain.testnet.id,
       currency: pathUsd,
       getClient: () => client,
       recipient: account.address,

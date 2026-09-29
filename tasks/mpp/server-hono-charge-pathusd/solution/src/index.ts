@@ -16,6 +16,7 @@ const app = new Hono();
 const mppx = Mppx.create({
   methods: [
     tempo.charge({
+      currencies: [pathUsd],
       getClient: () => tempoRpcClient,
       recipient,
       testnet: true,

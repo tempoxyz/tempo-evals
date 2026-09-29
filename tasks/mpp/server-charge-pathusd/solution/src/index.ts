@@ -6,12 +6,14 @@ import { tempoRpcClient } from "./tempo-rpc.js";
 const port = Number(process.env.PORT ?? "3000");
 const freePath = "/free";
 const paidPath = "/paid";
+const pathUsd = "0x20c0000000000000000000000000000000000000";
 const recipient = (process.env.RECIPIENT_ADDRESS ?? "0x1111111111111111111111111111111111111111") as `0x${string}`;
 const chargeAmount = process.env.MPP_CHARGE_AMOUNT ?? "0.01";
 
 const mppx = Mppx.create({
   methods: [
     tempo({
+      currencies: [pathUsd],
       getClient: () => tempoRpcClient,
       recipient,
       testnet: true,

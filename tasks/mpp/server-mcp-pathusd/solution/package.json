@@ -8,9 +8,9 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^22.15.30",
-    "mppx": "^0.8.6",
+    "mppx": "^0.12.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
-    "viem": "^2.54.0"
+    "viem": "^2.57.1"
   }
 }
