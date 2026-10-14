@@ -22,15 +22,18 @@ LLMS_FEEDBACK_NOTICE = (
     "or `client`.\n"
 )
 
-BUNDLE_SCHEMA_VERSION = 2
+BUNDLE_SCHEMA_VERSION = 3
+SKILL_ROUTE = "/developers/SKILL.md"
 
-# Rewrite only rendered documentation links; root-host APIs such as the faucet
+# Rewrite only documentation routes under the canonical docs mount. Root-host
+# APIs such as the faucet, and the website skill at https://tempo.xyz/SKILL.md,
 # must continue to resolve to Tempo rather than the pinned docs sidecar.
+_ROUTE_END = r"""(?=[/?#.,"'`<\s)\]}]|$)"""
+_MOUNT_END = r"""(?=/?(?:[?#.,"'`<\s)\]}]|$))"""
 CANONICAL_DOCS_URL_PATTERN = re.compile(
-    r"https://tempo\.xyz/developers/(?:"
-    r"docs(?=[/?#\"'<\s)\]}]|$)|"
-    r"llms(?:-full)?\.txt(?=[/?#\"'<\s)\]}]|$)"
-    r")"
+    r"https://tempo\.xyz/developers(?:/(?:"
+    r"docs|get-started|index\.md|llms(?:-full)?\.txt|SKILL\.md|skill\.md"
+    rf"){_ROUTE_END}|{_MOUNT_END})"
 )
 
 
@@ -127,21 +130,22 @@ def walk(directory: Path) -> list[Path]:
 
 
 def route_for(relative_path: Path) -> str:
-    without_extension = relative_path.with_suffix("").as_posix()
-    if without_extension == "index":
-        return "/docs"
-    if without_extension.endswith("/index"):
-        return f"/docs/{without_extension[: -len('/index')]}"
-    return f"/docs/{without_extension}"
+    """Return the site route for a page path relative to `src/pages`."""
+    parts = relative_path.with_suffix("").parts
+    if parts[-1] == "index":
+        parts = parts[:-1]
+    return "/" + "/".join(parts)
 
 
 def link_route_for(relative_path: Path) -> str:
-    without_extension = relative_path.with_suffix("").as_posix()
-    if without_extension == "index":
-        return "/docs/"
-    if without_extension.endswith("/index"):
-        return f"/docs/{without_extension[: -len('/index')]}/"
-    return route_for(relative_path)
+    route = route_for(relative_path)
+    if relative_path.stem == "index" and route != "/":
+        return f"{route}/"
+    return route
+
+
+def markdown_route_for(route: str) -> str:
+    return f"/developers{'/index' if route == '/' else route}.md"
 
 
 def parse_frontmatter(content: str) -> dict[str, str]:
@@ -241,7 +245,7 @@ def links_in_config_block(config: str, start_marker: str, end_marker: str) -> li
         return []
     end = config.find(end_marker, start + len(start_marker))
     block = config[start:] if end == -1 else config[start:end]
-    links = re.findall(r"link:\s*[\"'](/docs[^\"']*)[\"']", block)
+    links = re.findall(r"link:\s*[\"'](/(?:docs|get-started)[^\"']*)[\"']", block)
     return list(dict.fromkeys(links))
 
 
@@ -250,20 +254,16 @@ def sidebar_order(repo_root: Path) -> dict[str, int]:
     if not config_path.exists():
         return {}
     config = config_path.read_text()
-    ordered_links = [
-        link
-        for link in dict.fromkeys(
-            [
-                *links_in_config_block(
-                    config, "const docsHomeSidebar = [", "const buildSidebar"
-                ),
-                *links_in_config_block(
-                    config, "const docsSidebar = [", "const section"
-                ),
-            ],
-        )
-        if link != "/docs"
+    links = [
+        *links_in_config_block(
+            config, "const docsHomeSidebar = [", "const buildSidebar"
+        ),
+        *links_in_config_block(config, "const docsSidebar = [", "const section"),
     ]
+    if not links:
+        # Product navigation defines every section sidebar inside one factory.
+        links = links_in_config_block(config, "sidebar: (() => {", "topNav:")
+    ordered_links = [link for link in dict.fromkeys(links) if link != "/docs"]
     return {link: index for index, link in enumerate(ordered_links)}
 
 
@@ -276,7 +276,16 @@ def write_manifest(
     docs: list[dict[str, str]],
     source_digest: str,
     output_root: Path,
+    *,
+    has_skill: bool,
 ) -> None:
+    routes = {
+        "index": "/developers",
+        "llms": "/developers/llms.txt",
+        "llmsFull": "/developers/llms-full.txt",
+    }
+    if has_skill:
+        routes["skill"] = SKILL_ROUTE
     manifest = {
         "schemaVersion": BUNDLE_SCHEMA_VERSION,
         "repo": lock["repo"],
@@ -285,11 +294,7 @@ def write_manifest(
         "sourceDigest": source_digest,
         "publicDir": str(output_root),
         "agentBasePath": "/developers",
-        "routes": {
-            "index": "/developers",
-            "llms": "/developers/llms.txt",
-            "llmsFull": "/developers/llms-full.txt",
-        },
+        "routes": routes,
     }
     content = f"{json.dumps(manifest, indent=2)}\n"
     write_file(manifest_path(lock), content)
@@ -297,18 +302,22 @@ def write_manifest(
 
 
 def build_bundle(lock: dict[str, Any]) -> None:
-    source_root = repo_dir(lock) / "src" / "pages" / "docs"
+    """Export every Vocs page under `src/pages` and the docs skill.
+
+    Production serves the repository root `SKILL.md` at `/developers/SKILL.md`.
+    """
+    pages_root = repo_dir(lock) / "src" / "pages"
     output_root = public_dir(lock)
-    if not source_root.exists():
-        msg = f"Docs source directory not found: {source_root}"
+    if not (pages_root / "docs").exists():
+        msg = f"Docs source directory not found: {pages_root / 'docs'}"
         raise RuntimeError(msg)
 
     shutil.rmtree(output_root, ignore_errors=True)
     output_root.mkdir(parents=True, exist_ok=True)
 
     docs = []
-    for file_path in walk(source_root):
-        relative_path = file_path.relative_to(source_root)
+    for file_path in walk(pages_root):
+        relative_path = file_path.relative_to(pages_root)
         content = file_path.read_text()
         route = route_for(relative_path)
         docs.append(
@@ -316,13 +325,22 @@ def build_bundle(lock: dict[str, Any]) -> None:
                 "content": content,
                 "description": description_from(content),
                 "linkRoute": link_route_for(relative_path),
-                "markdownRoute": f"/developers{route}.md",
+                "markdownRoute": markdown_route_for(route),
                 "relativePath": relative_path.as_posix(),
                 "route": route,
                 "title": title_from(content, relative_path),
             },
         )
     docs.sort(key=lambda doc: doc_sort_key(sidebar_order(repo_dir(lock)), doc))
+    routes = {doc["route"] for doc in docs}
+
+    skill_path = repo_dir(lock) / "SKILL.md"
+    skill = skill_path.read_text() if skill_path.exists() else None
+    if skill is not None:
+        write_file(
+            output_root / SKILL_ROUTE.removeprefix("/"),
+            rewrite_canonical_docs_urls(skill),
+        )
 
     llms_lines = [
         LLMS_FEEDBACK_NOTICE.rstrip(),
@@ -332,13 +350,26 @@ def build_bundle(lock: dict[str, Any]) -> None:
         "Documentation for the Tempo network and protocol specifications",
         "",
     ]
+    if skill is not None:
+        llms_lines.extend(
+            [
+                f"[Docs skill]({SKILL_ROUTE}) · "
+                "[Full documentation](/developers/llms-full.txt)",
+                "",
+            ]
+        )
     full_lines = llms_lines.copy()
 
     for doc in docs:
         markdown = clean_markdown(doc["content"], doc)
-        markdown_path = output_root / doc["markdownRoute"].removeprefix("/")
+        markdown_routes = [doc["markdownRoute"]]
+        if doc["route"] == "/" and "/docs" not in routes:
+            # Production redirects /docs.md to the site home when no docs
+            # landing page exists.
+            markdown_routes.append(markdown_route_for("/docs"))
+        for markdown_route in markdown_routes:
+            write_file(output_root / markdown_route.removeprefix("/"), markdown)
         page_path = output_root / doc["route"].removeprefix("/") / "index.html"
-        write_file(markdown_path, markdown)
         write_file(page_path, page_html(doc, markdown))
         description = f": {doc['description']}" if doc["description"] else ""
         llms_lines.append(f"- [{doc['title']}]({doc['linkRoute']}){description}")
@@ -351,6 +382,7 @@ def build_bundle(lock: dict[str, Any]) -> None:
             "",
             "Documentation for the Tempo network and protocol specifications",
             "",
+            *([f"- [SKILL.md]({SKILL_ROUTE})"] if skill is not None else []),
             "- [llms.txt](/developers/llms.txt)",
             "- [llms-full.txt](/developers/llms-full.txt)",
             "",
@@ -367,13 +399,22 @@ def build_bundle(lock: dict[str, Any]) -> None:
         output_root / "developers" / "llms-full.txt", f"{'\n'.join(full_lines)}\n"
     )
 
+    sources = [(doc["relativePath"], doc["content"]) for doc in docs]
+    if skill is not None:
+        sources.append(("SKILL.md", skill))
     digest = hashlib.sha256()
-    for doc in docs:
-        digest.update(doc["relativePath"].encode())
+    for relative_path, content in sources:
+        digest.update(relative_path.encode())
         digest.update(b"\0")
-        digest.update(doc["content"].encode())
+        digest.update(content.encode())
         digest.update(b"\0")
-    write_manifest(lock, docs, f"sha256:{digest.hexdigest()}", output_root)
+    write_manifest(
+        lock,
+        docs,
+        f"sha256:{digest.hexdigest()}",
+        output_root,
+        has_skill=skill is not None,
+    )
 
 
 def main() -> None:

@@ -44,9 +44,9 @@ services:
       DOCS_HEALTH_PATH: /developers/llms.txt
       DOCS_BASE_URL: https://docs.tempo.xyz
       ACCESS_LOG_PATH: /var/log/tempo-docs/access.log
-      DOCS_EXACT_ALIASES: '{"/":"/developers","/llms.txt":"/developers/llms.txt","/llms-full.txt":"/developers/llms-full.txt","/docs":"/developers/docs.md","/docs/":"/developers/docs.md","/developers/docs":"/developers/docs.md","/developers/docs/":"/developers/docs.md"}'
-      DOCS_PREFIX_ALIASES: '[["/docs/","/developers/docs/"]]'
-      DOCS_STRIP_TRAILING_SLASH_PREFIXES: '["/developers/docs/","/docs/"]'
+      DOCS_EXACT_ALIASES: '{"/":"/developers","/llms.txt":"/developers/llms.txt","/llms-full.txt":"/developers/llms-full.txt","/SKILL.md":"/developers/SKILL.md","/skill.md":"/developers/SKILL.md","/developers/skill.md":"/developers/SKILL.md","/index.md":"/developers/index.md","/docs":"/developers/docs.md","/docs/":"/developers/docs.md","/developers/docs":"/developers/docs.md","/developers/docs/":"/developers/docs.md"}'
+      DOCS_PREFIX_ALIASES: '[["/docs/","/developers/docs/"],["/get-started","/developers/get-started"]]'
+      DOCS_STRIP_TRAILING_SLASH_PREFIXES: '["/developers/docs/","/docs/","/developers/get-started/","/get-started/"]'
     volumes:
       - ${TEMPO_DOCS_BUNDLE_PATH:-./tempo-docs-bundle}:/docs:ro
       - ./docs-tls:/tls:ro
