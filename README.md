@@ -53,12 +53,19 @@ The Tempo MCP efficiency suite instead uses `mcp-direct` and `mcp-code` to
 compare direct documentation tools with `docs_code`; both query live Tempo data
 and documentation.
 
-> [!IMPORTANT]
-> **OpenAI documentation exception:** OpenAI models run through Codex's hosted
-> web fetch, which resolves `docs.tempo.xyz` outside the task sandbox. They
-> therefore use the live public docs and do not honor
-> `config/tempo-docs.lock.json` or `--docs-sha`. The pin only controls
-> documentation requests routed from within the sandbox.
+Within the task sandbox, `docs.tempo.xyz` serves the pinned revision with the
+production agent entry points: the docs `SKILL.md`, `llms.txt`,
+`llms-full.txt`, and Markdown for every page under `src/pages`, including Get
+Started. Bundled links to the canonical `https://tempo.xyz/developers` docs
+mount are rewritten to `docs.tempo.xyz`. Codex runs with hosted web search
+disabled, so its documentation requests also go through the sandbox.
+
+> [!NOTE]
+> Some linked sources are not pinned. The website skill at
+> `https://tempo.xyz/SKILL.md` is published from the website repository, not
+> the docs repository. The hosted MCP server at `https://mcp.tempo.xyz` indexes
+> the live docs. API reference pages generated from OpenAPI at docs build time
+> are not bundled.
 
 ## Repository Layout
 

@@ -23,6 +23,8 @@ verifier:
 agents:
 - name: codex
   model_name: gpt-5.4-mini
+  kwargs:
+    web_search: disabled
   env:
     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}

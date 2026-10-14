@@ -368,6 +368,13 @@ class RunBenchmarkTest(unittest.TestCase):
             ],
             [("claude-code", "anthropic")] * 4 + [("codex", "openai")] * 4,
         )
+        rendered = render_job_config(
+            production_job("test-run", production, {}), benchmark=None
+        )
+        self.assertEqual(
+            {agent["name"]: agent.get("kwargs") for agent in rendered["agents"]},
+            {"claude-code": None, "codex": {"web_search": "disabled"}},
+        )
 
     def test_production_profiles_prepare_shared_inputs_once(self) -> None:
         source = {"mode": "pinned", "repo": "tempo/docs", "sha": "docs123"}
@@ -479,6 +486,41 @@ class RunBenchmarkTest(unittest.TestCase):
             run.call_args.args[1][3:5],
             ["--path", "tasks/mpp"],
         )
+
+    def test_model_disables_hosted_web_search_only_for_codex(self) -> None:
+        for agent, expected in (
+            (None, []),
+            ("claude-code", []),
+            ("codex", ["web_search=disabled"]),
+        ):
+            options = {
+                "agent": agent,
+                "env_file": None,
+                "job_name": "model-test",
+                "profile": "docs",
+                "sync": False,
+                "task_suite": "tempo",
+            }
+            with (
+                self.subTest(agent=agent),
+                patch("scripts.run_benchmark.preflight"),
+                patch("scripts.run_benchmark.build_images"),
+                patch(
+                    "scripts.run_benchmark.docs_source",
+                    return_value={"mode": "public"},
+                ),
+                patch("scripts.run_benchmark.ensure_docs_bundle", return_value=None),
+                patch("scripts.run_benchmark.run") as run,
+            ):
+                run_benchmark_variant("model", options)
+
+                args = run.call_args.args[1]
+                agent_kwargs = [
+                    args[index + 1]
+                    for index, arg in enumerate(args)
+                    if arg == "--agent-kwarg"
+                ]
+                self.assertEqual(agent_kwargs, expected)
 
     def test_suite_profiles_are_validated_before_running(self) -> None:
         for suite, profile in (
@@ -666,6 +708,8 @@ class RunBenchmarkTest(unittest.TestCase):
             },
         )
         self.assertNotIn("env", agents["oracle"])
+        self.assertEqual(agents["codex"]["kwargs"], {"web_search": "disabled"})
+        self.assertNotIn("kwargs", agents["claude-code"])
         self.assertEqual(
             config["verifier"]["env"],
             {
@@ -686,6 +730,7 @@ class RunBenchmarkTest(unittest.TestCase):
         )
 
         self.assertEqual(config["agents"][0]["name"], "codex")
+        self.assertEqual(config["agents"][0]["kwargs"], {"web_search": "disabled"})
         self.assertEqual(
             config["agents"][0]["env"],
             {

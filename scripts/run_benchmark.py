@@ -236,6 +236,9 @@ DOCS_SHA_PATTERN = re.compile(r"[0-9a-fA-F]{7,40}")
 FULL_GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
 PINNED_JUDGE_MODEL = "anthropic/claude-haiku-4-5-20251001"
 DEFAULT_JUDGE_MODEL = f"${{REWARDKIT_JUDGE:-{PINNED_JUDGE_MODEL}}}"
+# Codex hosted web search resolves pages outside the task sandbox, so Codex
+# must read documentation through the sandbox like every other agent.
+CODEX_WEB_SEARCH = "disabled"
 DOCS_ACCESS_LOG = "/var/log/tempo-docs/access.log"
 DOCS_TLS_DIR = "docs-tls"
 DOCS_CA_FILE = "ca.crt"
@@ -707,6 +710,7 @@ def render_job_config(
         agents=job["agents"],
         judge_model=job.get("judge_model", DEFAULT_JUDGE_MODEL),
         dind_image=RUN_CONFIG["daytona"]["dind_image"],
+        codex_web_search=CODEX_WEB_SEARCH,
     )
     config = yaml.safe_load(rendered)
     datasets = (
@@ -1427,12 +1431,10 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
                 task_path,
             ]
         )
-        args.extend(
-            [
-                "--agent",
-                options.get("agent") or variant.get("default_agent") or "claude-code",
-            ]
-        )
+        agent = options.get("agent") or variant.get("default_agent") or "claude-code"
+        args.extend(["--agent", agent])
+        if agent == "codex":
+            args.extend(["--agent-kwarg", f"web_search={CODEX_WEB_SEARCH}"])
         model = options.get("model") or variant.get("default_model")
         if model:
             args.extend(["--model", model])

@@ -53,6 +53,8 @@ agents:
       ANTHROPIC_DEFAULT_SONNET_MODEL: ${ANTHROPIC_DEFAULT_SONNET_MODEL:-}
 {% endif %}
 {% elif agent.name == "codex" %}
+    kwargs:
+      web_search: {{ codex_web_search | tojson }}
     env:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 {% if environment_type == "docker" %}
