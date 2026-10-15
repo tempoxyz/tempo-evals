@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:5dc41c9ccf2f88497926985d246cb4daf80e38cf953b9baadbe13faccd4d7ed7"
+digest = "sha256:d78ba3f18377ab14c0bd20187869dc91f7ebaee7c0b9a9204be31952132e9c8e"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:7435cc286b8b1ac2cedf0906d4f2679b6cf6285d88fbbbcee9592cf4b01dc43e"
+digest = "sha256:68e506f5c3dedc8b6e19e5e27db9a27481220d01f9e56d1e6ba58964afb4c0c9"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:c54e66c90c8575f50f02c1fc5cbd1b9b2d76aa4a50eda7359b23d4cc261bae25"
+digest = "sha256:f34aec68faa2af32b7baf89c95ef11299db371b9616fc334b1186059f1adc4b6"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:f2839be740161a721ba1891b55b493d0fc87fdb18e8920905d6ff1c3631d0f09"
+digest = "sha256:953bbaa98de9b5f975fb4bf5b533b7f26c59ddc7fbe4f05b230c2c751de27de6"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:2e4c7671fe31b452380e5fca6a8602c7e8f50451dbefe3171a4ac08745066952"
+digest = "sha256:5774fb4e1f87e53ef18bf0a1f9a966ca78a2dee5873e21be163c422babf6ac81"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:5c6450948b0aaa09cd65bc8617d3546ea236b52e583ee155ea71847c1911848c"
+digest = "sha256:3a4156aaac696195c4ac66f4e6f66740a379f0b47259bc49527df9fa960fcd48"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:d857f6756d7c74c80f5286cffa1e2c0de9f0daa1a18b94d39d5863abeac736b8"
+digest = "sha256:19ca97f9711654b91b6214e045736cb799b808bb0629d228a057974a7dc41866"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:f8b643136446cbc23d54d3076086abfeb7d462723a66cb6a0c6506eee29d6b77"
+digest = "sha256:02f0818c3ec12115c6d898aab9bee2c81724c248ab7c3695527ba64c9a61327e"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:fa83a2ac5a3d99db8f539461a81512b1f342813f709ceb5504c48bb433481d37"
+digest = "sha256:16e770e0fea3effa5e73f355b4887b332ac48dda670cdfe63ad91858de634d97"
 
