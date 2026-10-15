@@ -42,12 +42,17 @@ PRODUCT_NAVIGATION_CONFIG = """export default defineConfig({
 })
 """
 
+PUBLISHING_BUILD_CONFIG = (
+    "await fs.copyFile(path.join(root, 'SKILL.md'), path.join(directory, 'SKILL.md'))\n"
+)
+
 # Each layout maps repository files to the bundle files they must produce, the
 # bundle files that must not exist, and the llms.txt link order.
 BUNDLE_LAYOUTS = {
     "product navigation": {
         "files": {
             "SKILL.md": DOCS_SKILL,
+            "vite.config.ts": PUBLISHING_BUILD_CONFIG,
             "vocs.config.ts": PRODUCT_NAVIGATION_CONFIG,
             "src/pages/index.mdx": "---\ntitle: Documentation\n---\n\n# Home\n",
             "src/pages/get-started.mdx": "---\ntitle: Build on Tempo\n---\n\n# Build\n",
@@ -72,8 +77,10 @@ BUNDLE_LAYOUTS = {
         ],
         "skill": True,
     },
-    "docs landing": {
+    "docs landing with an unpublished skill": {
         "files": {
+            "SKILL.md": DOCS_SKILL,
+            "vite.config.ts": "export default defineConfig({})\n",
             "src/pages/docs/index.mdx": "# Docs\n",
             "src/pages/docs/guide/index.mdx": "# Guides\n",
         },

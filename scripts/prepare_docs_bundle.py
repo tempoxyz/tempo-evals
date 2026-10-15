@@ -271,6 +271,21 @@ def doc_sort_key(order: dict[str, int], doc: dict[str, str]) -> tuple[int, str]:
     return (order.get(doc["route"], 2**53 - 1), doc["route"])
 
 
+def published_skill(repo_root: Path) -> str | None:
+    """Return the root `SKILL.md` when the docs build publishes it.
+
+    The docs build copies `SKILL.md` to `/developers/SKILL.md` from
+    `vite.config.ts`; earlier revisions keep the file for plugins only.
+    """
+    skill_path = repo_root / "SKILL.md"
+    build_config = repo_root / "vite.config.ts"
+    if not skill_path.exists() or not build_config.exists():
+        return None
+    if "SKILL.md" not in build_config.read_text():
+        return None
+    return skill_path.read_text()
+
+
 def write_manifest(
     lock: dict[str, Any],
     docs: list[dict[str, str]],
@@ -302,10 +317,7 @@ def write_manifest(
 
 
 def build_bundle(lock: dict[str, Any]) -> None:
-    """Export every Vocs page under `src/pages` and the docs skill.
-
-    Production serves the repository root `SKILL.md` at `/developers/SKILL.md`.
-    """
+    """Export every Vocs page under `src/pages` and any published docs skill."""
     pages_root = repo_dir(lock) / "src" / "pages"
     output_root = public_dir(lock)
     if not (pages_root / "docs").exists():
@@ -334,8 +346,7 @@ def build_bundle(lock: dict[str, Any]) -> None:
     docs.sort(key=lambda doc: doc_sort_key(sidebar_order(repo_dir(lock)), doc))
     routes = {doc["route"] for doc in docs}
 
-    skill_path = repo_dir(lock) / "SKILL.md"
-    skill = skill_path.read_text() if skill_path.exists() else None
+    skill = published_skill(repo_dir(lock))
     if skill is not None:
         write_file(
             output_root / SKILL_ROUTE.removeprefix("/"),
