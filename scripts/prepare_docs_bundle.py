@@ -22,7 +22,7 @@ LLMS_FEEDBACK_NOTICE = (
     "or `client`.\n"
 )
 
-BUNDLE_SCHEMA_VERSION = 3
+BUNDLE_SCHEMA_VERSION = 4
 SKILL_ROUTE = "/developers/SKILL.md"
 
 # Rewrite only documentation routes under the canonical docs mount. Root-host
