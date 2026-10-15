@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:a0bc7a6dc22d221c48c518fcf023c6688d1209f04817c14bc033608127dfc658"
+digest = "sha256:5dc41c9ccf2f88497926985d246cb4daf80e38cf953b9baadbe13faccd4d7ed7"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:7da0aedfaaa9de8b2731b2ef8297af40ecd26a05fa992fcdbcaca23d0a7ace90"
+digest = "sha256:7435cc286b8b1ac2cedf0906d4f2679b6cf6285d88fbbbcee9592cf4b01dc43e"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:32a9067d89dfb56517e5fc5f67ed110c8d7ea8ea48b77d9f743320245da0af65"
+digest = "sha256:c54e66c90c8575f50f02c1fc5cbd1b9b2d76aa4a50eda7359b23d4cc261bae25"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:23032c567d4651f4ed472311e651856ff29cdca552adbfaaa6e6e0abcb6b9e13"
+digest = "sha256:f2839be740161a721ba1891b55b493d0fc87fdb18e8920905d6ff1c3631d0f09"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:f21c562f697a6145a58fb44cea05094d4e416c19dcc03a17c06e050048a64fcf"
+digest = "sha256:2e4c7671fe31b452380e5fca6a8602c7e8f50451dbefe3171a4ac08745066952"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:476af82ff9f5bf5f617308913757d13124b12a2044f67ca03a445f566465317a"
+digest = "sha256:5c6450948b0aaa09cd65bc8617d3546ea236b52e583ee155ea71847c1911848c"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:a0b5fb8423f2d430852d6aa228487168e5e0a18593c8d175970c06d4054e4955"
+digest = "sha256:d857f6756d7c74c80f5286cffa1e2c0de9f0daa1a18b94d39d5863abeac736b8"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:327e845ebbc87e89ad633fe04207a8139871a8fca30f19507b0e02899206d2f1"
+digest = "sha256:f8b643136446cbc23d54d3076086abfeb7d462723a66cb6a0c6506eee29d6b77"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:07debfa3dad3c8debf39ad537716adb566babf0349b4b612330e9e81ce4ac5bb"
+digest = "sha256:fa83a2ac5a3d99db8f539461a81512b1f342813f709ceb5504c48bb433481d37"
 
