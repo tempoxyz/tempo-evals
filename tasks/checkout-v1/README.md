@@ -1,8 +1,9 @@
-# Checkout Suite (Scaffolding)
+# Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. No tasks are published yet. The
-suite is not included in benchmark jobs until a merchant task has an oracle and
-independent verifier.
+Planned dataset: `tempo/checkout-bench-v1`. The first Stripe merchant task is
+under development. It can only be selected with `--task-suite checkout` and is
+excluded from the default and `all` benchmark jobs. The browser oracle and
+provider verification still need a paid Stripe sandbox run on Daytona.
 
 ## What It Measures
 
@@ -53,15 +54,21 @@ transfers must be identified separately in results.
 
 ## Bringing the First Merchant Online
 
-1. Implement the merchant's test checkout and a per-trial credential inventory.
-2. Complete the oracle and independent verifier; prove both a passing purchase
-   and a plausible-looking purchase that the verifier rejects.
-3. Refresh the generated images and dataset manifest with `npm run sync` and
-   `npm run dataset -- --tasks tasks/checkout-v1`.
-4. Register the now-populated suite in the runner, evalkit, and job matrices.
-   Add checkout-specific tool/browser profiles and result export fields there.
-5. Run the local oracle, task lint, generated-artifact checks, and repository
-   checks before publishing the dataset.
+The `stripe-notebook` task uses a Stripe sandbox secret in the merchant sidecar,
+a per-trial funded Tempo testnet payer in a read-only agent wallet volume, a
+sandbox card, a prepared Link sandbox identity, and a Playwright MCP browser.
+Set `STRIPE_TEST_SECRET_KEY` and `CHECKOUT_LINK_TEST_EMAIL` in the runner's
+secret environment. Never commit either value. The merchant key is interpolated
+only into the merchant sidecar; it is not included in the agent wallet.
+The Link identity must already have a sandbox funding source; this task does
+not yet provision a fresh Link account for each trial. Keep scored runs off
+until that isolation and a real paid Stripe oracle run are proven.
+
+The checkout runner route is already opt-in. Before publishing this task, prove
+one paid Stripe sandbox purchase through the browser oracle on Daytona and one
+unpaid run that scores zero. Then establish a fresh funded Link identity per
+trial, refresh the dataset manifest, and run the repository checks. Add further
+browser/tool profiles and result export fields after this first task is proven.
 
 Changes to task prompts, fixtures, verification, or scoring after publication
 must follow the repository's benchmark-major versioning rule.
