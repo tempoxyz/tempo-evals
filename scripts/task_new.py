@@ -21,6 +21,7 @@ SUITES_BY_ID = {
     "tempo": next(suite for suite in SUITES if suite.path == "tasks/tempo-v1"),
     "mpp": next(suite for suite in SUITES if suite.path == "tasks/mpp"),
     "tempo-mcp": next(suite for suite in SUITES if suite.path == "tasks/tempo-mcp-v1"),
+    "checkout": next(suite for suite in SUITES if suite.path == "tasks/checkout-v1"),
 }
 
 
@@ -33,6 +34,7 @@ def task_toml(suite_id: str, suite: Suite, slug: str) -> str:
         "tempo": "stable-bench-v1",
         "mpp": "mpp-bench-v1",
         "tempo-mcp": "tempo-mcp-bench-v1",
+        "checkout": "checkout-bench-v1",
     }[suite_id]
     artifacts = [
         json.dumps(artifact)
@@ -47,6 +49,10 @@ def task_toml(suite_id: str, suite: Suite, slug: str) -> str:
         for source, service in suite.sidecar_artifacts
     )
     artifact_toml = "[\n  " + ",\n  ".join(artifacts) + ",\n]"
+    category = "checkout" if suite_id == "checkout" else "integration"
+    keywords = (
+        '["checkout", "payments", "agents"]' if suite_id == "checkout" else '["tempo"]'
+    )
     return f'''schema_version = "1.3"
 
 artifacts = {artifact_toml}
@@ -54,10 +60,10 @@ artifacts = {artifact_toml}
 [task]
 name = "{suite.task_name(slug)}"
 description = "TODO: describe the capability this task evaluates."
-keywords = ["tempo"]
+keywords = {keywords}
 
 [metadata]
-category = "integration"
+category = "{category}"
 benchmark = "{benchmark}"
 
 [agent]
@@ -75,6 +81,17 @@ storage_mb = {2048 if suite_id == "tempo-mcp" else 10240}
 
 
 def instruction(suite_id: str, slug: str, canary: str) -> str:
+    if suite_id == "checkout":
+        return f"""<!-- stable-bench-canary: {canary} -->
+# {title(slug)}
+
+Buy TODO item from TODO merchant at TODO URL.
+
+Available payment methods: TODO list the full benchmark wallet inventory.
+
+TODO: state the permitted total and any delivery details. Do not prescribe a
+payment method or describe the merchant's accepted methods.
+"""
     output = "/app/answer.json" if suite_id == "tempo-mcp" else "/app/out.json"
     return f"""<!-- stable-bench-canary: {canary} -->
 # {title(slug)}
@@ -86,6 +103,17 @@ Write the required result to `{output}`.
 
 
 def readme(suite_id: str, slug: str) -> str:
+    if suite_id == "checkout":
+        return f"""# {title(slug)}
+
+## Overview
+
+TODO: describe the merchant, item, and checkout experience.
+
+## Verification
+
+TODO: describe the independent order and payment evidence required to pass.
+"""
     return f"""# {title(slug)}
 
 ## Overview

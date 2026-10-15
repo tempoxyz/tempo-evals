@@ -15,7 +15,7 @@ class TaskLintTest(unittest.TestCase):
             root = Path(directory)
             for suite in SUITES:
                 (root / suite.path).mkdir(parents=True)
-            for suite_id in ("tempo", "mpp", "tempo-mcp"):
+            for suite_id in ("tempo", "mpp", "tempo-mcp", "checkout"):
                 task = create_task(root, suite_id, f"{suite_id}-task")
                 self.assertEqual(
                     (task / "environment" / "Dockerfile").read_text(),
@@ -25,6 +25,24 @@ class TaskLintTest(unittest.TestCase):
                     (task / "tests" / "Dockerfile").read_text(),
                     VERIFIER_DOCKERFILE,
                 )
+
+            self.assertEqual(lint(root), [])
+
+    def test_checkout_task_allows_merchant_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for suite in SUITES:
+                (root / suite.path).mkdir(parents=True)
+            task = create_task(root, "checkout", "sample-merchant")
+            task_toml = task / "task.toml"
+            task_toml.write_text(
+                task_toml.read_text().replace(
+                    '  "/logs/agent/trajectory.json",',
+                    '  "/logs/agent/trajectory.json",\n'
+                    '  { source = "/var/log/checkout/orders.jsonl", '
+                    'service = "merchant" },',
+                )
+            )
 
             self.assertEqual(lint(root), [])
 

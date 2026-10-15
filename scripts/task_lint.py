@@ -29,6 +29,7 @@ class Suite:
     artifacts: tuple[Artifact, ...]
     verifier_timeout_sec: int
     sidecar_artifacts: tuple[tuple[str, str], ...] = ()
+    allow_additional_artifacts: bool = False
 
     def task_name(self, slug: str) -> str:
         if self.path == "tasks/mpp":
@@ -90,6 +91,21 @@ SUITES = (
             ("/var/log/tempo-mcp/code-trace.jsonl", "tempo-mcp-code"),
         ),
     ),
+    Suite(
+        "tasks/checkout-v1",
+        (
+            "README.md",
+            "instruction.md",
+            "task.toml",
+            "environment/Dockerfile",
+            "solution/solve.sh",
+            "tests/Dockerfile",
+            "tests/test.sh",
+        ),
+        ("/logs/agent/trajectory.json",),
+        900,
+        allow_additional_artifacts=True,
+    ),
 )
 
 
@@ -149,8 +165,17 @@ def lint_task(root: Path, suite: Suite, task_dir: Path) -> list[str]:
         {"source": source, "service": service}
         for source, service in suite.sidecar_artifacts
     )
-    if metadata.get("artifacts") != expected_artifacts:
-        errors.append(f"{metadata_path}: artifacts must be {expected_artifacts!r}")
+    actual_artifacts = metadata.get("artifacts")
+    if suite.allow_additional_artifacts:
+        valid_artifacts = (
+            isinstance(actual_artifacts, list)
+            and actual_artifacts[: len(expected_artifacts)] == expected_artifacts
+        )
+    else:
+        valid_artifacts = actual_artifacts == expected_artifacts
+    if not valid_artifacts:
+        suffix = " start with" if suite.allow_additional_artifacts else " be"
+        errors.append(f"{metadata_path}: artifacts must{suffix} {expected_artifacts!r}")
     verifier = metadata.get("verifier")
     if not isinstance(verifier, dict) or verifier.get("environment_mode") != "separate":
         errors.append(f'{metadata_path}: verifier.environment_mode must be "separate"')
