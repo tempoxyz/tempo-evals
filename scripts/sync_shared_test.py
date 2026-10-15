@@ -81,13 +81,22 @@ class SyncSharedTest(unittest.TestCase):
                 self.assertEqual(sync_shared.sync_task_dockerfiles(), 4)
                 for suite_dir in suite_dirs:
                     task_dir = suite_dir / "example"
+                    canary = (
+                        sync_shared.CHECKOUT_CANARY
+                        if suite_dir == sync_shared.CHECKOUT_TASKS_DIR
+                        else ""
+                    )
                     self.assertEqual(
                         (task_dir / "environment" / "Dockerfile").read_text(),
-                        sync_shared.ENVIRONMENT_DOCKERFILE,
+                        sync_shared.ENVIRONMENT_DOCKERFILE.replace(
+                            "FROM ", canary + "FROM ", 1
+                        ),
                     )
                     self.assertEqual(
                         (task_dir / "tests" / "Dockerfile").read_text(),
-                        sync_shared.VERIFIER_DOCKERFILE,
+                        sync_shared.VERIFIER_DOCKERFILE.replace(
+                            "FROM ", canary + "FROM ", 1
+                        ),
                     )
             finally:
                 (
