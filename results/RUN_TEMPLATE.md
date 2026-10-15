@@ -13,6 +13,7 @@
 | Profile | `docs`, `mcp`, `mcp-direct`, or `mcp-code` |
 | Attempts | `<count>` |
 | Models | `<agent> / <model>` |
+| Codex web search | `disabled` (default since `9dfc654a`, 2026-10-15) or `live` |
 | Status | `completed` or `failed` |
 
 ## Headline results

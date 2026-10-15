@@ -57,6 +57,12 @@ Each suite ran pass@3 over a suite of nine tasks, with either access to Tempo do
 
 ## Notes
 
+GPT runs in this report used Codex with hosted web search enabled, so they could
+read live documentation outside the pinned docs bundle. Since `9dfc654a`
+(2026-10-15), Codex runs disable hosted web search in place for
+`stable-bench-v1` and `tempo-mcp-bench-v1`, so later GPT scores are not directly
+comparable with this baseline. Claude runs are unaffected.
+
 `summary.csv` contains the chart inputs. Stable Bench score is mean
 deterministic correctness. Tokens are input plus output tokens, so cached input
 tokens are included once. Model turns are agent trajectory steps. Costs, tokens,
