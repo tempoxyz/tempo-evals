@@ -34,6 +34,7 @@ from scripts.run_benchmark import (
     stage_filtered_config,
     stage_mpp_docs_task,
     stage_pinned_docs_task,
+    stage_task_datasets,
     sync_dataset,
     uses_live_mcp_eval,
     validate_run_options,
@@ -91,6 +92,19 @@ class RunBenchmarkTest(unittest.TestCase):
             [{"path": "tasks/tempo-mcp-v1"}],
         )
 
+    def test_finalize_config_selects_checkout_only_when_requested(self) -> None:
+        config = finalize_config(base_config(), {"task_suite": "checkout"})
+        self.assertEqual(config["datasets"], [{"path": "tasks/checkout-v1"}])
+        self.assertEqual(config["verifier"]["env"], {})
+
+    def test_checkout_stays_out_of_existing_dataset_scopes(self) -> None:
+        for suite in (None, "tempo", "tempo-mcp", "mpp", "all"):
+            with self.subTest(suite=suite):
+                datasets = finalize_config(base_config(), {"task_suite": suite})[
+                    "datasets"
+                ]
+                self.assertNotIn({"path": "tasks/checkout-v1"}, datasets)
+
     def test_claude_preflight_accepts_proxy_credentials(self) -> None:
         with patch.dict(
             os.environ,
@@ -142,6 +156,13 @@ class RunBenchmarkTest(unittest.TestCase):
                 {"needs_agent_auth": True, "default_agent": "claude-code"},
                 {"agent": "codex"},
             )
+
+    def test_checkout_preflight_requires_sandbox_credentials(self) -> None:
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
+        ):
+            preflight({}, {"task_suite": "checkout"})
 
     def test_tempo_mcp_suite_uses_the_live_mcp_server(self) -> None:
         self.assertTrue(uses_live_mcp_eval({"task_suite": "tempo-mcp"}))
@@ -813,7 +834,28 @@ class RunBenchmarkTest(unittest.TestCase):
             stage_filtered_config(config, "all-suite", options, None, None)
 
         stage_tasks.assert_called_once()
+        self.assertFalse(stage_tasks.call_args.kwargs.get("checkout", False))
         redirect.assert_called_once()
+
+    def test_checkout_suite_stages_only_by_explicit_selection(self) -> None:
+        config = {"agents": [{"name": "oracle"}], "datasets": []}
+        options = {"profile": "docs", "task_suite": "checkout"}
+        with (
+            patch("scripts.run_benchmark.stage_task_datasets") as stage_tasks,
+            patch("scripts.run_benchmark.redirect_dataset_paths"),
+        ):
+            stage_filtered_config(config, "checkout-suite", options, None, None)
+
+        self.assertTrue(stage_tasks.call_args.kwargs["checkout"])
+
+    def test_checkout_staging_contains_no_existing_suites(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            staging_root = Path(directory)
+            with patch("scripts.run_benchmark.copy_tasks") as copy:
+                stage_task_datasets(staging_root, None, checkout=True)
+            copy.assert_called_once_with(
+                Path("tasks/checkout-v1"), staging_root / "tasks/checkout-v1"
+            )
 
     def test_staged_pinned_docs_proxy_only_docs_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

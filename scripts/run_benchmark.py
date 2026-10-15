@@ -25,6 +25,7 @@ class BenchmarkKey(StrEnum):
     TEMPO = "tempo"
     TEMPO_MCP = "tempo-mcp"
     MPP = "mpp"
+    CHECKOUT = "checkout"
 
 
 # All run variant data (job specs, prefixes, auth flags, Daytona runner
@@ -64,6 +65,7 @@ SUITE_PROFILES = {
     "tempo": (DOCS_PROFILE["id"], MCP_PROFILE["id"], "all"),
     "tempo-mcp": (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"], "mcp-both"),
     "mpp": (DOCS_PROFILE["id"],),
+    "checkout": (DOCS_PROFILE["id"],),
     "all": (DOCS_PROFILE["id"],),
 }
 _IMAGE_BUILD_LOCK = Lock()
@@ -113,7 +115,7 @@ Options:
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and config variants
-  --task-suite SUITE      Task family: tempo, tempo-mcp, mpp, or all
+  --task-suite SUITE      Task family: tempo, tempo-mcp, mpp, checkout, or all
                           (default: tempo; use all explicitly for full matrix)
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
@@ -165,7 +167,9 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument("--agent")
     parser.add_argument("--model")
     parser.add_argument("--task-filter")
-    parser.add_argument("--task-suite", choices=["tempo", "tempo-mcp", "mpp", "all"])
+    parser.add_argument(
+        "--task-suite", choices=["tempo", "tempo-mcp", "mpp", "checkout", "all"]
+    )
     parser.add_argument(
         "--n-tasks", type=lambda value: read_positive_integer(value, "--n-tasks")
     )
@@ -326,6 +330,13 @@ def ensure_mpp_docs_bundle(options: dict[str, Any]) -> str | None:
 
 
 def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
+    if options.get("task_suite") == "checkout":
+        if not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
+            raise RuntimeError(
+                "Checkout runs require STRIPE_TEST_SECRET_KEY in sandbox mode"
+            )
+        if not os.environ.get("CHECKOUT_LINK_TEST_EMAIL"):
+            raise RuntimeError("Checkout runs require CHECKOUT_LINK_TEST_EMAIL")
     effective_agents = effective_agent_names(variant, options)
     needs_agent_auth = variant.get("needs_agent_auth") and effective_agents
     if needs_agent_auth and "claude-code" in effective_agents and not has_claude_auth():
@@ -420,9 +431,14 @@ def task_paths(options: dict[str, Any]) -> list[str]:
         "tempo": "tasks/tempo-v1",
         "tempo-mcp": "tasks/tempo-mcp-v1",
         "mpp": "tasks/mpp",
+        "checkout": "tasks/checkout-v1",
     }
     suite = options.get("task_suite") or "tempo"
-    return list(paths.values()) if suite == "all" else [paths[suite]]
+    return (
+        [paths[key] for key in ("tempo", "tempo-mcp", "mpp")]
+        if suite == "all"
+        else [paths[suite]]
+    )
 
 
 def validate_run_options(variant_name: str, options: dict[str, Any]) -> dict[str, Any]:
@@ -812,7 +828,11 @@ def prepare_production_profiles(
     preflight_production_agents(model_config)
     if options.get("sync"):
         sync_dataset(options)
-    source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
+    source = (
+        {"mode": "live"}
+        if uses_live_mcp_eval(options) or options.get("task_suite") == "checkout"
+        else docs_source(options)
+    )
     if source["mode"] != "live":
         ensure_docs_bundle(source)
 
@@ -832,6 +852,8 @@ def datasets_for_suite(task_suite: str) -> list[dict[str, Any]]:
         return copy.deepcopy(RUN_CONFIG["mpp_only_datasets"])
     if task_suite == "tempo-mcp":
         return copy.deepcopy(RUN_CONFIG["mcp_only_datasets"])
+    if task_suite == "checkout":
+        return [{"path": "tasks/checkout-v1"}]
     return copy.deepcopy(read_yaml("config/datasets.yaml").get("datasets", []))
 
 
@@ -840,6 +862,8 @@ def apply_task_suite(
     task_suite: str | None,
 ) -> dict[str, Any]:
     config["datasets"] = datasets_for_suite(task_suite or "tempo")
+    if task_suite == "checkout":
+        config.setdefault("verifier", {})["env"] = {}
     return config
 
 
@@ -852,6 +876,18 @@ def apply_task_filter(
 
     if mpp_filter := mpp_task_filter(task_filter):
         config["datasets"] = [{"path": "tasks/mpp", "task_names": [mpp_filter]}]
+        return config
+
+    if any(
+        dataset.get("path") == "tasks/checkout-v1"
+        for dataset in config.get("datasets", [])
+    ):
+        config["datasets"] = [
+            {
+                "path": "tasks/checkout-v1",
+                "task_names": [task_filter.removeprefix("checkout-v1/")],
+            }
+        ]
         return config
 
     tempo_prefixes = ("tempo-v1/", "tempo-mcp-v1/", "tempo/")
@@ -921,6 +957,7 @@ def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
         "tasks/mpp": str(staging_root / "tasks" / "mpp"),
         "tasks/tempo-v1": str(staging_root / "tasks" / "tempo-v1"),
         "tasks/tempo-mcp-v1": str(staging_root / "tasks" / "tempo-mcp-v1"),
+        "tasks/checkout-v1": str(staging_root / "tasks" / "checkout-v1"),
         "tasks": str(staging_root / "tasks" / "tempo-v1"),
     }
     changed = False
@@ -1146,7 +1183,16 @@ def stage_task_datasets(
     docs_bundle: str | None,
     mpp_docs_bundle: str | None = None,
     images: dict[str, str] | None = None,
+    checkout: bool = False,
 ) -> None:
+    if checkout:
+        staged_checkout = staging_root / "tasks" / "checkout-v1"
+        staged_checkout.parent.mkdir(parents=True, exist_ok=True)
+        copy_tasks(Path("tasks/checkout-v1"), staged_checkout)
+        if images is not None:
+            override_staged_images(staging_root, images)
+        return
+
     staged_tasks = staging_root / "tasks" / "tempo-v1"
     staged_tasks.parent.mkdir(parents=True, exist_ok=True)
     copy_tasks(Path("tasks/tempo-v1"), staged_tasks)
@@ -1231,7 +1277,11 @@ def stage_daytona_config(
 
     shutil.rmtree(staging_root, ignore_errors=True)
     stage_task_datasets(
-        staging_root, docs_bundle, mpp_docs_bundle, daytona_images(options)
+        staging_root,
+        docs_bundle,
+        mpp_docs_bundle,
+        daytona_images(options),
+        checkout=options.get("task_suite") == "checkout",
     )
 
     config = apply_pair_id(
@@ -1262,9 +1312,14 @@ def stage_filtered_config(
         docs_bundle is not None
         or mpp_docs_bundle is not None
         or options["profile"] in {MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"]}
-        or options.get("task_suite") in {"tempo-mcp", "all"}
+        or options.get("task_suite") in {"tempo-mcp", "checkout", "all"}
     ):
-        stage_task_datasets(staging_root, docs_bundle, mpp_docs_bundle)
+        stage_task_datasets(
+            staging_root,
+            docs_bundle,
+            mpp_docs_bundle,
+            checkout=options.get("task_suite") == "checkout",
+        )
         redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
@@ -1381,7 +1436,11 @@ def main(argv: list[str]) -> None:
 def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     variant = validate_run_options(variant_name, options)
 
-    source = {"mode": "live"} if uses_live_mcp_eval(options) else docs_source(options)
+    source = (
+        {"mode": "live"}
+        if uses_live_mcp_eval(options) or options.get("task_suite") == "checkout"
+        else docs_source(options)
+    )
     load_env_file(options.get("env_file"))
     preflight(variant, options)
     if not options.get("mcp_target_preflight_done"):
