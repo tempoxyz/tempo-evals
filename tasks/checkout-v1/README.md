@@ -3,7 +3,7 @@
 Planned dataset: `tempo/checkout-bench-v1`. The first Stripe merchant task is
 under development. It can only be selected with `--task-suite checkout` and is
 excluded from the default and `all` benchmark jobs. The browser oracle and
-provider verification still need a paid Stripe sandbox run on Daytona.
+independent provider verifier have passed one paid Stripe sandbox run on Daytona.
 
 ## What It Measures
 
@@ -65,7 +65,7 @@ secret environment. Never commit either value. The merchant key is interpolated
 only into the merchant sidecar; it is not included in the agent wallet.
 The Link identity must already have a sandbox funding source; this task does
 not yet provision a fresh Link account for each trial. Keep scored runs off
-until that isolation and a real paid Stripe oracle run are proven.
+until that isolation is proven.
 
 The checkout runner route and EvalKit validation are opt-in. Before publishing
 this task, prove one paid Stripe sandbox purchase through the browser oracle on

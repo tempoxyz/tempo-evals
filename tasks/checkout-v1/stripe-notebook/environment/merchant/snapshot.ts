@@ -35,7 +35,7 @@ for (const record of records) {
     paymentStatus: session.payment_status,
     amountTotal: session.amount_total,
     currency: session.currency,
-    paymentIntent: typeof session.payment_intent === 'object' ? {
+    paymentIntent: session.payment_intent && typeof session.payment_intent === 'object' ? {
       id: session.payment_intent.id,
       status: session.payment_intent.status,
       amount: session.payment_intent.amount,
