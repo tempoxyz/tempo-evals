@@ -97,6 +97,41 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual(config["datasets"], [{"path": "tasks/checkout-v1"}])
         self.assertEqual(config["verifier"]["env"], {})
 
+    def test_checkout_preserves_production_revision_without_verifier_auth(self) -> None:
+        config = base_config() | {
+            "verifier": {
+                "env": {
+                    "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY:-}",
+                    "REWARDKIT_JUDGE": "anthropic/claude-haiku-4-5-20251001",
+                    "TEMPO_EVALS_SHA": "a" * 40,
+                }
+            }
+        }
+
+        result = finalize_config(config, {"task_suite": "checkout"})
+
+        self.assertEqual(result["verifier"]["env"], {"TEMPO_EVALS_SHA": "a" * 40})
+
+    def test_checkout_filter_takes_priority_over_mpp_slug_heuristic(self) -> None:
+        for slug in ("server-cart", "client-cart"):
+            with self.subTest(slug=slug):
+                result = finalize_config(
+                    base_config(), {"task_suite": "checkout", "task_filter": slug}
+                )
+                self.assertEqual(
+                    result["datasets"],
+                    [{"path": "tasks/checkout-v1", "task_names": [slug]}],
+                )
+
+    def test_mpp_slug_filter_still_selects_mpp(self) -> None:
+        result = finalize_config(
+            base_config(), {"task_suite": "mpp", "task_filter": "server-cart"}
+        )
+        self.assertEqual(
+            result["datasets"],
+            [{"path": "tasks/mpp", "task_names": ["server-cart"]}],
+        )
+
     def test_checkout_stays_out_of_existing_dataset_scopes(self) -> None:
         for suite in (None, "tempo", "tempo-mcp", "mpp", "all"):
             with self.subTest(suite=suite):
@@ -161,6 +196,25 @@ class RunBenchmarkTest(unittest.TestCase):
         with (
             patch.dict(os.environ, {}, clear=True),
             self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
+        ):
+            preflight({}, {"task_suite": "checkout"})
+
+    def test_checkout_explicit_task_path_requires_suite_selection(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
+            preflight({}, {"tasks": "tasks/checkout-v1/stripe-notebook"})
+
+    def test_checkout_preflight_rejects_missing_dataset(self) -> None:
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+                    "CHECKOUT_LINK_TEST_EMAIL": "buyer@example.com",
+                },
+                clear=True,
+            ),
+            patch("scripts.run_benchmark.Path.is_file", return_value=False),
+            self.assertRaisesRegex(RuntimeError, "no published task dataset"),
         ):
             preflight({}, {"task_suite": "checkout"})
 
