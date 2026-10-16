@@ -51,6 +51,9 @@ payment method and checkout stage as diagnostics. Report `pass@1`, all-five-pass
 reliability (`pass^5`), tokens, turns, tool calls, wall time, and provider cost
 from repeated Harbor trials. Provider sandbox payments and Tempo testnet
 transfers must be identified separately in results.
+The exporter leaves `pass_5` blank with fewer than five trials. With at least
+five, it reports the fraction of five-trial subsets in which every checkout
+passed.
 
 ## Bringing the First Merchant Online
 
@@ -64,11 +67,11 @@ The Link identity must already have a sandbox funding source; this task does
 not yet provision a fresh Link account for each trial. Keep scored runs off
 until that isolation and a real paid Stripe oracle run are proven.
 
-The checkout runner route is already opt-in. Before publishing this task, prove
-one paid Stripe sandbox purchase through the browser oracle on Daytona and one
-unpaid run that scores zero. Then establish a fresh funded Link identity per
-trial, refresh the dataset manifest, and run the repository checks. Add further
-browser/tool profiles and result export fields after this first task is proven.
+The checkout runner route and EvalKit validation are opt-in. Before publishing
+this task, prove one paid Stripe sandbox purchase through the browser oracle on
+Daytona and one unpaid run that scores zero. Then establish a fresh funded Link
+identity per trial, refresh the dataset manifest, and run the repository
+checks. Add further browser and tool profiles after this first task is proven.
 
 Changes to task prompts, fixtures, verification, or scoring after publication
 must follow the repository's benchmark-major versioning rule.

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime
+from math import comb
 from pathlib import Path
 from typing import Any
 
@@ -68,6 +69,12 @@ TRIAL_COLUMNS = [
     "docs_source",
     "mcp_target_id",
     "result_path",
+]
+CHECKOUT_TRIAL_COLUMNS = [
+    "checkout_stage",
+    "payment_method",
+    "payment_provider_type",
+    "verification_reason",
 ]
 
 SUMMARY_COLUMNS = [
@@ -187,6 +194,8 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
         return {"task_family": task_name[: -len(MCP_PROFILE_SUFFIX)], "profile": "mcp"}
     if task_name.startswith(("tempo-v1/", "tempo-mcp-v1/")):
         return {"task_family": task_name, "profile": tempo_profile}
+    if task_name.startswith("checkout-v1/"):
+        return {"task_family": task_name, "profile": "browser-mcp"}
     return {"task_family": task_name, "profile": "unknown"}
 
 
@@ -380,6 +389,12 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     model_info = as_object(agent_info.get("model_info"))
     exception_info = as_object(result.get("exception_info"))
     task = parse_task_name(result["task_name"], profile_from_trial(result))
+    checkout = task["task_family"].startswith("checkout-v1/")
+    checkout_details = (
+        as_object(read_json(file_path.parent / "verifier" / "details.json"))
+        if checkout
+        else {}
+    )
     docs_source = result_docs_source(result, task["profile"], context)
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
@@ -425,7 +440,11 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         ),
         "mcp_used": used_mcp,
         "mcp_trace_clean": trace_clean,
-        "eligible": passed and used_mcp and trace_clean,
+        "eligible": (
+            bool(checkout_details) and not exception_info
+            if checkout
+            else passed and used_mcp and trace_clean
+        ),
         "outcome": outcome,
         **validation,
         "exception_type": as_string(exception_info.get("exception_type")),
@@ -456,6 +475,18 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "mcp_target_id": context["mcp_target_id"] or trace["target_id"],
         "result_path": str(file_path),
         "rewards": rewards,
+        **(
+            {
+                "checkout_stage": as_string(checkout_details.get("checkout_stage")),
+                "payment_method": as_string(checkout_details.get("payment_method")),
+                "payment_provider_type": as_string(
+                    checkout_details.get("payment_provider_type")
+                ),
+                "verification_reason": as_string(checkout_details.get("reason")),
+            }
+            if checkout
+            else {}
+        ),
     }
 
 
@@ -560,7 +591,15 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     )
     for column in ("mean_quality", "median_quality", "quality_at_k"):
         summary[column] = summary[column].where(summary[column].notna(), "")
-    return summary[SUMMARY_COLUMNS].to_dict("records")
+    results = summary[SUMMARY_COLUMNS].to_dict("records")
+    for result in results:
+        if str(result["task_family"]).startswith("checkout-v1/"):
+            n_trials = int(result["n_trials"])
+            n_passed = int(result["n_passed"])
+            result["pass_5"] = (
+                comb(n_passed, 5) / comb(n_trials, 5) if n_trials >= 5 else ""
+            )
+    return results
 
 
 def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
@@ -656,10 +695,25 @@ def export_results(
     out_path.mkdir(parents=True, exist_ok=True)
     write_csv(
         out_path / "trials.csv",
-        [*TRIAL_COLUMNS, *reward_columns(trials)],
+        [
+            *TRIAL_COLUMNS,
+            *(
+                CHECKOUT_TRIAL_COLUMNS
+                if any(row["task_family"].startswith("checkout-v1/") for row in trials)
+                else []
+            ),
+            *reward_columns(trials),
+        ],
         trial_csv_rows(trials),
     )
-    write_csv(out_path / "summary.csv", SUMMARY_COLUMNS, summary)
+    write_csv(
+        out_path / "summary.csv",
+        [
+            *SUMMARY_COLUMNS,
+            *(["pass_5"] if any("pass_5" in row for row in summary) else []),
+        ],
+        summary,
+    )
     write_csv(
         out_path / "quality_summary.csv", QUALITY_SUMMARY_COLUMNS, quality_summary
     )

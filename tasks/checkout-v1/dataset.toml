@@ -11,5 +11,5 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v1/stripe-notebook"
-digest = "sha256:b3400e2badd9443c2e0bfecbd89308544082d3d94b6bb3da119d74f6b5760fc5"
+digest = "sha256:2446c13b32d2e808e03a97d739933c0c715275807e01b61fa8cb051bb142fd63"
 

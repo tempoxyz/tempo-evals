@@ -78,7 +78,12 @@ class CheckoutVerifierTests(unittest.TestCase):
             )
             self.assertEqual(
                 json.loads((root / "details.json").read_text()),
-                {"reason": "verified", "payment_method": "card"},
+                {
+                    "reason": "verified",
+                    "payment_method": "card",
+                    "checkout_stage": "verified",
+                    "payment_provider_type": "stripe_sandbox",
+                },
             )
 
 

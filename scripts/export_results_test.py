@@ -70,6 +70,10 @@ class ExportResultsTest(unittest.TestCase):
             parse_task_name("custom-task"),
             {"task_family": "custom-task", "profile": "unknown"},
         )
+        self.assertEqual(
+            parse_task_name("checkout-v1/stripe-notebook"),
+            {"task_family": "checkout-v1/stripe-notebook", "profile": "browser-mcp"},
+        )
 
     def test_export_results_writes_trial_and_summary_outputs(self) -> None:
         with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
@@ -123,6 +127,7 @@ class ExportResultsTest(unittest.TestCase):
             trials_csv = (out_dir / "trials.csv").read_text()
             self.assertIn("verifier_reward_correctness", trials_csv)
             self.assertIn("transfer-with-memo-fee-payer", trials_csv)
+            self.assertNotIn("payment_provider_type", trials_csv)
             trial_records = pd.read_csv(out_dir / "trials.csv", keep_default_na=False)
             self.assertEqual(len(trial_records), 3)
             self.assertEqual(
@@ -136,10 +141,67 @@ class ExportResultsTest(unittest.TestCase):
             summary_csv = (out_dir / "summary.csv").read_text()
             self.assertIn("pass_rate", summary_csv)
             self.assertIn("other-model", summary_csv)
+            self.assertNotIn("pass_5", summary_csv)
 
             summary_json = json.loads((out_dir / "summary.json").read_text())
             self.assertEqual(summary_json["n_trials"], 3)
             self.assertEqual(summary_json["reward_keys"], ["correctness", "reward"])
+
+    def test_checkout_export_includes_provider_diagnostics(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            trial_dir = job_dir / "trial"
+            write_json(
+                trial_dir / "result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v1/stripe-notebook",
+                        "verifier_result": {"rewards": {"reward": 1}},
+                    }
+                ),
+            )
+            write_json(
+                trial_dir / "verifier" / "details.json",
+                {
+                    "reason": "verified",
+                    "payment_method": "card",
+                    "checkout_stage": "verified",
+                    "payment_provider_type": "stripe_sandbox",
+                },
+            )
+
+            exported = export_results(job_dir)
+            row = exported["trials"][0]
+            self.assertEqual(row["profile"], "browser-mcp")
+            self.assertEqual(row["payment_method"], "card")
+            self.assertEqual(row["checkout_stage"], "verified")
+            self.assertEqual(row["payment_provider_type"], "stripe_sandbox")
+            self.assertEqual(row["verification_reason"], "verified")
+            self.assertTrue(row["eligible"])
+            columns = pd.read_csv(Path(exported["out_dir"]) / "trials.csv").columns
+            self.assertIn("payment_provider_type", columns)
+            self.assertEqual(exported["summary"][0]["pass_5"], "")
+
+    def test_checkout_pass_five_uses_independent_trial_outcomes(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for index in range(6):
+                write_json(
+                    job_dir / f"trial-{index}" / "result.json",
+                    trial(
+                        {
+                            "task_name": "checkout-v1/stripe-notebook",
+                            "trial_name": f"trial-{index}",
+                            "verifier_result": {"rewards": {"reward": int(index != 0)}},
+                        }
+                    ),
+                )
+
+            exported = export_results(job_dir)
+            self.assertAlmostEqual(exported["summary"][0]["pass_rate"], 5 / 6)
+            self.assertAlmostEqual(exported["summary"][0]["pass_5"], 1 / 6)
+            columns = pd.read_csv(Path(exported["out_dir"]) / "summary.csv").columns
+            self.assertIn("pass_5", columns)
 
     def test_export_results_reads_mcp_profile_from_trial_config(self) -> None:
         with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
