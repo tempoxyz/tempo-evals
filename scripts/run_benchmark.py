@@ -314,6 +314,13 @@ def is_checkout_tasks_path(path: str) -> bool:
     return Path(path).resolve().is_relative_to(Path("tasks/checkout-v1").resolve())
 
 
+def has_checkout_tasks() -> bool:
+    return any(
+        task_file.is_file()
+        for task_file in Path("tasks/checkout-v1").glob("*/task.toml")
+    )
+
+
 def ensure_mpp_docs_bundle(options: dict[str, Any]) -> str | None:
     source = options.get("mpp_docs_source")
     if not source:
@@ -347,8 +354,8 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             )
         if not os.environ.get("CHECKOUT_LINK_TEST_EMAIL"):
             raise RuntimeError("Checkout runs require CHECKOUT_LINK_TEST_EMAIL")
-        if not Path("tasks/checkout-v1/dataset.toml").is_file():
-            raise RuntimeError("Checkout has no published task dataset yet")
+        if not has_checkout_tasks():
+            raise RuntimeError("Checkout has no authored task yet")
     effective_agents = effective_agent_names(variant, options)
     needs_agent_auth = variant.get("needs_agent_auth") and effective_agents
     if needs_agent_auth and "claude-code" in effective_agents and not has_claude_auth():

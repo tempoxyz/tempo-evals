@@ -203,7 +203,7 @@ class RunBenchmarkTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
             preflight({}, {"tasks": "tasks/checkout-v1/stripe-notebook"})
 
-    def test_checkout_preflight_rejects_missing_dataset(self) -> None:
+    def test_checkout_preflight_rejects_missing_task(self) -> None:
         with (
             patch.dict(
                 os.environ,
@@ -213,8 +213,22 @@ class RunBenchmarkTest(unittest.TestCase):
                 },
                 clear=True,
             ),
-            patch("scripts.run_benchmark.Path.is_file", return_value=False),
-            self.assertRaisesRegex(RuntimeError, "no published task dataset"),
+            patch("scripts.run_benchmark.has_checkout_tasks", return_value=False),
+            self.assertRaisesRegex(RuntimeError, "no authored task"),
+        ):
+            preflight({}, {"task_suite": "checkout"})
+
+    def test_checkout_preflight_allows_task_before_manifest_sync(self) -> None:
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+                    "CHECKOUT_LINK_TEST_EMAIL": "buyer@example.com",
+                },
+                clear=True,
+            ),
+            patch("scripts.run_benchmark.has_checkout_tasks", return_value=True),
         ):
             preflight({}, {"task_suite": "checkout"})
 
