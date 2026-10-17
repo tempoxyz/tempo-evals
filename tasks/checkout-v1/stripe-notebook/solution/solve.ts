@@ -51,6 +51,7 @@ async function main(): Promise<void> {
   for (let digit = 1; digit <= 6; digit++) {
     await page.getByRole('textbox', { name: 'Security code character ' + digit }).fill(${JSON.stringify(wallet.link.sandboxPasscode)}[digit - 1]);
   }
+  await page.getByText(/4242/).last().waitFor({ state: 'visible', timeout: 30000 });
   const linkCvc = page.getByRole('textbox', { name: 'CVC' });
   if (await linkCvc.isVisible()) await linkCvc.fill(${JSON.stringify(card.cvc)});
   await page.getByRole('button', { name: 'Pay', exact: true }).click();` : `
@@ -81,7 +82,12 @@ async function main(): Promise<void> {
   };
   await fill(/email/i, ${JSON.stringify(email)});
   ${paymentSteps}
-  await page.waitForURL(/merchant:3000\\/complete/, { timeout: 60000 });
+  try {
+    await page.waitForURL(/merchant:3000\\/complete/, { timeout: 60000 });
+  } catch {
+    const summary = (await page.locator('main').innerText()).replace(/\\s+/g, ' ').slice(0, 500);
+    throw new Error('Checkout did not return: ' + summary);
+  }
   return 'checkout return reached';
 }`;
   const result = await rpc('tools/call', { name: 'browser_run_code_unsafe', arguments: { code: script } });
