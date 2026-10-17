@@ -48,6 +48,7 @@ async function stripe(path, options = {}) {
 async function main() {
   const form = new URLSearchParams({
     mode: 'setup',
+    currency: 'usd',
     'payment_method_types[0]': 'card',
     'payment_method_types[1]': 'link',
     customer_email: wallet.link.email,
@@ -72,13 +73,23 @@ async function main() {
   const card = wallet.card;
   const script = `async (page) => {
     await page.goto(${JSON.stringify(session.url)});
-    await page.getByRole('textbox', { name: 'Card number' }).fill(${JSON.stringify(card.number)});
-    await page.getByRole('textbox', { name: 'Expiration' }).fill(${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
-    await page.getByRole('textbox', { name: /CVC/ }).fill(${JSON.stringify(card.cvc)});
-    await page.getByRole('textbox', { name: 'Cardholder name' }).fill('Tempo Test Buyer');
-    await page.getByRole('textbox', { name: 'ZIP' }).fill('94103');
+    const fill = async (name, value) => {
+      for (let attempt = 0; attempt < 60; attempt++) {
+        for (const frame of [page, ...page.frames()]) {
+          const field = frame.getByRole('textbox', { name }).first();
+          if (await field.count()) { await field.fill(value); return; }
+        }
+        await page.waitForTimeout(500);
+      }
+      throw new Error('Missing Link setup field: ' + name);
+    };
+    await fill('Card number', ${JSON.stringify(card.number)});
+    await fill('Expiration', ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
+    await fill(/CVC/, ${JSON.stringify(card.cvc)});
+    await fill('Cardholder name', 'Tempo Test Buyer');
+    await fill('ZIP', '94103');
     const saveWithLink = page.getByRole('checkbox', { name: /Save my information with Link/ });
-    if (!await saveWithLink.isVisible()) throw new Error('Link enrollment is unavailable');
+    await saveWithLink.waitFor({ state: 'visible', timeout: 30000 });
     await saveWithLink.check();
     await page.getByRole('textbox', { name: 'Phone number' }).fill(${JSON.stringify(wallet.link.phone)});
     await page.getByRole('button', { name: 'Save', exact: true }).click();

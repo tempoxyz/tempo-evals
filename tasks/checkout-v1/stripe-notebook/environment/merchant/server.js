@@ -25,6 +25,8 @@ http.createServer(async (request, response) => {
     const orderId = randomUUID();
     const form = new URLSearchParams({
       mode: 'payment',
+      'payment_method_types[0]': 'card',
+      'payment_method_types[1]': 'link',
       client_reference_id: orderId,
       'metadata[order_id]': orderId,
       'line_items[0][price_data][currency]': 'usd',

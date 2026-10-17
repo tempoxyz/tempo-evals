@@ -1280,13 +1280,22 @@ def stage_task_datasets(
 
 
 def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str, Any]:
-    return apply_model_override(
+    result = apply_model_override(
         apply_task_filter(
             apply_task_suite(config, options.get("task_suite")),
             options.get("task_filter"),
         ),
         options.get("model"),
     )
+    if options.get("task_suite") == "checkout":
+        method = os.environ.get("CHECKOUT_ORACLE_PAYMENT_METHOD")
+        if method:
+            for agent in result.get("agents", []):
+                if agent.get("name") == "oracle":
+                    agent.setdefault("env", {})["CHECKOUT_ORACLE_PAYMENT_METHOD"] = (
+                        method
+                    )
+    return result
 
 
 def stage_daytona_config(

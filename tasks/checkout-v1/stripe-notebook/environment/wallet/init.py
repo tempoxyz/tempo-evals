@@ -13,27 +13,14 @@ from eth_account import Account
 
 RPC = os.environ.get("TEMPO_RPC_URL", "https://rpc.moderato.tempo.xyz")
 LINK_EMAIL = f"tempo-checkout-{uuid.uuid4().hex}@example.com"
+# NANP 555-0100 through 555-0199 is reserved for fictional use. Draw from
+# valid-looking area codes to reduce collisions between isolated trials.
 AREA_CODES = [
-    "202",
-    "206",
-    "212",
-    "213",
-    "214",
-    "215",
-    "216",
-    "305",
-    "310",
-    "312",
-    "313",
-    "415",
-    "617",
-    "646",
-    "650",
-    "703",
-    "718",
-    "781",
-    "818",
-    "925",
+    f"{first}{middle}{last}"
+    for first in range(2, 10)
+    for middle in range(10)
+    for last in range(10)
+    if not (middle == 1 and last == 1)
 ]
 LINK_PHONE = f"{secrets.choice(AREA_CODES)}55501{secrets.randbelow(100):02d}"
 

@@ -97,6 +97,18 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual(config["datasets"], [{"path": "tasks/checkout-v1"}])
         self.assertEqual(config["verifier"]["env"], {})
 
+    def test_checkout_method_hint_only_reaches_oracle(self) -> None:
+        config = {
+            "agents": [{"name": "oracle"}, {"name": "claude-code"}],
+            "datasets": [],
+        }
+        with patch.dict(os.environ, {"CHECKOUT_ORACLE_PAYMENT_METHOD": "link"}):
+            result = finalize_config(config, {"task_suite": "checkout"})
+        self.assertEqual(
+            result["agents"][0]["env"], {"CHECKOUT_ORACLE_PAYMENT_METHOD": "link"}
+        )
+        self.assertNotIn("env", result["agents"][1])
+
     def test_checkout_preserves_production_revision_without_verifier_auth(self) -> None:
         config = base_config() | {
             "verifier": {

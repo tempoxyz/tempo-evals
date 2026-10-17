@@ -11,9 +11,6 @@ services:
         condition: service_completed_successfully
     volumes:
       - checkout-wallet:/wallet:ro
-    environment:
-      CHECKOUT_ORACLE_PAYMENT_METHOD: ${CHECKOUT_ORACLE_PAYMENT_METHOD:-}
-
   wallet:
     build:
       context: ./wallet
