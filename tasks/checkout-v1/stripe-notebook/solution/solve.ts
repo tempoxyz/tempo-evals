@@ -44,6 +44,27 @@ async function main(): Promise<void> {
 
   const card = wallet.card;
   const email = wallet.link.email;
+  const method = process.env.CHECKOUT_ORACLE_PAYMENT_METHOD || 'card';
+  if (!['card', 'link'].includes(method)) throw new Error('Unsupported oracle payment method');
+  const paymentSteps = method === 'link' ? `
+  await page.getByRole('textbox', { name: 'Security code character 1' }).waitFor({ state: 'visible', timeout: 30000 });
+  for (let digit = 1; digit <= 6; digit++) {
+    await page.getByRole('textbox', { name: 'Security code character ' + digit }).fill(${JSON.stringify(wallet.link.sandboxPasscode)}[digit - 1]);
+  }
+  const linkCvc = page.getByRole('textbox', { name: 'CVC' });
+  if (await linkCvc.isVisible()) await linkCvc.fill(${JSON.stringify(card.cvc)});
+  await page.getByRole('button', { name: 'Pay', exact: true }).click();` : `
+  const cardButton = page.getByRole('button', { name: 'Pay with card' }).first();
+  if (await cardButton.isVisible()) await cardButton.click();
+  else if (await cardButton.count()) await cardButton.evaluate(button => button.click());
+  const saveWithLink = page.getByRole('checkbox', { name: /Save my information with Link/i });
+  if (await saveWithLink.isVisible()) await saveWithLink.uncheck();
+  await fill(/card number/i, ${JSON.stringify(card.number)});
+  await fill(/expir/i, ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
+  await fill(/cvc|security code/i, ${JSON.stringify(card.cvc)});
+  await fill(/cardholder name|name on card/i, 'Tempo Test Buyer');
+  await fill(/zip|postal code/i, '94103');
+  await page.getByRole('button', { name: /pay/i }).last().click();`;
   const script = `async (page) => {
   await page.goto('http://merchant:3000');
   await page.getByRole('button', { name: 'Buy notebook' }).click();
@@ -59,17 +80,7 @@ async function main(): Promise<void> {
     throw new Error('Missing checkout field: ' + pattern);
   };
   await fill(/email/i, ${JSON.stringify(email)});
-  const cardButton = page.getByRole('button', { name: 'Pay with card' }).first();
-  if (await cardButton.isVisible()) await cardButton.click();
-  else if (await cardButton.count()) await cardButton.evaluate(button => button.click());
-  const saveWithLink = page.getByRole('checkbox', { name: /Save my information with Link/i });
-  if (await saveWithLink.isVisible()) await saveWithLink.uncheck();
-  await fill(/card number/i, ${JSON.stringify(card.number)});
-  await fill(/expir/i, ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
-  await fill(/cvc|security code/i, ${JSON.stringify(card.cvc)});
-  await fill(/cardholder name|name on card/i, 'Tempo Test Buyer');
-  await fill(/zip|postal code/i, '94103');
-  await page.getByRole('button', { name: /pay/i }).last().click();
+  ${paymentSteps}
   await page.waitForURL(/merchant:3000\\/complete/, { timeout: 60000 });
   return 'checkout return reached';
 }`;

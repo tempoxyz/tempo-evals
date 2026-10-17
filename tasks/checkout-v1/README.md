@@ -57,21 +57,22 @@ passed.
 
 ## Bringing the First Merchant Online
 
-The `stripe-notebook` task uses a Stripe sandbox secret in the merchant sidecar,
+The `stripe-notebook` task uses a Stripe sandbox secret in trusted sidecars,
 a per-trial funded Tempo testnet payer in a read-only agent wallet volume, a
-sandbox card, a prepared Link sandbox identity, and a Playwright MCP browser.
-Set `STRIPE_TEST_SECRET_KEY` and `CHECKOUT_LINK_TEST_EMAIL` in the runner's
-secret environment. Never commit either value. The merchant key is interpolated
-only into the merchant sidecar; it is not included in the agent wallet.
-The Link identity must already have a sandbox funding source; this task does
-not yet provision a fresh Link account for each trial. Keep scored runs off
-until that isolation is proven.
+sandbox card, a Link sandbox identity, and a Playwright MCP browser.
+Set `STRIPE_TEST_SECRET_KEY` in the runner's secret environment. Never commit it.
+The key is not included in the agent wallet. Before the agent starts, a setup
+sidecar creates a fresh Link identity with a synthetic email and phone, saves
+the sandbox card through a no-charge Stripe Checkout setup session, and checks
+Stripe's resulting Link payment method. The agent receives only the trial wallet
+inventory and sandbox login code.
 
 The checkout runner route and EvalKit validation are opt-in. Before publishing
-this task, prove one paid Stripe sandbox purchase through the browser oracle on
-Daytona and one unpaid run that scores zero. Then establish a fresh funded Link
-identity per trial, refresh the dataset manifest, and run the repository
-checks. Add further browser and tool profiles after this first task is proven.
+this task, prove paid card and Link purchases through the browser oracle on
+Daytona and one unpaid run that scores zero. Refresh the dataset manifest and
+run repository checks. Add further browser and tool profiles after this first
+task is proven. Set `CHECKOUT_ORACLE_PAYMENT_METHOD=link` for the Link oracle
+canary; the default oracle uses the card.
 
 Changes to task prompts, fixtures, verification, or scoring after publication
 must follow the repository's benchmark-major versioning rule.

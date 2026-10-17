@@ -2,7 +2,9 @@
 
 import json
 import os
+import secrets
 import time
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -10,11 +12,30 @@ from urllib.request import Request, urlopen
 from eth_account import Account
 
 RPC = os.environ.get("TEMPO_RPC_URL", "https://rpc.moderato.tempo.xyz")
-LINK_EMAIL = os.environ.get("CHECKOUT_LINK_TEST_EMAIL", "")
-if not LINK_EMAIL or "@" not in LINK_EMAIL:
-    raise SystemExit(
-        "CHECKOUT_LINK_TEST_EMAIL must name a prepared Link sandbox identity"
-    )
+LINK_EMAIL = f"tempo-checkout-{uuid.uuid4().hex}@example.com"
+AREA_CODES = [
+    "202",
+    "206",
+    "212",
+    "213",
+    "214",
+    "215",
+    "216",
+    "305",
+    "310",
+    "312",
+    "313",
+    "415",
+    "617",
+    "646",
+    "650",
+    "703",
+    "718",
+    "781",
+    "818",
+    "925",
+]
+LINK_PHONE = f"{secrets.choice(AREA_CODES)}55501{secrets.randbelow(100):02d}"
 
 
 def rpc(method: str, params: list) -> object:
@@ -66,7 +87,8 @@ wallet = {
     },
     "link": {
         "email": LINK_EMAIL,
-        "sandboxPasscode": "123456",
+        "phone": LINK_PHONE,
+        "sandboxPasscode": "000000",
     },
 }
 path = Path("/wallet/wallet.json")

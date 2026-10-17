@@ -352,8 +352,6 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             raise RuntimeError(
                 "Checkout runs require STRIPE_TEST_SECRET_KEY in sandbox mode"
             )
-        if not os.environ.get("CHECKOUT_LINK_TEST_EMAIL"):
-            raise RuntimeError("Checkout runs require CHECKOUT_LINK_TEST_EMAIL")
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
     effective_agents = effective_agent_names(variant, options)

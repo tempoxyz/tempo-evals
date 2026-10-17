@@ -209,7 +209,6 @@ class RunBenchmarkTest(unittest.TestCase):
                 os.environ,
                 {
                     "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
-                    "CHECKOUT_LINK_TEST_EMAIL": "buyer@example.com",
                 },
                 clear=True,
             ),
@@ -224,7 +223,6 @@ class RunBenchmarkTest(unittest.TestCase):
                 os.environ,
                 {
                     "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
-                    "CHECKOUT_LINK_TEST_EMAIL": "buyer@example.com",
                 },
                 clear=True,
             ),
