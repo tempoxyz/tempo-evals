@@ -55,8 +55,10 @@ async function main(): Promise<void> {
   const linkCvc = page.getByRole('textbox', { name: 'CVC' });
   if (await linkCvc.isVisible()) await linkCvc.fill(${JSON.stringify(card.cvc)});
   await page.getByRole('button', { name: 'Pay', exact: true }).click();` : `
+  const linkDialog = page.getByRole('dialog');
+  await linkDialog.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+  if (await linkDialog.isVisible()) await linkDialog.getByRole('button', { name: 'close' }).click();
   const payWithoutLink = page.getByRole('button', { name: 'Pay without Link' });
-  await payWithoutLink.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   if (await payWithoutLink.isVisible()) await payWithoutLink.click();
   const cardButton = page.getByRole('button', { name: 'Pay with card' }).first();
   if (await cardButton.isVisible()) await cardButton.click();
