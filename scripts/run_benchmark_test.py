@@ -235,7 +235,9 @@ class RunBenchmarkTest(unittest.TestCase):
             self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
         ):
             preflight({}, {"task_suite": "checkout", "task_filter": "mpp-notebook"})
-        with patch.dict(os.environ, {"STRIPE_TEST_SECRET_KEY": "sk_test_dummy"}, clear=True):
+        with patch.dict(
+            os.environ, {"STRIPE_TEST_SECRET_KEY": "sk_test_dummy"}, clear=True
+        ):
             preflight({}, {"task_suite": "checkout", "task_filter": "mpp-notebook"})
 
     def test_paypal_checkout_preflight_requires_sandbox_credentials(self) -> None:
