@@ -376,8 +376,6 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
         if selected & {
             "stripe-card",
             "stripe-link",
-            "mpp-notebook",
-            "x402-notebook",
         } and not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")
         if "stripe-link" in selected and not os.environ.get(

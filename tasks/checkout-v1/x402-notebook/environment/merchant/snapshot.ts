@@ -58,35 +58,4 @@ for (const record of records) {
     transfers,
   });
 }
-const key = process.env.STRIPE_TEST_SECRET_KEY;
-if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
-let cardRecords: { orderId: string; paymentIntentId: string }[] = [];
-try {
-  cardRecords = readFileSync(`${dir}/card-orders.jsonl`, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
-} catch (error) {
-  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
-}
-const cardOrders = [];
-for (const record of cardRecords) {
-  if (!/^pi_[A-Za-z0-9_]+$/.test(record.paymentIntentId)) throw new Error('Invalid PaymentIntent ID');
-  const response = await fetch(`https://api.stripe.com/v1/payment_intents/${record.paymentIntentId}?expand[]=payment_method`, {
-    headers: { authorization: `Bearer ${key}` },
-    signal: AbortSignal.timeout(30000),
-  });
-  if (!response.ok) throw new Error(`Stripe retrieval failed: ${response.status}`);
-  const intent = await response.json();
-  cardOrders.push({
-    orderId: record.orderId,
-    id: intent.id,
-    livemode: intent.livemode,
-    metadataOrderId: intent.metadata?.order_id,
-    metadataItem: intent.metadata?.item,
-    metadataQuantity: intent.metadata?.quantity,
-    status: intent.status,
-    amount: intent.amount,
-    amountReceived: intent.amount_received,
-    currency: intent.currency,
-    paymentMethodType: intent.payment_method?.type ?? null,
-  });
-}
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, usdc, deliveries, cardOrders }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, usdc, deliveries }, null, 2) + '\n');

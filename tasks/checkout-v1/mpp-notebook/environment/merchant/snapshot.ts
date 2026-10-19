@@ -5,7 +5,7 @@ import { Receipt } from 'mppx';
 
 const dir = '/var/log/checkout';
 const { recipient, pathUsd } = JSON.parse(readFileSync(`${dir}/merchant.json`, 'utf8'));
-let records: { orderId: string; receipt: string }[] = [];
+let records: { orderId: string; item: string; quantity: number; amount: string; currency: string; receipt: string }[] = [];
 try {
   records = readFileSync(`${dir}/deliveries.jsonl`, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
 } catch (error) {
@@ -20,40 +20,10 @@ const balance = await client.readContract({ address: pathUsd, abi, functionName:
 const decimals = await client.readContract({ address: pathUsd, abi, functionName: 'decimals' });
 const deliveries = records.map(record => {
   const receipt = record.receipt ? Receipt.deserialize(record.receipt) : null;
-  return { orderId: record.orderId, receiptStatus: receipt?.status ?? null, receiptMethod: receipt?.method ?? null };
+  return {
+    orderId: record.orderId, item: record.item, quantity: record.quantity,
+    amount: record.amount, currency: record.currency,
+    receiptStatus: receipt?.status ?? null, receiptMethod: receipt?.method ?? null,
+  };
 });
-const key = process.env.STRIPE_TEST_SECRET_KEY;
-if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
-let cardRecords: { orderId: string; paymentIntentId: string }[] = [];
-try {
-  cardRecords = readFileSync(`${dir}/card-orders.jsonl`, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
-} catch (error) {
-  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
-}
-async function stripeGet(path: string) {
-  const response = await fetch(`https://api.stripe.com/v1${path}`, {
-    headers: { authorization: `Bearer ${key}` },
-    signal: AbortSignal.timeout(30000),
-  });
-  if (!response.ok) throw new Error(`Stripe retrieval failed: ${response.status}`);
-  return response.json();
-}
-const cardOrders = [];
-for (const record of cardRecords) {
-  if (!/^pi_[A-Za-z0-9_]+$/.test(record.paymentIntentId)) throw new Error('Invalid PaymentIntent ID');
-  const intent = await stripeGet(`/payment_intents/${record.paymentIntentId}?expand[]=payment_method`);
-  cardOrders.push({
-    orderId: record.orderId,
-    id: intent.id,
-    livemode: intent.livemode,
-    metadataOrderId: intent.metadata?.order_id,
-    metadataItem: intent.metadata?.item,
-    metadataQuantity: intent.metadata?.quantity,
-    status: intent.status,
-    amount: intent.amount,
-    amountReceived: intent.amount_received,
-    currency: intent.currency,
-    paymentMethodType: intent.payment_method?.type ?? null,
-  });
-}
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, pathUsd, balance: balance.toString(), decimals, deliveries, cardOrders }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, pathUsd, balance: balance.toString(), decimals, deliveries }, null, 2) + '\n');

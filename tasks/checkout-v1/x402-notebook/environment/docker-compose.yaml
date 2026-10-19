@@ -51,7 +51,6 @@ services:
     build:
       context: ./merchant
     environment:
-      STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:?Stripe sandbox key is required}
       X402_RECIPIENT_ADDRESS: ${X402_RECIPIENT_ADDRESS:?Base Sepolia recipient is required}
       BASE_SEPOLIA_RPC_URL: ${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}
       X402_FACILITATOR_URL: ${X402_FACILITATOR_URL:-https://x402.org/facilitator}
