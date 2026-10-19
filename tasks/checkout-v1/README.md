@@ -66,7 +66,7 @@ merchant runs in a trusted sidecar and exposes only its own checkout flow.
 | --- | --- | --- |
 | `stripe-card` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
 | `stripe-link` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
-| `mpp-notebook` | MPP 402 charge | One paid delivery and exact trial-recipient pathUSD balance |
+| `mpp-notebook` | Stripe Checkout card form or MPP paid proxy | Exactly one paid Stripe card order or MPP delivery with exact trial-recipient pathUSD balance |
 | `paypal-notebook` | PayPal sandbox buyer approval | One completed PayPal order and capture |
 
 The wallet setup creates a fresh funded Tempo testnet payer and Link identity
@@ -74,11 +74,11 @@ for each trial. The sandbox card is synthetic. PayPal sandbox buyer credentials
 are supplied by the runner; provision distinct buyers for concurrent PayPal
 trials. Merchant secrets remain in trusted sidecars.
 
-Set `STRIPE_TEST_SECRET_KEY` for Stripe tasks and
+Set `STRIPE_TEST_SECRET_KEY` for Stripe and MPP tasks and
 `STRIPE_TEST_PUBLISHABLE_KEY` for Link. Set
 `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`,
 `PAYPAL_SANDBOX_BUYER_EMAIL`, and `PAYPAL_SANDBOX_BUYER_PASSWORD` for the PayPal
-task. MPP needs no provider secret. Before publishing, run each task's oracle
+task. Before publishing, run each task's oracle
 on Daytona and one unpaid trial that scores zero; verify the Link-only page
 actually excludes direct card entry. Refresh the dataset manifest and run
 repository checks. Add browser and tool profiles after these merchant flows

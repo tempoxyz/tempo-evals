@@ -1,4 +1,4 @@
-FROM node:22-trixie
+FROM node:24-trixie
 WORKDIR /srv
 COPY package.json ./
 RUN npm install --no-audit --no-fund

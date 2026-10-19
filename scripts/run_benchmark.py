@@ -373,7 +373,7 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
         selected = selected_checkout_tasks(options)
-        if selected & {"stripe-card", "stripe-link"} and not os.environ.get(
+        if selected & {"stripe-card", "stripe-link", "mpp-notebook"} and not os.environ.get(
             "STRIPE_TEST_SECRET_KEY", ""
         ).startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")

@@ -11,7 +11,7 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v1/mpp-notebook"
-digest = "sha256:2e92a639fd061333937567c91d1ecb5368700f0cd5c91cf45bdb2b574c9ad805"
+digest = "sha256:8c2711c65a7209d33b7e152bf441df245f8a176fbe2b768fdafffd07361066e0"
 
 [[tasks]]
 name = "checkout-v1/paypal-notebook"
