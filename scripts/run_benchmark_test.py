@@ -229,8 +229,13 @@ class RunBenchmarkTest(unittest.TestCase):
         ):
             preflight({}, {"task_suite": "checkout", "task_filter": "stripe-card"})
 
-    def test_mpp_checkout_preflight_needs_no_provider_secret(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
+    def test_mpp_checkout_preflight_requires_stripe_secret(self) -> None:
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
+        ):
+            preflight({}, {"task_suite": "checkout", "task_filter": "mpp-notebook"})
+        with patch.dict(os.environ, {"STRIPE_TEST_SECRET_KEY": "sk_test_dummy"}, clear=True):
             preflight({}, {"task_suite": "checkout", "task_filter": "mpp-notebook"})
 
     def test_paypal_checkout_preflight_requires_sandbox_credentials(self) -> None:
