@@ -15,7 +15,7 @@ digest = "sha256:2e92a639fd061333937567c91d1ecb5368700f0cd5c91cf45bdb2b574c9ad80
 
 [[tasks]]
 name = "checkout-v1/paypal-notebook"
-digest = "sha256:d9d79ff8cffacb68bb27ae040054a304cbf015c9ad07c7b9900ef054d39ef560"
+digest = "sha256:6bec75664ccb8f453988a7f5070637dcde957005357fab174489a16e7b57ca82"
 
 [[tasks]]
 name = "checkout-v1/stripe-card"
