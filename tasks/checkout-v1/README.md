@@ -1,6 +1,6 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. The four merchant tasks are under
+Planned dataset: `tempo/checkout-bench-v1`. The five merchant tasks are under
 development. They can only be selected with `--task-suite checkout` and are
 excluded from the default and `all` benchmark jobs. The earlier mixed-method
 Stripe task was validated on Daytona before these four tasks replaced it.
@@ -57,8 +57,8 @@ passed.
 
 ## Current merchants
 
-All four tasks request one Tempo Notebook for at most $12 and use the same
-agent instruction and Playwright browser. Each trial wallet lists its prepared
+All five tasks request one Tempo Notebook for at most $12 and use the same
+purchase request and Playwright browser. Each trial wallet lists its prepared
 payment methods. The method to use is not named in the instruction. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
 
@@ -68,17 +68,24 @@ merchant runs in a trusted sidecar and exposes only its own checkout flow.
 | `stripe-link` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
 | `mpp-notebook` | Stripe Checkout card form or MPP paid proxy | Exactly one paid Stripe card order or MPP delivery with exact trial-recipient pathUSD balance |
 | `paypal-notebook` | PayPal sandbox buyer approval | One completed PayPal order and capture |
+| `x402-notebook` | x402 Base Sepolia USDC charge | One delivered order and matching settled 12 USDC transfer |
 
 The wallet setup creates a fresh funded Tempo testnet payer and Link identity
 for each trial. The sandbox card is synthetic. PayPal sandbox buyer credentials
 are supplied by the runner; provision distinct buyers for concurrent PayPal
-trials. Merchant secrets remain in trusted sidecars.
+trials. The x402 task funds a fresh Base Sepolia buyer from a testnet funding
+pool. Its merchant recipient is that pool, so successful payments replenish it.
+The pool key is passed only to the trusted payment setup sidecar; the agent sees
+only its trial wallet. Merchant secrets remain in trusted sidecars.
 
 Set `STRIPE_TEST_SECRET_KEY` for Stripe and MPP tasks and
 `STRIPE_TEST_PUBLISHABLE_KEY` for Link. Set
 `PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`,
 `PAYPAL_SANDBOX_BUYER_EMAIL`, and `PAYPAL_SANDBOX_BUYER_PASSWORD` for the PayPal
-task. Before publishing, run each task's oracle
+task. Set `X402_FUNDING_PRIVATE_KEY` and the corresponding public
+`X402_RECIPIENT_ADDRESS` for the x402 task. The pool needs at least 12 Base
+Sepolia test USDC and a little test ETH for funding transfers. Before publishing,
+run each task's oracle
 on Daytona and one unpaid trial that scores zero; verify the Link-only page
 actually excludes direct card entry. Refresh the dataset manifest and run
 repository checks. Add browser and tool profiles after these merchant flows

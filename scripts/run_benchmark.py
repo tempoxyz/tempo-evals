@@ -395,6 +395,15 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             missing = [name for name in required if not os.environ.get(name)]
             if missing:
                 raise RuntimeError(f"PayPal checkout runs require {', '.join(missing)}")
+        if "x402-notebook" in selected:
+            if not re.fullmatch(
+                r"0x[0-9a-fA-F]{64}", os.environ.get("X402_FUNDING_PRIVATE_KEY", "")
+            ):
+                raise RuntimeError("x402 checkout requires X402_FUNDING_PRIVATE_KEY")
+            if not re.fullmatch(
+                r"0x[0-9a-fA-F]{40}", os.environ.get("X402_RECIPIENT_ADDRESS", "")
+            ):
+                raise RuntimeError("x402 checkout requires X402_RECIPIENT_ADDRESS")
     effective_agents = effective_agent_names(variant, options)
     needs_agent_auth = variant.get("needs_agent_auth") and effective_agents
     if needs_agent_auth and "claude-code" in effective_agents and not has_claude_auth():
