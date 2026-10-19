@@ -28,7 +28,7 @@ if (sourceBalance < amount) throw new Error('The x402 funding wallet needs at le
 if (await publicClient.getBalance({ address: source.address }) === 0n) throw new Error('The x402 funding wallet needs Base Sepolia test ETH for gas');
 wallet.baseSepolia = {
   chainId: 84532,
-  rpcUrl,
+  rpcUrl: 'https://sepolia.base.org',
   usdcAddress: usdc,
   address: buyer,
   privateKey: wallet.tempo.privateKey,

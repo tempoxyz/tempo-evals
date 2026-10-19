@@ -35,6 +35,11 @@ service = "merchant"
 command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts"
 timeout_sec = 90.0
 
+[[verifier.collect]]
+service = "recovery"
+command = "/srv/node_modules/.bin/tsx /srv/sweep.ts"
+timeout_sec = 120.0
+
 [environment]
 cpus = 2
 memory_mb = 4096

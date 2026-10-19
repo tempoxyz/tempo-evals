@@ -75,8 +75,10 @@ for each trial. The sandbox card is synthetic. PayPal sandbox buyer credentials
 are supplied by the runner; provision distinct buyers for concurrent PayPal
 trials. The x402 task funds a fresh Base Sepolia buyer from a testnet funding
 pool. Its merchant recipient is that pool, so successful payments replenish it.
-The pool key is passed only to the trusted payment setup sidecar; the agent sees
-only its trial wallet. Merchant secrets remain in trusted sidecars.
+After the agent stops, a trusted recovery sidecar returns unspent buyer USDC.
+The runner serializes x402 trials so the shared pool has only one pending funding
+transfer. The pool key stays in the trusted payment and recovery sidecars; the
+agent sees only its trial wallet. Merchant secrets remain in trusted sidecars.
 
 Set `STRIPE_TEST_SECRET_KEY` for Stripe and MPP tasks and
 `STRIPE_TEST_PUBLISHABLE_KEY` for Link. Set
@@ -84,9 +86,9 @@ Set `STRIPE_TEST_SECRET_KEY` for Stripe and MPP tasks and
 `PAYPAL_SANDBOX_BUYER_EMAIL`, and `PAYPAL_SANDBOX_BUYER_PASSWORD` for the PayPal
 task. Set `X402_FUNDING_PRIVATE_KEY` and the corresponding public
 `X402_RECIPIENT_ADDRESS` for the x402 task. The pool needs at least 12 Base
-Sepolia test USDC and a little test ETH for funding transfers. Before publishing,
-run each task's oracle
-on Daytona and one unpaid trial that scores zero; verify the Link-only page
+Sepolia test USDC and a little test ETH for funding and recovery transfers.
+Before publishing, run each task's oracle on Daytona and one unpaid trial that
+scores zero; verify the Link-only page
 actually excludes direct card entry. Refresh the dataset manifest and run
 repository checks. Add browser and tool profiles after these merchant flows
 are validated.

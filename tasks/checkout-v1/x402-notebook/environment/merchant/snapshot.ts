@@ -30,7 +30,7 @@ for (const record of records) {
   let transfers: { from: string; to: string; value: string }[] = [];
   if (settlement && /^0x[0-9a-fA-F]{64}$/.test(settlement.transaction)) {
     try {
-      const tx = await client.getTransactionReceipt({ hash: settlement.transaction as `0x${string}` });
+      const tx = await client.waitForTransactionReceipt({ hash: settlement.transaction as `0x${string}`, timeout: 75_000 });
       txStatus = tx.status;
       transfers = tx.logs.filter(log => log.address.toLowerCase() === usdc.toLowerCase()).flatMap(log => {
         try {
@@ -39,7 +39,7 @@ for (const record of records) {
           return [{ from: event.args.from, to: event.args.to, value: event.args.value.toString() }];
         } catch { return []; }
       });
-    } catch { /* An unconfirmed transaction cannot verify the order. */ }
+    } catch (error) { throw new Error('Could not confirm x402 settlement transaction', { cause: error }); }
   }
   deliveries.push({
     orderId: record.orderId,

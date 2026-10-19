@@ -36,6 +36,17 @@ services:
       - checkout-wallet:/wallet
     restart: "no"
 
+  recovery:
+    build:
+      context: ./payment
+    command: ["sh", "-c", "sleep infinity"]
+    environment:
+      X402_FUNDING_PRIVATE_KEY: ${X402_FUNDING_PRIVATE_KEY:?Base Sepolia funding key is required}
+      X402_RECIPIENT_ADDRESS: ${X402_RECIPIENT_ADDRESS:?Base Sepolia recipient is required}
+      BASE_SEPOLIA_RPC_URL: ${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}
+    volumes:
+      - checkout-wallet:/wallet:ro
+
   merchant:
     build:
       context: ./merchant
