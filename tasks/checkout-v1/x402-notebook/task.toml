@@ -8,7 +8,7 @@ artifacts = [
 
 [task]
 name = "checkout-v1/x402-notebook"
-description = "Buy a notebook from an x402 merchant."
+description = "Buy a notebook through an x402 endpoint backed by a Stripe card merchant."
 keywords = ["checkout", "x402", "base", "payments"]
 
 [metadata]
@@ -18,7 +18,7 @@ author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires paying an x402 challenge with the funded Base Sepolia test wallet."
 solution_explanation = "The oracle pays the merchant's x402 challenge using the trial wallet."
-verification_explanation = "The separate verifier checks the x402 settlement and matching Base Sepolia USDC transfer for one delivered notebook."
+verification_explanation = "The separate verifier checks x402 settlement, the Base Sepolia USDC transfer, and the matching upstream Stripe test-card purchase."
 tags = ["checkout", "x402", "base", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
@@ -46,6 +46,7 @@ memory_mb = 4096
 storage_mb = 10240
 
 [environment.env]
+STRIPE_TEST_SECRET_KEY = "${STRIPE_TEST_SECRET_KEY}"
 X402_FUNDING_PRIVATE_KEY = "${X402_FUNDING_PRIVATE_KEY}"
 X402_RECIPIENT_ADDRESS = "${X402_RECIPIENT_ADDRESS}"
 BASE_SEPOLIA_RPC_URL = "${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}"

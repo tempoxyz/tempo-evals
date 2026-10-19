@@ -24,9 +24,9 @@ const deliveries = records.map(record => {
 });
 const key = process.env.STRIPE_TEST_SECRET_KEY;
 if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
-let sessionRecords: { orderId: string; sessionId: string }[] = [];
+let cardRecords: { orderId: string; paymentIntentId: string }[] = [];
 try {
-  sessionRecords = readFileSync(`${dir}/sessions.jsonl`, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
+  cardRecords = readFileSync(`${dir}/card-orders.jsonl`, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
 } catch (error) {
   if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
 }
@@ -38,35 +38,22 @@ async function stripeGet(path: string) {
   if (!response.ok) throw new Error(`Stripe retrieval failed: ${response.status}`);
   return response.json();
 }
-const sessions = [];
-for (const record of sessionRecords) {
-  if (!/^cs_test_[A-Za-z0-9_]+$/.test(record.sessionId)) throw new Error('Invalid session ID');
-  const session = await stripeGet(`/checkout/sessions/${record.sessionId}?expand[]=payment_intent.payment_method`);
-  const items = await stripeGet(`/checkout/sessions/${record.sessionId}/line_items?limit=10`);
-  sessions.push({
+const cardOrders = [];
+for (const record of cardRecords) {
+  if (!/^pi_[A-Za-z0-9_]+$/.test(record.paymentIntentId)) throw new Error('Invalid PaymentIntent ID');
+  const intent = await stripeGet(`/payment_intents/${record.paymentIntentId}?expand[]=payment_method`);
+  cardOrders.push({
     orderId: record.orderId,
-    id: session.id,
-    livemode: session.livemode,
-    clientReferenceId: session.client_reference_id,
-    metadataOrderId: session.metadata?.order_id,
-    status: session.status,
-    paymentStatus: session.payment_status,
-    amountTotal: session.amount_total,
-    currency: session.currency,
-    paymentIntent: session.payment_intent && typeof session.payment_intent === 'object' ? {
-      id: session.payment_intent.id,
-      status: session.payment_intent.status,
-      amount: session.payment_intent.amount,
-      amountReceived: session.payment_intent.amount_received,
-      currency: session.payment_intent.currency,
-      paymentMethodType: session.payment_intent.payment_method?.type ?? null,
-    } : null,
-    items: items.data.map((item: { description: string; quantity: number; amount_total: number; currency: string }) => ({
-      description: item.description,
-      quantity: item.quantity,
-      amountTotal: item.amount_total,
-      currency: item.currency,
-    })),
+    id: intent.id,
+    livemode: intent.livemode,
+    metadataOrderId: intent.metadata?.order_id,
+    metadataItem: intent.metadata?.item,
+    metadataQuantity: intent.metadata?.quantity,
+    status: intent.status,
+    amount: intent.amount,
+    amountReceived: intent.amount_received,
+    currency: intent.currency,
+    paymentMethodType: intent.payment_method?.type ?? null,
   });
 }
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, pathUsd, balance: balance.toString(), decimals, deliveries, sessions }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, pathUsd, balance: balance.toString(), decimals, deliveries, cardOrders }, null, 2) + '\n');

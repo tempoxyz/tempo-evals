@@ -8,7 +8,7 @@ artifacts = [
 
 [task]
 name = "checkout-v1/mpp-notebook"
-description = "Buy a notebook from a merchant accepting Stripe card and MPP."
+description = "Buy a notebook through an MPP endpoint backed by a Stripe card merchant."
 keywords = ["checkout", "mpp", "tempo", "payments"]
 
 [metadata]
@@ -16,9 +16,9 @@ category = "checkout"
 benchmark = "checkout-bench-v1"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "Requires completing a card form or paying an MPP challenge with the prepared wallet."
+difficulty_explanation = "Requires paying an MPP challenge with the prepared wallet."
 solution_explanation = "The oracle pays the MPP challenge using the trial Tempo wallet."
-verification_explanation = "The separate verifier checks either a paid Stripe card order or an MPP receipt, delivery, and merchant testnet balance."
+verification_explanation = "The separate verifier checks the MPP receipt, merchant testnet balance, and matching upstream Stripe test-card purchase."
 tags = ["checkout", "mpp", "tempo", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."

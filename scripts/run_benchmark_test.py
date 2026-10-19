@@ -243,12 +243,20 @@ class RunBenchmarkTest(unittest.TestCase):
     def test_x402_checkout_preflight_requires_funding_wallet(self) -> None:
         with (
             patch.dict(os.environ, {}, clear=True),
+            self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
+        ):
+            preflight({}, {"task_suite": "checkout", "task_filter": "x402-notebook"})
+        with (
+            patch.dict(
+                os.environ, {"STRIPE_TEST_SECRET_KEY": "sk_test_dummy"}, clear=True
+            ),
             self.assertRaisesRegex(RuntimeError, "X402_FUNDING_PRIVATE_KEY"),
         ):
             preflight({}, {"task_suite": "checkout", "task_filter": "x402-notebook"})
         with patch.dict(
             os.environ,
             {
+                "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
                 "X402_FUNDING_PRIVATE_KEY": "0x" + "1" * 64,
                 "X402_RECIPIENT_ADDRESS": "0x" + "2" * 40,
             },

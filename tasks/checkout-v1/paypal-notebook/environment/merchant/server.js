@@ -41,9 +41,10 @@ function json(response, status, data) {
   response.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(data));
 }
 
-const page = `<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head>
-<body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p>
-<form method="post" action="/checkout"><button type="submit">Pay with PayPal</button></form></main></body></html>`;
+const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Notebook Store · Checkout</title>
+<style>body{font:16px system-ui,sans-serif;background:#f5f6f8;color:#17212b;margin:0}main{max-width:480px;margin:8vh auto;background:white;padding:32px;border-radius:12px;box-shadow:0 4px 24px #17212b15}h1{margin-top:0}section{display:flex;justify-content:space-between;padding:20px 0;border-top:1px solid #ddd;border-bottom:1px solid #ddd}button{width:100%;margin-top:24px;padding:14px;border:0;border-radius:24px;background:#ffc439;color:#17212b;font-size:16px;font-weight:700;cursor:pointer}small{display:block;margin-top:14px;color:#5d6873;text-align:center}</style></head>
+<body><main><h1>Checkout</h1><p>Review your order</p><section><span>Tempo Notebook <small>Quantity: 1</small></span><strong>$12.00</strong></section>
+<form method="post" action="/checkout"><button type="submit">Pay with PayPal</button></form><small>You will approve this payment on PayPal.</small></main></body></html>`;
 
 http.createServer(async (request, response) => {
   const url = new URL(request.url || '/', 'http://merchant:3000');
