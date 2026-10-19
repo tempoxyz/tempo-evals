@@ -103,6 +103,8 @@ def main() -> None:
         or any(
             isinstance(s, dict) and s.get("paymentStatus") == "paid" for s in sessions
         )
+        else "session_created"
+        if sessions
         else "checkout_not_started",
         "payment_provider_type": "tempo_testnet"
         if method == "tempo_mpp"
