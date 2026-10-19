@@ -3,7 +3,7 @@
 
 ## Overview
 
-Buy one Tempo Notebook for $12 from a controlled merchant using the PayPal sandbox buyer approval form. The agent receives the same wallet inventory and purchase request as every checkout task.
+Buy one Tempo Notebook for $12 from a controlled merchant using the PayPal sandbox buyer approval form. The agent receives the same wallet schema and purchase request as every checkout task.
 
 ## Verification
 

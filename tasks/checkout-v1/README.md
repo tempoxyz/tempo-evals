@@ -57,10 +57,10 @@ passed.
 
 ## Current merchants
 
-All four tasks request one Tempo Notebook for at most $12 and expose the same
-trial wallet inventory and Playwright browser. The method is not named in the
-agent instruction. Each merchant runs in a trusted sidecar and exposes only its
-own checkout flow.
+All four tasks request one Tempo Notebook for at most $12 and use the same
+agent instruction and Playwright browser. Each trial wallet lists its prepared
+payment methods. The method to use is not named in the instruction. Each
+merchant runs in a trusted sidecar and exposes only its own checkout flow.
 
 | Task | Payment surface | Independent proof |
 | --- | --- | --- |
