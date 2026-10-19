@@ -213,7 +213,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
     def test_checkout_explicit_task_path_requires_suite_selection(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
-            preflight({}, {"tasks": "tasks/checkout-v1/stripe-notebook"})
+            preflight({}, {"tasks": "tasks/checkout-v1/stripe-card"})
 
     def test_checkout_preflight_rejects_missing_task(self) -> None:
         with (
@@ -227,7 +227,18 @@ class RunBenchmarkTest(unittest.TestCase):
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=False),
             self.assertRaisesRegex(RuntimeError, "no authored task"),
         ):
-            preflight({}, {"task_suite": "checkout"})
+            preflight({}, {"task_suite": "checkout", "task_filter": "stripe-card"})
+
+    def test_mpp_checkout_preflight_needs_no_provider_secret(self) -> None:
+        with patch.dict(os.environ, {}, clear=True):
+            preflight({}, {"task_suite": "checkout", "task_filter": "mpp-notebook"})
+
+    def test_paypal_checkout_preflight_requires_sandbox_credentials(self) -> None:
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_CLIENT_ID"),
+        ):
+            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-notebook"})
 
     def test_checkout_preflight_allows_task_before_manifest_sync(self) -> None:
         with (
@@ -240,7 +251,7 @@ class RunBenchmarkTest(unittest.TestCase):
             ),
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=True),
         ):
-            preflight({}, {"task_suite": "checkout"})
+            preflight({}, {"task_suite": "checkout", "task_filter": "stripe-card"})
 
     def test_tempo_mcp_suite_uses_the_live_mcp_server(self) -> None:
         self.assertTrue(uses_live_mcp_eval({"task_suite": "tempo-mcp"}))

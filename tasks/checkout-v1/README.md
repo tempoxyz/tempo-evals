@@ -1,9 +1,9 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. The first Stripe merchant task is
-under development. It can only be selected with `--task-suite checkout` and is
-excluded from the default and `all` benchmark jobs. The browser oracle and
-independent provider verifier have passed one paid Stripe sandbox run on Daytona.
+Planned dataset: `tempo/checkout-bench-v1`. The four merchant tasks are under
+development. They can only be selected with `--task-suite checkout` and are
+excluded from the default and `all` benchmark jobs. The earlier mixed-method
+Stripe task was validated on Daytona before these four tasks replaced it.
 
 ## What It Measures
 
@@ -55,24 +55,33 @@ The exporter leaves `pass_5` blank with fewer than five trials. With at least
 five, it reports the fraction of five-trial subsets in which every checkout
 passed.
 
-## Bringing the First Merchant Online
+## Current merchants
 
-The `stripe-notebook` task uses a Stripe sandbox secret in trusted sidecars,
-a per-trial funded Tempo testnet payer in a read-only agent wallet volume, a
-sandbox card, a Link sandbox identity, and a Playwright MCP browser.
-Set `STRIPE_TEST_SECRET_KEY` in the runner's secret environment. Never commit it.
-The key is not included in the agent wallet. Before the agent starts, a setup
-sidecar creates a fresh Link identity with a synthetic email and phone, saves
-the sandbox card through a no-charge Stripe Checkout setup session, and checks
-Stripe's resulting Link payment method. The agent receives only the trial wallet
-inventory and sandbox login code.
+All four tasks request one Tempo Notebook for at most $12 and expose the same
+trial wallet inventory and Playwright browser. The method is not named in the
+agent instruction. Each merchant runs in a trusted sidecar and exposes only its
+own checkout flow.
 
-The checkout runner route and EvalKit validation are opt-in. Before publishing
-this task, prove paid card and Link purchases through the browser oracle on
-Daytona and one unpaid run that scores zero. Refresh the dataset manifest and
-run repository checks. Add further browser and tool profiles after this first
-task is proven. Set `CHECKOUT_ORACLE_PAYMENT_METHOD=link` for the Link oracle
-canary; the default oracle uses the card.
+| Task | Payment surface | Independent proof |
+| --- | --- | --- |
+| `stripe-card` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
+| `stripe-link` | Stripe Checkout Link form | One paid Link PaymentIntent and matching order |
+| `mpp-notebook` | MPP 402 charge | One paid delivery and exact trial-recipient pathUSD balance |
+| `paypal-notebook` | PayPal sandbox buyer approval | One completed PayPal order and capture |
+
+The wallet setup creates a fresh funded Tempo testnet payer and Link identity
+for each trial. The sandbox card is synthetic. PayPal sandbox buyer credentials
+are supplied by the runner; provision distinct buyers for concurrent PayPal
+trials. Merchant secrets remain in trusted sidecars.
+
+Set `STRIPE_TEST_SECRET_KEY` for Stripe tasks. Set
+`PAYPAL_SANDBOX_CLIENT_ID`, `PAYPAL_SANDBOX_CLIENT_SECRET`,
+`PAYPAL_SANDBOX_BUYER_EMAIL`, and `PAYPAL_SANDBOX_BUYER_PASSWORD` for the PayPal
+task. MPP needs no provider secret. Before publishing, run each task's oracle
+on Daytona and one unpaid trial that scores zero; verify the Link-only page
+actually excludes direct card entry. Refresh the dataset manifest and run
+repository checks. Add browser and tool profiles after these merchant flows
+are validated.
 
 Changes to task prompts, fixtures, verification, or scoring after publication
 must follow the repository's benchmark-major versioning rule.

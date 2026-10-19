@@ -10,6 +10,18 @@ name = "Tempo Labs"
 
 
 [[tasks]]
-name = "checkout-v1/stripe-notebook"
-digest = "sha256:2446c13b32d2e808e03a97d739933c0c715275807e01b61fa8cb051bb142fd63"
+name = "checkout-v1/mpp-notebook"
+digest = "sha256:5bb4d33064ffcda6190743e3abe34c497c73aa86633cd4f45413b40e25a953bf"
+
+[[tasks]]
+name = "checkout-v1/paypal-notebook"
+digest = "sha256:78c46fb6fda4716db1b7467631e157041bad37ef09fb78b91d451b3e61eadd8f"
+
+[[tasks]]
+name = "checkout-v1/stripe-card"
+digest = "sha256:a72b2c934e3b0eb6c3766c055342520ee23690a5599f795439e64dcc1c22364c"
+
+[[tasks]]
+name = "checkout-v1/stripe-link"
+digest = "sha256:1128fdc465d936e2bc15f06136a2f992c2c98224cb55f5597334e8f91dece744"
 

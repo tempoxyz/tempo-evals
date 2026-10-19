@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import fnmatch
 import json
 import os
 import re
@@ -321,6 +322,27 @@ def has_checkout_tasks() -> bool:
     )
 
 
+def selected_checkout_tasks(options: dict[str, Any]) -> set[str]:
+    names = {
+        task_file.parent.name
+        for task_file in Path("tasks/checkout-v1").glob("*/task.toml")
+    }
+    requested_path = options.get("tasks")
+    if requested_path and is_checkout_tasks_path(requested_path):
+        path = Path(requested_path).resolve()
+        if path != Path("tasks/checkout-v1").resolve():
+            names &= {path.name}
+    task_filter = options.get("task_filter")
+    if task_filter:
+        names = {
+            name
+            for name in names
+            if fnmatch.fnmatchcase(name, task_filter)
+            or fnmatch.fnmatchcase(f"checkout-v1/{name}", task_filter)
+        }
+    return names
+
+
 def ensure_mpp_docs_bundle(options: dict[str, Any]) -> str | None:
     source = options.get("mpp_docs_source")
     if not source:
@@ -348,12 +370,23 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
     ):
         raise RuntimeError("Checkout task paths require --task-suite checkout")
     if options.get("task_suite") == "checkout":
-        if not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
-            raise RuntimeError(
-                "Checkout runs require STRIPE_TEST_SECRET_KEY in sandbox mode"
-            )
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
+        selected = selected_checkout_tasks(options)
+        if selected & {"stripe-card", "stripe-link"} and not os.environ.get(
+            "STRIPE_TEST_SECRET_KEY", ""
+        ).startswith("sk_test_"):
+            raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")
+        if "paypal-notebook" in selected:
+            required = (
+                "PAYPAL_SANDBOX_CLIENT_ID",
+                "PAYPAL_SANDBOX_CLIENT_SECRET",
+                "PAYPAL_SANDBOX_BUYER_EMAIL",
+                "PAYPAL_SANDBOX_BUYER_PASSWORD",
+            )
+            missing = [name for name in required if not os.environ.get(name)]
+            if missing:
+                raise RuntimeError(f"PayPal checkout runs require {', '.join(missing)}")
     effective_agents = effective_agent_names(variant, options)
     needs_agent_auth = variant.get("needs_agent_auth") and effective_agents
     if needs_agent_auth and "claude-code" in effective_agents and not has_claude_auth():
