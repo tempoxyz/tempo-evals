@@ -377,6 +377,12 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             "STRIPE_TEST_SECRET_KEY", ""
         ).startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")
+        if "stripe-link" in selected and not os.environ.get(
+            "STRIPE_TEST_PUBLISHABLE_KEY", ""
+        ).startswith("pk_test_"):
+            raise RuntimeError(
+                "Stripe Link checkout requires STRIPE_TEST_PUBLISHABLE_KEY"
+            )
         if "paypal-notebook" in selected:
             required = (
                 "PAYPAL_SANDBOX_CLIENT_ID",

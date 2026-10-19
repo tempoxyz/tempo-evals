@@ -26,6 +26,7 @@ http.createServer(async (request, response) => {
     const form = new URLSearchParams({
       mode: 'payment',
       'payment_method_types[0]': 'card',
+      'wallet_options[link][display]': 'never',
       client_reference_id: orderId,
       'metadata[order_id]': orderId,
       'line_items[0][price_data][currency]': 'usd',

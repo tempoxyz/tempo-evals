@@ -29,9 +29,10 @@ async function rpc(method: string, params: object, notification = false): Promis
   return message.result;
 }
 
-await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'checkout-paypal-oracle', version: '1' } });
-await rpc('notifications/initialized', {}, true);
-const script = `async (page) => {
+async function main() {
+  await rpc('initialize', { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'checkout-paypal-oracle', version: '1' } });
+  await rpc('notifications/initialized', {}, true);
+  const script = `async (page) => {
   await page.goto('http://merchant:3000');
   let button;
   for (let attempt = 0; attempt < 60 && !button; attempt++) {
@@ -61,6 +62,12 @@ const script = `async (page) => {
   await page.waitForURL(/merchant:3000\\/complete/, { timeout: 60000 });
   return 'PayPal approval returned to merchant';
 }`;
-const result = await rpc('tools/call', { name: 'browser_run_code_unsafe', arguments: { code: script } });
-if (result.isError) throw new Error('PayPal browser purchase failed');
-console.log('Oracle PayPal checkout completed');
+  const result = await rpc('tools/call', { name: 'browser_run_code_unsafe', arguments: { code: script } });
+  if (result.isError) throw new Error('PayPal browser purchase failed');
+  console.log('Oracle PayPal checkout completed');
+}
+
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+});

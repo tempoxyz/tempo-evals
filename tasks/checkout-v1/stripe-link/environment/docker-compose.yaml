@@ -27,7 +27,7 @@ services:
       context: ./merchant
     environment:
       STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:?Stripe sandbox key is required}
-      PUBLIC_BASE_URL: http://merchant:3000
+      STRIPE_TEST_PUBLISHABLE_KEY: ${STRIPE_TEST_PUBLISHABLE_KEY:?Stripe publishable test key is required}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1))"]
       interval: 2s

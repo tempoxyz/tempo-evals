@@ -16,9 +16,9 @@ category = "checkout"
 benchmark = "checkout-bench-v1"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "Requires navigation through a hosted payment page and use of a prepared sandbox payment method."
+difficulty_explanation = "Requires navigation through an embedded Link payment form with a prepared sandbox identity."
 solution_explanation = "The oracle completes the Stripe link checkout and returns to the merchant."
-verification_explanation = "The merchant queries Stripe after the attempt; the separate verifier checks the paid session, item, total, and PaymentIntent."
+verification_explanation = "The merchant queries Stripe after the attempt; the separate verifier checks the Link PaymentIntent, item, and total."
 tags = ["checkout", "stripe", "browser", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
@@ -42,6 +42,7 @@ storage_mb = 10240
 
 [environment.env]
 STRIPE_TEST_SECRET_KEY = "${STRIPE_TEST_SECRET_KEY}"
+STRIPE_TEST_PUBLISHABLE_KEY = "${STRIPE_TEST_PUBLISHABLE_KEY}"
 TEMPO_RPC_URL = "${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}"
 PAYPAL_SANDBOX_BUYER_EMAIL = "${PAYPAL_SANDBOX_BUYER_EMAIL:-}"
 PAYPAL_SANDBOX_BUYER_PASSWORD = "${PAYPAL_SANDBOX_BUYER_PASSWORD:-}"
