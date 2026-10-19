@@ -71,8 +71,11 @@ class ExportResultsTest(unittest.TestCase):
             {"task_family": "custom-task", "profile": "unknown"},
         )
         self.assertEqual(
-            parse_task_name("checkout-v1/stripe-card"),
-            {"task_family": "checkout-v1/stripe-card", "profile": "browser-mcp"},
+            parse_task_name("checkout-v1/stripe-card-checkout"),
+            {
+                "task_family": "checkout-v1/stripe-card-checkout",
+                "profile": "browser-mcp",
+            },
         )
 
     def test_export_results_writes_trial_and_summary_outputs(self) -> None:
@@ -155,7 +158,7 @@ class ExportResultsTest(unittest.TestCase):
                 trial_dir / "result.json",
                 trial(
                     {
-                        "task_name": "checkout-v1/stripe-card",
+                        "task_name": "checkout-v1/stripe-card-checkout",
                         "verifier_result": {"rewards": {"reward": 1}},
                     }
                 ),
@@ -190,7 +193,7 @@ class ExportResultsTest(unittest.TestCase):
                     job_dir / f"trial-{index}" / "result.json",
                     trial(
                         {
-                            "task_name": "checkout-v1/stripe-card",
+                            "task_name": "checkout-v1/stripe-card-checkout",
                             "trial_name": f"trial-{index}",
                             "verifier_result": {"rewards": {"reward": int(index != 0)}},
                         }

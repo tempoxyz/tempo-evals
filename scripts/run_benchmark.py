@@ -374,17 +374,17 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             raise RuntimeError("Checkout has no authored task yet")
         selected = selected_checkout_tasks(options)
         if selected & {
-            "stripe-card",
-            "stripe-link",
+            "stripe-card-checkout",
+            "stripe-link-checkout",
         } and not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")
-        if "stripe-link" in selected and not os.environ.get(
+        if "stripe-link-checkout" in selected and not os.environ.get(
             "STRIPE_TEST_PUBLISHABLE_KEY", ""
         ).startswith("pk_test_"):
             raise RuntimeError(
                 "Stripe Link checkout requires STRIPE_TEST_PUBLISHABLE_KEY"
             )
-        if "paypal-notebook" in selected:
+        if "paypal-checkout" in selected:
             required = (
                 "PAYPAL_SANDBOX_CLIENT_ID",
                 "PAYPAL_SANDBOX_CLIENT_SECRET",
@@ -394,7 +394,7 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             missing = [name for name in required if not os.environ.get(name)]
             if missing:
                 raise RuntimeError(f"PayPal checkout runs require {', '.join(missing)}")
-        if "x402-notebook" in selected:
+        if "x402-usdc-checkout" in selected:
             if not re.fullmatch(
                 r"0x[0-9a-fA-F]{64}", os.environ.get("X402_FUNDING_PRIVATE_KEY", "")
             ):
@@ -1519,7 +1519,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     variant = validate_run_options(variant_name, options)
     if options.get(
         "task_suite"
-    ) == "checkout" and "x402-notebook" in selected_checkout_tasks(options):
+    ) == "checkout" and "x402-usdc-checkout" in selected_checkout_tasks(options):
         if options.get("concurrency") not in (None, "1"):
             raise RuntimeError("x402 checkout runs require --concurrency 1")
         options = options | {"concurrency": "1"}

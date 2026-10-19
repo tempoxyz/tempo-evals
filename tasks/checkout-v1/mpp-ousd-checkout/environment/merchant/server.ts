@@ -7,10 +7,10 @@ import { Mppx, NodeListener, Request as ServerRequest, tempo } from 'mppx/server
 import { Proxy } from 'mppx/proxy';
 
 const recipient = `0x${randomBytes(20).toString('hex')}` as `0x${string}`;
-const pathUsd = '0x20c0000000000000000000000000000000000000' as `0x${string}`;
+const ousd = '0x20c0000000000000000000006a37DA5C996874BE' as `0x${string}`;
 const client = createClient({ chain: Chain.testnet, transport: rpcHttp(process.env.TEMPO_RPC_URL || 'https://rpc.moderato.tempo.xyz') });
 const mppx = Mppx.create({
-  methods: [tempo({ currencies: [pathUsd], getClient: () => client, recipient, testnet: true })],
+  methods: [tempo({ currencies: [ousd], getClient: () => client, recipient, testnet: true })],
   secretKey: randomBytes(32).toString('hex'),
 });
 const proxy = Proxy.create({
@@ -22,7 +22,7 @@ const proxy = Proxy.create({
 });
 const log = '/var/log/checkout/deliveries.jsonl';
 mkdirSync('/var/log/checkout', { recursive: true });
-writeFileSync('/var/log/checkout/merchant.json', JSON.stringify({ recipient, pathUsd }));
+writeFileSync('/var/log/checkout/merchant.json', JSON.stringify({ recipient, ousd }));
 const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p><a href="/buy">Buy notebook</a></main></body></html>';
 
 http.createServer((request, response) => {

@@ -1,9 +1,9 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. The five merchant tasks are under
-development. They can only be selected with `--task-suite checkout` and are
-excluded from the default and `all` benchmark jobs. The earlier mixed-method
-Stripe task was validated on Daytona before these four tasks replaced it.
+Planned dataset: `tempo/checkout-bench-v1`. The five merchant tasks have passed
+Daytona oracle validation but the dataset is not published. They can only be
+selected with `--task-suite checkout` and are excluded from the default and
+`all` benchmark jobs.
 
 ## What It Measures
 
@@ -62,13 +62,18 @@ purchase request and Playwright browser. Each trial wallet lists its prepared
 payment methods. The method to use is not named in the instruction. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
 
+Harbor starts a separate environment for each task and trial. In that
+environment, `http://merchant:3000` resolves to that task's merchant container.
+The shared address is local to the trial; agents cannot browse another task's
+merchant through it.
+
 | Task | Payment surface | Independent proof |
 | --- | --- | --- |
-| `stripe-card` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
-| `stripe-link` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
-| `mpp-notebook` | MPP paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient pathUSD balance |
-| `paypal-notebook` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
-| `x402-notebook` | x402 Base Sepolia USDC endpoint only | One delivered order and matching settled 12 USDC transfer |
+| `stripe-card-checkout` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
+| `stripe-link-checkout` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
+| `mpp-ousd-checkout` | MPP OUSD paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient OUSD balance |
+| `paypal-checkout` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
+| `x402-usdc-checkout` | x402 Base Sepolia USDC endpoint only | One delivered order and matching settled 12 USDC transfer |
 
 The wallet setup creates a fresh funded Tempo testnet payer and Link identity
 for each trial. The sandbox card is synthetic. PayPal sandbox buyer credentials

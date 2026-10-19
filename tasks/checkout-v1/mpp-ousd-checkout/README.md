@@ -7,4 +7,4 @@ Buy one Tempo Notebook for $12 from a controlled merchant exposing only an MPP p
 
 ## Verification
 
-The separate verifier requires one notebook delivery, a successful MPP receipt, and exactly $12 of pathUSD at the trial-specific merchant recipient. A 402 response or success message alone does not count.
+The separate verifier requires one notebook delivery, a successful MPP receipt, and exactly $12 of OUSD at the trial-specific merchant recipient. A 402 response or success message alone does not count.

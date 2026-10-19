@@ -28,8 +28,8 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or (
             not isinstance(snapshot.get("recipient"), str)
             or len(snapshot["recipient"]) != 42
-            or snapshot.get("pathUsd", "").lower()
-            != "0x20c0000000000000000000000000000000000000"
+            or snapshot.get("ousd", "").lower()
+            != "0x20c0000000000000000000006a37da5c996874be"
         )
     ):
         return False, "payment_or_order_mismatch", None

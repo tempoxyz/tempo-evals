@@ -213,7 +213,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
     def test_checkout_explicit_task_path_requires_suite_selection(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
-            preflight({}, {"tasks": "tasks/checkout-v1/stripe-card"})
+            preflight({}, {"tasks": "tasks/checkout-v1/stripe-card-checkout"})
 
     def test_checkout_preflight_rejects_missing_task(self) -> None:
         with (
@@ -227,18 +227,24 @@ class RunBenchmarkTest(unittest.TestCase):
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=False),
             self.assertRaisesRegex(RuntimeError, "no authored task"),
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "stripe-card"})
+            preflight(
+                {}, {"task_suite": "checkout", "task_filter": "stripe-card-checkout"}
+            )
 
     def test_mpp_checkout_preflight_needs_no_stripe_secret(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
-            preflight({}, {"task_suite": "checkout", "task_filter": "mpp-notebook"})
+            preflight(
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-checkout"}
+            )
 
     def test_x402_checkout_preflight_requires_funding_wallet(self) -> None:
         with (
             patch.dict(os.environ, {}, clear=True),
             self.assertRaisesRegex(RuntimeError, "X402_FUNDING_PRIVATE_KEY"),
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "x402-notebook"})
+            preflight(
+                {}, {"task_suite": "checkout", "task_filter": "x402-usdc-checkout"}
+            )
         with patch.dict(
             os.environ,
             {
@@ -247,7 +253,9 @@ class RunBenchmarkTest(unittest.TestCase):
             },
             clear=True,
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "x402-notebook"})
+            preflight(
+                {}, {"task_suite": "checkout", "task_filter": "x402-usdc-checkout"}
+            )
 
     def test_x402_checkout_rejects_parallel_trials(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "require --concurrency 1"):
@@ -255,7 +263,7 @@ class RunBenchmarkTest(unittest.TestCase):
                 "daytona-oracle",
                 {
                     "task_suite": "checkout",
-                    "task_filter": "x402-notebook",
+                    "task_filter": "x402-usdc-checkout",
                     "concurrency": "2",
                     "profile": "docs",
                 },
@@ -266,7 +274,7 @@ class RunBenchmarkTest(unittest.TestCase):
             patch.dict(os.environ, {}, clear=True),
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_CLIENT_ID"),
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-notebook"})
+            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-checkout"})
 
     def test_checkout_preflight_allows_task_before_manifest_sync(self) -> None:
         with (
@@ -279,7 +287,9 @@ class RunBenchmarkTest(unittest.TestCase):
             ),
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=True),
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "stripe-card"})
+            preflight(
+                {}, {"task_suite": "checkout", "task_filter": "stripe-card-checkout"}
+            )
 
     def test_tempo_mcp_suite_uses_the_live_mcp_server(self) -> None:
         self.assertTrue(uses_live_mcp_eval({"task_suite": "tempo-mcp"}))

@@ -7,19 +7,19 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/stripe-link"
-description = "Buy a notebook from a Stripe link merchant."
-keywords = ["checkout", "stripe", "payments", "browser"]
+name = "checkout-v1/mpp-ousd-checkout"
+description = "Buy a notebook from an MPP merchant."
+keywords = ["checkout", "mpp", "tempo", "payments"]
 
 [metadata]
 category = "checkout"
 benchmark = "checkout-bench-v1"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "Requires navigation through an embedded Link payment form with a prepared sandbox identity."
-solution_explanation = "The oracle completes the Stripe link checkout and returns to the merchant."
-verification_explanation = "The merchant queries Stripe after the attempt; the separate verifier checks the Link PaymentIntent, item, and total."
-tags = ["checkout", "stripe", "browser", "payments"]
+difficulty_explanation = "Requires paying an MPP challenge with the prepared wallet."
+solution_explanation = "The oracle pays the MPP challenge using the trial Tempo wallet."
+verification_explanation = "The separate verifier checks the MPP receipt, delivered notebook, and trial-specific merchant OUSD testnet balance."
+tags = ["checkout", "mpp", "tempo", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
 
@@ -32,7 +32,7 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "tsx /srv/snapshot.ts"
+command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts"
 timeout_sec = 90.0
 
 [environment]
@@ -41,8 +41,6 @@ memory_mb = 4096
 storage_mb = 10240
 
 [environment.env]
-STRIPE_TEST_SECRET_KEY = "${STRIPE_TEST_SECRET_KEY}"
-STRIPE_TEST_PUBLISHABLE_KEY = "${STRIPE_TEST_PUBLISHABLE_KEY}"
 TEMPO_RPC_URL = "${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}"
 PAYPAL_SANDBOX_BUYER_EMAIL = "${PAYPAL_SANDBOX_BUYER_EMAIL:-}"
 PAYPAL_SANDBOX_BUYER_PASSWORD = "${PAYPAL_SANDBOX_BUYER_PASSWORD:-}"

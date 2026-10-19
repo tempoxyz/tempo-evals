@@ -4,7 +4,7 @@ import { Chain } from 'viem/tempo';
 import { Receipt } from 'mppx';
 
 const dir = '/var/log/checkout';
-const { recipient, pathUsd } = JSON.parse(readFileSync(`${dir}/merchant.json`, 'utf8'));
+const { recipient, ousd } = JSON.parse(readFileSync(`${dir}/merchant.json`, 'utf8'));
 let records: { orderId: string; item: string; quantity: number; amount: string; currency: string; receipt: string }[] = [];
 try {
   records = readFileSync(`${dir}/deliveries.jsonl`, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
@@ -16,8 +16,8 @@ const abi = [
   { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'decimals', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] },
 ] as const;
-const balance = await client.readContract({ address: pathUsd, abi, functionName: 'balanceOf', args: [recipient] });
-const decimals = await client.readContract({ address: pathUsd, abi, functionName: 'decimals' });
+const balance = await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [recipient] });
+const decimals = await client.readContract({ address: ousd, abi, functionName: 'decimals' });
 const deliveries = records.map(record => {
   const receipt = record.receipt ? Receipt.deserialize(record.receipt) : null;
   return {
@@ -26,4 +26,4 @@ const deliveries = records.map(record => {
     receiptStatus: receipt?.status ?? null, receiptMethod: receipt?.method ?? null,
   };
 });
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, pathUsd, balance: balance.toString(), decimals, deliveries }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, ousd, balance: balance.toString(), decimals, deliveries }, null, 2) + '\n');

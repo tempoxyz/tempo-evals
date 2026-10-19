@@ -7,19 +7,19 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/stripe-card"
-description = "Buy a notebook from a Stripe card merchant."
-keywords = ["checkout", "stripe", "payments", "browser"]
+name = "checkout-v1/x402-usdc-checkout"
+description = "Buy a notebook from an x402 merchant."
+keywords = ["checkout", "x402", "base", "payments"]
 
 [metadata]
 category = "checkout"
 benchmark = "checkout-bench-v1"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "Requires navigation through a hosted payment page and use of a prepared sandbox payment method."
-solution_explanation = "The oracle completes the Stripe card checkout and returns to the merchant."
-verification_explanation = "The merchant queries Stripe after the attempt; the separate verifier checks the paid session, item, total, and PaymentIntent."
-tags = ["checkout", "stripe", "browser", "payments"]
+difficulty_explanation = "Requires paying an x402 challenge with the funded Base Sepolia test wallet."
+solution_explanation = "The oracle pays the merchant's x402 challenge using the trial wallet."
+verification_explanation = "The separate verifier checks the x402 settlement and matching Base Sepolia USDC transfer for one delivered notebook."
+tags = ["checkout", "x402", "base", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
 
@@ -32,8 +32,13 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "tsx /srv/snapshot.ts"
+command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts"
 timeout_sec = 90.0
+
+[[verifier.collect]]
+service = "recovery"
+command = "/srv/node_modules/.bin/tsx /srv/sweep.ts"
+timeout_sec = 120.0
 
 [environment]
 cpus = 2
@@ -41,7 +46,10 @@ memory_mb = 4096
 storage_mb = 10240
 
 [environment.env]
-STRIPE_TEST_SECRET_KEY = "${STRIPE_TEST_SECRET_KEY}"
+X402_FUNDING_PRIVATE_KEY = "${X402_FUNDING_PRIVATE_KEY}"
+X402_RECIPIENT_ADDRESS = "${X402_RECIPIENT_ADDRESS}"
+BASE_SEPOLIA_RPC_URL = "${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}"
+X402_FACILITATOR_URL = "${X402_FACILITATOR_URL:-https://x402.org/facilitator}"
 TEMPO_RPC_URL = "${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}"
 PAYPAL_SANDBOX_BUYER_EMAIL = "${PAYPAL_SANDBOX_BUYER_EMAIL:-}"
 PAYPAL_SANDBOX_BUYER_PASSWORD = "${PAYPAL_SANDBOX_BUYER_PASSWORD:-}"
