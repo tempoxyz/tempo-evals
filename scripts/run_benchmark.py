@@ -1518,10 +1518,9 @@ def main(argv: list[str]) -> None:
 
 def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     variant = validate_run_options(variant_name, options)
-    if (
-        options.get("task_suite") == "checkout"
-        and "x402-notebook" in selected_checkout_tasks(options)
-    ):
+    if options.get(
+        "task_suite"
+    ) == "checkout" and "x402-notebook" in selected_checkout_tasks(options):
         if options.get("concurrency") not in (None, "1"):
             raise RuntimeError("x402 checkout runs require --concurrency 1")
         options = options | {"concurrency": "1"}
