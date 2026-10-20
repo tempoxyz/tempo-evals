@@ -8,7 +8,7 @@ services:
       browser:
         condition: service_healthy
       link:
-        condition: service_completed_successfully
+        condition: service_started
     volumes:
       - checkout-wallet:/wallet:ro
   wallet:

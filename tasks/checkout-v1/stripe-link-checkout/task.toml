@@ -40,6 +40,12 @@ cpus = 2
 memory_mb = 4096
 storage_mb = 10240
 
+[environment.healthcheck]
+command = "test -f /wallet/link-ready"
+interval_sec = 2.0
+timeout_sec = 10.0
+retries = 150
+
 [environment.env]
 STRIPE_TEST_SECRET_KEY = "${STRIPE_TEST_SECRET_KEY}"
 STRIPE_TEST_PUBLISHABLE_KEY = "${STRIPE_TEST_PUBLISHABLE_KEY}"

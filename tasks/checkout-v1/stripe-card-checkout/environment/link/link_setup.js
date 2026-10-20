@@ -80,24 +80,26 @@ async function main() {
     }
     const script = `async (page) => {
     await page.goto(${JSON.stringify(session.url)});
-    const fill = async (name, value) => {
-      for (let attempt = 0; attempt < 60; attempt++) {
+    const fill = async (name, value, optional = false) => {
+      for (let attempt = 0; attempt < (optional ? 4 : 60); attempt++) {
         for (const frame of [page, ...page.frames()]) {
           const field = frame.getByRole('textbox', { name }).first();
           if (await field.count()) { await field.fill(value); return; }
         }
         await page.waitForTimeout(500);
       }
-      throw new Error('Missing Link setup field: ' + name);
+      if (!optional) throw new Error('Missing Link setup field: ' + name);
     };
     await fill('Card number', ${JSON.stringify(card.number)});
     await fill('Expiration', ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
     await fill(/CVC/, ${JSON.stringify(card.cvc)});
     await fill('Cardholder name', 'Tempo Test Buyer');
-    await fill('ZIP', '94103');
-    const saveWithLink = page.getByRole('checkbox', { name: /Save my information with Link/ });
+    await page.getByRole('combobox', { name: 'Country or region' }).selectOption('US');
+    await fill(/ZIP|Postal code/i, '94103', true);
+    const saveWithLink = page.getByRole('checkbox', { name: /Save my information/i });
     await saveWithLink.waitFor({ state: 'visible', timeout: 30000 });
     await saveWithLink.check();
+    await page.getByRole('combobox', { name: 'Phone number country code' }).selectOption('US');
     await page.getByRole('textbox', { name: 'Phone number' }).fill(${JSON.stringify(phone)});
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await page.waitForURL(${JSON.stringify(base + '/')}, { timeout: 60000 });
@@ -106,7 +108,10 @@ async function main() {
     const result = await browserRpc('tools/call', {
       name: 'browser_run_code_unsafe', arguments: { code: script },
     });
-    if (result.isError) continue;
+    if (result.isError) {
+      const detail = result.content?.find(item => item.type === 'text')?.text || '';
+      console.warn(detail.split('\n').find(line => line.includes('Error:')) || 'Link browser setup returned an error');
+    }
 
     const verified = await stripe(`/checkout/sessions/${session.id}?expand[]=setup_intent.payment_method`);
     const setup = verified.setup_intent;
@@ -119,6 +124,7 @@ async function main() {
 
     wallet.link.phone = phone;
     writeFileSync('/wallet/wallet.json', JSON.stringify(wallet, null, 2) + '\n');
+    writeFileSync('/wallet/link-ready', '');
     console.log('Trial Link sandbox identity enrolled and verified');
     return;
   }
