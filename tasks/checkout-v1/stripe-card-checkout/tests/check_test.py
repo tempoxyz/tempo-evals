@@ -85,6 +85,7 @@ class CheckoutVerifierTests(unittest.TestCase):
                 json.loads((root / "details.json").read_text()),
                 {
                     "reason": "verified",
+                    "extra_checkout_attempts": 0,
                     "payment_method": "card",
                     "checkout_stage": "verified",
                     "payment_provider_type": "stripe_sandbox",

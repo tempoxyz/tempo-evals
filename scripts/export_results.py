@@ -75,7 +75,18 @@ CHECKOUT_TRIAL_COLUMNS = [
     "payment_method",
     "payment_provider_type",
     "verification_reason",
+    "extra_checkout_attempts",
+    "checkout_score",
 ]
+CHECKOUT_SUMMARY_COLUMNS = [
+    "n_checkout_scored",
+    "checkout_score_coverage",
+    "mean_checkout_score",
+]
+
+# Fixed for checkout-v1 so model comparisons use the same reference points.
+CHECKOUT_TARGET_TURNS = 10
+CHECKOUT_TARGET_SECONDS = 180
 
 SUMMARY_COLUMNS = [
     "run_id",
@@ -298,6 +309,32 @@ def model_turns(result: JsonObject, file_path: Path) -> Numeric:
     return ""
 
 
+def checkout_score(
+    passed: bool, turns: Numeric, extra_attempts: Any, agent_seconds: Numeric
+) -> Numeric:
+    if not passed:
+        return 0
+    turns_number = as_number(turns)
+    attempts_number = as_number(extra_attempts)
+    seconds_number = as_number(agent_seconds)
+    if (
+        turns_number is None
+        or turns_number <= 0
+        or attempts_number is None
+        or attempts_number < 0
+        or int(attempts_number) != attempts_number
+        or seconds_number is None
+        or seconds_number <= 0
+    ):
+        return ""
+    turn_score = min(1, CHECKOUT_TARGET_TURNS / turns_number)
+    retry_score = 1 / (1 + attempts_number)
+    time_score = min(1, CHECKOUT_TARGET_SECONDS / seconds_number)
+    return round(
+        0.6 + 0.4 * (0.4 * turn_score + 0.35 * retry_score + 0.25 * time_score), 4
+    )
+
+
 def trace_metrics(file_path: Path) -> dict[str, Numeric]:
     calls = denied = errors = latency = 0
     target_id = ""
@@ -421,6 +458,9 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         if passed
         else "verifier_failed"
     )
+    turns = model_turns(result, file_path)
+    agent_seconds = duration_sec(result.get("agent_execution"))
+    extra_attempts = checkout_details.get("extra_checkout_attempts")
 
     return {
         "run_id": context["run_id"],
@@ -459,12 +499,12 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         ),
         "environment_setup_duration_sec": duration_sec(result.get("environment_setup")),
         "agent_setup_duration_sec": duration_sec(result.get("agent_setup")),
-        "agent_execution_duration_sec": duration_sec(result.get("agent_execution")),
+        "agent_execution_duration_sec": agent_seconds,
         "verifier_duration_sec": duration_sec(result.get("verifier")),
         "input_tokens": tokens["input"],
         "cache_tokens": tokens["cache"],
         "output_tokens": tokens["output"],
-        "model_turns": model_turns(result, file_path),
+        "model_turns": turns,
         "mcp_calls": trace["calls"],
         "mcp_denied_calls": trace["denied"],
         "mcp_latency_ms": trace["latency"],
@@ -483,6 +523,12 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                     checkout_details.get("payment_provider_type")
                 ),
                 "verification_reason": as_string(checkout_details.get("reason")),
+                "extra_checkout_attempts": (
+                    extra_attempts if as_number(extra_attempts) is not None else ""
+                ),
+                "checkout_score": checkout_score(
+                    passed, turns, extra_attempts, agent_seconds
+                ),
             }
             if checkout
             else {}
@@ -539,6 +585,10 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame = pd.DataFrame(rows)
     frame["_reward"] = pd.to_numeric(frame["reward"], errors="coerce")
     frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
+    if "checkout_score" in frame:
+        frame["_checkout_score"] = pd.to_numeric(
+            frame["checkout_score"], errors="coerce"
+        )
     frame["_passed"] = frame["passed"].astype(int)
     frame["_eligible"] = frame["eligible"].astype(int)
     frame["_error"] = frame["exception_type"].astype(bool).astype(int)
@@ -598,6 +648,19 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             n_passed = int(result["n_passed"])
             result["pass_5"] = (
                 comb(n_passed, 5) / comb(n_trials, 5) if n_trials >= 5 else ""
+            )
+            scored = frame.loc[
+                (frame["model"] == result["model"])
+                & (frame["agent"] == result["agent"])
+                & (frame["task_name"] == result["task_name"])
+                & (frame["task_family"] == result["task_family"])
+                & (frame["profile"] == result["profile"]),
+                "_checkout_score",
+            ]
+            result["n_checkout_scored"] = int(scored.count())
+            result["checkout_score_coverage"] = scored.count() / n_trials
+            result["mean_checkout_score"] = (
+                float(scored.mean()) if scored.count() else ""
             )
     return results
 
@@ -711,6 +774,11 @@ def export_results(
         [
             *SUMMARY_COLUMNS,
             *(["pass_5"] if any("pass_5" in row for row in summary) else []),
+            *(
+                CHECKOUT_SUMMARY_COLUMNS
+                if any("n_checkout_scored" in row for row in summary)
+                else []
+            ),
         ],
         summary,
     )

@@ -62,6 +62,7 @@ def main() -> None:
     )
     details = {
         "reason": reason,
+        "extra_checkout_attempts": max(0, len(intents) - 1),
         "payment_method": method,
         "checkout_stage": stage,
         "payment_provider_type": (

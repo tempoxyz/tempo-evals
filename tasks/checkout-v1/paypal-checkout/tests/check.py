@@ -55,6 +55,7 @@ def main() -> None:
     orders = snapshot.get("orders", []) if isinstance(snapshot, dict) else []
     details = {
         "reason": reason,
+        "extra_checkout_attempts": max(0, len(orders) - 1),
         "payment_method": method,
         "checkout_stage": "verified"
         if passed

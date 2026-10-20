@@ -60,6 +60,13 @@ def main() -> None:
     deliveries = snapshot.get("deliveries", []) if isinstance(snapshot, dict) else []
     details = {
         "reason": reason,
+        "extra_checkout_attempts": (
+            max(0, snapshot["checkoutRequestCount"] - 2)
+            if isinstance(snapshot, dict)
+            and isinstance(snapshot.get("checkoutRequestCount"), int)
+            and snapshot["checkoutRequestCount"] >= 0
+            else None
+        ),
         "payment_method": method,
         "checkout_stage": "verified"
         if passed

@@ -10,6 +10,7 @@ import pandas as pd
 
 from scripts.compare_mcp_results import compare, summarize_quality_comparison
 from scripts.export_results import (
+    checkout_score,
     export_results,
     parse_task_name,
     summarize_quality,
@@ -205,6 +206,55 @@ class ExportResultsTest(unittest.TestCase):
             self.assertAlmostEqual(exported["summary"][0]["pass_5"], 1 / 6)
             columns = pd.read_csv(Path(exported["out_dir"]) / "summary.csv").columns
             self.assertIn("pass_5", columns)
+
+    def test_checkout_score_requires_payment_and_complete_telemetry(self) -> None:
+        self.assertEqual(checkout_score(False, 1, 0, 1), 0)
+        self.assertEqual(checkout_score(True, 10, 0, 180), 1)
+        self.assertEqual(checkout_score(True, "", 0, 180), "")
+        self.assertEqual(checkout_score(True, 10, None, 180), "")
+        self.assertEqual(checkout_score(True, 10, 0, ""), "")
+        self.assertLess(checkout_score(True, 20, 1, 360), 1)
+
+    def test_checkout_export_scores_success_and_failure_without_changing_reward(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-score-") as root:
+            job_dir = Path(root) / "job"
+            for name, reward, attempts, turns in (
+                ("success", 1, 0, 10),
+                ("retry", 1, 1, 20),
+                ("failure", 0, 2, 5),
+            ):
+                trial_dir = job_dir / name
+                result = trial(
+                    {
+                        "task_name": "checkout-v1/stripe-card-checkout",
+                        "trial_name": name,
+                        "verifier_result": {"rewards": {"reward": reward}},
+                        "agent_result": {"n_turns": turns},
+                    }
+                )
+                write_json(trial_dir / "result.json", result)
+                write_json(
+                    trial_dir / "verifier" / "details.json",
+                    {
+                        "reason": "verified" if reward else "unpaid",
+                        "extra_checkout_attempts": attempts,
+                    },
+                )
+            exported = export_results(job_dir)
+            rows = {row["trial_name"]: row for row in exported["trials"]}
+            self.assertEqual(rows["success"]["checkout_score"], 1)
+            self.assertLess(rows["retry"]["checkout_score"], 1)
+            self.assertGreater(rows["retry"]["checkout_score"], 0.6)
+            self.assertEqual(rows["failure"]["checkout_score"], 0)
+            self.assertEqual(rows["failure"]["reward"], 0)
+            self.assertEqual(exported["summary"][0]["n_checkout_scored"], 3)
+            self.assertEqual(exported["summary"][0]["checkout_score_coverage"], 1)
+            self.assertIn(
+                "mean_checkout_score",
+                pd.read_csv(Path(exported["out_dir"]) / "summary.csv"),
+            )
 
     def test_export_results_reads_mcp_profile_from_trial_config(self) -> None:
         with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:

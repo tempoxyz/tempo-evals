@@ -47,7 +47,18 @@ and matching provider or chain payment, and reject duplicate orders or charges.
 An agent's final message or a success page alone does not establish success.
 
 Publish a binary `reward` for verified checkout success. Record the chosen
-payment method and checkout stage as diagnostics. Report `pass@1`, all-five-pass
+payment method and checkout stage as diagnostics. The results exporter also
+reports `checkout_score`: failed checkouts score zero; verified checkouts score
+`0.6 + 0.4 × (0.40 × turn_score + 0.35 × retry_score + 0.25 × time_score)`.
+`turn_score = min(1, 10 / model_turns)`, `retry_score = 1 / (1 +
+extra_checkout_attempts)`, and `time_score = min(1, 180 / agent_execution_seconds)`.
+Missing turns, attempt counts, or agent time leave a successful trial's graded
+score blank, with coverage reported separately. These fixed checkout-v1 targets
+are shared across merchants and should be calibrated before dataset publication.
+Stripe and PayPal count extra checkout starts; MPP counts `/buy` requests beyond
+the expected 402 challenge and paid replay. These are observable proxies for
+retries, not counts of every failed payment submission. Harbor's native reward
+remains binary for pass@k. Report `pass@1`, all-five-pass
 reliability (`pass^5`), tokens, turns, tool calls, wall time, and provider cost
 from repeated Harbor trials. Provider sandbox payments and Tempo testnet
 transfers must be identified separately in results.
