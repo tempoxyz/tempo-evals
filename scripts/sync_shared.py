@@ -259,7 +259,11 @@ def sync_mpp_tasks() -> int:
 
 def sync_checkout_grading() -> None:
     for task_dir in checkout_task_dirs():
-        for relative in ("tests/grade.py", "tests/quality/check.py"):
+        for relative in (
+            "tests/grade.py",
+            "tests/observation.py",
+            "tests/quality/check.py",
+        ):
             copy_file(CHECKOUT_SHARED_DIR / relative, task_dir / relative)
 
 
@@ -267,7 +271,7 @@ def sync_checkout_prompt_variants() -> None:
     """Generate directed Harbor tasks from the authored discover tasks."""
     for slug, prompt in TASKS_CONFIG["checkout"]["directed"].items():
         source = CHECKOUT_TASKS_DIR / slug
-        directed_slug = f"{slug.removesuffix('-checkout')}-directed"
+        directed_slug = prompt["task"]
         target = CHECKOUT_TASKS_DIR / directed_slug
         if not (source / "task.toml").is_file():
             continue

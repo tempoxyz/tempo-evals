@@ -29,10 +29,12 @@ for (const record of records) {
   const order = await response.json();
   const purchase = order.purchase_units?.[0];
   const capture = purchase?.payments?.captures?.[0];
+  const paymentMethods = Object.keys(order.payment_source ?? {});
   orders.push({
     orderId: record.orderId,
     id: order.id,
     status: order.status,
+    paymentMethodType: paymentMethods.length === 1 ? paymentMethods[0] : null,
     referenceId: purchase?.reference_id,
     customId: purchase?.custom_id,
     description: purchase?.description,

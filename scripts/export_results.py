@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import tomllib
 from datetime import datetime
 from functools import cache
 from math import comb
@@ -10,7 +11,6 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import yaml
 
 JsonObject = dict[str, Any]
 Numeric = float | int | str
@@ -77,6 +77,7 @@ CHECKOUT_TRIAL_COLUMNS = [
     "prompt_condition",
     "required_method",
     "observed_method",
+    "observed_methods",
     "checkout_stage",
     "payment_method",
     "payment_provider_type",
@@ -210,19 +211,30 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
 
 
 @cache
-def checkout_prompt_metadata(task_name: str) -> dict[str, str]:
-    directed = task_name.endswith("-directed")
-    scenario = (
-        task_name.removesuffix("-directed") + "-checkout" if directed else task_name
-    )
-    prompts = yaml.safe_load(
-        (Path(__file__).resolve().parents[1] / "config/tasks.yaml").read_text()
-    )["checkout"]["directed"]
-    prompt = prompts.get(scenario.removeprefix("checkout-v1/"), {})
+def checkout_prompt_metadata(task_name: str, task_path: str = "") -> dict[str, str]:
+    """Read native task fields, preferring the task snapshot used by the run."""
+    root = Path(__file__).resolve().parents[1]
+    candidates = ([root / task_path] if task_path else []) + [
+        root / "tasks" / task_name
+    ]
+    for directory in candidates:
+        if not directory.resolve().is_relative_to(root):
+            continue
+        try:
+            task = tomllib.loads((directory / "task.toml").read_text())
+        except (OSError, tomllib.TOMLDecodeError):
+            continue
+        if task.get("task", {}).get("name") == task_name:
+            metadata = task.get("metadata", {})
+            if all(key in metadata for key in CHECKOUT_SUMMARY_COLUMNS):
+                return {
+                    key: as_string(metadata.get(key))
+                    for key in CHECKOUT_SUMMARY_COLUMNS
+                }
     return {
-        "scenario_id": scenario,
-        "prompt_condition": "directed" if directed else "discover",
-        "required_method": prompt.get("method", "") if directed else "",
+        "scenario_id": task_name,
+        "prompt_condition": "unknown",
+        "required_method": "",
     }
 
 
@@ -513,8 +525,18 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "rewards": rewards,
         **(
             {
-                **checkout_prompt_metadata(result["task_name"]),
-                "observed_method": as_string(checkout_details.get("payment_method")),
+                **checkout_prompt_metadata(
+                    result["task_name"],
+                    as_string(
+                        as_object(as_object(result.get("config")).get("task")).get(
+                            "path"
+                        )
+                    ),
+                ),
+                "observed_method": as_string(checkout_details.get("observed_method")),
+                "observed_methods": json.dumps(
+                    checkout_details.get("observed_methods", [])
+                ),
                 "checkout_stage": as_string(checkout_details.get("checkout_stage")),
                 "payment_method": as_string(checkout_details.get("payment_method")),
                 "payment_provider_type": as_string(
@@ -587,6 +609,8 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame["_passed"] = frame["passed"].astype(int)
     frame["_eligible"] = frame["eligible"].astype(int)
     frame["_error"] = frame["exception_type"].astype(bool).astype(int)
+    checkout_columns = [key for key in CHECKOUT_SUMMARY_COLUMNS if key in frame]
+    frame[checkout_columns] = frame[checkout_columns].fillna("")
     for column in [
         "input_tokens",
         "cache_tokens",
@@ -622,6 +646,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             mcp_denied_calls=("mcp_denied_calls", "sum"),
             mcp_latency_ms=("mcp_latency_ms", "sum"),
             cost_usd=("cost_usd", "sum"),
+            **{key: (key, "first") for key in checkout_columns},
         )
         .assign(
             pass_rate=lambda data: data["n_passed"] / data["n_trials"],
@@ -636,10 +661,9 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     )
     for column in ("mean_quality", "median_quality", "quality_at_k"):
         summary[column] = summary[column].where(summary[column].notna(), "")
-    results = summary[SUMMARY_COLUMNS].to_dict("records")
+    results = summary[[*SUMMARY_COLUMNS, *checkout_columns]].to_dict("records")
     for result in results:
         if str(result["task_family"]).startswith("checkout-v1/"):
-            result.update(checkout_prompt_metadata(result["task_name"]))
             n_trials = int(result["n_trials"])
             n_passed = int(result["n_passed"])
             result["pass_5"] = (
@@ -663,12 +687,7 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
     columns = QUALITY_SUMMARY_COLUMNS
     if frame["_checkout"].any():
         # Directed and discover trials must never share a suite-level average.
-        frame["prompt_condition"] = [
-            checkout_prompt_metadata(name)["prompt_condition"]
-            if name.startswith("checkout-v1/")
-            else ""
-            for name in frame["task_name"]
-        ]
+        frame["prompt_condition"] = frame["prompt_condition"].fillna("")
         group_columns = [*group_columns, "prompt_condition"]
         columns = [*columns, "prompt_condition"]
     task_quality = frame.groupby(

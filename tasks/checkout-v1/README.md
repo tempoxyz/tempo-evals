@@ -37,11 +37,22 @@ method, so a different payment method cannot pass a directed task.
 | `mpp-ousd-checkout` | `mpp-ousd-directed` | Use MPP to pay. |
 
 Each task has `scenario_id`, `prompt_condition`, and `required_method` metadata.
-Exports retain these fields even if a trial times out before verification;
-`observed_method` comes from the independent verifier and is blank if unknown.
+Preflight and exports read those native fields instead of inferring the scenario
+or condition from a task-name suffix. Exports prefer the staged task snapshot
+used by the run, retaining the condition even if verification never started.
+`observed_method` comes from provider/receipt evidence independently of grading,
+including wrong-method and wrong-order failures. It is blank if unknown or if
+several methods were observed; `observed_methods` retains the full set as a JSON
+array. Observing a method does not imply that its payment or checkout succeeded.
 MPP's machine-readable method is `tempo_mpp`, matching the existing verifier.
 Task summaries and suite quality summaries keep the two conditions separate.
 The existing `payment_method` export remains available.
+
+`config/tasks.yaml` declares each directed task ID, method, and instruction once.
+The generated directories are self-contained Harbor artifacts, not separately
+authored implementations. Common method observation, grading, and efficiency
+criteria live in `shared/checkout/tests/`; `npm run sync` copies them into each
+artifact, like the shared harness assets in the other suites.
 
 Run all eight tasks with `--task-suite checkout`. Select only discover tasks
 with `--task-filter '*-checkout'`, only directed tasks with

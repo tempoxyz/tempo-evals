@@ -373,9 +373,11 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
         selected = {
-            name.removesuffix("-directed") + "-checkout"
-            if name.endswith("-directed")
-            else name
+            tomlkit.parse((Path("tasks/checkout-v1") / name / "task.toml").read_text())[
+                "metadata"
+            ]
+            .get("scenario_id", f"checkout-v1/{name}")
+            .rsplit("/", 1)[-1]
             for name in selected_checkout_tasks(options)
         }
         if not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):

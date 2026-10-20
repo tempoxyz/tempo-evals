@@ -26,7 +26,7 @@ class SyncSharedTest(unittest.TestCase):
                     "directed"
                 ].items():
                     source = checkout / slug
-                    directed_slug = f"{slug.removesuffix('-checkout')}-directed"
+                    directed_slug = prompt["task"]
                     directed = checkout / directed_slug
                     self.assertEqual(
                         (source / "instruction.md").read_text(), original_prompts[slug]
@@ -105,7 +105,11 @@ class SyncSharedTest(unittest.TestCase):
             (task / "task.toml").write_text('[task]\nname = "merchant"\n')
             with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
                 sync_shared.sync_checkout_grading()
-            for relative in ("tests/grade.py", "tests/quality/check.py"):
+            for relative in (
+                "tests/grade.py",
+                "tests/observation.py",
+                "tests/quality/check.py",
+            ):
                 self.assertEqual(
                     (task / relative).read_bytes(),
                     (sync_shared.CHECKOUT_SHARED_DIR / relative).read_bytes(),

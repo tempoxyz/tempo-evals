@@ -9,6 +9,7 @@ PAID = {
     "orderId": "order-1",
     "id": "PAYPAL1",
     "status": "COMPLETED",
+    "paymentMethodType": "paypal",
     "referenceId": "order-1",
     "customId": "order-1",
     "description": "Tempo Notebook",

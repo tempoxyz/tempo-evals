@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 
+from observation import payment_observations
+
 SNAPSHOT = Path("/var/log/checkout/snapshot.json")
 LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
 
@@ -59,6 +61,7 @@ def main() -> None:
     score = {"reward": int(passed)}
     deliveries = snapshot.get("deliveries", []) if isinstance(snapshot, dict) else []
     details = {
+        **payment_observations(snapshot),
         "reason": reason,
         "extra_checkout_attempts": (
             max(0, snapshot["paymentAttemptCount"] - 1)
