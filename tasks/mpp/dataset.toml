@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:d78ba3f18377ab14c0bd20187869dc91f7ebaee7c0b9a9204be31952132e9c8e"
+digest = "sha256:536516d3b7454a69ab90f595eff396aec5bd573ecca70cadbd65987a1a732a52"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:68e506f5c3dedc8b6e19e5e27db9a27481220d01f9e56d1e6ba58964afb4c0c9"
+digest = "sha256:5d00c286a973b03df8f322d8bfc0e3259ae0dbda46967fdc05b8346d509346f3"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:f34aec68faa2af32b7baf89c95ef11299db371b9616fc334b1186059f1adc4b6"
+digest = "sha256:2f4887e7d4487f4ba8265e06e178e2c38610d786d541f14fb86505a53e70d872"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:953bbaa98de9b5f975fb4bf5b533b7f26c59ddc7fbe4f05b230c2c751de27de6"
+digest = "sha256:bdad232b8b55abe0c03828d0cee49ec366bf354b30896cca7ebcfa5cc7d43d13"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:5774fb4e1f87e53ef18bf0a1f9a966ca78a2dee5873e21be163c422babf6ac81"
+digest = "sha256:2b0ec29d6a749e567c191c9e9d514992df364ef5b9ff95afeefb9c7f9d8c9c44"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:3a4156aaac696195c4ac66f4e6f66740a379f0b47259bc49527df9fa960fcd48"
+digest = "sha256:63c04f6c82a1de5ff2d86cf18df7115d8815e50461682bcccb41815358d638b0"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:19ca97f9711654b91b6214e045736cb799b808bb0629d228a057974a7dc41866"
+digest = "sha256:1f35d5768f6d985c95e9527f2de2d29c25133152faf73b224d50da2411424377"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:02f0818c3ec12115c6d898aab9bee2c81724c248ab7c3695527ba64c9a61327e"
+digest = "sha256:11ee1e39c2e9a91211d4e69d2ab1c8f45c177da53dada22a6072d092e303b05c"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:16e770e0fea3effa5e73f355b4887b332ac48dda670cdfe63ad91858de634d97"
+digest = "sha256:15329184e550344d531f1a033456cf21839ce6622887613d1532f36eabe3c9d5"
 
