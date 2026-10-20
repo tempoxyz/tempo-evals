@@ -16,8 +16,8 @@ services:
       context: ./wallet
     environment:
       TEMPO_RPC_URL: ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}
-      PAYPAL_SANDBOX_BUYER_EMAIL: ${PAYPAL_SANDBOX_BUYER_EMAIL:-}
-      PAYPAL_SANDBOX_BUYER_PASSWORD: ${PAYPAL_SANDBOX_BUYER_PASSWORD:-}
+      PAYPAL_SANDBOX_BUYER_EMAIL: ${PAYPAL_SANDBOX_BUYER_EMAIL:?PayPal sandbox buyer email is required}
+      PAYPAL_SANDBOX_BUYER_PASSWORD: ${PAYPAL_SANDBOX_BUYER_PASSWORD:?PayPal sandbox buyer password is required}
     volumes:
       - checkout-wallet:/wallet
     restart: "no"
@@ -36,8 +36,7 @@ services:
 
   link:
     build:
-      context: ./merchant
-    command: ["node", "link_setup.js"]
+      context: ./link
     depends_on:
       wallet:
         condition: service_completed_successfully
@@ -47,7 +46,6 @@ services:
         condition: service_healthy
     environment:
       STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:?Stripe sandbox key is required}
-      PUBLIC_BASE_URL: http://merchant:3000
     volumes:
       - checkout-wallet:/wallet
     restart: "no"

@@ -231,47 +231,51 @@ class RunBenchmarkTest(unittest.TestCase):
                 {}, {"task_suite": "checkout", "task_filter": "stripe-card-checkout"}
             )
 
-    def test_mpp_checkout_preflight_needs_no_stripe_secret(self) -> None:
-        with patch.dict(os.environ, {}, clear=True):
+    def test_checkout_shared_setup_requires_stripe_and_paypal_buyer(self) -> None:
+        with (
+            patch.dict(os.environ, {}, clear=True),
+            self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
+        ):
             preflight(
                 {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-checkout"}
             )
-
-    def test_x402_checkout_preflight_requires_funding_wallet(self) -> None:
         with (
-            patch.dict(os.environ, {}, clear=True),
-            self.assertRaisesRegex(RuntimeError, "X402_FUNDING_PRIVATE_KEY"),
+            patch.dict(
+                os.environ,
+                {
+                    "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+                },
+                clear=True,
+            ),
+            self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_BUYER_EMAIL"),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "x402-usdc-checkout"}
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-checkout"}
             )
         with patch.dict(
             os.environ,
             {
-                "X402_FUNDING_PRIVATE_KEY": "0x" + "1" * 64,
-                "X402_RECIPIENT_ADDRESS": "0x" + "2" * 40,
+                "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+                "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
+                "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
             },
             clear=True,
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "x402-usdc-checkout"}
-            )
-
-    def test_x402_checkout_rejects_parallel_trials(self) -> None:
-        with self.assertRaisesRegex(RuntimeError, "require --concurrency 1"):
-            run_benchmark_variant(
-                "daytona-oracle",
-                {
-                    "task_suite": "checkout",
-                    "task_filter": "x402-usdc-checkout",
-                    "concurrency": "2",
-                    "profile": "docs",
-                },
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-checkout"}
             )
 
     def test_paypal_checkout_preflight_requires_sandbox_credentials(self) -> None:
         with (
-            patch.dict(os.environ, {}, clear=True),
+            patch.dict(
+                os.environ,
+                {
+                    "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+                    "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
+                    "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+                },
+                clear=True,
+            ),
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_CLIENT_ID"),
         ):
             preflight({}, {"task_suite": "checkout", "task_filter": "paypal-checkout"})
@@ -282,6 +286,8 @@ class RunBenchmarkTest(unittest.TestCase):
                 os.environ,
                 {
                     "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+                    "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
+                    "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
                 },
                 clear=True,
             ),
@@ -290,6 +296,28 @@ class RunBenchmarkTest(unittest.TestCase):
             preflight(
                 {}, {"task_suite": "checkout", "task_filter": "stripe-card-checkout"}
             )
+
+    def test_checkout_preserves_parallel_trial_count(self) -> None:
+        options = {
+            "profile": "docs",
+            "task_suite": "checkout",
+            "concurrency": "4",
+            "sync": False,
+        }
+        with (
+            patch("scripts.run_benchmark.preflight"),
+            patch("scripts.run_benchmark.preflight_mcp_target"),
+            patch(
+                "scripts.run_benchmark.stage_daytona_config", return_value="job.yaml"
+            ),
+            patch("scripts.run_benchmark.run") as run,
+        ):
+            run_benchmark_variant("daytona-agent-dev", options)
+        self.assertIn("--n-concurrent", run.call_args.args[1])
+        self.assertEqual(
+            run.call_args.args[1][run.call_args.args[1].index("--n-concurrent") + 1],
+            "4",
+        )
 
     def test_tempo_mcp_suite_uses_the_live_mcp_server(self) -> None:
         self.assertTrue(uses_live_mcp_eval({"task_suite": "tempo-mcp"}))

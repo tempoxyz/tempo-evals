@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const key = process.env.STRIPE_TEST_SECRET_KEY;
 if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
 const wallet = JSON.parse(readFileSync('/wallet/wallet.json', 'utf8'));
-const base = process.env.PUBLIC_BASE_URL || 'http://merchant:3000';
+const base = 'http://merchant:3000';
 let browserSession;
 let nextId = 1;
 
