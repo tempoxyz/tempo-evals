@@ -6,7 +6,7 @@ changing suite tasks or harnesses:
 - [Tempo integration](tasks/tempo-v1/README.md)
 - [Tempo MCP efficiency](tasks/tempo-mcp-v1/README.md)
 - [MPP integration](tasks/mpp/README.md)
-- [Checkout](tasks/checkout-v1/README.md)
+- [Checkout](tasks/checkout-v2/README.md)
 
 ## Repository Contract
 

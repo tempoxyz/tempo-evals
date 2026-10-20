@@ -94,7 +94,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
     def test_finalize_config_selects_checkout_only_when_requested(self) -> None:
         config = finalize_config(base_config(), {"task_suite": "checkout"})
-        self.assertEqual(config["datasets"], [{"path": "tasks/checkout-v1"}])
+        self.assertEqual(config["datasets"], [{"path": "tasks/checkout-v2"}])
         self.assertEqual(config["verifier"]["env"], {})
 
     def test_checkout_method_hint_only_reaches_oracle(self) -> None:
@@ -132,7 +132,7 @@ class RunBenchmarkTest(unittest.TestCase):
                 )
                 self.assertEqual(
                     result["datasets"],
-                    [{"path": "tasks/checkout-v1", "task_names": [slug]}],
+                    [{"path": "tasks/checkout-v2", "task_names": [slug]}],
                 )
 
     def test_mpp_slug_filter_still_selects_mpp(self) -> None:
@@ -150,7 +150,7 @@ class RunBenchmarkTest(unittest.TestCase):
                 datasets = finalize_config(base_config(), {"task_suite": suite})[
                     "datasets"
                 ]
-                self.assertNotIn({"path": "tasks/checkout-v1"}, datasets)
+                self.assertNotIn({"path": "tasks/checkout-v2"}, datasets)
 
     def test_claude_preflight_accepts_proxy_credentials(self) -> None:
         with patch.dict(
@@ -213,7 +213,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
     def test_checkout_explicit_task_path_requires_suite_selection(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
-            preflight({}, {"tasks": "tasks/checkout-v1/stripe-card-checkout"})
+            preflight({}, {"tasks": "tasks/checkout-v2/stripe-card-checkout"})
 
     def test_checkout_preflight_rejects_missing_task(self) -> None:
         with (
@@ -1009,7 +1009,7 @@ class RunBenchmarkTest(unittest.TestCase):
             with patch("scripts.run_benchmark.copy_tasks") as copy:
                 stage_task_datasets(staging_root, None, checkout=True)
             copy.assert_called_once_with(
-                Path("tasks/checkout-v1"), staging_root / "tasks/checkout-v1"
+                Path("tasks/checkout-v2"), staging_root / "tasks/checkout-v2"
             )
 
     def test_staged_pinned_docs_proxy_only_docs_hostname(self) -> None:

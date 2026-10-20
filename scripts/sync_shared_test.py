@@ -21,13 +21,13 @@ class SyncSharedTest(unittest.TestCase):
                 task_dir = tasks_dir / "merchant-item"
                 task_dir.mkdir()
                 (task_dir / "task.toml").write_text(
-                    '[task]\nname = "checkout-v1/merchant-item"\n'
+                    '[task]\nname = "checkout-v2/merchant-item"\n'
                 )
                 sync_shared.write_checkout_dataset_manifest()
                 manifest = tomllib.loads((tasks_dir / "dataset.toml").read_text())
-                self.assertEqual(manifest["dataset"]["name"], "tempo/checkout-bench-v1")
+                self.assertEqual(manifest["dataset"]["name"], "tempo/checkout-bench-v2")
                 self.assertEqual(
-                    manifest["tasks"][0]["name"], "checkout-v1/merchant-item"
+                    manifest["tasks"][0]["name"], "checkout-v2/merchant-item"
                 )
             finally:
                 sync_shared.CHECKOUT_TASKS_DIR = original_tasks_dir

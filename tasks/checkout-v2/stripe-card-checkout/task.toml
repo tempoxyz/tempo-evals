@@ -7,13 +7,13 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/stripe-card-checkout"
+name = "checkout-v2/stripe-card-checkout"
 description = "Buy a notebook from a Stripe card merchant."
 keywords = ["checkout", "stripe", "payments", "browser"]
 
 [metadata]
 category = "checkout"
-benchmark = "checkout-bench-v1"
+benchmark = "checkout-bench-v2"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires navigation through a hosted payment page and use of a prepared sandbox payment method."

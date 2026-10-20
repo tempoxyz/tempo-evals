@@ -7,19 +7,19 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/mpp-ousd-checkout"
-description = "Buy a notebook from an MPP merchant."
-keywords = ["checkout", "mpp", "tempo", "payments"]
+name = "checkout-v2/paypal-checkout"
+description = "Buy a notebook from a PayPal sandbox merchant."
+keywords = ["checkout", "paypal", "payments", "browser"]
 
 [metadata]
 category = "checkout"
-benchmark = "checkout-bench-v1"
+benchmark = "checkout-bench-v2"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "Requires paying an MPP challenge with the prepared wallet."
-solution_explanation = "The oracle pays the MPP challenge using the trial Tempo wallet."
-verification_explanation = "The separate verifier checks the MPP receipt, delivered notebook, and trial-specific merchant OUSD testnet balance."
-tags = ["checkout", "mpp", "tempo", "payments"]
+difficulty_explanation = "Requires navigation through a PayPal buyer approval page and use of a prepared sandbox payment method."
+solution_explanation = "The oracle approves a PayPal sandbox order in the browser."
+verification_explanation = "The merchant queries PayPal after the attempt; the separate verifier checks the captured order, item, and total."
+tags = ["checkout", "paypal", "browser", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
 
@@ -32,7 +32,7 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts"
+command = "tsx /srv/snapshot.ts"
 timeout_sec = 90.0
 
 [environment]
@@ -42,6 +42,8 @@ storage_mb = 10240
 
 [environment.env]
 STRIPE_TEST_SECRET_KEY = "${STRIPE_TEST_SECRET_KEY}"
+PAYPAL_SANDBOX_CLIENT_ID = "${PAYPAL_SANDBOX_CLIENT_ID}"
+PAYPAL_SANDBOX_CLIENT_SECRET = "${PAYPAL_SANDBOX_CLIENT_SECRET}"
 TEMPO_RPC_URL = "${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}"
 PAYPAL_SANDBOX_BUYER_EMAIL = "${PAYPAL_SANDBOX_BUYER_EMAIL}"
 PAYPAL_SANDBOX_BUYER_PASSWORD = "${PAYPAL_SANDBOX_BUYER_PASSWORD}"

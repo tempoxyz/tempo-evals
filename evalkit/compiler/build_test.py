@@ -42,7 +42,7 @@ def Policy(**kwargs: object) -> ApiPolicy:
 class BuildTest(unittest.TestCase):
     def test_all_existing_suites_are_registered(self) -> None:
         self.assertEqual(
-            suite_names(), ("checkout-v1", "mpp", "tempo-mcp-v1", "tempo-v1")
+            suite_names(), ("checkout-v2", "mpp", "tempo-mcp-v1", "tempo-v1")
         )
         self.assertEqual(len(load_suite("mpp").tasks), 9)
         self.assertEqual(len(load_suite("tempo-mcp-v1").tasks), 12)

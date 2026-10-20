@@ -7,13 +7,13 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/stripe-link-checkout"
+name = "checkout-v2/stripe-link-checkout"
 description = "Buy a notebook from a Stripe link merchant."
 keywords = ["checkout", "stripe", "payments", "browser"]
 
 [metadata]
 category = "checkout"
-benchmark = "checkout-bench-v1"
+benchmark = "checkout-bench-v2"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires navigation through an embedded Link payment form with a prepared sandbox identity."

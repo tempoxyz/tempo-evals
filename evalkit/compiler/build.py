@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LOCK_PATH = ROOT / "evalkit.lock"
 MANIFEST = ".evalkit-manifest.json"
 SUITE_MODULES = {
-    "checkout-v1": "evalkit.suites.checkout_v1",
+    "checkout-v2": "evalkit.suites.checkout_v2",
     "mpp": "evalkit.suites.mpp",
     "tempo-mcp-v1": "evalkit.suites.tempo_mcp_v1",
     "tempo-v1": "evalkit.suites.tempo_v1",
