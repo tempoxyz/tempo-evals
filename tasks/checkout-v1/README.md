@@ -80,6 +80,8 @@ for each trial. The sandbox card is synthetic. PayPal sandbox buyer credentials
 are supplied by the runner; provision distinct buyers for concurrent PayPal
 trials. The x402 task funds a fresh Base Sepolia buyer from a testnet funding
 pool. Its merchant recipient is that pool, so successful payments replenish it.
+MPP and x402 agents receive no preinstalled payment helper or payment SDK; they
+may consult public documentation and install the dependencies they choose.
 After the agent stops, a trusted recovery sidecar returns unspent buyer USDC.
 The runner serializes x402 trials so the shared pool has only one pending funding
 transfer. The pool key stays in the trusted payment and recovery sidecars; the

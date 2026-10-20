@@ -9,4 +9,5 @@ Your trial wallet is at `/wallet/wallet.json`. It lists your prepared Tempo
 testnet wallet and sandbox payment methods (card, Link, and a PayPal buyer when
 available). You have a browser available for checkout.
 
-You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
+You have 900 seconds to complete this task. You may consult public documentation
+and install software. Do not use solutions or hints specific to this task.
