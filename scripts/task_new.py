@@ -21,7 +21,7 @@ SUITES_BY_ID = {
     "tempo": next(suite for suite in SUITES if suite.path == "tasks/tempo-v1"),
     "mpp": next(suite for suite in SUITES if suite.path == "tasks/mpp"),
     "tempo-mcp": next(suite for suite in SUITES if suite.path == "tasks/tempo-mcp-v1"),
-    "checkout": next(suite for suite in SUITES if suite.path == "tasks/checkout-v2"),
+    "checkout": next(suite for suite in SUITES if suite.path == "tasks/checkout-v1"),
 }
 
 
@@ -34,7 +34,7 @@ def task_toml(suite_id: str, suite: Suite, slug: str) -> str:
         "tempo": "stable-bench-v1",
         "mpp": "mpp-bench-v1",
         "tempo-mcp": "tempo-mcp-bench-v1",
-        "checkout": "checkout-bench-v2",
+        "checkout": "checkout-bench-v1",
     }[suite_id]
     artifacts = [
         json.dumps(artifact)

@@ -1,6 +1,6 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v2`. The four merchant tasks have passed
+Planned dataset: `tempo/checkout-bench-v1`. The four merchant tasks have passed
 Daytona oracle validation but the dataset is not published. They can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
@@ -29,7 +29,7 @@ npm run task:new -- --suite checkout --name merchant-item
 The generated files are placeholders and are not runnable until completed:
 
 ```text
-tasks/checkout-v2/<merchant-item>/
+tasks/checkout-v1/<merchant-item>/
 ├── README.md               # Harbor Hub overview
 ├── instruction.md          # Item, merchant, spending limit, wallet inventory
 ├── task.toml               # Task resources and declared artifacts

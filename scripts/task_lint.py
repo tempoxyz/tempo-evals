@@ -92,7 +92,7 @@ SUITES = (
         ),
     ),
     Suite(
-        "tasks/checkout-v2",
+        "tasks/checkout-v1",
         (
             "README.md",
             "instruction.md",

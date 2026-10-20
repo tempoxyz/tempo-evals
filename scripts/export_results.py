@@ -194,13 +194,9 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
         return {"task_family": task_name[: -len(MCP_PROFILE_SUFFIX)], "profile": "mcp"}
     if task_name.startswith(("tempo-v1/", "tempo-mcp-v1/")):
         return {"task_family": task_name, "profile": tempo_profile}
-    if is_checkout_task(task_name):
+    if task_name.startswith("checkout-v1/"):
         return {"task_family": task_name, "profile": "browser-mcp"}
     return {"task_family": task_name, "profile": "unknown"}
-
-
-def is_checkout_task(task_name: str) -> bool:
-    return task_name.startswith(("checkout-v1/", "checkout-v2/"))
 
 
 def result_docs_source(result: JsonObject, profile: str, context: JsonObject) -> str:
@@ -393,7 +389,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     model_info = as_object(agent_info.get("model_info"))
     exception_info = as_object(result.get("exception_info"))
     task = parse_task_name(result["task_name"], profile_from_trial(result))
-    checkout = is_checkout_task(task["task_family"])
+    checkout = task["task_family"].startswith("checkout-v1/")
     checkout_details = (
         as_object(read_json(file_path.parent / "verifier" / "details.json"))
         if checkout
@@ -597,7 +593,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
         summary[column] = summary[column].where(summary[column].notna(), "")
     results = summary[SUMMARY_COLUMNS].to_dict("records")
     for result in results:
-        if is_checkout_task(str(result["task_family"])):
+        if str(result["task_family"]).startswith("checkout-v1/"):
             n_trials = int(result["n_trials"])
             n_passed = int(result["n_passed"])
             result["pass_5"] = (
@@ -703,7 +699,7 @@ def export_results(
             *TRIAL_COLUMNS,
             *(
                 CHECKOUT_TRIAL_COLUMNS
-                if any(is_checkout_task(row["task_family"]) for row in trials)
+                if any(row["task_family"].startswith("checkout-v1/") for row in trials)
                 else []
             ),
             *reward_columns(trials),

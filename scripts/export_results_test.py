@@ -77,13 +77,6 @@ class ExportResultsTest(unittest.TestCase):
                 "profile": "browser-mcp",
             },
         )
-        self.assertEqual(
-            parse_task_name("checkout-v2/stripe-card-checkout"),
-            {
-                "task_family": "checkout-v2/stripe-card-checkout",
-                "profile": "browser-mcp",
-            },
-        )
 
     def test_export_results_writes_trial_and_summary_outputs(self) -> None:
         with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
@@ -165,7 +158,7 @@ class ExportResultsTest(unittest.TestCase):
                 trial_dir / "result.json",
                 trial(
                     {
-                        "task_name": "checkout-v2/stripe-card-checkout",
+                        "task_name": "checkout-v1/stripe-card-checkout",
                         "verifier_result": {"rewards": {"reward": 1}},
                     }
                 ),

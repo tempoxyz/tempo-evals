@@ -312,25 +312,25 @@ def is_tempo_tasks_path(path: str) -> bool:
 
 
 def is_checkout_tasks_path(path: str) -> bool:
-    return Path(path).resolve().is_relative_to(Path("tasks/checkout-v2").resolve())
+    return Path(path).resolve().is_relative_to(Path("tasks/checkout-v1").resolve())
 
 
 def has_checkout_tasks() -> bool:
     return any(
         task_file.is_file()
-        for task_file in Path("tasks/checkout-v2").glob("*/task.toml")
+        for task_file in Path("tasks/checkout-v1").glob("*/task.toml")
     )
 
 
 def selected_checkout_tasks(options: dict[str, Any]) -> set[str]:
     names = {
         task_file.parent.name
-        for task_file in Path("tasks/checkout-v2").glob("*/task.toml")
+        for task_file in Path("tasks/checkout-v1").glob("*/task.toml")
     }
     requested_path = options.get("tasks")
     if requested_path and is_checkout_tasks_path(requested_path):
         path = Path(requested_path).resolve()
-        if path != Path("tasks/checkout-v2").resolve():
+        if path != Path("tasks/checkout-v1").resolve():
             names &= {path.name}
     task_filter = options.get("task_filter")
     if task_filter:
@@ -338,7 +338,7 @@ def selected_checkout_tasks(options: dict[str, Any]) -> set[str]:
             name
             for name in names
             if fnmatch.fnmatchcase(name, task_filter)
-            or fnmatch.fnmatchcase(f"checkout-v2/{name}", task_filter)
+            or fnmatch.fnmatchcase(f"checkout-v1/{name}", task_filter)
         }
     return names
 
@@ -487,7 +487,7 @@ def task_paths(options: dict[str, Any]) -> list[str]:
         "tempo": "tasks/tempo-v1",
         "tempo-mcp": "tasks/tempo-mcp-v1",
         "mpp": "tasks/mpp",
-        "checkout": "tasks/checkout-v2",
+        "checkout": "tasks/checkout-v1",
     }
     suite = options.get("task_suite") or "tempo"
     return (
@@ -909,7 +909,7 @@ def datasets_for_suite(task_suite: str) -> list[dict[str, Any]]:
     if task_suite == "tempo-mcp":
         return copy.deepcopy(RUN_CONFIG["mcp_only_datasets"])
     if task_suite == "checkout":
-        return [{"path": "tasks/checkout-v2"}]
+        return [{"path": "tasks/checkout-v1"}]
     return copy.deepcopy(read_yaml("config/datasets.yaml").get("datasets", []))
 
 
@@ -938,13 +938,13 @@ def apply_task_filter(
         return config
 
     if any(
-        dataset.get("path") == "tasks/checkout-v2"
+        dataset.get("path") == "tasks/checkout-v1"
         for dataset in config.get("datasets", [])
     ):
         config["datasets"] = [
             {
-                "path": "tasks/checkout-v2",
-                "task_names": [task_filter.removeprefix("checkout-v2/")],
+                "path": "tasks/checkout-v1",
+                "task_names": [task_filter.removeprefix("checkout-v1/")],
             }
         ]
         return config
@@ -1020,7 +1020,7 @@ def redirect_dataset_paths(config: dict[str, Any], staging_root: Path) -> None:
         "tasks/mpp": str(staging_root / "tasks" / "mpp"),
         "tasks/tempo-v1": str(staging_root / "tasks" / "tempo-v1"),
         "tasks/tempo-mcp-v1": str(staging_root / "tasks" / "tempo-mcp-v1"),
-        "tasks/checkout-v2": str(staging_root / "tasks" / "checkout-v2"),
+        "tasks/checkout-v1": str(staging_root / "tasks" / "checkout-v1"),
         "tasks": str(staging_root / "tasks" / "tempo-v1"),
     }
     changed = False
@@ -1249,9 +1249,9 @@ def stage_task_datasets(
     checkout: bool = False,
 ) -> None:
     if checkout:
-        staged_checkout = staging_root / "tasks" / "checkout-v2"
+        staged_checkout = staging_root / "tasks" / "checkout-v1"
         staged_checkout.parent.mkdir(parents=True, exist_ok=True)
-        copy_tasks(Path("tasks/checkout-v2"), staged_checkout)
+        copy_tasks(Path("tasks/checkout-v1"), staged_checkout)
         if images is not None:
             override_staged_images(staging_root, images)
         return
