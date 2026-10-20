@@ -22,6 +22,9 @@ verification_explanation = "The merchant queries Stripe after the attempt; the s
 tags = ["checkout", "stripe", "browser", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
+scenario_id = "checkout-v1/stripe-link-checkout"
+prompt_condition = "discover"
+required_method = ""
 
 [agent]
 timeout_sec = 900.0

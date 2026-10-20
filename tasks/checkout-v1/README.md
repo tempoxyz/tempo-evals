@@ -1,7 +1,8 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. The four merchant tasks have passed
-Daytona oracle validation but the dataset is not published. They can only be
+Planned dataset: `tempo/checkout-bench-v1`. Four merchant scenarios each have
+discover and directed prompts, for eight Harbor tasks. The dataset is not
+published. Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
 
@@ -9,14 +10,44 @@ selected with `--task-suite checkout` and are excluded from the default and
 
 An agent receives a request to buy a specific item from a test merchant. The
 instruction lists the payment capabilities available in the same benchmark
-wallet inventory for every task, but does not prescribe a method or disclose
-which methods the merchant accepts. The agent chooses a route and completes the
-purchase without a trial reset or human intervention.
+wallet inventory for every task. In the **discover** condition, it does not
+prescribe a method or disclose which methods the merchant accepts. In the
+**directed** condition, it adds one sentence naming the payment method, such as
+"Use MPP to pay." Neither condition provides a payment SDK or implementation hint.
+The agent completes the purchase without a trial reset or human intervention.
 
-The merchant and item define a Harbor task. Browser and tool configurations,
-agent/model pairs, and independent attempts belong in job configurations rather
-than duplicated task directories. The payment method used is an observed result,
-not an assigned task variant.
+The merchant and item define a scenario. Each prompt condition has its own native
+Harbor task ID in the same dataset. Browser and tool configurations, agent/model
+pairs, and independent attempts belong in job configurations.
+
+## Payment prompt pairs
+
+The four existing task IDs remain the authored discover tasks. `npm run sync`
+generates their `-directed` counterparts from those sources and the method
+sentences in `config/tasks.yaml`. Do not edit the generated task directories.
+The environment, wallet setup, oracle, verifier, and efficiency scoring are
+identical within each pair. Each existing verifier already requires the named
+method, so a different payment method cannot pass a directed task.
+
+| Discover task | Directed task | Added sentence |
+| --- | --- | --- |
+| `stripe-card-checkout` | `stripe-card-checkout-directed` | Use card to pay. |
+| `stripe-link-checkout` | `stripe-link-checkout-directed` | Use Link to pay. |
+| `paypal-checkout` | `paypal-checkout-directed` | Use PayPal to pay. |
+| `mpp-ousd-checkout` | `mpp-ousd-checkout-directed` | Use MPP to pay. |
+
+Each task has `scenario_id`, `prompt_condition`, and `required_method` metadata.
+Exports retain these fields even if a trial times out before verification;
+`observed_method` comes from the independent verifier and is blank if unknown.
+MPP's machine-readable method is `tempo_mpp`, matching the existing verifier.
+Task summaries and suite quality summaries keep the two conditions separate.
+The existing `payment_method` export remains available.
+
+Run all eight tasks with `--task-suite checkout`. Select only discover tasks
+with `--task-filter '*-checkout'`, only directed tasks with
+`--task-filter '*-directed'`, or one pair with
+`--task-filter 'stripe-card-checkout*'`. Every task and attempt receives a fresh
+isolated Harbor environment; the shared merchant URL remains trial-local.
 
 ## Task Contract
 
@@ -82,9 +113,9 @@ passed.
 
 ## Current merchants
 
-All four tasks request one Tempo Notebook for at most $12 and use the same
+All four scenarios request one Tempo Notebook for at most $12 and use the same
 purchase request and Playwright browser. Each trial wallet lists its prepared
-payment methods. The method to use is not named in the instruction. Each
+payment methods. Only directed prompts name the method to use. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
 
 Harbor starts a separate environment for each task and trial. In that

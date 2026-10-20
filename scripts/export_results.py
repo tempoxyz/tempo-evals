@@ -4,11 +4,13 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime
+from functools import cache
 from math import comb
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import yaml
 
 JsonObject = dict[str, Any]
 Numeric = float | int | str
@@ -71,6 +73,10 @@ TRIAL_COLUMNS = [
     "result_path",
 ]
 CHECKOUT_TRIAL_COLUMNS = [
+    "scenario_id",
+    "prompt_condition",
+    "required_method",
+    "observed_method",
     "checkout_stage",
     "payment_method",
     "payment_provider_type",
@@ -79,6 +85,7 @@ CHECKOUT_TRIAL_COLUMNS = [
     "trajectory_duration_sec",
     "quality_unavailable",
 ]
+CHECKOUT_SUMMARY_COLUMNS = ["scenario_id", "prompt_condition", "required_method"]
 
 SUMMARY_COLUMNS = [
     "run_id",
@@ -200,6 +207,21 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
     if task_name.startswith("checkout-v1/"):
         return {"task_family": task_name, "profile": "browser-mcp"}
     return {"task_family": task_name, "profile": "unknown"}
+
+
+@cache
+def checkout_prompt_metadata(task_name: str) -> dict[str, str]:
+    directed = task_name.endswith("-directed")
+    scenario = task_name.removesuffix("-directed")
+    prompts = yaml.safe_load(
+        (Path(__file__).resolve().parents[1] / "config/tasks.yaml").read_text()
+    )["checkout"]["directed"]
+    prompt = prompts.get(scenario.removeprefix("checkout-v1/"), {})
+    return {
+        "scenario_id": scenario,
+        "prompt_condition": "directed" if directed else "discover",
+        "required_method": prompt.get("method", "") if directed else "",
+    }
 
 
 def result_docs_source(result: JsonObject, profile: str, context: JsonObject) -> str:
@@ -489,6 +511,8 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "rewards": rewards,
         **(
             {
+                **checkout_prompt_metadata(result["task_name"]),
+                "observed_method": as_string(checkout_details.get("payment_method")),
                 "checkout_stage": as_string(checkout_details.get("checkout_stage")),
                 "payment_method": as_string(checkout_details.get("payment_method")),
                 "payment_provider_type": as_string(
@@ -613,6 +637,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     results = summary[SUMMARY_COLUMNS].to_dict("records")
     for result in results:
         if str(result["task_family"]).startswith("checkout-v1/"):
+            result.update(checkout_prompt_metadata(result["task_name"]))
             n_trials = int(result["n_trials"])
             n_passed = int(result["n_passed"])
             result["pass_5"] = (
@@ -633,6 +658,17 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
     frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
     frame["_checkout"] = frame["task_family"].str.startswith("checkout-v1/")
     group_columns = ["run_id", "job_name", "model", "agent", "profile"]
+    columns = QUALITY_SUMMARY_COLUMNS
+    if frame["_checkout"].any():
+        # Directed and discover trials must never share a suite-level average.
+        frame["prompt_condition"] = [
+            checkout_prompt_metadata(name)["prompt_condition"]
+            if name.startswith("checkout-v1/")
+            else ""
+            for name in frame["task_name"]
+        ]
+        group_columns = [*group_columns, "prompt_condition"]
+        columns = [*columns, "prompt_condition"]
     task_quality = frame.groupby(
         [*group_columns, "task_family"], as_index=False, sort=False
     ).agg(quality_at_k=("_quality", "max"))
@@ -664,7 +700,7 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
             & ~(summary["_checkout"] & (summary["quality_coverage"] < 1)),
             "",
         )
-    return summary[QUALITY_SUMMARY_COLUMNS].to_dict("records")
+    return summary[columns].to_dict("records")
 
 
 def write_summary_json(
@@ -739,12 +775,26 @@ def export_results(
         out_path / "summary.csv",
         [
             *SUMMARY_COLUMNS,
+            *(
+                CHECKOUT_SUMMARY_COLUMNS
+                if any("scenario_id" in row for row in summary)
+                else []
+            ),
             *(["pass_5"] if any("pass_5" in row for row in summary) else []),
         ],
         summary,
     )
     write_csv(
-        out_path / "quality_summary.csv", QUALITY_SUMMARY_COLUMNS, quality_summary
+        out_path / "quality_summary.csv",
+        [
+            *QUALITY_SUMMARY_COLUMNS,
+            *(
+                ["prompt_condition"]
+                if any("prompt_condition" in row for row in quality_summary)
+                else []
+            ),
+        ],
+        quality_summary,
     )
     write_summary_json(
         out_path / "summary.json",

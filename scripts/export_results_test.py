@@ -57,6 +57,74 @@ def trial(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
 
 
 class ExportResultsTest(unittest.TestCase):
+    def test_checkout_prompt_conditions_stay_separate_in_all_exports(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
+            job = Path(root)
+            for suffix, reward in (("", 0), ("-directed", 1)):
+                name = f"checkout-v1/mpp-ousd-checkout{suffix}"
+                path = job / f"trial{suffix}"
+                write_json(
+                    path / "result.json",
+                    trial(
+                        {
+                            "task_name": name,
+                            "trial_name": path.name,
+                            "verifier_result": {
+                                "rewards": {"reward": reward, "quality": reward}
+                            },
+                        }
+                    ),
+                )
+                write_json(
+                    path / "verifier/details.json",
+                    {"payment_method": "tempo_mpp" if reward else None},
+                )
+            exported = export_results(job)
+            self.assertEqual(len(exported["summary"]), 2)
+            self.assertEqual(len(exported["quality_summary"]), 2)
+            for row in exported["trials"]:
+                self.assertEqual(row["scenario_id"], "checkout-v1/mpp-ousd-checkout")
+                directed = row["prompt_condition"] == "directed"
+                self.assertEqual(
+                    row["required_method"], "tempo_mpp" if directed else ""
+                )
+                self.assertEqual(
+                    row["observed_method"], "tempo_mpp" if directed else ""
+                )
+                self.assertEqual(row["attempt_index"], 1)
+            for rows, metric in (
+                (exported["summary"], "pass_rate"),
+                (exported["quality_summary"], "mean_quality"),
+            ):
+                self.assertEqual(
+                    {row["prompt_condition"]: row[metric] for row in rows},
+                    {"discover": 0, "directed": 1},
+                )
+            for filename in ("trials.csv", "summary.csv", "quality_summary.csv"):
+                frame = pd.read_csv(Path(exported["out_dir"]) / filename)
+                self.assertEqual(
+                    set(frame["prompt_condition"]), {"discover", "directed"}
+                )
+
+    def test_directed_checkout_timeout_keeps_its_assigned_condition(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
+            job = Path(root)
+            write_json(
+                job / "timeout/result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v1/stripe-link-checkout-directed",
+                        "verifier_result": None,
+                        "exception_info": {"exception_type": "AgentTimeoutError"},
+                    }
+                ),
+            )
+            row = export_results(job)["trials"][0]
+            self.assertEqual(row["prompt_condition"], "directed")
+            self.assertEqual(row["required_method"], "link")
+            self.assertEqual(row["observed_method"], "")
+            self.assertFalse(row["passed"])
+
     def test_parse_task_name_handles_multi_hyphen_task_families(self) -> None:
         self.assertEqual(
             parse_task_name("transfer-with-memo-fee-payer-mcp"),
@@ -192,6 +260,16 @@ class ExportResultsTest(unittest.TestCase):
             columns = pd.read_csv(Path(exported["out_dir"]) / "trials.csv").columns
             self.assertIn("payment_provider_type", columns)
             self.assertEqual(exported["summary"][0]["pass_5"], "")
+
+    def test_checkout_prompt_columns_do_not_change_other_suite_exports(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            job = Path(root)
+            write_json(job / "trial/result.json", trial())
+            exported = export_results(job)
+            for filename in ("trials.csv", "summary.csv", "quality_summary.csv"):
+                columns = pd.read_csv(Path(exported["out_dir"]) / filename).columns
+                for column in ("scenario_id", "prompt_condition", "required_method"):
+                    self.assertNotIn(column, columns)
 
     def test_checkout_pass_five_uses_independent_trial_outcomes(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
