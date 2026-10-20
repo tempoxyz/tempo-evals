@@ -60,8 +60,8 @@ class ExportResultsTest(unittest.TestCase):
     def test_checkout_prompt_conditions_stay_separate_in_all_exports(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
             job = Path(root)
-            for suffix, reward in (("", 0), ("-directed", 1)):
-                name = f"checkout-v1/mpp-ousd-checkout{suffix}"
+            for suffix, reward in (("-checkout", 0), ("-directed", 1)):
+                name = f"checkout-v1/mpp-ousd{suffix}"
                 path = job / f"trial{suffix}"
                 write_json(
                     path / "result.json",
@@ -113,7 +113,7 @@ class ExportResultsTest(unittest.TestCase):
                 job / "timeout/result.json",
                 trial(
                     {
-                        "task_name": "checkout-v1/stripe-link-checkout-directed",
+                        "task_name": "checkout-v1/stripe-link-directed",
                         "verifier_result": None,
                         "exception_info": {"exception_type": "AgentTimeoutError"},
                     }

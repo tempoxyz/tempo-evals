@@ -212,7 +212,9 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
 @cache
 def checkout_prompt_metadata(task_name: str) -> dict[str, str]:
     directed = task_name.endswith("-directed")
-    scenario = task_name.removesuffix("-directed")
+    scenario = (
+        task_name.removesuffix("-directed") + "-checkout" if directed else task_name
+    )
     prompts = yaml.safe_load(
         (Path(__file__).resolve().parents[1] / "config/tasks.yaml").read_text()
     )["checkout"]["directed"]

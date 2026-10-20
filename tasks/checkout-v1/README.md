@@ -31,10 +31,10 @@ method, so a different payment method cannot pass a directed task.
 
 | Discover task | Directed task | Added sentence |
 | --- | --- | --- |
-| `stripe-card-checkout` | `stripe-card-checkout-directed` | Use card to pay. |
-| `stripe-link-checkout` | `stripe-link-checkout-directed` | Use Link to pay. |
-| `paypal-checkout` | `paypal-checkout-directed` | Use PayPal to pay. |
-| `mpp-ousd-checkout` | `mpp-ousd-checkout-directed` | Use MPP to pay. |
+| `stripe-card-checkout` | `stripe-card-directed` | Use card to pay. |
+| `stripe-link-checkout` | `stripe-link-directed` | Use Link to pay. |
+| `paypal-checkout` | `paypal-directed` | Use PayPal to pay. |
+| `mpp-ousd-checkout` | `mpp-ousd-directed` | Use MPP to pay. |
 
 Each task has `scenario_id`, `prompt_condition`, and `required_method` metadata.
 Exports retain these fields even if a trial times out before verification;
@@ -46,7 +46,7 @@ The existing `payment_method` export remains available.
 Run all eight tasks with `--task-suite checkout`. Select only discover tasks
 with `--task-filter '*-checkout'`, only directed tasks with
 `--task-filter '*-directed'`, or one pair with
-`--task-filter 'stripe-card-checkout*'`. Every task and attempt receives a fresh
+`--task-filter 'stripe-card-*'`. Every task and attempt receives a fresh
 isolated Harbor environment; the shared merchant URL remains trial-local.
 
 ## Task Contract

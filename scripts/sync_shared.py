@@ -267,7 +267,8 @@ def sync_checkout_prompt_variants() -> None:
     """Generate directed Harbor tasks from the authored discover tasks."""
     for slug, prompt in TASKS_CONFIG["checkout"]["directed"].items():
         source = CHECKOUT_TASKS_DIR / slug
-        target = CHECKOUT_TASKS_DIR / f"{slug}-directed"
+        directed_slug = f"{slug.removesuffix('-checkout')}-directed"
+        target = CHECKOUT_TASKS_DIR / directed_slug
         if not (source / "task.toml").is_file():
             continue
         scenario = task_name(source)
@@ -292,7 +293,7 @@ def sync_checkout_prompt_variants() -> None:
                 ".DS_Store",
             ),
         )
-        metadata["task"]["name"] = f"{scenario}-directed"
+        metadata["task"]["name"] = f"checkout-v1/{directed_slug}"
         metadata["metadata"].update(
             prompt_condition="directed", required_method=prompt["method"]
         )
@@ -301,7 +302,7 @@ def sync_checkout_prompt_variants() -> None:
         purchase = "Complete the purchase once.\n"
         if instruction.count(purchase) != 1:
             raise ValueError(f"{source}: expected one purchase instruction")
-        marker = uuid.uuid5(uuid.NAMESPACE_URL, scenario + "-directed")
+        marker = uuid.uuid5(uuid.NAMESPACE_URL, f"checkout-v1/{directed_slug}")
         instruction = re.sub(
             r"<!-- stable-bench-canary: [0-9a-f-]+ -->",
             f"<!-- stable-bench-canary: {marker} -->",

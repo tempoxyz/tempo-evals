@@ -26,7 +26,8 @@ class SyncSharedTest(unittest.TestCase):
                     "directed"
                 ].items():
                     source = checkout / slug
-                    directed = checkout / f"{slug}-directed"
+                    directed_slug = f"{slug.removesuffix('-checkout')}-directed"
+                    directed = checkout / directed_slug
                     self.assertEqual(
                         (source / "instruction.md").read_text(), original_prompts[slug]
                     )
@@ -48,7 +49,7 @@ class SyncSharedTest(unittest.TestCase):
                     config = tomllib.loads((directed / "task.toml").read_text())
                     original = tomllib.loads((source / "task.toml").read_text())
                     self.assertEqual(
-                        config["task"]["name"], f"checkout-v1/{slug}-directed"
+                        config["task"]["name"], f"checkout-v1/{directed_slug}"
                     )
                     self.assertEqual(
                         config["metadata"]["scenario_id"], f"checkout-v1/{slug}"
