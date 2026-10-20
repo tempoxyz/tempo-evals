@@ -11,4 +11,5 @@ Link, and a PayPal buyer when available). You have a browser available for
 checkout.
 
 You may consult public documentation and install software.
+
 You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
