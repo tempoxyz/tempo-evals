@@ -46,19 +46,33 @@ The verifier must confirm the requested item, permitted total, completed order,
 and matching provider or chain payment, and reject duplicate orders or charges.
 An agent's final message or a success page alone does not establish success.
 
-Publish a binary `reward` for verified checkout success. Record the chosen
-payment method and checkout stage as diagnostics. The results exporter also
-reports `checkout_score`: failed checkouts score zero; verified checkouts score
+Like the MPP integration suite, publish native Harbor `correctness`, `quality`,
+and `reward` fields. The merchant verifier determines binary `correctness` and
+`reward`. A failed checkout gets zero for all three. After a verified payment,
+RewardKit combines deterministic efficiency criteria into `quality`:
 `0.6 + 0.4 × (0.40 × turn_score + 0.35 × retry_score + 0.25 × time_score)`.
+The existing exporter reports `quality`, `mean_quality`, and `quality_coverage`;
+it does not compute a separate checkout score.
+
 `turn_score = min(1, 10 / model_turns)`, `retry_score = 1 / (1 +
-extra_checkout_attempts)`, and `time_score = min(1, 180 / agent_execution_seconds)`.
-Missing turns, attempt counts, or agent time leave a successful trial's graded
-score blank, with coverage reported separately. These fixed checkout-v1 targets
-are shared across merchants and should be calibrated before dataset publication.
-Stripe and PayPal count extra checkout starts; MPP counts `/buy` requests beyond
-the expected 402 challenge and paid replay. These are observable proxies for
-retries, not counts of every failed payment submission. Harbor's native reward
-remains binary for pass@k. Report `pass@1`, all-five-pass
+extra_checkout_attempts)`, and `time_score = min(1, 180 / trajectory_duration_sec)`.
+Turns count model calls in the Harbor trajectory, excluding copied context.
+Trajectory time spans the first user/agent timestamp through the last one;
+Harbor's full agent execution duration is exported separately. Setup and
+verification time do not contribute to quality. The fixed targets are shared
+across merchants and should be calibrated before dataset publication.
+
+Stripe and PayPal count extra checkout starts. MPP counts requests carrying
+payment credentials beyond the first one; unpaid discovery and 402 challenges
+are not retries. These are observable proxies for retries, not counts of every
+failed payment submission. Missing trajectory data or attempt counts leave a
+successful trial's quality absent. Oracle purchases still receive `reward = 1`.
+Checkout quality aggregates are left blank unless every trial in the group has
+quality, so missing successful telemetry cannot bias averages toward failures.
+
+The shared grader and RewardKit criteria are authored in
+`shared/checkout/tests/` and copied into each task by `npm run sync`. Merchant
+correctness checks remain task-owned. Report `pass@1`, all-five-pass
 reliability (`pass^5`), tokens, turns, tool calls, wall time, and provider cost
 from repeated Harbor trials. Provider sandbox payments and Tempo testnet
 transfers must be identified separately in results.

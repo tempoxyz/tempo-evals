@@ -4,11 +4,26 @@ import tempfile
 import tomllib
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts import sync_shared
 
 
 class SyncSharedTest(unittest.TestCase):
+    def test_checkout_grading_copies_only_to_checkout_tasks(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory) / "checkout"
+            task = checkout / "merchant"
+            task.mkdir(parents=True)
+            (task / "task.toml").write_text('[task]\nname = "merchant"\n')
+            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+                sync_shared.sync_checkout_grading()
+            for relative in ("tests/grade.py", "tests/quality/check.py"):
+                self.assertEqual(
+                    (task / relative).read_bytes(),
+                    (sync_shared.CHECKOUT_SHARED_DIR / relative).read_bytes(),
+                )
+
     def test_checkout_manifest_waits_for_an_authored_task(self) -> None:
         original_tasks_dir = sync_shared.CHECKOUT_TASKS_DIR
         with tempfile.TemporaryDirectory() as temporary_directory:

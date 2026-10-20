@@ -61,10 +61,10 @@ def main() -> None:
     details = {
         "reason": reason,
         "extra_checkout_attempts": (
-            max(0, snapshot["checkoutRequestCount"] - 2)
+            max(0, snapshot["paymentAttemptCount"] - 1)
             if isinstance(snapshot, dict)
-            and isinstance(snapshot.get("checkoutRequestCount"), int)
-            and snapshot["checkoutRequestCount"] >= 0
+            and type(snapshot.get("paymentAttemptCount")) is int
+            and snapshot["paymentAttemptCount"] >= 1
             else None
         ),
         "payment_method": method,

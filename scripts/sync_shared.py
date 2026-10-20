@@ -22,6 +22,7 @@ MCP_TASKS_DIR = ROOT / "tasks" / "tempo-mcp-v1"
 MPP_TASKS_DIR = ROOT / "tasks" / "mpp"
 CHECKOUT_TASKS_DIR = ROOT / "tasks" / "checkout-v1"
 MPP_SHARED_DIR = ROOT / "shared" / "mpp"
+CHECKOUT_SHARED_DIR = ROOT / "shared" / "checkout"
 MCP_ORACLE = ROOT / "shared" / "tempo" / "mcp-eval" / "oracle.ts"
 
 TASKS_CONFIG: dict[str, Any] = yaml.safe_load(
@@ -254,6 +255,12 @@ def sync_mpp_tasks() -> int:
     return len(tasks)
 
 
+def sync_checkout_grading() -> None:
+    for task_dir in checkout_task_dirs():
+        for relative in ("tests/grade.py", "tests/quality/check.py"):
+            copy_file(CHECKOUT_SHARED_DIR / relative, task_dir / relative)
+
+
 def write_mpp_dataset_manifest() -> None:
     dataset_path = MPP_TASKS_DIR / "dataset.toml"
     digests = read_manifest_digests(dataset_path)
@@ -310,6 +317,7 @@ def main() -> None:
     dockerfile_count = sync_task_dockerfiles()
     mcp_task_count = sync_mcp_oracles()
     mpp_task_count = sync_mpp_tasks()
+    sync_checkout_grading()
     write_dataset_manifest()
     write_mcp_dataset_manifest()
     write_mpp_dataset_manifest()

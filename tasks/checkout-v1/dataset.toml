@@ -11,17 +11,17 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-checkout"
-digest = "sha256:f4bc1e999b970c11ecf67d40ae9be731fd0a3f5177dfe2bacf3a88c7ca51cff9"
+digest = "sha256:d507dc3f0d43c32c4c65d00613bbd424edf2b0e9974912d015ac4fa58a69abc6"
 
 [[tasks]]
 name = "checkout-v1/paypal-checkout"
-digest = "sha256:2c77659ba6888f6be58f11e5542e3c8e958de4d110bbad26390699dfda83cbd4"
+digest = "sha256:168cb0159e06762389395c81da891d237ebdb83f0dbafc1d5f1c22895c76687d"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-checkout"
-digest = "sha256:91a189451480a26b9089fb82684df1cdb73070c7e4f3bc17fc496eacd64f3428"
+digest = "sha256:3a73581e3b27c1c7305990b1b2547ec0eddab3ce5b231913ba96b0f4102dc762"
 
 [[tasks]]
 name = "checkout-v1/stripe-link-checkout"
-digest = "sha256:190bafcf650c2e43099689c2990c641b9a9b117e64d2dad5d51111ec20a4c8c0"
+digest = "sha256:0ff647035b7bf3a400bbe7457868f5dce37c5f45f901264e5a37dd54acac2fdc"
 

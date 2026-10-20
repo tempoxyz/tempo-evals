@@ -10,7 +10,6 @@ import pandas as pd
 
 from scripts.compare_mcp_results import compare, summarize_quality_comparison
 from scripts.export_results import (
-    checkout_score,
     export_results,
     parse_task_name,
     summarize_quality,
@@ -171,7 +170,12 @@ class ExportResultsTest(unittest.TestCase):
                     "payment_method": "card",
                     "checkout_stage": "verified",
                     "payment_provider_type": "stripe_sandbox",
+                    "extra_checkout_attempts": 0,
                 },
+            )
+            write_json(
+                trial_dir / "verifier" / "efficiency.json",
+                {"model_turns": 10, "trajectory_duration_sec": 150},
             )
 
             exported = export_results(job_dir)
@@ -181,6 +185,9 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["checkout_stage"], "verified")
             self.assertEqual(row["payment_provider_type"], "stripe_sandbox")
             self.assertEqual(row["verification_reason"], "verified")
+            self.assertEqual(row["extra_checkout_attempts"], 0)
+            self.assertEqual(row["model_turns"], 10)
+            self.assertEqual(row["trajectory_duration_sec"], 150)
             self.assertTrue(row["eligible"])
             columns = pd.read_csv(Path(exported["out_dir"]) / "trials.csv").columns
             self.assertIn("payment_provider_type", columns)
@@ -207,54 +214,63 @@ class ExportResultsTest(unittest.TestCase):
             columns = pd.read_csv(Path(exported["out_dir"]) / "summary.csv").columns
             self.assertIn("pass_5", columns)
 
-    def test_checkout_score_requires_payment_and_complete_telemetry(self) -> None:
-        self.assertEqual(checkout_score(False, 1, 0, 1), 0)
-        self.assertEqual(checkout_score(True, 10, 0, 180), 1)
-        self.assertEqual(checkout_score(True, "", 0, 180), "")
-        self.assertEqual(checkout_score(True, 10, None, 180), "")
-        self.assertEqual(checkout_score(True, 10, 0, ""), "")
-        self.assertLess(checkout_score(True, 20, 1, 360), 1)
-
-    def test_checkout_export_scores_success_and_failure_without_changing_reward(
-        self,
-    ) -> None:
-        with tempfile.TemporaryDirectory(prefix="checkout-score-") as root:
+    def test_checkout_export_uses_native_quality(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-quality-") as root:
             job_dir = Path(root) / "job"
-            for name, reward, attempts, turns in (
-                ("success", 1, 0, 10),
-                ("retry", 1, 1, 20),
-                ("failure", 0, 2, 5),
+            for name, reward, quality in (
+                ("success", 1, 1),
+                ("retry", 1, 0.8),
+                ("failure", 0, 0),
             ):
-                trial_dir = job_dir / name
-                result = trial(
-                    {
-                        "task_name": "checkout-v1/stripe-card-checkout",
-                        "trial_name": name,
-                        "verifier_result": {"rewards": {"reward": reward}},
-                        "agent_result": {"n_turns": turns},
-                    }
-                )
-                write_json(trial_dir / "result.json", result)
                 write_json(
-                    trial_dir / "verifier" / "details.json",
-                    {
-                        "reason": "verified" if reward else "unpaid",
-                        "extra_checkout_attempts": attempts,
-                    },
+                    job_dir / name / "result.json",
+                    trial(
+                        {
+                            "task_name": "checkout-v1/stripe-card-checkout",
+                            "trial_name": name,
+                            "verifier_result": {
+                                "rewards": {
+                                    "reward": reward,
+                                    "correctness": reward,
+                                    "quality": quality,
+                                }
+                            },
+                        }
+                    ),
                 )
             exported = export_results(job_dir)
-            rows = {row["trial_name"]: row for row in exported["trials"]}
-            self.assertEqual(rows["success"]["checkout_score"], 1)
-            self.assertLess(rows["retry"]["checkout_score"], 1)
-            self.assertGreater(rows["retry"]["checkout_score"], 0.6)
-            self.assertEqual(rows["failure"]["checkout_score"], 0)
-            self.assertEqual(rows["failure"]["reward"], 0)
-            self.assertEqual(exported["summary"][0]["n_checkout_scored"], 3)
-            self.assertEqual(exported["summary"][0]["checkout_score_coverage"], 1)
-            self.assertIn(
-                "mean_checkout_score",
-                pd.read_csv(Path(exported["out_dir"]) / "summary.csv"),
+            self.assertAlmostEqual(exported["summary"][0]["mean_quality"], 0.6)
+            self.assertAlmostEqual(exported["summary"][0]["pass_rate"], 2 / 3)
+            self.assertEqual(exported["summary"][0]["quality_coverage"], 1)
+            self.assertNotIn(
+                "checkout_score", pd.read_csv(Path(exported["out_dir"]) / "trials.csv")
             )
+
+    def test_checkout_missing_quality_does_not_bias_average_toward_failures(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-quality-") as root:
+            job_dir = Path(root) / "job"
+            for name, rewards in (
+                ("pass", {"reward": 1}),
+                ("fail", {"reward": 0, "quality": 0}),
+            ):
+                write_json(
+                    job_dir / name / "result.json",
+                    trial(
+                        {
+                            "task_name": "checkout-v1/stripe-card-checkout",
+                            "trial_name": name,
+                            "verifier_result": {"rewards": rewards},
+                        }
+                    ),
+                )
+            exported = export_results(job_dir)
+            self.assertEqual(exported["summary"][0]["pass_rate"], 0.5)
+            for summary in (exported["summary"][0], exported["quality_summary"][0]):
+                self.assertEqual(summary["quality_coverage"], 0.5)
+                for metric in ("mean_quality", "median_quality", "quality_at_k"):
+                    self.assertEqual(summary[metric], "")
 
     def test_export_results_reads_mcp_profile_from_trial_config(self) -> None:
         with tempfile.TemporaryDirectory(prefix="stable-bench-export-") as root:
