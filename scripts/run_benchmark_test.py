@@ -280,6 +280,32 @@ class RunBenchmarkTest(unittest.TestCase):
         ):
             preflight({}, {"task_suite": "checkout", "task_filter": "paypal-checkout"})
 
+    def test_directed_checkout_preflight_requires_the_same_provider_credentials(
+        self,
+    ) -> None:
+        for slug, missing in (
+            ("stripe-link-directed", "STRIPE_TEST_PUBLISHABLE_KEY"),
+            ("paypal-directed", "PAYPAL_SANDBOX_CLIENT_ID"),
+        ):
+            for selection in (
+                {"task_filter": slug},
+                {"tasks": f"tasks/checkout-v1/{slug}"},
+            ):
+                with (
+                    self.subTest(slug=slug, selection=selection),
+                    patch.dict(
+                        os.environ,
+                        {
+                            "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+                            "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
+                            "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+                        },
+                        clear=True,
+                    ),
+                    self.assertRaisesRegex(RuntimeError, missing),
+                ):
+                    preflight({}, {"task_suite": "checkout", **selection})
+
     def test_checkout_preflight_allows_task_before_manifest_sync(self) -> None:
         with (
             patch.dict(
