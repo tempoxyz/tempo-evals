@@ -97,19 +97,16 @@ class SyncSharedTest(unittest.TestCase):
                     },
                 )
 
-    def test_checkout_grading_copies_only_to_checkout_tasks(self) -> None:
+    def test_checkout_assets_copy_only_to_checkout_tasks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory) / "checkout"
             task = checkout / "merchant"
             task.mkdir(parents=True)
             (task / "task.toml").write_text('[task]\nname = "merchant"\n')
             with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
-                sync_shared.sync_checkout_grading()
-            for relative in (
-                "tests/grade.py",
-                "tests/observation.py",
-                "tests/quality/check.py",
-            ):
+                sync_shared.sync_checkout_assets()
+            for shared_file in sync_shared.TASKS_CONFIG["checkout"]["shared_files"]:
+                relative = shared_file["path"]
                 self.assertEqual(
                     (task / relative).read_bytes(),
                     (sync_shared.CHECKOUT_SHARED_DIR / relative).read_bytes(),

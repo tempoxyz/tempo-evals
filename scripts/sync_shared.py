@@ -257,13 +257,10 @@ def sync_mpp_tasks() -> int:
     return len(tasks)
 
 
-def sync_checkout_grading() -> None:
+def sync_checkout_assets() -> None:
     for task_dir in checkout_task_dirs():
-        for relative in (
-            "tests/grade.py",
-            "tests/observation.py",
-            "tests/quality/check.py",
-        ):
+        for shared_file in TASKS_CONFIG["checkout"]["shared_files"]:
+            relative = shared_file["path"]
             copy_file(CHECKOUT_SHARED_DIR / relative, task_dir / relative)
 
 
@@ -383,7 +380,7 @@ def main() -> None:
     dockerfile_count = sync_task_dockerfiles()
     mcp_task_count = sync_mcp_oracles()
     mpp_task_count = sync_mpp_tasks()
-    sync_checkout_grading()
+    sync_checkout_assets()
     sync_checkout_prompt_variants()
     write_dataset_manifest()
     write_mcp_dataset_manifest()

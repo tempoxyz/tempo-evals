@@ -34,6 +34,15 @@ profiles:
         url: http://tempo-mcp-code:8787/mcp
 
 checkout:
+  # Authored once; copied into each self-contained Harbor task artifact.
+  shared_files:
+    - path: environment/wallet/Dockerfile
+    - path: environment/wallet/init.py
+    - path: environment/link/Dockerfile
+    - path: environment/link/link_setup.js
+    - path: tests/grade.py
+    - path: tests/observation.py
+    - path: tests/quality/check.py
   # Existing tasks are discover prompts; sync generates their -directed peers.
   directed:
     stripe-card-checkout:

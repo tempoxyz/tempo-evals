@@ -53,6 +53,10 @@ The generated directories are self-contained Harbor artifacts, not separately
 authored implementations. Common method observation, grading, and efficiency
 criteria live in `shared/checkout/tests/`; `npm run sync` copies them into each
 artifact, like the shared harness assets in the other suites.
+Wallet generation/funding and Link enrollment are also authored once under
+`shared/checkout/environment/` and synced through the `checkout.shared_files`
+declarations in `config/tasks.yaml`. Edit those shared sources to change setup
+for every merchant and prompt condition together.
 
 Run all eight tasks with `--task-suite checkout`. Select only discover tasks
 with `--task-filter '*-checkout'`, only directed tasks with
