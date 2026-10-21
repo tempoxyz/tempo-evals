@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:536516d3b7454a69ab90f595eff396aec5bd573ecca70cadbd65987a1a732a52"
+digest = "sha256:52f11d106aed8f1a9668a67628148ac8407af0e0700bc4312d005a00adf73bc6"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:5d00c286a973b03df8f322d8bfc0e3259ae0dbda46967fdc05b8346d509346f3"
+digest = "sha256:1db59a4162a0e44d1a99da36c802610a167ed0acbab9ced36d20a2ba601f896e"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:2f4887e7d4487f4ba8265e06e178e2c38610d786d541f14fb86505a53e70d872"
+digest = "sha256:f2b4f2e398877078220cb58dd208012ebfed52f0cf37947bf586813b27780fe5"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:bdad232b8b55abe0c03828d0cee49ec366bf354b30896cca7ebcfa5cc7d43d13"
+digest = "sha256:09af03d28dbe2d4721258e9538cbee31248e10f7ac139f78f61d78fe0fad5d1d"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:2b0ec29d6a749e567c191c9e9d514992df364ef5b9ff95afeefb9c7f9d8c9c44"
+digest = "sha256:98bd5e7f71d67715285bc4e6d6867277d07efbcee8884330cad0df0150159635"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:63c04f6c82a1de5ff2d86cf18df7115d8815e50461682bcccb41815358d638b0"
+digest = "sha256:f7707506552cd00eb9d7279bc5358a1b502b0e33bc6b31be148ef9a2dabacf04"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:1f35d5768f6d985c95e9527f2de2d29c25133152faf73b224d50da2411424377"
+digest = "sha256:49c968360a1b3ed8aac07a937a4c103107728db97f345a21b530cb9c5e655ff1"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:11ee1e39c2e9a91211d4e69d2ab1c8f45c177da53dada22a6072d092e303b05c"
+digest = "sha256:e2c30bd2b1c6225c8417b531d8cafaa9ae2f63fc0584fc1209a06ede811669c2"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:15329184e550344d531f1a033456cf21839ce6622887613d1532f36eabe3c9d5"
+digest = "sha256:088a29d4c56481707628beec871170d04b12acc6910e5a4bc684987207627f7b"
 
