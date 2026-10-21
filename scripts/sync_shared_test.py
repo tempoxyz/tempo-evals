@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import re
-import shutil
 import tempfile
 import tomllib
 import unittest
@@ -12,101 +10,19 @@ from scripts import sync_shared
 
 
 class SyncSharedTest(unittest.TestCase):
-    def test_checkout_prompt_pairs_share_every_runtime_and_verifier_file(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            checkout = Path(directory)
-            original_prompts = {}
-            for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]:
-                source = sync_shared.CHECKOUT_TASKS_DIR / slug
-                shutil.copytree(source, checkout / slug)
-                original_prompts[slug] = (source / "instruction.md").read_text()
-            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
-                sync_shared.sync_checkout_prompt_variants()
-                for slug, prompt in sync_shared.TASKS_CONFIG["checkout"][
-                    "directed"
-                ].items():
-                    source = checkout / slug
-                    directed_slug = prompt["task"]
-                    directed = checkout / directed_slug
-                    self.assertEqual(
-                        (source / "instruction.md").read_text(), original_prompts[slug]
-                    )
-                    instruction = (directed / "instruction.md").read_text()
-                    self.assertEqual(instruction.count(prompt["instruction"]), 1)
-
-                    # Only the method sentence and unique benchmark marker differ.
-                    def strip_marker(text: str) -> str:
-                        return re.sub(
-                            r"<!-- stable-bench-canary: [0-9a-f-]+ -->", "", text
-                        )
-
-                    self.assertEqual(
-                        strip_marker(
-                            instruction.replace(prompt["instruction"] + "\n", "")
-                        ),
-                        strip_marker(original_prompts[slug]),
-                    )
-                    config = tomllib.loads((directed / "task.toml").read_text())
-                    original = tomllib.loads((source / "task.toml").read_text())
-                    self.assertEqual(
-                        config["task"]["name"], f"checkout-v1/{directed_slug}"
-                    )
-                    self.assertEqual(
-                        config["metadata"]["scenario_id"], f"checkout-v1/{slug}"
-                    )
-                    self.assertEqual(config["metadata"]["prompt_condition"], "directed")
-                    self.assertEqual(
-                        config["metadata"]["required_method"], prompt["method"]
-                    )
-                    self.assertEqual(
-                        original["metadata"]["prompt_condition"], "discover"
-                    )
-                    for name in ("agent", "environment", "verifier", "artifacts"):
-                        self.assertEqual(config[name], original[name])
-                    for part in ("environment", "solution", "tests"):
-                        files = {
-                            p.relative_to(source)
-                            for p in (source / part).rglob("*")
-                            if p.is_file() and "__pycache__" not in p.parts
-                        }
-                        self.assertEqual(
-                            files,
-                            {
-                                p.relative_to(directed)
-                                for p in (directed / part).rglob("*")
-                                if p.is_file()
-                            },
-                        )
-                        for relative in files:
-                            self.assertEqual(
-                                (source / relative).read_bytes(),
-                                (directed / relative).read_bytes(),
-                            )
-                before = {
-                    p.relative_to(checkout): p.read_bytes()
-                    for p in checkout.rglob("*")
-                    if p.is_file()
-                }
-                sync_shared.sync_checkout_prompt_variants()
-                self.assertEqual(
-                    before,
-                    {
-                        p.relative_to(checkout): p.read_bytes()
-                        for p in checkout.rglob("*")
-                        if p.is_file()
-                    },
-                )
-
-    def test_checkout_assets_copy_only_to_checkout_tasks(self) -> None:
+    def test_checkout_grading_copies_only_to_checkout_tasks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory) / "checkout"
             task = checkout / "merchant"
             task.mkdir(parents=True)
             (task / "task.toml").write_text('[task]\nname = "merchant"\n')
             with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
-                sync_shared.sync_checkout_assets()
-            for shared_file in sync_shared.TASKS_CONFIG["checkout"]["shared_files"]:
-                relative = shared_file["path"]
+                sync_shared.sync_checkout_grading()
+            for relative in (
+                "tests/grade.py",
+                "tests/observation.py",
+                "tests/quality/check.py",
+            ):
                 self.assertEqual(
                     (task / relative).read_bytes(),
                     (sync_shared.CHECKOUT_SHARED_DIR / relative).read_bytes(),

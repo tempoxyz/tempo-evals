@@ -1,8 +1,7 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Four merchant scenarios each have
-discover and directed prompts, for eight Harbor tasks. The dataset is not
-published. Checkout tasks can only be
+Planned dataset: `tempo/checkout-bench-v1`. The four merchant tasks have passed
+Daytona oracle validation but the dataset is not published. They can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
 
@@ -10,59 +9,52 @@ selected with `--task-suite checkout` and are excluded from the default and
 
 An agent receives a request to buy a specific item from a test merchant. The
 instruction lists the payment capabilities available in the same benchmark
-wallet inventory for every task. In the **discover** condition, it does not
-prescribe a method or disclose which methods the merchant accepts. In the
-**directed** condition, it adds one sentence naming the payment method, such as
-"Use MPP to pay." Neither condition provides a payment SDK or implementation hint.
-The agent completes the purchase without a trial reset or human intervention.
+wallet inventory for every task. By default it does not prescribe a method or
+disclose which methods the merchant accepts. The agent chooses a route and
+completes the purchase without a trial reset or human intervention.
 
-The merchant and item define a scenario. Each prompt condition has its own native
-Harbor task ID in the same dataset. Browser and tool configurations, agent/model
-pairs, and independent attempts belong in job configurations.
+The merchant and item define a Harbor task. Browser and tool configurations,
+agent/model pairs, and independent attempts belong in job configurations rather
+than duplicated task directories. The payment method used is observed
+independently of the prompt condition.
 
-## Payment prompt pairs
+## Payment prompt conditions
 
-The four existing task IDs remain the authored discover tasks. `npm run sync`
-generates their `-directed` counterparts from those sources and the method
-sentences in `config/tasks.yaml`. Do not edit the generated task directories.
-The environment, wallet setup, oracle, verifier, and efficiency scoring are
-identical within each pair. Each existing verifier already requires the named
-method, so a different payment method cannot pass a directed task.
+The same four tasks support two job conditions:
 
-| Discover task | Directed task | Added sentence |
-| --- | --- | --- |
-| `stripe-card-checkout` | `stripe-card-directed` | Use card to pay. |
-| `stripe-link-checkout` | `stripe-link-directed` | Use Link to pay. |
-| `paypal-checkout` | `paypal-directed` | Use PayPal to pay. |
-| `mpp-ousd-checkout` | `mpp-ousd-directed` | Use MPP to pay. |
+- `--checkout-prompt discover` (default): the original purchase request and wallet inventory.
+- `--checkout-prompt directed`: adds one sentence naming the required method.
 
-Each task has `scenario_id`, `prompt_condition`, and `required_method` metadata.
-Preflight and exports read those native fields instead of inferring the scenario
-or condition from a task-name suffix. Exports prefer the staged task snapshot
-used by the run, retaining the condition even if verification never started.
-`observed_method` comes from provider/receipt evidence independently of grading,
-including wrong-method and wrong-order failures. It is blank if unknown or if
-several methods were observed; `observed_methods` retains the full set as a JSON
-array. Observing a method does not imply that its payment or checkout succeeded.
-MPP's machine-readable method is `tempo_mpp`, matching the existing verifier.
-Task summaries and suite quality summaries keep the two conditions separate.
-The existing `payment_method` export remains available.
+| Task | Added sentence in directed mode |
+| --- | --- |
+| `stripe-card-checkout` | Use card to pay. |
+| `stripe-link-checkout` | Use Link to pay. |
+| `paypal-checkout` | Use PayPal to pay. |
+| `mpp-ousd-checkout` | Use MPP to pay. |
 
-`config/tasks.yaml` declares each directed task ID, method, and instruction once.
-The generated directories are self-contained Harbor artifacts, not separately
-authored implementations. Common method observation, grading, and efficiency
-criteria live in `shared/checkout/tests/`; `npm run sync` copies them into each
-artifact, like the shared harness assets in the other suites.
-Wallet generation/funding and Link enrollment are also authored once under
-`shared/checkout/environment/` and synced through the `checkout.shared_files`
-declarations in `config/tasks.yaml`. Edit those shared sources to change setup
-for every merchant and prompt condition together.
+`config/tasks.yaml` declares these sentences and method identifiers. The runner
+applies the selected condition during existing task staging; it changes only
+`instruction.md` and native `task.toml` metadata. Task IDs, environments, wallets,
+oracles, verification, and scoring stay identical across conditions. There are
+no additional source tasks or datasets. Each attempt receives its own isolated
+Harbor environment as before.
 
-Run all eight tasks with `--task-suite checkout`. Select only discover tasks
-with `--task-filter '*-checkout'`, only directed tasks with
-`--task-filter '*-directed'`, or one pair with
-`--task-filter 'stripe-card-*'`. Every task and attempt receives a fresh
-isolated Harbor environment; the shared merchant URL remains trial-local.
+For either Daytona or local jobs, add `--task-suite checkout` and the desired
+`--checkout-prompt` value. Run the conditions as separate jobs; generated job
+names include the condition. Existing task filters still select merchants.
+
+Exports read `scenario_id`, `prompt_condition`, and `required_method` from the
+native task metadata, preferring the staged snapshot used by the trial. Keep
+that staging directory with results until export; a missing snapshot is marked
+`unknown`. Trial, task, and suite quality summaries keep conditions separate,
+even when task IDs match. MPP's method identifier is `tempo_mpp`.
+
+`observed_method` comes from provider or receipt evidence, including failed
+checkouts. It is blank when unknown or when multiple methods were observed;
+`observed_methods` retains the full set as a JSON array. Observing a method does
+not imply success. The existing success-only `payment_method` column remains.
+Shared observation and grading code lives in `shared/checkout/tests/` and is
+copied into the four tasks by `npm run sync`.
 
 ## Task Contract
 
@@ -128,9 +120,9 @@ passed.
 
 ## Current merchants
 
-All four scenarios request one Tempo Notebook for at most $12 and use the same
+All four tasks request one Tempo Notebook for at most $12 and use the same
 purchase request and Playwright browser. Each trial wallet lists its prepared
-payment methods. Only directed prompts name the method to use. Each
+payment methods. The method to use is not named in the instruction. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
 
 Harbor starts a separate environment for each task and trial. In that

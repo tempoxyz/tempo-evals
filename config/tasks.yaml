@@ -34,31 +34,18 @@ profiles:
         url: http://tempo-mcp-code:8787/mcp
 
 checkout:
-  # Authored once; copied into each self-contained Harbor task artifact.
-  shared_files:
-    - path: environment/wallet/Dockerfile
-    - path: environment/wallet/init.py
-    - path: environment/link/Dockerfile
-    - path: environment/link/link_setup.js
-    - path: tests/grade.py
-    - path: tests/observation.py
-    - path: tests/quality/check.py
-  # Existing tasks are discover prompts; sync generates their -directed peers.
+  # Applied to staged task prompts only when --checkout-prompt directed is set.
   directed:
     stripe-card-checkout:
-      task: stripe-card-directed
       method: card
       instruction: Use card to pay.
     stripe-link-checkout:
-      task: stripe-link-directed
       method: link
       instruction: Use Link to pay.
     paypal-checkout:
-      task: paypal-directed
       method: paypal
       instruction: Use PayPal to pay.
     mpp-ousd-checkout:
-      task: mpp-ousd-directed
       method: tempo_mpp
       instruction: Use MPP to pay.
 

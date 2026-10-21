@@ -214,9 +214,8 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
 def checkout_prompt_metadata(task_name: str, task_path: str = "") -> dict[str, str]:
     """Read native task fields, preferring the task snapshot used by the run."""
     root = Path(__file__).resolve().parents[1]
-    candidates = ([root / task_path] if task_path else []) + [
-        root / "tasks" / task_name
-    ]
+    # A missing staged snapshot must not silently become a discover trial.
+    candidates = [root / task_path] if task_path else [root / "tasks" / task_name]
     for directory in candidates:
         if not directory.resolve().is_relative_to(root):
             continue
@@ -561,7 +560,10 @@ def assign_attempt_indexes(rows: list[JsonObject]) -> list[JsonObject]:
     counts: dict[str, int] = {}
     sorted_rows = sorted(rows, key=lambda row: str(row["trial_name"]))
     for row in sorted_rows:
-        key = "\0".join([str(row["task_name"]), str(row["agent"]), str(row["model"])])
+        key = "\0".join(
+            str(row.get(field, ""))
+            for field in ("task_name", "agent", "model", "prompt_condition")
+        )
         counts[key] = counts.get(key, 0) + 1
         row["attempt_index"] = counts[key]
     return sorted_rows
@@ -623,7 +625,14 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     ]:
         frame[column] = pd.to_numeric(frame[column], errors="coerce").fillna(0)
 
-    group_columns = ["model", "agent", "task_name", "task_family", "profile"]
+    group_columns = [
+        "model",
+        "agent",
+        "task_name",
+        "task_family",
+        "profile",
+        *checkout_columns,
+    ]
     summary = (
         frame.groupby(group_columns, as_index=False, sort=False)
         .agg(
@@ -646,7 +655,6 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             mcp_denied_calls=("mcp_denied_calls", "sum"),
             mcp_latency_ms=("mcp_latency_ms", "sum"),
             cost_usd=("cost_usd", "sum"),
-            **{key: (key, "first") for key in checkout_columns},
         )
         .assign(
             pass_rate=lambda data: data["n_passed"] / data["n_trials"],

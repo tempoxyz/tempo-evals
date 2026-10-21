@@ -56,18 +56,33 @@ def trial(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
     return value
 
 
+def checkout_task(root: Path, slug: str, condition: str, method: str) -> dict[str, Any]:
+    task = root / condition / slug
+    task.mkdir(parents=True)
+    (task / "task.toml").write_text(
+        f'[task]\nname = "checkout-v1/{slug}"\n'
+        f'[metadata]\nscenario_id = "checkout-v1/{slug}"\n'
+        f'prompt_condition = "{condition}"\nrequired_method = "{method}"\n'
+    )
+    return {"task_name": f"checkout-v1/{slug}", "config": {"task": {"path": str(task)}}}
+
+
 class ExportResultsTest(unittest.TestCase):
     def test_checkout_prompt_conditions_stay_separate_in_all_exports(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
+        with tempfile.TemporaryDirectory(
+            dir=Path(__file__).resolve().parents[1]
+        ) as root:
             job = Path(root)
-            for suffix, reward in (("-checkout", 0), ("-directed", 1)):
-                name = f"checkout-v1/mpp-ousd{suffix}"
-                path = job / f"trial{suffix}"
+            for condition, reward in (("discover", 0), ("directed", 1)):
+                assigned = checkout_task(
+                    job, "mpp-ousd-checkout", condition, "tempo_mpp" if reward else ""
+                )
+                path = job / f"trial-{condition}"
                 write_json(
                     path / "result.json",
                     trial(
                         {
-                            "task_name": name,
+                            **assigned,
                             "trial_name": path.name,
                             "verifier_result": {
                                 "rewards": {"reward": reward, "quality": reward}
@@ -111,13 +126,17 @@ class ExportResultsTest(unittest.TestCase):
                 )
 
     def test_directed_checkout_timeout_keeps_its_assigned_condition(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
+        with tempfile.TemporaryDirectory(
+            dir=Path(__file__).resolve().parents[1]
+        ) as root:
             job = Path(root)
             write_json(
                 job / "timeout/result.json",
                 trial(
                     {
-                        "task_name": "checkout-v1/stripe-link-directed",
+                        **checkout_task(
+                            job, "stripe-link-checkout", "directed", "link"
+                        ),
                         "verifier_result": None,
                         "exception_info": {"exception_type": "AgentTimeoutError"},
                     }
@@ -130,13 +149,17 @@ class ExportResultsTest(unittest.TestCase):
             self.assertFalse(row["passed"])
 
     def test_wrong_method_is_observed_without_receiving_credit(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory(
+            dir=Path(__file__).resolve().parents[1]
+        ) as directory:
             job = Path(directory)
             write_json(
                 job / "wrong/result.json",
                 trial(
                     {
-                        "task_name": "checkout-v1/stripe-link-directed",
+                        **checkout_task(
+                            job, "stripe-link-checkout", "directed", "link"
+                        ),
                         "verifier_result": {
                             "rewards": {"reward": 0, "correctness": 0, "quality": 0}
                         },
@@ -165,7 +188,7 @@ class ExportResultsTest(unittest.TestCase):
         self,
     ) -> None:
         repo = Path(__file__).resolve().parents[1]
-        with tempfile.TemporaryDirectory(dir=repo / ".cache") as directory:
+        with tempfile.TemporaryDirectory(dir=repo) as directory:
             root = Path(directory)
             task = root / "task"
             task.mkdir()
@@ -190,6 +213,22 @@ class ExportResultsTest(unittest.TestCase):
                 self.assertEqual(row["required_method"], "paypal")
                 self.assertEqual(row["prompt_condition"], "directed")
             self.assertEqual(out["quality_summary"][0]["prompt_condition"], "directed")
+
+    def test_missing_staged_snapshot_does_not_fall_back_to_discover(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            job = Path(directory)
+            write_json(
+                job / "missing/result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v1/stripe-card-checkout",
+                        "config": {"task": {"path": str(job / "missing-task")}},
+                    }
+                ),
+            )
+            self.assertEqual(
+                export_results(job)["trials"][0]["prompt_condition"], "unknown"
+            )
 
     def test_parse_task_name_handles_multi_hyphen_task_families(self) -> None:
         self.assertEqual(

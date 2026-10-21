@@ -118,6 +118,7 @@ Options:
   --task-filter GLOB      Include matching task names for model and config variants
   --task-suite SUITE      Task family: tempo, tempo-mcp, mpp, checkout, or all
                           (default: tempo; use all explicitly for full matrix)
+  --checkout-prompt MODE  Checkout payment instruction: discover (default) or directed
   --n-tasks N             Limit task count for the model variant
   --tasks PATH            Task dataset path for dataset/model variants
                           (default: tasks/tempo-v1)
@@ -170,6 +171,9 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser.add_argument("--task-filter")
     parser.add_argument(
         "--task-suite", choices=["tempo", "tempo-mcp", "mpp", "checkout", "all"]
+    )
+    parser.add_argument(
+        "--checkout-prompt", choices=["discover", "directed"], default="discover"
     )
     parser.add_argument(
         "--n-tasks", type=lambda value: read_positive_integer(value, "--n-tasks")
@@ -372,14 +376,7 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
     if options.get("task_suite") == "checkout":
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
-        selected = {
-            tomlkit.parse((Path("tasks/checkout-v1") / name / "task.toml").read_text())[
-                "metadata"
-            ]
-            .get("scenario_id", f"checkout-v1/{name}")
-            .rsplit("/", 1)[-1]
-            for name in selected_checkout_tasks(options)
-        }
+        selected = selected_checkout_tasks(options)
         if not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")
         if "stripe-link-checkout" in selected and not os.environ.get(
@@ -510,6 +507,8 @@ def validate_run_options(variant_name: str, options: dict[str, Any]) -> dict[str
         raise RuntimeError(f"Unknown variant: {variant_name}")
 
     suite = options.get("task_suite") or "tempo"
+    if options.get("checkout_prompt", "discover") != "discover" and suite != "checkout":
+        raise RuntimeError("--checkout-prompt directed requires --task-suite checkout")
     profile = options["profile"]
     profiles = SUITE_PROFILES[suite]
     if profile not in profiles:
@@ -1254,11 +1253,32 @@ def stage_task_datasets(
     mpp_docs_bundle: str | None = None,
     images: dict[str, str] | None = None,
     checkout: bool = False,
+    checkout_prompt: str = "discover",
 ) -> None:
     if checkout:
         staged_checkout = staging_root / "tasks" / "checkout-v1"
         staged_checkout.parent.mkdir(parents=True, exist_ok=True)
         copy_tasks(Path("tasks/checkout-v1"), staged_checkout)
+        if checkout_prompt == "directed":
+            for task_file in staged_checkout.glob("*/task.toml"):
+                prompt = TASKS_CONFIG["checkout"]["directed"][task_file.parent.name]
+                task = tomlkit.parse(task_file.read_text())
+                task["metadata"].update(
+                    prompt_condition="directed", required_method=prompt["method"]
+                )
+                task_file.write_text(tomlkit.dumps(task))
+                instruction_path = task_file.parent / "instruction.md"
+                instruction = instruction_path.read_text()
+                purchase = "Complete the purchase once.\n"
+                if instruction.count(purchase) != 1:
+                    raise RuntimeError(
+                        f"{instruction_path}: expected one purchase instruction"
+                    )
+                instruction_path.write_text(
+                    instruction.replace(
+                        purchase, f"{purchase}{prompt['instruction']}\n", 1
+                    )
+                )
         if images is not None:
             override_staged_images(staging_root, images)
         return
@@ -1361,6 +1381,7 @@ def stage_daytona_config(
         mpp_docs_bundle,
         daytona_images(options),
         checkout=options.get("task_suite") == "checkout",
+        checkout_prompt=options.get("checkout_prompt", "discover"),
     )
 
     config = apply_pair_id(
@@ -1398,6 +1419,7 @@ def stage_filtered_config(
             docs_bundle,
             mpp_docs_bundle,
             checkout=options.get("task_suite") == "checkout",
+            checkout_prompt=options.get("checkout_prompt", "discover"),
         )
         redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
@@ -1409,7 +1431,18 @@ def stage_direct_task_path(
     task_path: str,
     docs_bundle: str | None,
     mpp_docs_bundle: str | None,
+    checkout_prompt: str = "discover",
 ) -> str:
+    if is_checkout_tasks_path(task_path):
+        staging_root = Path(".cache") / "harbor-model" / run_id
+        shutil.rmtree(staging_root, ignore_errors=True)
+        stage_task_datasets(
+            staging_root, None, checkout=True, checkout_prompt=checkout_prompt
+        )
+        relative = (
+            Path(task_path).resolve().relative_to(Path("tasks/checkout-v1").resolve())
+        )
+        return str(staging_root / "tasks/checkout-v1" / relative)
     if docs_bundle is None and mpp_docs_bundle is None:
         return task_path
 
@@ -1532,6 +1565,8 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
 
     benchmark = run_benchmark_key(variant, options.get("task_suite"))
     default_run_name = versioned_name(benchmark, variant["prefix"])
+    if options.get("task_suite") == "checkout":
+        default_run_name += f"-{options.get('checkout_prompt', 'discover')}"
     run_group = options.get("job_name")
     if variant.get("production"):
         run_group = run_group or f"{default_run_name}-{production_timestamp()}"
@@ -1561,6 +1596,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
             task_paths(options)[0],
             docs_bundle,
             mpp_docs_bundle,
+            checkout_prompt=options.get("checkout_prompt", "discover"),
         )
         args.extend(
             [
