@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 import tempfile
-import tomllib
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -15,7 +14,6 @@ from scripts.run_benchmark import (
     MCP_CODE_PROFILE,
     MCP_DIRECT_PROFILE,
     MCP_PROFILE,
-    TASKS_CONFIG,
     BenchmarkKey,
     apply_pair_id,
     apply_profile,
@@ -33,7 +31,6 @@ from scripts.run_benchmark import (
     run_benchmark_key,
     run_benchmark_variant,
     run_production_variant,
-    stage_direct_task_path,
     stage_filtered_config,
     stage_mpp_docs_task,
     stage_pinned_docs_task,
@@ -287,8 +284,8 @@ class RunBenchmarkTest(unittest.TestCase):
         self,
     ) -> None:
         for slug, missing in (
-            ("stripe-link-checkout", "STRIPE_TEST_PUBLISHABLE_KEY"),
-            ("paypal-checkout", "PAYPAL_SANDBOX_CLIENT_ID"),
+            ("stripe-link-directed", "STRIPE_TEST_PUBLISHABLE_KEY"),
+            ("paypal-directed", "PAYPAL_SANDBOX_CLIENT_ID"),
         ):
             for selection in (
                 {"task_filter": slug},
@@ -307,14 +304,7 @@ class RunBenchmarkTest(unittest.TestCase):
                     ),
                     self.assertRaisesRegex(RuntimeError, missing),
                 ):
-                    preflight(
-                        {},
-                        {
-                            "task_suite": "checkout",
-                            "checkout_prompt": "directed",
-                            **selection,
-                        },
-                    )
+                    preflight({}, {"task_suite": "checkout", **selection})
 
     def test_checkout_preflight_allows_task_before_manifest_sync(self) -> None:
         with (
@@ -1046,67 +1036,6 @@ class RunBenchmarkTest(unittest.TestCase):
                 stage_task_datasets(staging_root, None, checkout=True)
             copy.assert_called_once_with(
                 Path("tasks/checkout-v1"), staging_root / "tasks/checkout-v1"
-            )
-
-    def test_checkout_prompt_modes_only_change_instructions_and_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            stage_task_datasets(root / "discover", None, checkout=True)
-            stage_task_datasets(
-                root / "directed", None, checkout=True, checkout_prompt="directed"
-            )
-            tasks = Path("tasks/checkout-v1")
-            self.assertEqual(
-                len(list((root / "directed" / tasks).glob("*/task.toml"))), 4
-            )
-            for slug, prompt in TASKS_CONFIG["checkout"]["directed"].items():
-                for source in (tasks / slug).rglob("*"):
-                    if not source.is_file() or any(
-                        part in {"node_modules", "__pycache__"} for part in source.parts
-                    ):
-                        continue
-                    relative = source.relative_to(tasks)
-                    discover = root / "discover" / tasks / relative
-                    directed = root / "directed" / tasks / relative
-                    self.assertEqual(discover.read_bytes(), source.read_bytes())
-                    if source.name == "instruction.md":
-                        self.assertEqual(
-                            directed.read_text(),
-                            source.read_text().replace(
-                                "Complete the purchase once.\n",
-                                "Complete the purchase once.\n"
-                                f"{prompt['instruction']}\n",
-                                1,
-                            ),
-                        )
-                    elif source.name == "task.toml":
-                        expected = tomllib.loads(source.read_text())
-                        expected["metadata"].update(
-                            prompt_condition="directed",
-                            required_method=prompt["method"],
-                        )
-                        self.assertEqual(tomllib.loads(directed.read_text()), expected)
-                    else:
-                        self.assertEqual(directed.read_bytes(), source.read_bytes())
-
-    def test_checkout_direct_model_path_stages_the_selected_mode(self) -> None:
-        with patch("scripts.run_benchmark.stage_task_datasets") as stage:
-            path = stage_direct_task_path(
-                "checkout-mode-test",
-                "tasks/checkout-v1/stripe-card-checkout",
-                None,
-                None,
-                checkout_prompt="directed",
-            )
-        self.assertTrue(path.endswith("tasks/checkout-v1/stripe-card-checkout"))
-        self.assertEqual(
-            stage.call_args.kwargs, {"checkout": True, "checkout_prompt": "directed"}
-        )
-
-    def test_directed_checkout_option_rejects_other_suites(self) -> None:
-        with self.assertRaisesRegex(RuntimeError, "requires --task-suite checkout"):
-            validate_run_options(
-                "daytona-oracle", {"task_suite": "mpp", "checkout_prompt": "directed"}
             )
 
     def test_staged_pinned_docs_proxy_only_docs_hostname(self) -> None:

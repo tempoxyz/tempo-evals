@@ -34,18 +34,22 @@ profiles:
         url: http://tempo-mcp-code:8787/mcp
 
 checkout:
-  # Applied to staged task prompts only when --checkout-prompt directed is set.
+  # Existing tasks are discover prompts; sync generates their -directed peers.
   directed:
     stripe-card-checkout:
+      task: stripe-card-directed
       method: card
       instruction: Use card to pay.
     stripe-link-checkout:
+      task: stripe-link-directed
       method: link
       instruction: Use Link to pay.
     paypal-checkout:
+      task: paypal-directed
       method: paypal
       instruction: Use PayPal to pay.
     mpp-ousd-checkout:
+      task: mpp-ousd-directed
       method: tempo_mpp
       instruction: Use MPP to pay.
 

@@ -14,14 +14,30 @@ name = "checkout-v1/mpp-ousd-checkout"
 digest = "sha256:4b62b7663fb72281f1f076340e8751dd982ca309661e94919e7ab6a2d439f0ef"
 
 [[tasks]]
+name = "checkout-v1/mpp-ousd-directed"
+digest = "sha256:e7d93fa23380f92e70e7a47bf45b198f03a658bbfec15e5d7044d0294801f6ec"
+
+[[tasks]]
 name = "checkout-v1/paypal-checkout"
 digest = "sha256:b02483eb6c3819a0d5cd17d4c9f0a48aad592ec7998269de7407b15808a17268"
+
+[[tasks]]
+name = "checkout-v1/paypal-directed"
+digest = "sha256:e58728c3ad46cab3d5dcc3d91c89b898b2891fc486741648e9df1536beb8a058"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-checkout"
 digest = "sha256:823bb9837a732261c28e61ae7b0434e4f0e42471d641997fcc8ae118e976a051"
 
 [[tasks]]
+name = "checkout-v1/stripe-card-directed"
+digest = "sha256:f615cd7fb3e1e6a46abc6a0018f3f81270d16c4cac680426daf6189a06256cf0"
+
+[[tasks]]
 name = "checkout-v1/stripe-link-checkout"
 digest = "sha256:57f59336806e397da48fa25f64cf7c19998be47814b80966444ec8d3ccf9b779"
+
+[[tasks]]
+name = "checkout-v1/stripe-link-directed"
+digest = "sha256:0fe3b9d85eb171ad399f37ce530cfd1f2d93b9742aed947dad406dd97f1b0897"
 

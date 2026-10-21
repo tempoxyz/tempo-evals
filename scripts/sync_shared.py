@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """Sync task boilerplate, shared MPP files, and Harbor dataset manifests.
 
-Task behavior under tasks/ is authored directly. Sync owns only common
-boilerplate and applies access profiles at run time without changing behavior.
+Task behavior under tasks/ is authored directly. Sync owns common boilerplate
+and generates checkout directed prompts from their authored discover tasks.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import tomllib
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -265,6 +267,66 @@ def sync_checkout_grading() -> None:
             copy_file(CHECKOUT_SHARED_DIR / relative, task_dir / relative)
 
 
+def sync_checkout_prompt_variants() -> None:
+    """Generate directed Harbor tasks from the authored discover tasks."""
+    for slug, prompt in TASKS_CONFIG["checkout"]["directed"].items():
+        source = CHECKOUT_TASKS_DIR / slug
+        directed_slug = prompt["task"]
+        target = CHECKOUT_TASKS_DIR / directed_slug
+        if not (source / "task.toml").is_file():
+            continue
+        scenario = task_name(source)
+        metadata = tomlkit.parse((source / "task.toml").read_text())
+        metadata["metadata"].update(
+            scenario_id=scenario, prompt_condition="discover", required_method=""
+        )
+        write_file(source / "task.toml", tomlkit.dumps(metadata))
+        remove_path(target)
+        shutil.copytree(
+            source,
+            target,
+            ignore=shutil.ignore_patterns(
+                "node_modules",
+                "package-lock.json",
+                "__pycache__",
+                "*.pyc",
+                ".env",
+                ".env.*",
+                "*.pem",
+                "*.key",
+                ".DS_Store",
+            ),
+        )
+        metadata["task"]["name"] = f"checkout-v1/{directed_slug}"
+        metadata["metadata"].update(
+            prompt_condition="directed", required_method=prompt["method"]
+        )
+        write_file(target / "task.toml", tomlkit.dumps(metadata))
+        instruction = (source / "instruction.md").read_text()
+        purchase = "Complete the purchase once.\n"
+        if instruction.count(purchase) != 1:
+            raise ValueError(f"{source}: expected one purchase instruction")
+        marker = uuid.uuid5(uuid.NAMESPACE_URL, f"checkout-v1/{directed_slug}")
+        instruction = re.sub(
+            r"<!-- stable-bench-canary: [0-9a-f-]+ -->",
+            f"<!-- stable-bench-canary: {marker} -->",
+            instruction,
+            count=1,
+        )
+        instruction = instruction.replace(
+            purchase,
+            f"{purchase}{prompt['instruction']}\n",
+            1,
+        )
+        write_file(target / "instruction.md", instruction)
+        readme = (source / "README.md").read_text()
+        write_file(
+            target / "README.md",
+            f"<!-- Generated from {slug} by npm run sync; edit the source task. -->\n"
+            f"{readme}\n## Payment instruction\n\n{prompt['instruction']}\n",
+        )
+
+
 def write_mpp_dataset_manifest() -> None:
     dataset_path = MPP_TASKS_DIR / "dataset.toml"
     digests = read_manifest_digests(dataset_path)
@@ -322,6 +384,7 @@ def main() -> None:
     mcp_task_count = sync_mcp_oracles()
     mpp_task_count = sync_mpp_tasks()
     sync_checkout_grading()
+    sync_checkout_prompt_variants()
     write_dataset_manifest()
     write_mcp_dataset_manifest()
     write_mpp_dataset_manifest()
