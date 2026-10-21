@@ -88,3 +88,20 @@ test("CDP relay hides the authenticated URL and provider headers", async (t) => 
   assert.equal(data.subarray(2).toString(), "trial-cdp");
   socket.destroy();
 });
+
+test("CDP relay logs upstream rejection status without its private body", async (t) => {
+  const upstream = http.createServer((_req, res) => res.writeHead(410).end("provider-secret"));
+  upstream.listen(0, "127.0.0.1"); await once(upstream, "listening");
+  const relay = cdpRelay(`ws://127.0.0.1:${(upstream.address() as { port: number }).port}/?key=private`);
+  relay.listen(0, "127.0.0.1"); await once(relay, "listening");
+  t.after(() => { upstream.close(); relay.close(); });
+  const log = t.mock.method(console, "error", () => {});
+  const request = http.request(`http://127.0.0.1:${(relay.address() as { port: number }).port}`, {
+    headers: { Connection: "Upgrade", Upgrade: "websocket", "Sec-WebSocket-Key": "dGhlIHNhbXBsZSBub25jZQ==", "Sec-WebSocket-Version": "13" },
+  });
+  const rejected = once(request, "response"); request.end();
+  const [response] = await rejected;
+  response.resume();
+  assert.equal(response.statusCode, 502);
+  assert.deepEqual(log.mock.calls.map(call => call.arguments), [["Cloud browser CDP connection rejected: HTTP 410"]]);
+});

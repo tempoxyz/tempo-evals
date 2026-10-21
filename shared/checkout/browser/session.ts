@@ -82,7 +82,10 @@ export function cdpRelay(endpoint: string) {
       remote.on("close", () => socket.destroy());
       remote.on("error", () => socket.destroy());
     });
-    proxy.on("response", (res) => { res.resume(); socket.end("HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n"); });
+    proxy.on("response", (res) => {
+      console.error(`Cloud browser CDP connection rejected: HTTP ${res.statusCode}`);
+      res.resume(); socket.end("HTTP/1.1 502 Bad Gateway\r\nConnection: close\r\n\r\n");
+    });
     proxy.on("error", () => socket.destroy());
     socket.on("error", () => proxy.destroy());
     proxy.end();

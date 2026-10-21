@@ -111,6 +111,19 @@ class RunBenchmarkTest(unittest.TestCase):
                     )
                     compose["services"]["main"]["volumes"].remove(f"{output_volume}:ro")
                     self.assertIsNone(compose["volumes"].pop("checkout-browser-output"))
+                    ready = compose["services"].pop("browser-ready")
+                    self.assertEqual(
+                        ready["depends_on"],
+                        {"link": {"condition": "service_completed_successfully"}},
+                    )
+                    self.assertEqual(ready["command"], ["/opt/checkout/ready.ts"])
+                    self.assertEqual(
+                        ready["build"], compose["services"]["browser"]["build"]
+                    )
+                    self.assertEqual(
+                        compose["services"]["main"]["depends_on"].pop("browser-ready"),
+                        {"condition": "service_completed_successfully"},
+                    )
                     browser_command = compose["services"]["browser"]["command"]
                     self.assertIn("--no-webmcp", browser_command)
                     self.assertEqual(

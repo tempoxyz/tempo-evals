@@ -143,9 +143,11 @@ merchant through it.
 | `mpp-ousd-discover` | MPP OUSD paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient OUSD balance |
 | `paypal-discover` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
 Every trial runs the same wallet, Link enrollment, and browser services before
-the agent starts. The wallet service creates a fresh Tempo testnet payer and
-confirms its faucet funding independently of other trials. Link enrollment
-prepares a unique identity using a synthetic sandbox card. The agent sees the
+the agent starts. After Link enrollment, a shared Compose readiness step opens
+the merchant through the selected browser. A broken browser connection fails
+environment setup before the agent starts. The wallet service creates a fresh
+Tempo testnet payer and confirms its faucet funding independently of other
+trials. Link enrollment prepares a unique identity using a synthetic sandbox card. The agent sees the
 same wallet fields and payment methods across tasks; merchant and verifier
 sidecars differ. MPP agents receive no preinstalled payment helper or payment
 SDK and may install the dependencies they choose. Merchant credentials stay in

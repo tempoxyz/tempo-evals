@@ -1303,6 +1303,16 @@ def stage_browser_profile(task_dir: Path, profile: str) -> None:
         "--init-page",
         "/opt/checkout/merchant-route.ts",
     ]
+    compose["services"]["browser-ready"] = {
+        "build": browser["build"],
+        "entrypoint": "/opt/checkout/node_modules/.bin/tsx",
+        "command": ["/opt/checkout/ready.ts"],
+        "depends_on": {"link": {"condition": "service_completed_successfully"}},
+        "restart": "no",
+    }
+    compose["services"]["main"]["depends_on"]["browser-ready"] = {
+        "condition": "service_completed_successfully"
+    }
     if profile != "local":
         browser["command"] += ["--cdp-endpoint", "ws://browser-session:9222"]
         browser["depends_on"] = {"browser-session": {"condition": "service_healthy"}}

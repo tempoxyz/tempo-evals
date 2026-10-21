@@ -50,7 +50,7 @@
     "test:results": "uv run python -m unittest discover -s scripts -p '*_test.py'",
     "test:evalkit": "uv run coverage run -m unittest discover -s evalkit -p '*_test.py' && uv run coverage report && uv run coverage report --include='evalkit/compiler/*' --fail-under=99",
     "check:mcp-types": "tsc -p shared/tempo/mcp-bridge && tsc -p shared/tempo/mcp-eval",
-    "test:mcp-bridge": "tsx --test shared/tempo/mcp-bridge/server.test.ts shared/tempo/mcp-eval/oracle.test.ts shared/checkout/browser/session.test.ts",
+    "test:mcp-bridge": "tsx --test shared/tempo/mcp-bridge/server.test.ts shared/tempo/mcp-eval/oracle.test.ts shared/checkout/browser/session.test.ts shared/checkout/browser/ready.test.ts",
     "test:tempo-verifier": "npm ci --ignore-scripts --no-audit --no-fund --prefix shared/tempo/verifier && npm test --prefix shared/tempo/verifier",
     "llm-proxy": "tsx scripts/local-llm-proxy.ts",
     "clean": "uv run python scripts/run_benchmark.py clean",
