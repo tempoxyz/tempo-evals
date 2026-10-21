@@ -35,7 +35,7 @@ async function main() {
   const script = `async (page) => {
   await page.goto('http://merchant:3000');
   await page.getByRole('button', { name: 'Pay with PayPal' }).click();
-  await page.waitForURL(/sandbox\\.paypal\\.com/, { timeout: 60000 });
+  await page.waitForURL(/sandbox\\.paypal\\.com/, { waitUntil: 'domcontentloaded', timeout: 60000 });
   const email = page.getByLabel(/email|mobile/i).filter({ visible: true }).first();
   await email.waitFor({ state: 'visible', timeout: 30000 });
   await email.fill(${JSON.stringify(wallet.paypal.email)});
@@ -45,10 +45,10 @@ async function main() {
   await password.waitFor({ state: 'visible', timeout: 30000 });
   await password.fill(${JSON.stringify(wallet.paypal.password)});
   await page.getByRole('button', { name: /log in|sign in/i }).filter({ visible: true }).first().click();
-  const approve = page.getByRole('button', { name: /complete purchase|agree.*pay|pay now|continue/i }).filter({ visible: true }).first();
+  const approve = page.getByRole('button', { name: /^pay$|complete purchase|agree.*pay|pay now|continue/i }).filter({ visible: true }).first();
   await approve.waitFor({ state: 'visible', timeout: 60000 });
   await approve.click();
-  await page.waitForURL(/merchant:3000\\/complete/, { timeout: 60000 });
+  await page.waitForURL(/merchant:3000\\/complete/, { waitUntil: 'domcontentloaded', timeout: 60000 });
   return 'PayPal approval returned to merchant';
 }`;
   const result = await rpc('tools/call', { name: 'browser_run_code_unsafe', arguments: { code: script } });

@@ -196,7 +196,8 @@ Profiles are staged at run time using the existing Harbor task-copy pipeline.
 No new task directories or runner are added. `shared/checkout/browser/` contains
 the common page hook and cloud session sidecar. Every profile extends the same
 task-pinned Playwright MCP image and exposes `http://browser:8931/mcp` with the
-same tools. Prompts, funded wallets, merchant implementations, oracles, verifier
+same tools, US English locale, UTC timezone, and 1280x720 viewport.
+Prompts, funded wallets, merchant implementations, oracles, verifier
 and rewards are identical across profiles. Agents can still install tools of
 their choice; this comparison does not restrict them to browser use.
 

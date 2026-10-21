@@ -1283,7 +1283,12 @@ def stage_browser_profile(task_dir: Path, profile: str) -> None:
     image = browser.pop("image")
     browser["build"] = {"context": "./browser", "args": {"MCP_IMAGE": image}}
     browser["entrypoint"] = "/opt/checkout/node_modules/.bin/tsx"
-    browser["command"] += ["--init-page", "/opt/checkout/merchant-route.ts"]
+    browser["command"] += [
+        "--config",
+        "/opt/checkout/browser.json",
+        "--init-page",
+        "/opt/checkout/merchant-route.ts",
+    ]
     if profile != "local":
         browser["command"] += ["--cdp-endpoint", "ws://browser-session:9222"]
         browser["depends_on"] = {"browser-session": {"condition": "service_healthy"}}

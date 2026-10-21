@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   const script = `async (page) => {
   await page.goto('http://merchant:3000');
   await page.getByRole('button', { name: 'Buy notebook' }).click();
-  await page.waitForURL(/checkout\\.stripe\\.com/, { timeout: 30000 });
+  await page.waitForURL(/checkout\\.stripe\\.com/, { waitUntil: 'domcontentloaded', timeout: 30000 });
   const fill = async (pattern, value, optional = false) => {
     for (let attempt = 0; attempt < (optional ? 4 : 60); attempt++) {
       for (const frame of [page, ...page.frames()]) {
@@ -88,7 +88,7 @@ async function main(): Promise<void> {
   await fill(/email/i, ${JSON.stringify(email)});
   ${paymentSteps}
   try {
-    await page.waitForURL(/merchant:3000\\/complete/, { timeout: 60000 });
+    await page.waitForURL(/merchant:3000\\/complete/, { waitUntil: 'domcontentloaded', timeout: 60000 });
   } catch {
     const summary = (await page.locator('main').innerText()).replace(/\\s+/g, ' ').slice(0, 500);
     throw new Error('Checkout did not return: ' + summary);

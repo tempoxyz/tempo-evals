@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   stage = 'home';
   await page.getByRole('button', { name: 'Buy notebook' }).click();
   stage = 'intent-created';
-  await page.waitForURL(/merchant:3000\\/checkout/, { timeout: 30000 });
+  await page.waitForURL(/merchant:3000\\/checkout/, { waitUntil: 'domcontentloaded', timeout: 30000 });
   stage = 'link-button';
   let linkButton;
   for (let attempt = 0; attempt < 60 && !linkButton; attempt++) {
@@ -102,7 +102,7 @@ async function main(): Promise<void> {
   await pay.click({ timeout: 10000 });
   stage = 'payment-submitted';
   try {
-    await page.waitForURL(/merchant:3000\\/complete/, { timeout: 60000 });
+    await page.waitForURL(/merchant:3000\\/complete/, { waitUntil: 'domcontentloaded', timeout: 60000 });
   } catch {
     const summary = (await page.locator('main').innerText()).replace(/\\s+/g, ' ').slice(0, 500);
     throw new Error('Checkout did not return: ' + summary);
