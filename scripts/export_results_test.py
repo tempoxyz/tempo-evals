@@ -97,6 +97,9 @@ class ExportResultsTest(unittest.TestCase):
                     ),
                 )
             result = export_results(root / "job")
+            self.assertEqual(
+                [row["attempt_index"] for row in result["trials"]], [1, 1, 1]
+            )
             for collection in ("trials", "summary", "quality_summary"):
                 self.assertEqual(
                     {row["profile"] for row in result[collection]},

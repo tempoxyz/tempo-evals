@@ -580,6 +580,8 @@ def assign_attempt_indexes(rows: list[JsonObject]) -> list[JsonObject]:
             str(row.get(field, ""))
             for field in ("task_name", "agent", "model", "prompt_condition")
         )
+        if str(row.get("task_name", "")).startswith("checkout-v1/"):
+            key += "\0" + str(row.get("profile", ""))
         counts[key] = counts.get(key, 0) + 1
         row["attempt_index"] = counts[key]
     return sorted_rows
