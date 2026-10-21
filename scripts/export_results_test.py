@@ -60,7 +60,7 @@ class ExportResultsTest(unittest.TestCase):
     def test_checkout_prompt_conditions_stay_separate_in_all_exports(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
             job = Path(root)
-            for suffix, reward in (("-checkout", 0), ("-directed", 1)):
+            for suffix, reward in (("-discover", 0), ("-directed", 1)):
                 name = f"checkout-v1/mpp-ousd{suffix}"
                 path = job / f"trial{suffix}"
                 write_json(
@@ -87,7 +87,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(len(exported["summary"]), 2)
             self.assertEqual(len(exported["quality_summary"]), 2)
             for row in exported["trials"]:
-                self.assertEqual(row["scenario_id"], "checkout-v1/mpp-ousd-checkout")
+                self.assertEqual(row["scenario_id"], "checkout-v1/mpp-ousd-discover")
                 directed = row["prompt_condition"] == "directed"
                 self.assertEqual(
                     row["required_method"], "tempo_mpp" if directed else ""
@@ -205,9 +205,9 @@ class ExportResultsTest(unittest.TestCase):
             {"task_family": "custom-task", "profile": "unknown"},
         )
         self.assertEqual(
-            parse_task_name("checkout-v1/stripe-card-checkout"),
+            parse_task_name("checkout-v1/stripe-card-discover"),
             {
-                "task_family": "checkout-v1/stripe-card-checkout",
+                "task_family": "checkout-v1/stripe-card-discover",
                 "profile": "browser-mcp",
             },
         )
@@ -292,7 +292,7 @@ class ExportResultsTest(unittest.TestCase):
                 trial_dir / "result.json",
                 trial(
                     {
-                        "task_name": "checkout-v1/stripe-card-checkout",
+                        "task_name": "checkout-v1/stripe-card-discover",
                         "verifier_result": {"rewards": {"reward": 1}},
                     }
                 ),
@@ -345,7 +345,7 @@ class ExportResultsTest(unittest.TestCase):
                     job_dir / f"trial-{index}" / "result.json",
                     trial(
                         {
-                            "task_name": "checkout-v1/stripe-card-checkout",
+                            "task_name": "checkout-v1/stripe-card-discover",
                             "trial_name": f"trial-{index}",
                             "verifier_result": {"rewards": {"reward": int(index != 0)}},
                         }
@@ -370,7 +370,7 @@ class ExportResultsTest(unittest.TestCase):
                     job_dir / name / "result.json",
                     trial(
                         {
-                            "task_name": "checkout-v1/stripe-card-checkout",
+                            "task_name": "checkout-v1/stripe-card-discover",
                             "trial_name": name,
                             "verifier_result": {
                                 "rewards": {
@@ -403,7 +403,7 @@ class ExportResultsTest(unittest.TestCase):
                     job_dir / name / "result.json",
                     trial(
                         {
-                            "task_name": "checkout-v1/stripe-card-checkout",
+                            "task_name": "checkout-v1/stripe-card-discover",
                             "trial_name": name,
                             "verifier_result": {"rewards": rewards},
                         }

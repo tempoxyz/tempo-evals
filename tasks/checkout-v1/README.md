@@ -25,10 +25,10 @@ Every merchant has two native Harbor tasks in the same dataset:
 
 | Discover task | Directed task | Added instruction |
 | --- | --- | --- |
-| `stripe-card-checkout` | `stripe-card-directed` | Use card to pay. |
-| `stripe-link-checkout` | `stripe-link-directed` | Use Link to pay. |
-| `paypal-checkout` | `paypal-directed` | Use PayPal to pay. |
-| `mpp-ousd-checkout` | `mpp-ousd-directed` | Use MPP to pay. |
+| `stripe-card-discover` | `stripe-card-directed` | Use card to pay. |
+| `stripe-link-discover` | `stripe-link-directed` | Use Link to pay. |
+| `paypal-discover` | `paypal-directed` | Use PayPal to pay. |
+| `mpp-ousd-discover` | `mpp-ousd-directed` | Use MPP to pay. |
 
 The original four tasks are the authored sources. `config/tasks.yaml` declares
 peer names and method instructions; `npm run sync` generates their standalone
@@ -38,7 +38,7 @@ prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
 `--task-suite checkout` runs all eight tasks, including oracle runs. Use
-`--task-filter '*-checkout'` for discover only, `--task-filter '*-directed'`
+`--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
 Harbor environment, merchant instance, and funded wallet, including concurrent
@@ -132,10 +132,10 @@ merchant through it.
 
 | Task | Payment surface | Independent proof |
 | --- | --- | --- |
-| `stripe-card-checkout` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
-| `stripe-link-checkout` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
-| `mpp-ousd-checkout` | MPP OUSD paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient OUSD balance |
-| `paypal-checkout` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
+| `stripe-card-discover` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
+| `stripe-link-discover` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
+| `mpp-ousd-discover` | MPP OUSD paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient OUSD balance |
+| `paypal-discover` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
 Every trial runs the same wallet, Link enrollment, and browser services before
 the agent starts. The wallet service creates a fresh Tempo testnet payer and
 confirms its faucet funding independently of other trials. Link enrollment

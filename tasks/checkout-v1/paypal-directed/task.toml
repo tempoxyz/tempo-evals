@@ -22,7 +22,7 @@ verification_explanation = "The merchant queries PayPal after the attempt; the s
 tags = ["checkout", "paypal", "browser", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
-scenario_id = "checkout-v1/paypal-checkout"
+scenario_id = "checkout-v1/paypal-discover"
 prompt_condition = "directed"
 required_method = "paypal"
 

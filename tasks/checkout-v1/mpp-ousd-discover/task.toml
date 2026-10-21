@@ -7,22 +7,22 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/stripe-card-checkout"
-description = "Buy a notebook from a Stripe card merchant."
-keywords = ["checkout", "stripe", "payments", "browser"]
+name = "checkout-v1/mpp-ousd-discover"
+description = "Buy a notebook from an MPP merchant."
+keywords = ["checkout", "mpp", "tempo", "payments"]
 
 [metadata]
 category = "checkout"
 benchmark = "checkout-bench-v1"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "Requires navigation through a hosted payment page and use of a prepared sandbox payment method."
-solution_explanation = "The oracle completes the Stripe card checkout and returns to the merchant."
-verification_explanation = "The merchant queries Stripe after the attempt; the separate verifier checks the paid session, item, total, and PaymentIntent."
-tags = ["checkout", "stripe", "browser", "payments"]
+difficulty_explanation = "Requires paying an MPP challenge with the prepared wallet."
+solution_explanation = "The oracle pays the MPP challenge using the trial Tempo wallet."
+verification_explanation = "The separate verifier checks the MPP receipt, delivered notebook, and trial-specific merchant OUSD testnet balance."
+tags = ["checkout", "mpp", "tempo", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
-scenario_id = "checkout-v1/stripe-card-checkout"
+scenario_id = "checkout-v1/mpp-ousd-discover"
 prompt_condition = "discover"
 required_method = ""
 
@@ -35,7 +35,7 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "tsx /srv/snapshot.ts"
+command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts"
 timeout_sec = 90.0
 
 [environment]

@@ -213,7 +213,7 @@ class RunBenchmarkTest(unittest.TestCase):
 
     def test_checkout_explicit_task_path_requires_suite_selection(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
-            preflight({}, {"tasks": "tasks/checkout-v1/stripe-card-checkout"})
+            preflight({}, {"tasks": "tasks/checkout-v1/stripe-card-discover"})
 
     def test_checkout_preflight_rejects_missing_task(self) -> None:
         with (
@@ -228,7 +228,7 @@ class RunBenchmarkTest(unittest.TestCase):
             self.assertRaisesRegex(RuntimeError, "no authored task"),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "stripe-card-checkout"}
+                {}, {"task_suite": "checkout", "task_filter": "stripe-card-discover"}
             )
 
     def test_checkout_shared_setup_requires_stripe_and_paypal_buyer(self) -> None:
@@ -237,7 +237,7 @@ class RunBenchmarkTest(unittest.TestCase):
             self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-checkout"}
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-discover"}
             )
         with (
             patch.dict(
@@ -250,7 +250,7 @@ class RunBenchmarkTest(unittest.TestCase):
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_BUYER_EMAIL"),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-checkout"}
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-discover"}
             )
         with patch.dict(
             os.environ,
@@ -262,7 +262,7 @@ class RunBenchmarkTest(unittest.TestCase):
             clear=True,
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-checkout"}
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-discover"}
             )
 
     def test_paypal_checkout_preflight_requires_sandbox_credentials(self) -> None:
@@ -278,7 +278,7 @@ class RunBenchmarkTest(unittest.TestCase):
             ),
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_CLIENT_ID"),
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-checkout"})
+            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-discover"})
 
     def test_directed_checkout_preflight_requires_the_same_provider_credentials(
         self,
@@ -320,7 +320,7 @@ class RunBenchmarkTest(unittest.TestCase):
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=True),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "stripe-card-checkout"}
+                {}, {"task_suite": "checkout", "task_filter": "stripe-card-discover"}
             )
 
     def test_checkout_preserves_parallel_trial_count(self) -> None:

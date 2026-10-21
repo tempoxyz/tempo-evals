@@ -36,19 +36,19 @@ profiles:
 checkout:
   # Existing tasks are discover prompts; sync generates their -directed peers.
   directed:
-    stripe-card-checkout:
+    stripe-card-discover:
       task: stripe-card-directed
       method: card
       instruction: Use card to pay.
-    stripe-link-checkout:
+    stripe-link-discover:
       task: stripe-link-directed
       method: link
       instruction: Use Link to pay.
-    paypal-checkout:
+    paypal-discover:
       task: paypal-directed
       method: paypal
       instruction: Use PayPal to pay.
-    mpp-ousd-checkout:
+    mpp-ousd-discover:
       task: mpp-ousd-directed
       method: tempo_mpp
       instruction: Use MPP to pay.
