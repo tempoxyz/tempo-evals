@@ -311,6 +311,9 @@ class ExportResultsTest(unittest.TestCase):
                 trial_dir / "verifier" / "efficiency.json",
                 {"model_turns": 10, "trajectory_duration_sec": 150},
             )
+            agent_log = trial_dir / "agent" / "claude-code.txt"
+            agent_log.parent.mkdir()
+            agent_log.write_text('{"type": "result", "num_turns": 99}\n')
 
             exported = export_results(job_dir)
             row = exported["trials"][0]

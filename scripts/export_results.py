@@ -507,11 +507,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "input_tokens": tokens["input"],
         "cache_tokens": tokens["cache"],
         "output_tokens": tokens["output"],
-        "model_turns": (
-            turns
-            if (turns := model_turns(result, file_path)) != ""
-            else efficiency.get("model_turns", "")
-        ),
+        "model_turns": efficiency.get("model_turns", model_turns(result, file_path)),
         "mcp_calls": trace["calls"],
         "mcp_denied_calls": trace["denied"],
         "mcp_latency_ms": trace["latency"],
