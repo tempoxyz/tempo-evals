@@ -1293,6 +1293,7 @@ def stage_browser_profile(task_dir: Path, profile: str) -> None:
     browser.setdefault("volumes", []).append(output_volume)
     compose["services"]["main"]["volumes"].append(f"{output_volume}:ro")
     browser["command"] += [
+        "--no-webmcp",
         "--output-dir",
         output_dir,
         "--file-paths",

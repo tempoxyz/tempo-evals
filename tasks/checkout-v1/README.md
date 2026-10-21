@@ -199,6 +199,8 @@ task-pinned Playwright MCP image and exposes `http://browser:8931/mcp` with the
 same tools, US English locale, UTC timezone, and 1280x720 viewport.
 Browser output files are shared read-only with the agent at the absolute paths
 returned by MCP. PayPal orders also request US English for the hosted checkout.
+Page-published WebMCP tools are disabled to keep this infrastructure comparison
+on the same fixed browser toolset.
 Prompts, funded wallets, merchant implementations, oracles, verifier
 and rewards are identical across profiles. Agents can still install tools of
 their choice; this comparison does not restrict them to browser use.

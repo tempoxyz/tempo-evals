@@ -112,6 +112,7 @@ class RunBenchmarkTest(unittest.TestCase):
                     compose["services"]["main"]["volumes"].remove(f"{output_volume}:ro")
                     self.assertIsNone(compose["volumes"].pop("checkout-browser-output"))
                     browser_command = compose["services"]["browser"]["command"]
+                    self.assertIn("--no-webmcp", browser_command)
                     self.assertEqual(
                         browser_command[browser_command.index("--output-dir") + 1],
                         "/tmp/.playwright-mcp",
