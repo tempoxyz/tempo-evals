@@ -170,6 +170,49 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertEqual(len({options["pair_id"] for options in calls}), 1)
         self.assertEqual(len({options["job_name"] for options in calls}), 3)
 
+    def test_checkout_production_all_preflights_before_expanding_jobs(self) -> None:
+        credentials = {
+            "STRIPE_TEST_SECRET_KEY": "sk_test_fake",
+            "STRIPE_TEST_PUBLISHABLE_KEY": "pk_test_fake",
+            "PAYPAL_SANDBOX_BUYER_EMAIL": "test@example.com",
+            "PAYPAL_SANDBOX_BUYER_PASSWORD": "test",
+            "PAYPAL_SANDBOX_CLIENT_ID": "test",
+            "PAYPAL_SANDBOX_CLIENT_SECRET": "test",
+            "DAYTONA_API_KEY": "test",
+            "ANTHROPIC_API_KEY": "test",
+            "BROWSERBASE_API_KEY": "test",
+            "BROWSERBASE_PROJECT_ID": "test",
+            "KERNEL_API_KEY": "test",
+        }
+        args = [
+            "production-daytona",
+            "--task-suite",
+            "checkout",
+            "--profile",
+            "all",
+            "--models-config",
+            "config/models.dev.yaml",
+            "--no-sync",
+        ]
+        with (
+            patch.dict(os.environ, credentials, clear=True),
+            patch("scripts.run_benchmark.preflight_production_agents"),
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+        ):
+            main(args)
+        self.assertEqual(
+            {call.args[1]["profile"] for call in run_variant.call_args_list},
+            {"local", "browserbase", "kernel"},
+        )
+        del credentials["KERNEL_API_KEY"]
+        with (
+            patch.dict(os.environ, credentials, clear=True),
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+            self.assertRaisesRegex(RuntimeError, "KERNEL_API_KEY"),
+        ):
+            main(args)
+        run_variant.assert_not_called()
+
     def test_checkout_provider_preflight_fails_before_spending_on_other_profiles(
         self,
     ) -> None:

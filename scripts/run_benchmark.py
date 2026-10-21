@@ -374,11 +374,15 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
     ):
         raise RuntimeError("Checkout task paths require --task-suite checkout")
     if options.get("task_suite") == "checkout":
-        for key in CHECKOUT_PROFILES[checkout_profile(options)]["credentials"]:
-            if not os.environ.get(key):
-                raise RuntimeError(
-                    f"{checkout_profile(options)} checkout requires {key}"
-                )
+        profiles = (
+            CHECKOUT_PROFILES
+            if options.get("profile") == "all"
+            else (checkout_profile(options),)
+        )
+        for profile in profiles:
+            for key in CHECKOUT_PROFILES[profile]["credentials"]:
+                if not os.environ.get(key):
+                    raise RuntimeError(f"{profile} checkout requires {key}")
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
         selected = {
@@ -1560,10 +1564,9 @@ def main(argv: list[str]) -> None:
 
     if options["profile"] in {"all", "mcp-both"}:
         variant = validate_run_options(variant_name, options)
-        if options.get("task_suite") == "checkout":
+        if options.get("task_suite") == "checkout" and not variant.get("production"):
             load_env_file(options.get("env_file"))
-            for profile in CHECKOUT_PROFILES:
-                preflight(variant, options | {"profile": profile})
+            preflight(variant, options)
         if variant.get("production"):
             prepare_production_profiles(variant, options)
         elif options["sync"]:
