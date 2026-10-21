@@ -12,6 +12,7 @@ from scripts.compare_mcp_results import compare, summarize_quality_comparison
 from scripts.export_results import (
     export_results,
     parse_task_name,
+    profile_from_trial,
     summarize_quality,
     summarize_rows,
 )
@@ -57,6 +58,51 @@ def trial(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
 
 
 class ExportResultsTest(unittest.TestCase):
+    def test_checkout_profile_survives_missing_task_snapshot(self) -> None:
+        for profile in ("local", "browserbase", "kernel"):
+            self.assertEqual(
+                profile_from_trial(
+                    {
+                        "task_name": "checkout-v1/paypal-directed",
+                        "config": {
+                            "task": {"path": ".cache/deleted-checkout-snapshot"},
+                            "agent": {"env": {"CHECKOUT_BROWSER_PROFILE": profile}},
+                        },
+                    }
+                ),
+                profile,
+            )
+
+    def test_checkout_browser_profiles_remain_separate_in_exports(self) -> None:
+        repo = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory(dir=repo) as directory:
+            root = Path(directory)
+            for profile in ("local", "browserbase", "kernel"):
+                task = root / profile
+                task.mkdir()
+                (task / "task.toml").write_text(
+                    '[task]\nname = "checkout-v1/stripe-card-discover"\n'
+                    f'[metadata]\nbrowser_profile = "{profile}"\n'
+                    'scenario_id = "checkout-v1/stripe-card-discover"\n'
+                    'prompt_condition = "discover"\nrequired_method = ""\n'
+                )
+                write_json(
+                    root / f"job/{profile}/result.json",
+                    trial(
+                        {
+                            "task_name": "checkout-v1/stripe-card-discover",
+                            "trial_name": profile,
+                            "config": {"task": {"path": str(task)}},
+                        }
+                    ),
+                )
+            result = export_results(root / "job")
+            for collection in ("trials", "summary", "quality_summary"):
+                self.assertEqual(
+                    {row["profile"] for row in result[collection]},
+                    {"local", "browserbase", "kernel"},
+                )
+
     def test_checkout_prompt_conditions_stay_separate_in_all_exports(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
             job = Path(root)

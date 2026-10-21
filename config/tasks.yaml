@@ -34,6 +34,14 @@ profiles:
         url: http://tempo-mcp-code:8787/mcp
 
 checkout:
+  # Browser infrastructure varies; every profile exposes the same Playwright MCP.
+  profiles:
+    - id: local
+      credentials: []
+    - id: browserbase
+      credentials: [BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID]
+    - id: kernel
+      credentials: [KERNEL_API_KEY]
   # Existing tasks are discover prompts; sync generates their -directed peers.
   directed:
     stripe-card-discover:

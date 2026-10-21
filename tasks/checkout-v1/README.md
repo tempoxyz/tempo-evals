@@ -158,8 +158,66 @@ runner does not cap trial concurrency.
 Before publishing, run each task's oracle on Daytona and one unpaid trial that
 scores zero; verify the Link-only page
 actually excludes direct card entry. Refresh the dataset manifest and run
-repository checks. Add browser and tool profiles after these merchant flows
-are validated.
+repository checks. Browser infrastructure profiles are described below.
 
 Changes to task prompts, fixtures, verification, or scoring after publication
 must follow the repository's benchmark-major versioning rule.
+
+## Browser infrastructure profiles
+
+The original design varies browser infrastructure while keeping the browser
+tool identical. Checkout supports `--profile local`, `--profile browserbase`,
+and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
+selects local. `--profile all` launches three ordinary Harbor jobs, selecting
+all eight discover/directed tasks per job. Model trials retain the shared pair
+ID. Existing
+profile behavior for other suites is unchanged.
+
+For example, run the entire oracle matrix on Daytona:
+
+```sh
+npm run bench:daytona:oracle -- --task-suite checkout --profile all \
+  --env-file /path/to/.env.local-checkout --concurrency 2 \
+  --agent-image "$(npm run --silent agent-image:ref)" \
+  --verifier-image "$(npm run --silent verifier-image:ref)"
+```
+
+Use the same flags with `bench:daytona:agent:dev` for a single model attempt per
+task; `--model` chooses the model. Add `--agent-concurrency` at or below the
+trial concurrency. Concurrency is per job, so the three-profile matrix can
+start three times that many trials; provider plans must allow those sessions.
+
+Browserbase requires `BROWSERBASE_API_KEY` and `BROWSERBASE_PROJECT_ID`, plus
+support for keep-alive sessions. Kernel requires `KERNEL_API_KEY`. Put these in
+the ignored local env file alongside the existing payment sandbox credentials.
+The matrix checks all required credentials before starting any job.
+
+Profiles are staged at run time using the existing Harbor task-copy pipeline.
+No new task directories or runner are added. `shared/checkout/browser/` contains
+the common page hook and cloud session sidecar. Every profile extends the same
+task-pinned Playwright MCP image and exposes `http://browser:8931/mcp` with the
+same tools. Prompts, funded wallets, merchant implementations, oracles, verifier
+and rewards are identical across profiles. Agents can still install tools of
+their choice; this comparison does not restrict them to browser use.
+
+Each cloud trial creates its own provider session. Account API keys and the
+authenticated upstream CDP URL stay in a trusted Compose sidecar; it relays
+only that trial's CDP connection to the browser MCP service. The common page
+hook routes `http://merchant:3000` requests through the local MCP process, so
+the cloud browser can reach its trial's private merchant without a public
+store URL. Hosted Stripe/PayPal traffic runs in the selected browser. This
+routing also applies to local, including POST bodies, cookies and redirects.
+
+Cloud sessions are explicitly released when Compose stops, with a 40-minute
+sidecar lifetime and provider timeout as fallbacks. Browserbase uses direct
+egress with CAPTCHA solving disabled; Kernel uses headless, non-stealth
+browsers. Provider Chromium versions and network latency can still differ.
+This matrix measures those infrastructure differences through a common tool,
+not identical browser binaries.
+
+Staged task metadata records `browser_profile`; the native agent config also
+retains `CHECKOUT_BROWSER_PROFILE` so it survives removal of the staged files.
+Existing exports group
+trials and summaries by `profile` (`local`, `browserbase`, or `kernel`), alongside
+the existing prompt-condition fields. Older runs without profile metadata keep
+their `browser-mcp` label. Setup time stays separate from agent execution time.

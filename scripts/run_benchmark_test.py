@@ -10,6 +10,9 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import tomlkit
+import yaml
+
 from scripts.run_benchmark import (
     MCP_CODE_PROFILE,
     MCP_DIRECT_PROFILE,
@@ -54,6 +57,151 @@ def production_model_config() -> dict[str, Any]:
 
 
 class RunBenchmarkTest(unittest.TestCase):
+    def test_checkout_profile_uses_native_agent_metadata_for_oracles_too(self) -> None:
+        for profile in ("local", "browserbase", "kernel"):
+            config = {"agents": [{"name": "oracle"}, {"name": "claude-code"}]}
+            result = apply_profile(config, profile)
+            for agent in result["agents"]:
+                self.assertEqual(agent["env"], {"CHECKOUT_BROWSER_PROFILE": profile})
+                self.assertNotIn("mcp_servers", agent)
+
+    def test_checkout_profiles_only_change_browser_infrastructure(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            for profile in ("local", "browserbase", "kernel"):
+                stage = Path(root) / profile
+                stage_task_datasets(stage, None, checkout=True, browser_profile=profile)
+                for task in (stage / "tasks/checkout-v1").iterdir():
+                    if not (task / "task.toml").exists():
+                        continue
+                    source = Path("tasks/checkout-v1") / task.name
+                    for path in source.rglob("*"):
+                        if (
+                            path.is_file()
+                            and "node_modules" not in path.parts
+                            and path.name
+                            not in {
+                                "task.toml",
+                                "docker-compose.yaml",
+                                "package-lock.json",
+                            }
+                        ):
+                            self.assertEqual(
+                                path.read_bytes(),
+                                (task / path.relative_to(source)).read_bytes(),
+                            )
+                    native = tomlkit.parse((task / "task.toml").read_text())
+                    original = tomlkit.parse((source / "task.toml").read_text())
+                    self.assertEqual(native["metadata"].pop("browser_profile"), profile)
+                    for key in set(native["environment"]["env"]) - set(
+                        original["environment"]["env"]
+                    ):
+                        self.assertEqual(
+                            native["environment"]["env"].pop(key), "${" + key + "}"
+                        )
+                    self.assertEqual(native, original)
+                    compose = yaml.safe_load(
+                        (task / "environment/docker-compose.yaml").read_text()
+                    )
+                    original_compose = yaml.safe_load(
+                        (source / "environment/docker-compose.yaml").read_text()
+                    )
+                    for name in ("main", "merchant", "wallet", "link"):
+                        self.assertEqual(
+                            compose["services"][name],
+                            original_compose["services"][name],
+                        )
+                    self.assertEqual(compose["volumes"], original_compose["volumes"])
+                    self.assertNotIn("environment", compose["services"]["browser"])
+                    self.assertNotIn(
+                        "browser-session",
+                        compose["services"]["main"].get("environment", {}),
+                    )
+                    if profile == "local":
+                        self.assertNotIn("browser-session", compose["services"])
+                    else:
+                        self.assertIn(
+                            "ws://browser-session:9222",
+                            compose["services"]["browser"]["command"],
+                        )
+                        provider_env = compose["services"]["browser-session"][
+                            "environment"
+                        ]
+                        self.assertEqual(
+                            provider_env["CHECKOUT_BROWSER_PROFILE"], profile
+                        )
+                        self.assertNotIn(
+                            "KERNEL_API_KEY"
+                            if profile == "browserbase"
+                            else "BROWSERBASE_API_KEY",
+                            provider_env,
+                        )
+
+    def test_checkout_cloud_profiles_do_not_enable_other_suite_profiles(self) -> None:
+        for profile in ("local", "browserbase", "kernel"):
+            validate_run_options(
+                "model", {"task_suite": "checkout", "profile": profile}
+            )
+            for suite in ("tempo", "tempo-mcp", "mpp", "all"):
+                with self.assertRaisesRegex(RuntimeError, "not valid"):
+                    validate_run_options(
+                        "daytona-oracle", {"task_suite": suite, "profile": profile}
+                    )
+
+    def test_checkout_all_expands_to_three_native_jobs(self) -> None:
+        with (
+            patch("scripts.run_benchmark.preflight"),
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+        ):
+            main(
+                [
+                    "daytona-oracle",
+                    "--task-suite",
+                    "checkout",
+                    "--profile",
+                    "all",
+                    "--no-sync",
+                ]
+            )
+        calls = [call.args[1] for call in run_variant.call_args_list]
+        self.assertEqual(
+            {options["profile"] for options in calls},
+            {"local", "browserbase", "kernel"},
+        )
+        self.assertEqual(len({options["pair_id"] for options in calls}), 1)
+        self.assertEqual(len({options["job_name"] for options in calls}), 3)
+
+    def test_checkout_provider_preflight_fails_before_spending_on_other_profiles(
+        self,
+    ) -> None:
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "STRIPE_TEST_SECRET_KEY": "sk_test_fake",
+                    "STRIPE_TEST_PUBLISHABLE_KEY": "pk_test_fake",
+                    "PAYPAL_SANDBOX_BUYER_EMAIL": "test@example.com",
+                    "PAYPAL_SANDBOX_BUYER_PASSWORD": "test",
+                    "PAYPAL_SANDBOX_CLIENT_ID": "test",
+                    "PAYPAL_SANDBOX_CLIENT_SECRET": "test",
+                    "DAYTONA_API_KEY": "test",
+                },
+                clear=True,
+            ),
+            patch("scripts.run_benchmark.run_benchmark_variant") as run_variant,
+            self.assertRaisesRegex(RuntimeError, "BROWSERBASE_API_KEY"),
+        ):
+            main(
+                [
+                    "daytona-oracle",
+                    "--task-suite",
+                    "checkout",
+                    "--profile",
+                    "all",
+                    "--no-sync",
+                ]
+            )
+        run_variant.assert_not_called()
+
     def test_concurrent_profiles_build_the_image_pair_once(self) -> None:
         with (
             patch("scripts.run_benchmark.run") as run,

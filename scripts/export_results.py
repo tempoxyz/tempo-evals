@@ -184,6 +184,19 @@ def result_files(root: Path) -> list[Path]:
 
 def profile_from_trial(result: JsonObject) -> str:
     agent = as_object(as_object(result.get("config")).get("agent"))
+    if as_string(result.get("task_name")).startswith("checkout-v1/"):
+        profile = as_string(as_object(agent.get("env")).get("CHECKOUT_BROWSER_PROFILE"))
+        if profile in {"local", "browserbase", "kernel"}:
+            return profile
+        path = as_string(
+            as_object(as_object(result.get("config")).get("task")).get("path")
+        )
+        return (
+            as_string(
+                checkout_task_metadata(result["task_name"], path).get("browser_profile")
+            )
+            or "browser-mcp"
+        )
     for server in agent.get("mcp_servers") or []:
         if isinstance(server, dict):
             name = server.get("name")
@@ -207,12 +220,15 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
     if task_name.startswith(("tempo-v1/", "tempo-mcp-v1/")):
         return {"task_family": task_name, "profile": tempo_profile}
     if task_name.startswith("checkout-v1/"):
-        return {"task_family": task_name, "profile": "browser-mcp"}
+        return {
+            "task_family": task_name,
+            "profile": "browser-mcp" if tempo_profile == "docs" else tempo_profile,
+        }
     return {"task_family": task_name, "profile": "unknown"}
 
 
 @cache
-def checkout_prompt_metadata(task_name: str, task_path: str = "") -> dict[str, str]:
+def checkout_task_metadata(task_name: str, task_path: str = "") -> JsonObject:
     """Read native task fields, preferring the task snapshot used by the run."""
     root = Path(__file__).resolve().parents[1]
     # A missing staged snapshot must not silently become a discover trial.
@@ -225,12 +241,14 @@ def checkout_prompt_metadata(task_name: str, task_path: str = "") -> dict[str, s
         except (OSError, tomllib.TOMLDecodeError):
             continue
         if task.get("task", {}).get("name") == task_name:
-            metadata = task.get("metadata", {})
-            if all(key in metadata for key in CHECKOUT_SUMMARY_COLUMNS):
-                return {
-                    key: as_string(metadata.get(key))
-                    for key in CHECKOUT_SUMMARY_COLUMNS
-                }
+            return task.get("metadata", {})
+    return {}
+
+
+def checkout_prompt_metadata(task_name: str, task_path: str = "") -> dict[str, str]:
+    metadata = checkout_task_metadata(task_name, task_path)
+    if all(key in metadata for key in CHECKOUT_SUMMARY_COLUMNS):
+        return {key: as_string(metadata.get(key)) for key in CHECKOUT_SUMMARY_COLUMNS}
     return {
         "scenario_id": task_name,
         "prompt_condition": "unknown",

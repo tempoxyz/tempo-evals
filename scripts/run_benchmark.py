@@ -43,6 +43,9 @@ BENCHMARKS: dict[BenchmarkKey, dict[str, Any]] = {
     key: RAW_BENCHMARKS[key.value] for key in BenchmarkKey
 }
 TEMPO_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
+CHECKOUT_PROFILES = {
+    profile["id"]: profile for profile in TASKS_CONFIG["checkout"]["profiles"]
+}
 
 
 def tempo_profile(profile_id: str) -> dict[str, Any]:
@@ -66,7 +69,7 @@ SUITE_PROFILES = {
     "tempo": (DOCS_PROFILE["id"], MCP_PROFILE["id"], "all"),
     "tempo-mcp": (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"], "mcp-both"),
     "mpp": (DOCS_PROFILE["id"],),
-    "checkout": (DOCS_PROFILE["id"],),
+    "checkout": (DOCS_PROFILE["id"], *CHECKOUT_PROFILES, "all"),
     "all": (DOCS_PROFILE["id"],),
 }
 _IMAGE_BUILD_LOCK = Lock()
@@ -123,7 +126,8 @@ Options:
                           (default: tasks/tempo-v1)
   --docs-sha SHA          Override the pinned documentation revision for a run
   --profile PROFILE       Access profile: docs, mcp, mcp-direct, mcp-code,
-                          mcp-both, or all (default: docs)
+                          mcp-both, local, browserbase, kernel, or all
+                          (default: docs; checkout: local)
   --agent-image REF       Immutable Daytona agent image tag or digest (required)
   --verifier-image REF    Immutable Daytona verifier image tag or digest (required)
   --no-force-build        Ask Harbor to reuse Docker environment builds
@@ -182,7 +186,7 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     )
     parser.add_argument(
         "--profile",
-        choices=(*PROFILE_IDS, "mcp-both", "all"),
+        choices=(*PROFILE_IDS, *CHECKOUT_PROFILES, "mcp-both", "all"),
         default=DOCS_PROFILE["id"],
     )
     parser.add_argument("--agent-image")
@@ -370,6 +374,11 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
     ):
         raise RuntimeError("Checkout task paths require --task-suite checkout")
     if options.get("task_suite") == "checkout":
+        for key in CHECKOUT_PROFILES[checkout_profile(options)]["credentials"]:
+            if not os.environ.get(key):
+                raise RuntimeError(
+                    f"{checkout_profile(options)} checkout requires {key}"
+                )
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
         selected = {
@@ -528,6 +537,7 @@ def validate_run_options(variant_name: str, options: dict[str, Any]) -> dict[str
         not variant.get("job")
         and not variant.get("production")
         and profile != DOCS_PROFILE["id"]
+        and suite != "checkout"
     ):
         raise RuntimeError("Non-Docs profiles require a job-backed variant")
     if variant.get("job") and options.get("agent"):
@@ -994,7 +1004,16 @@ def apply_model_override(
     raise RuntimeError(msg)
 
 
+def checkout_profile(options: dict[str, Any]) -> str:
+    profile = options.get("profile", "docs")
+    return "local" if profile == "docs" else profile
+
+
 def apply_profile(config: dict[str, Any], profile_id: str) -> dict[str, Any]:
+    if profile_id in CHECKOUT_PROFILES:
+        for agent in config.get("agents", []):
+            agent.setdefault("env", {})["CHECKOUT_BROWSER_PROFILE"] = profile_id
+        return config
     if profile_id == DOCS_PROFILE["id"]:
         return config
 
@@ -1248,17 +1267,76 @@ def override_staged_images(staging_root: Path, images: dict[str, str]) -> None:
             )
 
 
+def stage_browser_profile(task_dir: Path, profile: str) -> None:
+    if profile not in CHECKOUT_PROFILES:
+        raise ValueError(f"Unknown checkout browser profile: {profile}")
+    environment = task_dir / "environment"
+    shutil.copytree(
+        "shared/checkout/browser",
+        environment / "browser",
+        ignore=shutil.ignore_patterns("node_modules", "package-lock.json"),
+    )
+    compose_file = environment / "docker-compose.yaml"
+    compose = yaml.safe_load(compose_file.read_text())
+    browser = compose["services"]["browser"]
+    # Extend the exact task-pinned MCP image; tool schemas stay identical.
+    image = browser.pop("image")
+    browser["build"] = {"context": "./browser", "args": {"MCP_IMAGE": image}}
+    browser["entrypoint"] = "/opt/checkout/node_modules/.bin/tsx"
+    browser["command"] += ["--init-page", "/opt/checkout/merchant-route.ts"]
+    if profile != "local":
+        browser["command"] += ["--cdp-endpoint", "ws://browser-session:9222"]
+        browser["depends_on"] = {"browser-session": {"condition": "service_healthy"}}
+        compose["services"]["browser-session"] = {
+            "build": browser["build"],
+            "entrypoint": "/opt/checkout/node_modules/.bin/tsx",
+            "command": ["/opt/checkout/session.ts"],
+            "environment": {
+                "CHECKOUT_BROWSER_PROFILE": profile,
+                **{
+                    key: "${" + key + "}"
+                    for key in CHECKOUT_PROFILES[profile]["credentials"]
+                },
+            },
+            "healthcheck": {
+                "test": [
+                    "CMD",
+                    "node",
+                    "-e",
+                    "fetch('http://localhost:9222/health')"
+                    ".then(r => process.exit(r.ok ? 0 : 1))"
+                    ".catch(() => process.exit(1))",
+                ],
+                "interval": "2s",
+                "timeout": "5s",
+                "retries": 60,
+            },
+            "stop_grace_period": "30s",
+        }
+    compose_file.write_text(yaml.safe_dump(compose, sort_keys=False))
+    task_file = task_dir / "task.toml"
+    task = tomlkit.parse(task_file.read_text())
+    task["metadata"]["browser_profile"] = profile
+    env = task["environment"]["env"]
+    for key in CHECKOUT_PROFILES[profile]["credentials"]:
+        env[key] = "${" + key + "}"
+    task_file.write_text(tomlkit.dumps(task))
+
+
 def stage_task_datasets(
     staging_root: Path,
     docs_bundle: str | None,
     mpp_docs_bundle: str | None = None,
     images: dict[str, str] | None = None,
     checkout: bool = False,
+    browser_profile: str = "local",
 ) -> None:
     if checkout:
         staged_checkout = staging_root / "tasks" / "checkout-v1"
         staged_checkout.parent.mkdir(parents=True, exist_ok=True)
         copy_tasks(Path("tasks/checkout-v1"), staged_checkout)
+        for task_file in staged_checkout.glob("*/task.toml"):
+            stage_browser_profile(task_file.parent, browser_profile)
         if images is not None:
             override_staged_images(staging_root, images)
         return
@@ -1361,6 +1439,7 @@ def stage_daytona_config(
         mpp_docs_bundle,
         daytona_images(options),
         checkout=options.get("task_suite") == "checkout",
+        browser_profile=checkout_profile(options),
     )
 
     config = apply_pair_id(
@@ -1398,6 +1477,7 @@ def stage_filtered_config(
             docs_bundle,
             mpp_docs_bundle,
             checkout=options.get("task_suite") == "checkout",
+            browser_profile=checkout_profile(options),
         )
         redirect_dataset_paths(config, staging_root)
     staged_config.write_text(dump_yaml(config))
@@ -1409,7 +1489,19 @@ def stage_direct_task_path(
     task_path: str,
     docs_bundle: str | None,
     mpp_docs_bundle: str | None,
+    browser_profile: str = "local",
 ) -> str:
+    if is_checkout_tasks_path(task_path):
+        staging_root = Path(".cache") / "harbor-model" / run_id
+        shutil.rmtree(staging_root, ignore_errors=True)
+        stage_task_datasets(
+            staging_root, None, checkout=True, browser_profile=browser_profile
+        )
+        return str(
+            staging_root
+            / "tasks/checkout-v1"
+            / Path(task_path).resolve().relative_to(Path("tasks/checkout-v1").resolve())
+        )
     if docs_bundle is None and mpp_docs_bundle is None:
         return task_path
 
@@ -1463,6 +1555,10 @@ def main(argv: list[str]) -> None:
 
     if options["profile"] in {"all", "mcp-both"}:
         variant = validate_run_options(variant_name, options)
+        if options.get("task_suite") == "checkout":
+            load_env_file(options.get("env_file"))
+            for profile in CHECKOUT_PROFILES:
+                preflight(variant, options | {"profile": profile})
         if variant.get("production"):
             prepare_production_profiles(variant, options)
         elif options["sync"]:
@@ -1497,6 +1593,8 @@ def main(argv: list[str]) -> None:
             for index, profile_id in enumerate(
                 (MCP_DIRECT_PROFILE["id"], MCP_CODE_PROFILE["id"])
                 if options["profile"] == "mcp-both"
+                else tuple(CHECKOUT_PROFILES)
+                if options.get("task_suite") == "checkout"
                 else DEFAULT_PROFILE_IDS
             )
         ]
@@ -1514,6 +1612,8 @@ def main(argv: list[str]) -> None:
 
 def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     variant = validate_run_options(variant_name, options)
+    if options.get("task_suite") == "checkout":
+        options = options | {"profile": checkout_profile(options)}
     source = (
         {"mode": "live"}
         if uses_live_mcp_eval(options) or options.get("task_suite") == "checkout"
@@ -1561,6 +1661,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
             task_paths(options)[0],
             docs_bundle,
             mpp_docs_bundle,
+            browser_profile=checkout_profile(options),
         )
         args.extend(
             [
@@ -1572,6 +1673,10 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         args.extend(["--agent", agent])
         if agent == "codex":
             args.extend(["--agent-kwarg", f"web_search={CODEX_WEB_SEARCH}"])
+        if options.get("task_suite") == "checkout":
+            args.extend(
+                ["--agent-env", f"CHECKOUT_BROWSER_PROFILE={options['profile']}"]
+            )
         model = options.get("model") or variant.get("default_model")
         if model:
             args.extend(["--model", model])
