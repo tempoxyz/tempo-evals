@@ -152,6 +152,9 @@ class ExportResultsTest(unittest.TestCase):
                     "observed_methods": ["card"],
                 },
             )
+            agent_log = job / "wrong/agent/claude-code.txt"
+            agent_log.parent.mkdir()
+            agent_log.write_text('{"type": "result", "num_turns": 99}\n')
             exported = export_results(job)
             row = exported["trials"][0]
             self.assertEqual(row["required_method"], "link")
@@ -160,6 +163,8 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["payment_method"], "")
             self.assertEqual(row["reward"], 0)
             self.assertEqual(row["quality"], 0)
+            self.assertEqual(row["model_turns"], 99)
+            self.assertEqual(row["efficiency_model_turns"], "")
 
     def test_checkout_exports_use_native_metadata_even_with_nonstandard_task_names(
         self,
@@ -323,7 +328,8 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["payment_provider_type"], "stripe_sandbox")
             self.assertEqual(row["verification_reason"], "verified")
             self.assertEqual(row["extra_checkout_attempts"], 0)
-            self.assertEqual(row["model_turns"], 10)
+            self.assertEqual(row["model_turns"], 99)
+            self.assertEqual(row["efficiency_model_turns"], 10)
             self.assertEqual(row["trajectory_duration_sec"], 150)
             self.assertTrue(row["eligible"])
             columns = pd.read_csv(Path(exported["out_dir"]) / "trials.csv").columns

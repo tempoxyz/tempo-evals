@@ -118,6 +118,10 @@ The exporter leaves `pass_5` blank with fewer than five trials. With at least
 five, it reports the fraction of five-trial subsets in which every checkout
 passed.
 
+Exports keep `model_turns` as the agent-reported count for every trial.
+`efficiency_model_turns` separately records the trajectory count used for
+quality scoring and is blank when efficiency telemetry is unavailable.
+
 ## Current merchants
 
 All four merchant scenarios request one Tempo Notebook for at most $12 and use

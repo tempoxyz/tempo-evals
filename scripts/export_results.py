@@ -84,6 +84,7 @@ CHECKOUT_TRIAL_COLUMNS = [
     "verification_reason",
     "extra_checkout_attempts",
     "trajectory_duration_sec",
+    "efficiency_model_turns",
     "quality_unavailable",
 ]
 CHECKOUT_SUMMARY_COLUMNS = ["scenario_id", "prompt_condition", "required_method"]
@@ -507,7 +508,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "input_tokens": tokens["input"],
         "cache_tokens": tokens["cache"],
         "output_tokens": tokens["output"],
-        "model_turns": efficiency.get("model_turns", model_turns(result, file_path)),
+        "model_turns": model_turns(result, file_path),
         "mcp_calls": trace["calls"],
         "mcp_denied_calls": trace["denied"],
         "mcp_latency_ms": trace["latency"],
@@ -544,6 +545,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                 "trajectory_duration_sec": efficiency.get(
                     "trajectory_duration_sec", ""
                 ),
+                "efficiency_model_turns": efficiency.get("model_turns", ""),
                 "quality_unavailable": as_string(efficiency.get("unavailable")),
             }
             if checkout
