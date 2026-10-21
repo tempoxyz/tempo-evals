@@ -462,6 +462,19 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     reward = primary_reward(rewards)
     tokens = token_totals(result)
     trace = trace_metrics(file_path)
+    if checkout and trace["calls"] == "":
+        trajectory = as_object(
+            read_json(file_path.parent / "agent" / "trajectory.json")
+        )
+        if isinstance(steps := trajectory.get("steps"), list):
+            trace["calls"] = sum(
+                as_string(as_object(call).get("function_name")).startswith("mcp__")
+                for step in steps
+                if isinstance(step, dict)
+                and step.get("source") == "agent"
+                and not step.get("is_copied_context")
+                for call in step.get("tool_calls") or []
+            )
     validation = validation_metrics(file_path)
     if (
         judge_available := as_number(rewards.get("quality_judge_available"))

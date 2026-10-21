@@ -368,6 +368,29 @@ class ExportResultsTest(unittest.TestCase):
             agent_log = trial_dir / "agent" / "claude-code.txt"
             agent_log.parent.mkdir()
             agent_log.write_text('{"type": "result", "num_turns": 99}\n')
+            write_json(
+                trial_dir / "agent" / "trajectory.json",
+                {
+                    "steps": [
+                        {
+                            "source": "agent",
+                            "tool_calls": [
+                                {"function_name": "Read"},
+                                {"function_name": "mcp__browser__browser_navigate"},
+                                {"function_name": "mcp__browser__browser_click"},
+                            ],
+                        },
+                        {
+                            "source": "agent",
+                            "is_copied_context": True,
+                            "tool_calls": [
+                                {"function_name": "mcp__browser__browser_click"}
+                            ],
+                        },
+                        {"source": "agent", "tool_calls": None},
+                    ]
+                },
+            )
 
             exported = export_results(job_dir)
             row = exported["trials"][0]
@@ -380,6 +403,11 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["model_turns"], 99)
             self.assertEqual(row["efficiency_model_turns"], 10)
             self.assertEqual(row["trajectory_duration_sec"], 150)
+            self.assertEqual(row["mcp_calls"], 2)
+            self.assertTrue(row["mcp_used"])
+            self.assertEqual(row["mcp_latency_ms"], "")
+            self.assertEqual(row["mcp_denied_calls"], "")
+            self.assertEqual(exported["summary"][0]["mcp_calls"], 2)
             self.assertTrue(row["eligible"])
             columns = pd.read_csv(Path(exported["out_dir"]) / "trials.csv").columns
             self.assertIn("payment_provider_type", columns)
@@ -389,7 +417,19 @@ class ExportResultsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             job = Path(root)
             write_json(job / "trial/result.json", trial())
+            write_json(
+                job / "trial/agent/trajectory.json",
+                {
+                    "steps": [
+                        {
+                            "source": "agent",
+                            "tool_calls": [{"function_name": "mcp__tempo__request"}],
+                        }
+                    ]
+                },
+            )
             exported = export_results(job)
+            self.assertEqual(exported["trials"][0]["mcp_calls"], "")
             for filename in ("trials.csv", "summary.csv", "quality_summary.csv"):
                 columns = pd.read_csv(Path(exported["out_dir"]) / filename).columns
                 for column in ("scenario_id", "prompt_condition", "required_method"):

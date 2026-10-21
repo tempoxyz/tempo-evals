@@ -121,6 +121,8 @@ passed.
 Exports keep `model_turns` as the agent-reported count for every trial.
 `efficiency_model_turns` separately records the trajectory count used for
 quality scoring and is blank when efficiency telemetry is unavailable.
+When no MCP bridge trace exists, checkout exports count `mcp_calls` from native
+agent trajectory tool calls. Missing MCP latency and denial telemetry stays blank.
 
 ## Current merchants
 
