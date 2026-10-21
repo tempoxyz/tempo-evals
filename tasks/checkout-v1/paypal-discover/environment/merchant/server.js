@@ -66,6 +66,7 @@ http.createServer(async (request, response) => {
           items: [{ name: 'Tempo Notebook', quantity: '1', unit_amount: { currency_code: 'USD', value: '12.00' } }],
         }],
         payment_source: { paypal: { experience_context: {
+          locale: 'en-US',
           return_url: 'http://merchant:3000/return',
           cancel_url: 'http://merchant:3000/cancel',
           user_action: 'PAY_NOW',

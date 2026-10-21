@@ -105,6 +105,21 @@ class RunBenchmarkTest(unittest.TestCase):
                     original_compose = yaml.safe_load(
                         (source / "environment/docker-compose.yaml").read_text()
                     )
+                    output_volume = "checkout-browser-output:/tmp/.playwright-mcp"
+                    self.assertIn(
+                        output_volume, compose["services"]["browser"]["volumes"]
+                    )
+                    compose["services"]["main"]["volumes"].remove(f"{output_volume}:ro")
+                    self.assertIsNone(compose["volumes"].pop("checkout-browser-output"))
+                    browser_command = compose["services"]["browser"]["command"]
+                    self.assertEqual(
+                        browser_command[browser_command.index("--output-dir") + 1],
+                        "/tmp/.playwright-mcp",
+                    )
+                    self.assertEqual(
+                        browser_command[browser_command.index("--file-paths") + 1],
+                        "absolute",
+                    )
                     for name in ("main", "merchant", "wallet", "link"):
                         self.assertEqual(
                             compose["services"][name],

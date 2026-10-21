@@ -1287,7 +1287,16 @@ def stage_browser_profile(task_dir: Path, profile: str) -> None:
     image = browser.pop("image")
     browser["build"] = {"context": "./browser", "args": {"MCP_IMAGE": image}}
     browser["entrypoint"] = "/opt/checkout/node_modules/.bin/tsx"
+    output_dir = "/tmp/.playwright-mcp"
+    output_volume = f"checkout-browser-output:{output_dir}"
+    compose["volumes"]["checkout-browser-output"] = None
+    browser.setdefault("volumes", []).append(output_volume)
+    compose["services"]["main"]["volumes"].append(f"{output_volume}:ro")
     browser["command"] += [
+        "--output-dir",
+        output_dir,
+        "--file-paths",
+        "absolute",
         "--config",
         "/opt/checkout/browser.json",
         "--init-page",
