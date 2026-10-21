@@ -122,6 +122,8 @@ async function main() {
       || paymentMethod?.type !== 'link' || paymentMethod.link?.email !== wallet.link.email
     ) continue;
 
+    const closed = await browserRpc('tools/call', { name: 'browser_close', arguments: {} });
+    if (closed.isError) throw new Error('Link setup browser did not close');
     wallet.link.phone = phone;
     writeFileSync('/wallet/wallet.json', JSON.stringify(wallet, null, 2) + '\n');
     writeFileSync('/wallet/link-ready', '');
