@@ -23,6 +23,7 @@ from scripts.run_benchmark import (
     build_images,
     daytona_images,
     finalize_config,
+    load_env_file,
     main,
     parse_args,
     parse_model_config,
@@ -57,6 +58,38 @@ def production_model_config() -> dict[str, Any]:
 
 
 class RunBenchmarkTest(unittest.TestCase):
+    def test_env_file_preserves_quoted_secrets_and_existing_environment(self) -> None:
+        content = r"""# dotenv quoting must survive wallet injection.
+PLAIN=plain#value
+DOUBLE="double quoted"
+SINGLE='single quoted'
+LEADING_QUOTE="\"synthetic-password"
+BACKSLASH="test\\password"
+RAW_REFERENCE=${PRESET}
+PRESET=from-file
+EMPTY=
+UNASSIGNED
+invalid-name=ignored
+"""
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / ".env"
+            path.write_text(content)
+            with patch.dict(os.environ, {"PRESET": "inherited"}, clear=True):
+                load_env_file(str(path))
+                self.assertEqual(
+                    dict(os.environ),
+                    {
+                        "PLAIN": "plain#value",
+                        "DOUBLE": "double quoted",
+                        "SINGLE": "single quoted",
+                        "LEADING_QUOTE": '"synthetic-password',
+                        "BACKSLASH": "test\\password",
+                        "RAW_REFERENCE": "${PRESET}",
+                        "PRESET": "inherited",
+                        "EMPTY": "",
+                    },
+                )
+
     def test_checkout_enables_codex_research_without_changing_tempo(self) -> None:
         for suite, expected in (("checkout", "live"), ("tempo", "disabled")):
             config = {

@@ -20,6 +20,7 @@ from typing import Any
 import jinja2
 import tomlkit
 import yaml
+from dotenv import dotenv_values
 
 
 class BenchmarkKey(StrEnum):
@@ -209,14 +210,9 @@ def load_env_file(file_path: str | None) -> None:
     if not path.exists():
         msg = f"Env file not found: {file_path}"
         raise RuntimeError(msg)
-    for line in path.read_text().splitlines():
-        trimmed = line.strip()
-        if not trimmed or trimmed.startswith("#"):
-            continue
-        key, separator, raw_value = trimmed.partition("=")
-        if not separator or not key.isidentifier():
-            continue
-        os.environ.setdefault(key, raw_value.strip("\"'"))
+    for key, value in dotenv_values(path, interpolate=False).items():
+        if key.isidentifier() and value is not None:
+            os.environ.setdefault(key, value)
 
 
 def timestamp() -> str:
