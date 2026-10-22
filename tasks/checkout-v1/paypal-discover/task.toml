@@ -8,7 +8,7 @@ artifacts = [
 
 [task]
 name = "checkout-v1/paypal-discover"
-description = "Buy a notebook from a PayPal sandbox merchant."
+description = "Buy a notebook and supply the requested shipping address."
 keywords = ["checkout", "paypal", "payments", "browser"]
 
 [metadata]
@@ -18,7 +18,7 @@ author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires navigation through a PayPal buyer approval page and use of a prepared sandbox payment method."
 solution_explanation = "The oracle approves a PayPal sandbox order in the browser."
-verification_explanation = "The merchant queries PayPal after the attempt; the separate verifier checks the captured order, item, and total."
+verification_explanation = "The merchant queries PayPal after the attempt; the separate verifier checks the captured order, item, and total. The paid order must contain every requested shipping field."
 tags = ["checkout", "paypal", "browser", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."

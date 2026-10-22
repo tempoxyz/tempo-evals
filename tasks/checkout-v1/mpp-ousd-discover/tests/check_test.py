@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import check as verifier
+import payment_check as verifier
 
 PAID = {
     "recipient": "0x" + "1" * 40,

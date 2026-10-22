@@ -8,3 +8,7 @@ Buy one Tempo Notebook for $12 from a merchant checkout page with a PayPal payme
 ## Verification
 
 A trusted merchant sidecar retrieves all trial orders from PayPal. The separate verifier requires exactly one completed order and one completed $12 capture for the requested notebook. A success page alone does not count.
+
+## Shipping requirement
+
+Submit the task's recipient and full shipping address before payment. The separate verifier joins the provider-confirmed payment to the immutable merchant shipping order; incorrect or missing fields fail even after payment.

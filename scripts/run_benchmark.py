@@ -398,10 +398,7 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
                 (Path("tasks/checkout-v1") / name / "task.toml").read_text()
             )["metadata"]
             selected.add(
-                metadata.get(
-                    "credential_scenario_id",
-                    metadata.get("scenario_id", f"checkout-v1/{name}"),
-                ).rsplit("/", 1)[-1]
+                metadata.get("scenario_id", f"checkout-v1/{name}").rsplit("/", 1)[-1]
             )
         if not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")

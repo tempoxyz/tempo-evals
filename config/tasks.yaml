@@ -42,12 +42,6 @@ checkout:
       credentials: [BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID]
     - id: kernel
       credentials: [KERNEL_API_KEY]
-  shipping:
-    stripe-card-discover: stripecard-shipping-discover
-    stripe-link-discover: stripelink-shipping-discover
-    paypal-discover: paypal-shipping-discover
-    mpp-ousd-discover: mppousd-shipping-discover
-    mpp-card-discover: mppcard-shipping-discover
   # Existing tasks are discover prompts; sync generates their -directed peers.
   directed:
     stripe-card-discover:
@@ -70,27 +64,6 @@ checkout:
       task: mpp-ousd-directed
       method: tempo_mpp
       instruction: Use MPP to pay.
-
-    stripecard-shipping-discover:
-      task: stripecard-shipping-directed
-      method: card
-      instruction: Use card to pay.
-    stripelink-shipping-discover:
-      task: stripelink-shipping-directed
-      method: link
-      instruction: Use Link to pay.
-    paypal-shipping-discover:
-      task: paypal-shipping-directed
-      method: paypal
-      instruction: Use PayPal to pay.
-    mppousd-shipping-discover:
-      task: mppousd-shipping-directed
-      method: tempo_mpp
-      instruction: Use MPP to pay.
-    mppcard-shipping-discover:
-      task: mppcard-shipping-directed
-      method: stripe_mpp
-      instruction: Use card over MPP to pay.
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.

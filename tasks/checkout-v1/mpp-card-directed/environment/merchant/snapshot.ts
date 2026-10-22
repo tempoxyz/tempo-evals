@@ -1,3 +1,4 @@
+import { shippingOrders } from './shipping.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { Receipt } from 'mppx';
 
@@ -55,4 +56,4 @@ const deliveries = records('deliveries').map(record => {
   };
 });
 const paymentAttemptCount = records('attempts').filter(record => record.paymentAttempt === true).length;
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ ...merchant, payments, deliveries, paymentAttemptCount }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), ...merchant, orderId: deliveries[0]?.orderId, payments, deliveries, paymentAttemptCount }, null, 2) + '\n');

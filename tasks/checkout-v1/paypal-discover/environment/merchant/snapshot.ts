@@ -1,3 +1,4 @@
+import { shippingOrders } from './shipping.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const clientId = process.env.PAYPAL_SANDBOX_CLIENT_ID;
@@ -52,4 +53,4 @@ for (const record of records) {
     captureCount: purchase?.payments?.captures?.length ?? 0,
   });
 }
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ orders }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), orders }, null, 2) + '\n');

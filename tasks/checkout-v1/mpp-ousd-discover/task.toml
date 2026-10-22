@@ -8,7 +8,7 @@ artifacts = [
 
 [task]
 name = "checkout-v1/mpp-ousd-discover"
-description = "Buy a notebook from an MPP merchant."
+description = "Buy a notebook and supply the requested shipping address."
 keywords = ["checkout", "mpp", "tempo", "payments"]
 
 [metadata]
@@ -18,7 +18,7 @@ author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires paying an MPP challenge with the prepared wallet."
 solution_explanation = "The oracle pays the MPP challenge using the trial Tempo wallet."
-verification_explanation = "The separate verifier checks the MPP receipt, delivered notebook, and trial-specific merchant OUSD testnet balance."
+verification_explanation = "The separate verifier checks the MPP receipt, delivered notebook, and trial-specific merchant OUSD testnet balance. The paid order must contain every requested shipping field."
 tags = ["checkout", "mpp", "tempo", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."

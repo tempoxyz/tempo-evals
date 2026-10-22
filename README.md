@@ -10,7 +10,7 @@ powered by [Harbor](https://harborframework.com).
 | Tempo integration | v1 | `tempo/stable-bench-v1` | TypeScript integrations that submit and verify Tempo testnet transactions | [tasks/tempo-v1](tasks/tempo-v1/README.md) |
 | Tempo MCP efficiency | v1 | `tempo/tempo-mcp-bench-v1` | Live Tempo investigations using direct documentation tools or `docs_code` | [tasks/tempo-mcp-v1](tasks/tempo-mcp-v1/README.md) |
 | MPP integration | Unstable | `tempo/mpp-bench-v1` | Paid HTTP and MCP services and clients on Tempo testnet | [tasks/mpp](tasks/mpp/README.md) |
-| Checkout | Five merchants, twenty baseline/shipping tasks | `tempo/checkout-bench-v1` (not published) | Agents purchasing specified items from test merchants | [tasks/checkout-v1](tasks/checkout-v1/README.md) |
+| Checkout | Five merchants, ten tasks with required shipping | `tempo/checkout-bench-v1` (not published) | Agents purchasing specified items from test merchants | [tasks/checkout-v1](tasks/checkout-v1/README.md) |
 
 Suite guides own suite-specific behavior and commands. Task `README.md` files
 are short Harbor Hub descriptions; `instruction.md` files are the agent-facing

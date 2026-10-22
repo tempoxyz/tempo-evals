@@ -1,5 +1,6 @@
+import { createShipping } from './shipping.js';
+const shipping = createShipping('/checkout');
 import http from 'node:http';
-import { randomUUID } from 'node:crypto';
 import { mkdirSync, appendFileSync } from 'node:fs';
 
 const key = process.env.STRIPE_TEST_SECRET_KEY;
@@ -18,7 +19,7 @@ const home = `<!doctype html><html><head><meta charset="utf-8"><title>Notebook S
 <body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p>
 <form method="post" action="/checkout"><button>Buy notebook</button></form></main></body></html>`;
 
-function paymentPage(clientSecret) {
+function paymentPage(clientSecret, orderId) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Notebook checkout</title>
 <script src="https://js.stripe.com/v3/"></script></head><body><main>
 <h1>Tempo Notebook</h1><p>One notebook · $12.00</p>
@@ -41,13 +42,13 @@ expressCheckout.on('ready', event => {
 expressCheckout.on('confirm', async () => {
   const { error, paymentIntent } = await stripe.confirmPayment({
     elements,
-    confirmParams: { return_url: 'http://merchant:3000/complete' },
+    confirmParams: { return_url: 'http://merchant:3000/complete?order_id=${orderId}' },
     redirect: 'if_required',
   });
   if (error) {
     document.getElementById('status').textContent = error.message || 'Payment failed';
   } else if (paymentIntent?.status === 'succeeded') {
-    location.href = '/complete';
+    location.href = '/complete?order_id=${orderId}';
   }
 });
 expressCheckout.mount('#express-checkout-element');
@@ -55,10 +56,13 @@ expressCheckout.mount('#express-checkout-element');
 }
 
 http.createServer(async (request, response) => {
+  if (await shipping.handle(request, response)) return;
   if (request.url === '/health') return response.writeHead(200).end('ok');
   if (request.url === '/' && request.method === 'GET') return html(response, home);
-  if (request.url === '/checkout' && request.method === 'POST') {
-    const orderId = randomUUID();
+  if (new URL(request.url, 'http://merchant:3000').pathname === '/checkout' && ['GET', 'POST'].includes(request.method)) {
+    const shippingOrder = shipping.get(request);
+    if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
+    const orderId = shippingOrder.id;
     const form = new URLSearchParams({
       amount: '1200',
       currency: 'usd',
@@ -80,14 +84,14 @@ http.createServer(async (request, response) => {
         throw new Error(`Stripe intent creation failed: ${stripe.status}`);
       }
       appendFileSync(log, JSON.stringify({ orderId, intentId: intent.id }) + '\n');
-      return html(response, paymentPage(intent.client_secret));
+      return html(response, paymentPage(intent.client_secret, orderId));
     } catch (error) {
       console.error(error);
       return response.writeHead(502).end('Checkout temporarily unavailable');
     }
   }
   if (request.url?.startsWith('/complete') && request.method === 'GET') {
-    return html(response, '<!doctype html><title>Order received</title><h1>Order received</h1><p>Payment is being verified.</p>');
+    return shipping.stripeReceipt(request, response, 'intents');
   }
   response.writeHead(404).end('Not found');
 }).listen(3000, '0.0.0.0');

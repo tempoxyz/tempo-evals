@@ -1,3 +1,5 @@
+import { createShipping } from './shipping.js';
+const shipping = createShipping('/buy');
 import http from 'node:http';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, appendFileSync, writeFileSync } from 'node:fs';
@@ -14,13 +16,14 @@ const mppx = Mppx.create({
   methods: [stripe.charge({ secretKey: key, networkId: 'internal', paymentMethodTypes: ['card'] })],
   secretKey: randomBytes(32).toString('hex'),
 });
-const charge = mppx.stripe.charge({
+const charge = (orderId: string) => mppx.stripe.charge({
   amount: '12', currency: 'usd', decimals: 2, description: 'Tempo Notebook', externalId: orderId,
   paymentIntentOptions: { metadata: { checkout_trial_id: trialId, order_id: orderId } },
 });
 const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p><a href="/buy">Buy notebook</a></main></body></html>';
 
 http.createServer(async (request, response) => {
+  if (await shipping.handle(request, response)) return;
   const path = new URL(request.url || '/', 'http://merchant:3000').pathname;
   if (path === '/health') return response.writeHead(200).end('ok');
   if (path === '/' && request.method === 'GET') return response.writeHead(200, { 'content-type': 'text/html' }).end(page);
@@ -29,9 +32,12 @@ http.createServer(async (request, response) => {
       if (/^Payment\s/i.test(request.headers.authorization || '')) {
         appendFileSync(`${dir}/attempts.jsonl`, JSON.stringify({ paymentAttempt: true }) + '\n');
       }
-      const paid = await charge(ServerRequest.fromNodeListener(request, response));
+      const shippingOrder = shipping.get(request);
+      if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
+      const orderId = shippingOrder.id;
+      const paid = await charge(orderId)(ServerRequest.fromNodeListener(request, response));
       if (paid.status === 402) return NodeListener.sendResponse(response, paid.challenge);
-      const order = { orderId, item: 'Tempo Notebook', quantity: 1, amount: '12.00', currency: 'USD' };
+      const order = { orderId, shipping: shippingOrder.shipping, item: 'Tempo Notebook', quantity: 1, amount: '12.00', currency: 'USD' };
       const result = paid.withReceipt(Response.json(order));
       appendFileSync(`${dir}/deliveries.jsonl`, JSON.stringify({ ...order, receipt: result.headers.get('payment-receipt') }) + '\n');
       return NodeListener.sendResponse(response, result);

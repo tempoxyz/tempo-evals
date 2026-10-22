@@ -1,5 +1,6 @@
+import { createShipping } from './shipping.js';
+const shipping = createShipping('/checkout');
 import http from 'node:http';
-import { randomUUID } from 'node:crypto';
 import { mkdirSync, appendFileSync, readFileSync } from 'node:fs';
 
 const clientId = process.env.PAYPAL_SANDBOX_CLIENT_ID;
@@ -47,15 +48,18 @@ const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
 <form method="post" action="/checkout"><button type="submit">Pay with PayPal</button></form><small>You will approve this payment on PayPal.</small></main></body></html>`;
 
 http.createServer(async (request, response) => {
+  if (await shipping.handle(request, response)) return;
   const url = new URL(request.url || '/', 'http://merchant:3000');
   const path = url.pathname;
   if (path === '/health') return response.writeHead(200).end('ok');
   if (path === '/' && request.method === 'GET') {
     return response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(page);
   }
-  if (path === '/checkout' && request.method === 'POST') {
+  if (path === '/checkout' && ['GET', 'POST'].includes(request.method)) {
     try {
-      const orderId = randomUUID();
+      const shippingOrder = shipping.get(request);
+    if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
+    const orderId = shippingOrder.id;
       const order = await paypal('/v2/checkout/orders', 'POST', {
         intent: 'CAPTURE',
         purchase_units: [{
@@ -89,12 +93,12 @@ http.createServer(async (request, response) => {
       if (!paypalOrderId || !/^[A-Za-z0-9]+$/.test(paypalOrderId))
         return json(response, 400, { error: 'invalid_order' });
       const known = readFileSync(log, 'utf8').split('\n').filter(Boolean)
-        .some(line => JSON.parse(line).paypalOrderId === paypalOrderId);
+        .map(line => JSON.parse(line)).find(row => row.paypalOrderId === paypalOrderId);
       if (!known) return json(response, 404, { error: 'unknown_order' });
       // PayPal rejects a second capture, so a repeated call cannot create a second paid order.
       const order = await paypal(`/v2/checkout/orders/${paypalOrderId}/capture`, 'POST');
       if (order.status !== 'COMPLETED') throw new Error('PayPal capture incomplete');
-      return response.writeHead(303, { location: '/complete' }).end();
+      return response.writeHead(303, { location: `/complete?order_id=${known.orderId}` }).end();
     } catch (error) {
       console.error(error);
       return json(response, 502, { error: 'capture_unavailable' });
@@ -102,7 +106,7 @@ http.createServer(async (request, response) => {
   }
   if (path === '/cancel') return response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end('<h1>Checkout canceled</h1>');
   if (path === '/complete') {
-    return response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end('<h1>Order received</h1><p>Payment is being verified.</p>');
+    return shipping.paypalReceipt(request, response, paypal);
   }
   response.writeHead(404).end('Not found');
 }).listen(3000, '0.0.0.0');

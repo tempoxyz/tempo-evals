@@ -10,7 +10,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import sync_shared
-from scripts.checkout_shipping import generate
 
 ROOT = Path(__file__).resolve().parents[1]
 SHARED = ROOT / "shared/checkout/shipping"
@@ -25,24 +24,20 @@ def load(path, name):
 
 class CheckoutShippingTest(unittest.TestCase):
     def test_each_payment_adapter_requires_the_paid_orders_exact_address(self):
-        for slug in sync_shared.TASKS_CONFIG["checkout"]["shipping"]:
+        for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]:
             with self.subTest(merchant=slug):
                 source = ROOT / "tasks/checkout-v1" / slug
                 original_path = sys.path[:]
                 try:
                     sys.path.insert(0, str(source / "tests"))
-                    fixture = load(source / "tests/check_test.py", "shipping_fixture")
                     payment_check = load(
-                        source / "tests/check.py", "shipping_payment_check"
+                        source / "tests/payment_check.py", "shipping_payment_check"
                     )
                     with patch.dict(sys.modules, {"payment_check": payment_check}):
-                        # A task-local trusted fixture supplies the expected address.
-                        target = (
-                            ROOT
-                            / "tasks/checkout-v1"
-                            / sync_shared.TASKS_CONFIG["checkout"]["shipping"][slug]
+                        fixture = load(
+                            source / "tests/check_test.py", "shipping_fixture"
                         )
-                        verifier = load(target / "tests/check.py", "shipping_check")
+                        verifier = load(source / "tests/check.py", "shipping_check")
                     paid = copy.deepcopy(fixture.PAID)
                     collection = {
                         "stripe-card-discover": "sessions",
@@ -109,58 +104,26 @@ class CheckoutShippingTest(unittest.TestCase):
                 finally:
                     sys.path[:] = original_path
 
-    def test_generation_is_repeatable_and_does_not_modify_sources(self):
-        for slug, target_name in sync_shared.TASKS_CONFIG["checkout"][
-            "shipping"
-        ].items():
-            with (
-                self.subTest(merchant=slug),
-                tempfile.TemporaryDirectory() as directory,
-            ):
-                source = ROOT / "tasks/checkout-v1" / slug
-                before = {
-                    p.relative_to(source): p.read_bytes()
-                    for p in source.rglob("*")
-                    if p.is_file() and "__pycache__" not in p.parts
-                }
-                target = Path(directory) / target_name
-                generate(source, target, SHARED)
-                first = {
-                    p.relative_to(target): p.read_bytes()
-                    for p in target.rglob("*")
-                    if p.is_file()
-                }
-                generate(source, target, SHARED)
-                self.assertEqual(
-                    first,
-                    {
-                        p.relative_to(target): p.read_bytes()
-                        for p in target.rglob("*")
-                        if p.is_file()
-                    },
-                )
-                self.assertEqual(
-                    before,
-                    {
-                        p.relative_to(source): p.read_bytes()
-                        for p in source.rglob("*")
-                        if p.is_file() and "__pycache__" not in p.parts
-                    },
-                )
-                self.assertEqual(
-                    (target / "tests/payment_check.py").read_bytes(),
-                    (source / "tests/check.py").read_bytes(),
-                )
+    def test_shipping_is_shared_by_the_ten_default_tasks(self):
+        pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
+        expected = set(pairs) | {peer["task"] for peer in pairs.values()}
+        tasks = sync_shared.checkout_task_dirs()
+        self.assertEqual({p.name for p in tasks}, expected)
+        self.assertEqual(len(tasks), 10)
+        for task in tasks:
+            with self.subTest(task=task.name):
+                self.assertNotIn("shipping", task.name)
+                for source, target in (
+                    ("merchant.js", "environment/merchant/shipping.js"),
+                    ("oracle.ts", "solution/shipping.ts"),
+                    ("address.json", "solution/shipping.json"),
+                    ("address.json", "tests/shipping.json"),
+                    ("check.py", "tests/check.py"),
+                ):
+                    self.assertEqual(
+                        (task / target).read_bytes(), (SHARED / source).read_bytes()
+                    )
                 self.assertIn(
-                    "including the apartment", (target / "instruction.md").read_text()
+                    "including the apartment", (task / "instruction.md").read_text()
                 )
-                self.assertFalse(
-                    (target / "environment/merchant/shipping.json").exists()
-                )
-                for name in ("wallet", "link"):
-                    for p in (source / "environment" / name).iterdir():
-                        if p.is_file():
-                            self.assertEqual(
-                                p.read_bytes(),
-                                (target / "environment" / name / p.name).read_bytes(),
-                            )
+                self.assertFalse((task / "environment/merchant/shipping.json").exists())

@@ -258,17 +258,15 @@ def sync_mpp_tasks() -> int:
 
 
 def sync_checkout_shipping() -> None:
-    if __package__:
-        from .checkout_shipping import generate
-    else:
-        from checkout_shipping import generate
-
-    for source, target in TASKS_CONFIG["checkout"]["shipping"].items():
-        generate(
-            CHECKOUT_TASKS_DIR / source,
-            CHECKOUT_TASKS_DIR / target,
-            CHECKOUT_SHARED_DIR / "shipping",
-        )
+    for task_dir in checkout_task_dirs():
+        for source, target in (
+            ("merchant.js", "environment/merchant/shipping.js"),
+            ("oracle.ts", "solution/shipping.ts"),
+            ("address.json", "solution/shipping.json"),
+            ("address.json", "tests/shipping.json"),
+            ("check.py", "tests/check.py"),
+        ):
+            copy_file(CHECKOUT_SHARED_DIR / "shipping" / source, task_dir / target)
 
 
 def sync_checkout_wallet() -> None:

@@ -1,5 +1,6 @@
+import { createShipping } from './shipping.js';
+const shipping = createShipping('/checkout');
 import http from 'node:http';
-import { randomUUID } from 'node:crypto';
 import { mkdirSync, appendFileSync } from 'node:fs';
 
 const key = process.env.STRIPE_TEST_SECRET_KEY;
@@ -13,6 +14,7 @@ const page = `<!doctype html><html><head><meta charset="utf-8"><title>Notebook S
 <form method="post" action="/checkout"><button>Buy notebook</button></form></main></body></html>`;
 
 http.createServer(async (request, response) => {
+  if (await shipping.handle(request, response)) return;
   if (request.url === '/health') {
     response.writeHead(200).end('ok');
     return;
@@ -21,8 +23,10 @@ http.createServer(async (request, response) => {
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(page);
     return;
   }
-  if (request.url === '/checkout' && request.method === 'POST') {
-    const orderId = randomUUID();
+  if (new URL(request.url, 'http://merchant:3000').pathname === '/checkout' && ['GET', 'POST'].includes(request.method)) {
+    const shippingOrder = shipping.get(request);
+    if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
+    const orderId = shippingOrder.id;
     const form = new URLSearchParams({
       mode: 'payment',
       'payment_method_types[0]': 'card',
@@ -56,9 +60,7 @@ http.createServer(async (request, response) => {
     return;
   }
   if (request.url?.startsWith('/complete') && request.method === 'GET') {
-    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-      .end('<!doctype html><title>Order received</title><h1>Order received</h1><p>Payment is being verified.</p>');
-    return;
+    return shipping.stripeReceipt(request, response, 'sessions');
   }
   response.writeHead(404).end('Not found');
 }).listen(3000, '0.0.0.0');

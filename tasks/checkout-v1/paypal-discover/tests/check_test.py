@@ -2,7 +2,7 @@
 import copy
 import unittest
 
-import check as verifier
+import payment_check as verifier
 
 AMOUNT = {"currency_code": "USD", "value": "12.00"}
 PAID = {

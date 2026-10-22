@@ -1,3 +1,4 @@
+import { shippingOrders } from './shipping.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createPublicClient, http } from 'viem';
 import { Chain } from 'viem/tempo';
@@ -33,4 +34,4 @@ const deliveries = records.map(record => {
     receiptStatus: receipt?.status ?? null, receiptMethod: receipt?.method ?? null,
   };
 });
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ recipient, ousd, balance: balance.toString(), decimals, deliveries, paymentAttemptCount }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), recipient, ousd, balance: balance.toString(), decimals, deliveries, paymentAttemptCount }, null, 2) + '\n');

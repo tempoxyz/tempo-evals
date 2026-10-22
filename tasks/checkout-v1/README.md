@@ -1,7 +1,7 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Twenty Harbor tasks cover five
-merchants with baseline/shipping scenarios and discover/directed prompts. The dataset is not published.
+Planned dataset: `tempo/checkout-bench-v1`. Ten Harbor tasks cover five
+merchants with required shipping and discover/directed prompts. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
@@ -21,8 +21,7 @@ independently of the prompt condition.
 
 ## Payment prompt pairs
 
-Every merchant has discover/directed native Harbor tasks in each scenario.
-The baseline pairs are:
+Every merchant has discover/directed native Harbor tasks:
 
 | Discover task | Directed task | Added instruction |
 | --- | --- | --- |
@@ -39,7 +38,7 @@ wallet setup, oracle, verifier, or scoring. Only the task name, provenance marke
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all twenty tasks, including oracle runs. Use
+`--task-suite checkout` runs all ten tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -58,33 +57,21 @@ not imply success. The existing success-only `payment_method` column remains.
 Shared observation and grading code lives in `shared/checkout/tests/` and is
 copied into every checkout task by `npm run sync`.
 
-## Shipping scenarios
+## Required shipping
 
-The original ten payment-only tasks remain unchanged. Ten additional native
-Harbor tasks require the same recipient and shipping destination across all five
-merchants. Shipping task names combine the payment adapter into one token to
-respect the repository's three-token task-name limit:
+Every checkout task requires the same recipient and full shipping destination.
+Shipping is part of the default task, alongside buying one Tempo Notebook for
+$12; there are no separate shipping task variants.
 
-| Discover task | Directed task |
-| --- | --- |
-| `stripecard-shipping-discover` | `stripecard-shipping-directed` |
-| `stripelink-shipping-discover` | `stripelink-shipping-directed` |
-| `paypal-shipping-discover` | `paypal-shipping-directed` |
-| `mppousd-shipping-discover` | `mppousd-shipping-directed` |
-| `mppcard-shipping-discover` | `mppcard-shipping-directed` |
+The five discover tasks own their merchant adapters, provider snapshots and
+oracles. Shared shipping input, order storage, address fixture and verifier
+live in `shared/checkout/shipping/`; `npm run sync` copies these assets into
+each task before generating directed peers. The provider-specific
+`tests/payment_check.py` verifies payment, and the shared `tests/check.py`
+requires the matching shipping destination. Wallet setup, browser profiles,
+time limits and efficiency weights are unchanged.
 
-`config/tasks.yaml` maps each authored merchant to its shipping discover task.
-`npm run sync` generates these variants using `scripts/checkout_shipping.py`
-and the shared assets in `shared/checkout/shipping/`, then generates their
-directed peers through the existing prompt-pair mechanism. Edit the shared
-shipping assets and its checked-in merchant adapters; do not edit generated task
-copies. Payment verifiers, snapshots, wallet setup and oracles reuse the original
-payment tasks.
-The wallet, Link enrollment, browser profiles, time limits, payment checks,
-quality formula, item, quantity and $12 total are shared with the baseline.
-Use `--task-filter '*-shipping-*'` to run the shipping cohort.
-
-The new tasks supply a fixed synthetic address in their prompt. The merchant
+The tasks supply a fixed synthetic address in their prompt. The merchant
 shows one common, initially empty shipping form with recipient name, street,
 apartment/suite, city, state code, postal code and country code. The apartment
 field is optional in the generic store but required by this task's destination.
@@ -101,7 +88,7 @@ creation; another submission creates a distinct draft. In the form adapters,
 merchant-managed shipping is collected before provider checkout; PSP billing
 addresses and PayPal's saved addresses do not replace this destination.
 
-Each new verifier reuses the original merchant's independent payment check,
+Each verifier uses the merchant's independent payment check,
 then matches its paid order ID to the trusted merchant shipping record. It
 compares every supplied field with the verifier's fixture using case-insensitive,
 whitespace-normalized equality. A wrong or omitted apartment, another order's
@@ -110,8 +97,8 @@ The verifier records `shipping_address_match` and
 `shipping_mismatched_fields` in details. A paid purchase with incorrect shipping
 gets zero reward/correctness/quality; efficiency weights remain unchanged.
 These sandbox tasks verify the recorded fulfillment destination, not physical
-delivery by a carrier. Baseline and shipping results should be compared as
-separate task cohorts with matched models, profiles and prompt conditions.
+delivery by a carrier. The unpublished v1 tasks now require shipping; earlier
+payment-only results are not comparable with these task digests.
 
 ## Task Contract
 
@@ -246,7 +233,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all twenty discover/directed tasks per job. Model trials retain the shared pair
+all ten discover/directed tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

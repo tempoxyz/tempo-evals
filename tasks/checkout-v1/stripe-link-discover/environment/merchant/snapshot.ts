@@ -1,3 +1,4 @@
+import { shippingOrders } from './shipping.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const key = process.env.STRIPE_TEST_SECRET_KEY;
@@ -39,4 +40,4 @@ for (const record of records) {
     paymentMethodType: intent.payment_method?.type ?? null,
   });
 }
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ intents }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), intents }, null, 2) + '\n');

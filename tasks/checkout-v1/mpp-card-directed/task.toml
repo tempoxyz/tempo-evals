@@ -8,7 +8,7 @@ artifacts = [
 
 [task]
 name = "checkout-v1/mpp-card-directed"
-description = "Buy a notebook by card over MPP."
+description = "Buy a notebook and supply the requested shipping address."
 keywords = ["checkout", "mpp", "card", "payments"]
 
 [metadata]
@@ -18,7 +18,7 @@ author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires paying an MPP challenge with a prepared card token."
 solution_explanation = "The oracle pays the Stripe MPP challenge using the trial card token."
-verification_explanation = "The separate verifier checks one notebook delivery, the MPP receipt, and its sandbox card PaymentIntent against Stripe."
+verification_explanation = "The separate verifier checks one notebook delivery, the MPP receipt, and its sandbox card PaymentIntent against Stripe. The paid order must contain every requested shipping field."
 tags = ["checkout", "mpp", "card", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
