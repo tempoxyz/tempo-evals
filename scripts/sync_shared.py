@@ -257,6 +257,20 @@ def sync_mpp_tasks() -> int:
     return len(tasks)
 
 
+def sync_checkout_shipping() -> None:
+    if __package__:
+        from .checkout_shipping import generate
+    else:
+        from checkout_shipping import generate
+
+    for source, target in TASKS_CONFIG["checkout"]["shipping"].items():
+        generate(
+            CHECKOUT_TASKS_DIR / source,
+            CHECKOUT_TASKS_DIR / target,
+            CHECKOUT_SHARED_DIR / "shipping",
+        )
+
+
 def sync_checkout_wallet() -> None:
     for task_dir in checkout_task_dirs():
         copy_file(
@@ -393,6 +407,7 @@ def main() -> None:
     mpp_task_count = sync_mpp_tasks()
     sync_checkout_wallet()
     sync_checkout_grading()
+    sync_checkout_shipping()
     sync_checkout_prompt_variants()
     write_dataset_manifest()
     write_mcp_dataset_manifest()

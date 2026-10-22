@@ -392,14 +392,17 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
                     raise RuntimeError(f"{profile} checkout requires {key}")
         if not has_checkout_tasks():
             raise RuntimeError("Checkout has no authored task yet")
-        selected = {
-            tomlkit.parse((Path("tasks/checkout-v1") / name / "task.toml").read_text())[
-                "metadata"
-            ]
-            .get("scenario_id", f"checkout-v1/{name}")
-            .rsplit("/", 1)[-1]
-            for name in selected_checkout_tasks(options)
-        }
+        selected = set()
+        for name in selected_checkout_tasks(options):
+            metadata = tomlkit.parse(
+                (Path("tasks/checkout-v1") / name / "task.toml").read_text()
+            )["metadata"]
+            selected.add(
+                metadata.get(
+                    "credential_scenario_id",
+                    metadata.get("scenario_id", f"checkout-v1/{name}"),
+                ).rsplit("/", 1)[-1]
+            )
         if not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")
         if "stripe-link-discover" in selected and not os.environ.get(
