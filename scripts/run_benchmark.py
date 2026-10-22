@@ -20,7 +20,7 @@ from typing import Any
 import jinja2
 import tomlkit
 import yaml
-from dotenv import dotenv_values
+from dotenv.parser import parse_stream
 
 
 class BenchmarkKey(StrEnum):
@@ -210,9 +210,20 @@ def load_env_file(file_path: str | None) -> None:
     if not path.exists():
         msg = f"Env file not found: {file_path}"
         raise RuntimeError(msg)
-    for key, value in dotenv_values(path, interpolate=False).items():
-        if key.isidentifier() and value is not None:
-            os.environ.setdefault(key, value)
+    with path.open() as stream:
+        bindings = list(parse_stream(stream))
+    for binding in bindings:
+        if binding.error:
+            raise RuntimeError(
+                f"Invalid env syntax in {path} at line {binding.original.line}"
+            )
+    for binding in bindings:
+        if (
+            binding.key is not None
+            and binding.key.isidentifier()
+            and binding.value is not None
+        ):
+            os.environ.setdefault(binding.key, binding.value)
 
 
 def timestamp() -> str:

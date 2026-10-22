@@ -91,6 +91,10 @@ npm run docs:prepare
 Copy [`.env.example`](.env.example) to `.env` and populate only the credentials
 needed for the runner you use. Never commit `.env` or a funded private key.
 
+Env files use dotenv syntax: quote values containing whitespace followed by `#`,
+and escape literal quotes and backslashes inside double-quoted values. Exported
+variables take precedence; `${...}` references are not expanded.
+
 For remote runs, install Harbor with Daytona support:
 
 ```bash

@@ -61,6 +61,8 @@ class RunBenchmarkTest(unittest.TestCase):
     def test_env_file_preserves_quoted_secrets_and_existing_environment(self) -> None:
         content = r"""# dotenv quoting must survive wallet injection.
 PLAIN=plain#value
+INLINE_COMMENT=plain # comment
+QUOTED_COMMENT="plain # value"
 DOUBLE="double quoted"
 SINGLE='single quoted'
 LEADING_QUOTE="\"synthetic-password"
@@ -80,6 +82,8 @@ invalid-name=ignored
                     dict(os.environ),
                     {
                         "PLAIN": "plain#value",
+                        "INLINE_COMMENT": "plain",
+                        "QUOTED_COMMENT": "plain # value",
                         "DOUBLE": "double quoted",
                         "SINGLE": "single quoted",
                         "LEADING_QUOTE": '"synthetic-password',
@@ -89,6 +93,19 @@ invalid-name=ignored
                         "EMPTY": "",
                     },
                 )
+
+    def test_env_file_rejects_invalid_syntax_before_setting_values(self) -> None:
+        for malformed in ('INVALID="unterminated', 'INVALID="value"trailing'):
+            with (
+                self.subTest(malformed=malformed),
+                tempfile.TemporaryDirectory() as root,
+            ):
+                path = Path(root) / ".env"
+                path.write_text(f"BEFORE=value\n{malformed}\nAFTER=value\n")
+                with patch.dict(os.environ, {}, clear=True):
+                    with self.assertRaisesRegex(RuntimeError, "at line 2"):
+                        load_env_file(str(path))
+                    self.assertEqual(dict(os.environ), {})
 
     def test_checkout_enables_codex_research_without_changing_tempo(self) -> None:
         for suite, expected in (("checkout", "live"), ("tempo", "disabled")):
