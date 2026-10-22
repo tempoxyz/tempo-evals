@@ -22,6 +22,12 @@ def payment_observations(snapshot: object) -> dict:
     ]
     methods = [row.get("paymentMethodType") for row in [*intents, *records("orders")]]
     methods.extend(
+        "stripe_mpp"
+        if row.get("paymentMethodType") == "card"
+        else row.get("paymentMethodType")
+        for row in records("payments")
+    )
+    methods.extend(
         {"tempo": "tempo_mpp", "stripe": "stripe_mpp"}.get(
             row.get("receiptMethod"), row.get("receiptMethod")
         )

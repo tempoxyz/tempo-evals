@@ -11,41 +11,41 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v1/mpp-card-directed"
-digest = "sha256:682372469972576352d146e48b4c2d6306310c48bb06068c6afbcad6bcc564df"
+digest = "sha256:25dbdc50fe36fd71b4542ae3840831abe92d71c9ee133cfb8ca8d8ce3e7629ab"
 
 [[tasks]]
 name = "checkout-v1/mpp-card-discover"
-digest = "sha256:188917975bbb52c0ad628ab24a80af50407f3e170388ff193ae4051d0221668f"
+digest = "sha256:39084ceb8b5283a599aa48fc8f6bc10ff5d49d99029b9bf870d14e38ea7dcaf9"
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-directed"
-digest = "sha256:992e39bfe634b8840211372fa9de866b4b6843237b533bc695fc5d99efafb22b"
+digest = "sha256:902c801fdcb58ebe50eecf22122dc6858caaccc05d4e30fc43b9e5163eb1f90e"
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-discover"
-digest = "sha256:2a73dc94c2f48c9464874461f557b9bf70d361f3780eb3c2124f620c0753c59c"
+digest = "sha256:41489c997c9a9ee5d770c5a195b16bc36420b520d0a80af25e1bffab3aab10b0"
 
 [[tasks]]
 name = "checkout-v1/paypal-directed"
-digest = "sha256:d9f28810501951e6c65bbfdf5c3b1daa5ca97de243c6c76ecd7a6e4f5c261541"
+digest = "sha256:984776d9f6a7d3ab74a16db34c7d451e9da5a45e32d212e41297339b3a9d6613"
 
 [[tasks]]
 name = "checkout-v1/paypal-discover"
-digest = "sha256:d82adb5357dd327de1769aa5bfc84ca49540ba3f663b7d3b573f57fcd49c72b0"
+digest = "sha256:9dbfcd28cf8de009e31ed5262fa7d3e9eaa2da8e3ae4c15cc2386dcdef9fb3f9"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-directed"
-digest = "sha256:b95e0f5ab18cd4d3ad52917d68a6a6220a22459e143c8f7193089a28bcb1e280"
+digest = "sha256:eac14a9adf3364fd74154da9c1ccc7fbe97da568c682b0459a7af993d0b698ee"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-discover"
-digest = "sha256:42a14400876a7940dac5cda4047e53eff26e036bb4ca1421b6b332f27941f8f3"
+digest = "sha256:f63772351f4802dd4133caf4fe097dbcd3ea7f92f5806096f402d2575882f59d"
 
 [[tasks]]
 name = "checkout-v1/stripe-link-directed"
-digest = "sha256:2db032967bd43e4b1668cf318aef57a8ac6ab85ec95842e7121f4291da4e2e5c"
+digest = "sha256:001944f6d738dd287fbfee1e5b8160f732983f03452b2916b4a76320df498fc2"
 
 [[tasks]]
 name = "checkout-v1/stripe-link-discover"
-digest = "sha256:91072f46f58af257468499820a370b807c9b72905aa0132cf2876cc5db00273b"
+digest = "sha256:e0351777ca8ce76326b22d65a6eaf1773b66221254e55d06048fc7e7b8d9de50"
 

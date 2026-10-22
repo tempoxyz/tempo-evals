@@ -26,6 +26,10 @@ class CheckoutObservationTest(unittest.TestCase):
                 "tempo_mpp",
             ),
             (
+                {"payments": [{"paymentMethodType": "card", "status": "succeeded"}]},
+                "stripe_mpp",
+            ),
+            (
                 {"deliveries": [{"receiptMethod": "stripe"}]},
                 "stripe_mpp",
             ),
