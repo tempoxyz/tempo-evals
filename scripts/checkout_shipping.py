@@ -94,8 +94,8 @@ def generate(source: Path, target: Path, shared: Path) -> None:
     text = server.read_text()
     text = (
         (
-            "import { createShipping } from './shipping.js';\nconst ship"
-            "ping = createShipping('"
+            "import { createShipping } from './shipping.js';\n"
+            "const shipping = createShipping('"
         )
         + ("/buy" if mpp else "/checkout")
         + "');\n"

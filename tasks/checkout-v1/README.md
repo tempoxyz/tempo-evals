@@ -61,8 +61,16 @@ copied into every checkout task by `npm run sync`.
 
 The original ten payment-only tasks remain unchanged. Ten additional native
 Harbor tasks require the same recipient and shipping destination across all five
-merchants. Names add `-shipping` before the prompt condition, for example
-`stripe-card-shipping-discover` and `mpp-ousd-shipping-directed`.
+merchants. Shipping task names combine the payment adapter into one token to
+respect the repository's three-token task-name limit:
+
+| Discover task | Directed task |
+| --- | --- |
+| `stripecard-shipping-discover` | `stripecard-shipping-directed` |
+| `stripelink-shipping-discover` | `stripelink-shipping-directed` |
+| `paypal-shipping-discover` | `paypal-shipping-directed` |
+| `mppousd-shipping-discover` | `mppousd-shipping-directed` |
+| `mppcard-shipping-discover` | `mppcard-shipping-directed` |
 
 `config/tasks.yaml` maps each authored merchant to its shipping discover task.
 `npm run sync` generates these variants using `scripts/checkout_shipping.py`

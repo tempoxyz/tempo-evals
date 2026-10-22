@@ -7,25 +7,25 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/mpp-card-shipping-discover"
+name = "checkout-v1/stripecard-shipping-discover"
 description = "Buy a notebook and supply the requested shipping address."
-keywords = ["checkout", "mpp", "card", "payments"]
+keywords = ["checkout", "stripe", "payments", "browser"]
 
 [metadata]
 category = "checkout"
 benchmark = "checkout-bench-v1"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "Requires paying an MPP challenge with a prepared card token."
-solution_explanation = "The oracle pays the Stripe MPP challenge using the trial card token."
-verification_explanation = "The separate verifier checks one notebook delivery, the MPP receipt, and its sandbox card PaymentIntent against Stripe. The paid order must contain every requested shipping field."
-tags = ["checkout", "mpp", "card", "payments"]
+difficulty_explanation = "Requires navigation through a hosted payment page and use of a prepared sandbox payment method."
+solution_explanation = "The oracle completes the Stripe card checkout and returns to the merchant."
+verification_explanation = "The merchant queries Stripe after the attempt; the separate verifier checks the paid session, item, total, and PaymentIntent. The paid order must contain every requested shipping field."
+tags = ["checkout", "stripe", "browser", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
-scenario_id = "checkout-v1/mpp-card-shipping-discover"
+scenario_id = "checkout-v1/stripecard-shipping-discover"
 prompt_condition = "discover"
 required_method = ""
-credential_scenario_id = "checkout-v1/mpp-card-discover"
+credential_scenario_id = "checkout-v1/stripe-card-discover"
 purchase_scenario = "shipping"
 
 [agent]
@@ -37,7 +37,7 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts"
+command = "tsx /srv/snapshot.ts"
 timeout_sec = 90.0
 
 [environment]
