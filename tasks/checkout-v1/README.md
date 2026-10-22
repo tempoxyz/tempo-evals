@@ -120,9 +120,12 @@ passed.
 
 Exports keep `model_turns` as the agent-reported count for every trial.
 `efficiency_model_turns` separately records the trajectory count used for
-quality scoring and is blank when efficiency telemetry is unavailable.
+quality scoring. Trajectory turns and duration are collected for both successful
+and unsuccessful checkouts, even when retry counts are unknown. Missing
+trajectory telemetry stays blank; unsuccessful rewards and quality remain zero.
 When no MCP bridge trace exists, checkout exports count `mcp_calls` from native
-agent trajectory tool calls. Missing MCP latency and denial telemetry stays blank.
+agent trajectory tool calls. Checkout summary totals stay blank if any trial in
+the group lacks that metric, including MCP latency and denial counts.
 
 ## Current merchants
 
@@ -207,7 +210,10 @@ Page-published WebMCP tools are disabled to keep this infrastructure comparison
 on the same fixed browser toolset.
 Prompts, funded wallets, merchant implementations, oracles, verifier
 and rewards are identical across profiles. Agents can still install tools of
-their choice; this comparison does not restrict them to browser use.
+their choice; this comparison does not restrict them to browser use. Checkout
+enables Codex's live web search, while Claude Code retains its native research
+tools. Both can also fetch documentation and install dependencies through the
+terminal. Other suites retain their existing research settings.
 
 Each cloud trial creates its own provider session. Account API keys and the
 authenticated upstream CDP URL stay in a trusted Compose sidecar; it relays

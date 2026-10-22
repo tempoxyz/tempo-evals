@@ -57,11 +57,14 @@ class CheckoutGradingTest(unittest.TestCase):
                 efficiency_metrics(data, attempts)
 
     def test_native_rewards_with_real_rewardkit(self) -> None:
-        for passed, data, expected_quality in (
-            (True, trajectory(), 1),
-            (True, trajectory(20, 360), 0.87),
-            (False, None, 0),
-            (True, None, None),
+        for passed, data, attempts, expected_quality in (
+            (True, trajectory(), 0, 1),
+            (True, trajectory(20, 360), 0, 0.87),
+            (False, trajectory(20, 360), 2, 0),
+            (False, trajectory(), None, 0),
+            (False, None, None, 0),
+            (True, trajectory(), None, None),
+            (True, None, 0, None),
         ):
             with (
                 self.subTest(passed=passed, quality=expected_quality),
@@ -78,7 +81,7 @@ class CheckoutGradingTest(unittest.TestCase):
                     "log = Path(os.environ['STABLE_BENCH_LOG_DIR'])\n"
                     f"payment = {{'reward': {int(passed)}}}\n"
                     "(log/'reward.json').write_text(json.dumps(payment))\n"
-                    "details = {'extra_checkout_attempts': 0}\n"
+                    f"details = {{'extra_checkout_attempts': {attempts!r}}}\n"
                     "(log/'details.json').write_text(json.dumps(details))\n"
                 )
                 trajectory_path = root / "trajectory.json"
@@ -97,6 +100,12 @@ class CheckoutGradingTest(unittest.TestCase):
                 self.assertEqual(rewards["reward"], int(passed))
                 self.assertEqual(rewards["correctness"], int(passed))
                 self.assertEqual(rewards.get("quality"), expected_quality)
+                metrics = json.loads((log / "efficiency.json").read_text())
+                if data:
+                    self.assertGreater(metrics["model_turns"], 0)
+                    self.assertGreater(metrics["trajectory_duration_sec"], 0)
+                if not passed:
+                    self.assertFalse((log / "rewardkit-output.json").exists())
                 if expected_quality and data:
                     self.assertTrue((log / "rewardkit-output.json").is_file())
 

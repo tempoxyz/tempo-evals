@@ -1013,6 +1013,10 @@ def checkout_profile(options: dict[str, Any]) -> str:
     return "local" if profile == "docs" else profile
 
 
+def codex_web_search(options: dict[str, Any]) -> str:
+    return "live" if options.get("task_suite") == "checkout" else CODEX_WEB_SEARCH
+
+
 def apply_profile(config: dict[str, Any], profile_id: str) -> dict[str, Any]:
     if profile_id in CHECKOUT_PROFILES:
         for agent in config.get("agents", []):
@@ -1441,6 +1445,9 @@ def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str
         options.get("model"),
     )
     if options.get("task_suite") == "checkout":
+        for agent in result.get("agents", []):
+            if agent.get("name") == "codex":
+                agent.setdefault("kwargs", {})["web_search"] = codex_web_search(options)
         method = os.environ.get("CHECKOUT_ORACLE_PAYMENT_METHOD")
         if method:
             for agent in result.get("agents", []):
@@ -1700,7 +1707,7 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         agent = options.get("agent") or variant.get("default_agent") or "claude-code"
         args.extend(["--agent", agent])
         if agent == "codex":
-            args.extend(["--agent-kwarg", f"web_search={CODEX_WEB_SEARCH}"])
+            args.extend(["--agent-kwarg", f"web_search={codex_web_search(options)}"])
         if options.get("task_suite") == "checkout":
             args.extend(
                 ["--agent-env", f"CHECKOUT_BROWSER_PROFILE={options['profile']}"]

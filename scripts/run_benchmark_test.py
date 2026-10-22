@@ -57,6 +57,15 @@ def production_model_config() -> dict[str, Any]:
 
 
 class RunBenchmarkTest(unittest.TestCase):
+    def test_checkout_enables_codex_research_without_changing_tempo(self) -> None:
+        for suite, expected in (("checkout", "live"), ("tempo", "disabled")):
+            config = {
+                "agents": [{"name": "codex", "kwargs": {"web_search": "disabled"}}],
+                "datasets": [],
+            }
+            result = finalize_config(config, {"task_suite": suite})
+            self.assertEqual(result["agents"][0]["kwargs"]["web_search"], expected)
+
     def test_checkout_profile_uses_native_agent_metadata_for_oracles_too(self) -> None:
         for profile in ("local", "browserbase", "kernel"):
             config = {"agents": [{"name": "oracle"}, {"name": "claude-code"}]}

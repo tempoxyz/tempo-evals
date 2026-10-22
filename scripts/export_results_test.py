@@ -58,6 +58,30 @@ def trial(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
 
 
 class ExportResultsTest(unittest.TestCase):
+    def test_checkout_summary_requires_complete_telemetry_for_totals(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            job = Path(directory)
+            for suite in ("checkout-v1", "tempo-v1"):
+                for index in range(2):
+                    write_json(
+                        job / f"{suite}-{index}/result.json",
+                        trial(
+                            {
+                                "task_name": f"{suite}/stripe-card-discover",
+                                "trial_name": f"{suite}-{index}",
+                            }
+                        ),
+                    )
+            rows = export_results(job)["trials"]
+            for row in rows:
+                row["mcp_latency_ms"] = 25 if row["trial_name"].endswith("-0") else ""
+                row["mcp_calls"] = 0
+            summaries = summarize_rows(rows)
+            for row in summaries:
+                checkout = row["task_family"].startswith("checkout-v1/")
+                self.assertEqual(row["mcp_latency_ms"], "" if checkout else 25)
+                self.assertEqual(row["mcp_calls"], 0)
+
     def test_checkout_profile_survives_missing_task_snapshot(self) -> None:
         for profile in ("local", "browserbase", "kernel"):
             self.assertEqual(
@@ -408,6 +432,8 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["mcp_latency_ms"], "")
             self.assertEqual(row["mcp_denied_calls"], "")
             self.assertEqual(exported["summary"][0]["mcp_calls"], 2)
+            self.assertEqual(exported["summary"][0]["mcp_latency_ms"], "")
+            self.assertEqual(exported["summary"][0]["mcp_denied_calls"], "")
             self.assertTrue(row["eligible"])
             columns = pd.read_csv(Path(exported["out_dir"]) / "trials.csv").columns
             self.assertIn("payment_provider_type", columns)

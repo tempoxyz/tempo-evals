@@ -644,7 +644,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame["_error"] = frame["exception_type"].astype(bool).astype(int)
     checkout_columns = [key for key in CHECKOUT_SUMMARY_COLUMNS if key in frame]
     frame[checkout_columns] = frame[checkout_columns].fillna("")
-    for column in [
+    telemetry_columns = [
         "input_tokens",
         "cache_tokens",
         "output_tokens",
@@ -653,8 +653,11 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
         "mcp_calls",
         "mcp_denied_calls",
         "mcp_latency_ms",
-    ]:
-        frame[column] = pd.to_numeric(frame[column], errors="coerce").fillna(0)
+    ]
+    for column in telemetry_columns:
+        numeric = pd.to_numeric(frame[column], errors="coerce")
+        frame[f"_known_{column}"] = numeric.notna().astype(int)
+        frame[column] = numeric.fillna(0)
 
     group_columns = [
         "model",
@@ -686,6 +689,10 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             mcp_denied_calls=("mcp_denied_calls", "sum"),
             mcp_latency_ms=("mcp_latency_ms", "sum"),
             cost_usd=("cost_usd", "sum"),
+            **{
+                f"_known_{column}": (f"_known_{column}", "sum")
+                for column in telemetry_columns
+            },
         )
         .assign(
             pass_rate=lambda data: data["n_passed"] / data["n_trials"],
@@ -700,6 +707,11 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     )
     for column in ("mean_quality", "median_quality", "quality_at_k"):
         summary[column] = summary[column].where(summary[column].notna(), "")
+    checkout = summary["task_family"].str.startswith("checkout-v1/")
+    for column in telemetry_columns:
+        complete = summary[f"_known_{column}"] == summary["n_trials"]
+        # A partial total is not the total for the checkout group.
+        summary[column] = summary[column].where(~checkout | complete, "")
     results = summary[[*SUMMARY_COLUMNS, *checkout_columns]].to_dict("records")
     for result in results:
         if str(result["task_family"]).startswith("checkout-v1/"):
