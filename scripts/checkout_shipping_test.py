@@ -123,7 +123,10 @@ class CheckoutShippingTest(unittest.TestCase):
                     self.assertEqual(
                         (task / target).read_bytes(), (SHARED / source).read_bytes()
                     )
-                self.assertIn(
-                    "including the apartment", (task / "instruction.md").read_text()
-                )
+                instruction = (task / "instruction.md").read_text()
+                self.assertIn("including the apartment", instruction)
+                for field, value in json.loads(
+                    (SHARED / "address.json").read_text()
+                ).items():
+                    self.assertIn(f"- {field}: {value}", instruction)
                 self.assertFalse((task / "environment/merchant/shipping.json").exists())
