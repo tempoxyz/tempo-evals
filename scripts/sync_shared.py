@@ -257,6 +257,14 @@ def sync_mpp_tasks() -> int:
     return len(tasks)
 
 
+def sync_checkout_wallet() -> None:
+    for task_dir in checkout_task_dirs():
+        copy_file(
+            CHECKOUT_SHARED_DIR / "wallet/link_setup.js",
+            task_dir / "environment/link/link_setup.js",
+        )
+
+
 def sync_checkout_grading() -> None:
     for task_dir in checkout_task_dirs():
         for relative in (
@@ -383,6 +391,7 @@ def main() -> None:
     dockerfile_count = sync_task_dockerfiles()
     mcp_task_count = sync_mcp_oracles()
     mpp_task_count = sync_mpp_tasks()
+    sync_checkout_wallet()
     sync_checkout_grading()
     sync_checkout_prompt_variants()
     write_dataset_manifest()

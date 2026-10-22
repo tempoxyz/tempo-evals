@@ -22,7 +22,9 @@ def payment_observations(snapshot: object) -> dict:
     ]
     methods = [row.get("paymentMethodType") for row in [*intents, *records("orders")]]
     methods.extend(
-        "tempo_mpp" if row.get("receiptMethod") == "tempo" else row.get("receiptMethod")
+        {"tempo": "tempo_mpp", "stripe": "stripe_mpp"}.get(
+            row.get("receiptMethod"), row.get("receiptMethod")
+        )
         for row in records("deliveries")
     )
     observed = sorted(

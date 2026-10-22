@@ -97,6 +97,23 @@ class SyncSharedTest(unittest.TestCase):
                     },
                 )
 
+    def test_checkout_wallet_setup_is_shared(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory)
+            for name in ("first", "second"):
+                task = checkout / name
+                task.mkdir()
+                (task / "task.toml").write_text('[task]\nname = "checkout-v1/test"\n')
+            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+                sync_shared.sync_checkout_wallet()
+            for name in ("first", "second"):
+                self.assertEqual(
+                    (checkout / name / "environment/link/link_setup.js").read_bytes(),
+                    (
+                        sync_shared.CHECKOUT_SHARED_DIR / "wallet/link_setup.js"
+                    ).read_bytes(),
+                )
+
     def test_checkout_grading_copies_only_to_checkout_tasks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory) / "checkout"

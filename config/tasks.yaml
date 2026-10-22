@@ -56,6 +56,10 @@ checkout:
       task: paypal-directed
       method: paypal
       instruction: Use PayPal to pay.
+    mpp-card-discover:
+      task: mpp-card-directed
+      method: stripe_mpp
+      instruction: Use card over MPP to pay.
     mpp-ousd-discover:
       task: mpp-ousd-directed
       method: tempo_mpp

@@ -1,6 +1,6 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Eight Harbor tasks cover four
+Planned dataset: `tempo/checkout-bench-v1`. Ten Harbor tasks cover five
 merchants with discover and directed prompts. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
@@ -29,15 +29,16 @@ Every merchant has two native Harbor tasks in the same dataset:
 | `stripe-link-discover` | `stripe-link-directed` | Use Link to pay. |
 | `paypal-discover` | `paypal-directed` | Use PayPal to pay. |
 | `mpp-ousd-discover` | `mpp-ousd-directed` | Use MPP to pay. |
+| `mpp-card-discover` | `mpp-card-directed` | Use card over MPP to pay. |
 
-The original four tasks are the authored sources. `config/tasks.yaml` declares
+The five discover tasks are the authored sources. `config/tasks.yaml` declares
 peer names and method instructions; `npm run sync` generates their standalone
 directed task directories. Edit the source task to change a pair's merchant,
 wallet setup, oracle, verifier, or scoring. Only the task name, provenance marker,
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all eight tasks, including oracle runs. Use
+`--task-suite checkout` runs all ten tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -47,7 +48,7 @@ runs.
 Native `task.toml` fields record `scenario_id`, `prompt_condition`, and
 `required_method`. Preflight reuses the scenario identity for credential checks.
 Exports prefer the trial's staged task metadata and keep prompt conditions
-separate in task and suite quality summaries. MPP's method is `tempo_mpp`.
+separate in task and suite quality summaries. OUSD MPP's method is `tempo_mpp`; card MPP's method is `stripe_mpp`.
 
 `observed_method` comes from provider or receipt evidence, including failed
 checkouts. It is blank when unknown or when multiple methods were observed;
@@ -129,7 +130,7 @@ the group lacks that metric, including MCP latency and denial counts.
 
 ## Current merchants
 
-All four merchant scenarios request one Tempo Notebook for at most $12 and use
+All five merchant scenarios request one Tempo Notebook for at most $12 and use
 the same purchase request and Playwright browser. Each trial wallet lists its
 prepared payment methods. Only directed prompts name the method to use. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
@@ -144,6 +145,7 @@ merchant through it.
 | `stripe-card-discover` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
 | `stripe-link-discover` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
 | `mpp-ousd-discover` | MPP OUSD paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient OUSD balance |
+| `mpp-card-discover` | Stripe MPP card paid endpoint only | One notebook delivery and MPP receipt matched to a captured, unrefunded sandbox card PaymentIntent |
 | `paypal-discover` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
 Every trial runs the same wallet, Link enrollment, and browser services before
 the agent starts. After Link enrollment, a shared Compose readiness step opens
@@ -155,6 +157,18 @@ same wallet fields and payment methods across tasks; merchant and verifier
 sidecars differ. MPP agents receive no preinstalled payment helper or payment
 SDK and may install the dependencies they choose. Merchant credentials stay in
 trusted sidecars.
+
+The common Link setup is authored in `shared/checkout/wallet/link_setup.js`
+and copied to every task by sync. It also prepares a unique, one-use Stripe
+sandbox shared payment token (SPT), with a $12 USD limit and two-hour expiry,
+under `card.sharedPaymentToken` in the wallet inventory. The agent receives the
+token and its limits, never the Stripe secret key. This uses Stripe's official
+[granted-token test helper](https://docs.stripe.com/agentic-commerce/concepts/shared-payment-tokens)
+without an interactive Link CLI authorization. It evaluates paying an MPP
+challenge with an already prepared card credential; it does not evaluate
+obtaining a credential or purchase approval. The `mpp-card` merchant advertises
+only Stripe MPP card payments and independently lists this trial's Stripe
+PaymentIntents during verification, including charges without a delivery.
 
 Set `STRIPE_TEST_SECRET_KEY`, `PAYPAL_SANDBOX_BUYER_EMAIL`, and
 `PAYPAL_SANDBOX_BUYER_PASSWORD` for every checkout task. Link also requires
@@ -176,7 +190,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all eight discover/directed tasks per job. Model trials retain the shared pair
+all ten discover/directed tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

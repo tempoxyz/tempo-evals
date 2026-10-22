@@ -1,3 +1,4 @@
+// SYNCED FROM shared/checkout/wallet/link_setup.js BY npm run sync. DO NOT EDIT COPIES.
 import { randomInt } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 
@@ -39,6 +40,7 @@ async function stripe(path, options = {}) {
     headers: {
       authorization: `Bearer ${key}`,
       ...(options.body ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
+      ...options.headers,
     },
     signal: AbortSignal.timeout(30000),
   });
@@ -124,6 +126,28 @@ async function main() {
 
     const closed = await browserRpc('tools/call', { name: 'browser_close', arguments: {} });
     if (closed.isError) throw new Error('Link setup browser did not close');
+    // Prepare the same one-use card credential for every checkout task. The
+    // test helper grants this account an SPT without exposing its API key.
+    const expiresAt = Math.floor(Date.now() / 1000) + 7200;
+    const token = await stripe('/test_helpers/shared_payment/granted_tokens', {
+      method: 'POST',
+      headers: { 'Stripe-Version': '2026-07-29.preview' },
+      body: new URLSearchParams({
+        payment_method: 'pm_card_visa',
+        'usage_limits[currency]': 'usd',
+        'usage_limits[max_amount]': '1200',
+        'usage_limits[expires_at]': String(expiresAt),
+      }),
+    });
+    if (!token.id?.startsWith('spt_') || token.livemode !== false
+      || token.payment_method_details?.type !== 'card'
+      || token.usage_limits?.max_amount !== 1200 || token.usage_limits?.currency !== 'usd') {
+      throw new Error('Stripe did not prepare a sandbox card token');
+    }
+    wallet.card.sharedPaymentToken = token.id;
+    wallet.card.sharedPaymentTokenExpiresAt = expiresAt;
+    wallet.card.sharedPaymentTokenMaxAmount = 1200;
+    wallet.card.sharedPaymentTokenCurrency = 'usd';
     wallet.link.phone = phone;
     writeFileSync('/wallet/wallet.json', JSON.stringify(wallet, null, 2) + '\n');
     writeFileSync('/wallet/link-ready', '');

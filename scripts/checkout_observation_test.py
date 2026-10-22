@@ -25,6 +25,10 @@ class CheckoutObservationTest(unittest.TestCase):
                 {"deliveries": [{"item": "Wrong item", "receiptMethod": "tempo"}]},
                 "tempo_mpp",
             ),
+            (
+                {"deliveries": [{"receiptMethod": "stripe"}]},
+                "stripe_mpp",
+            ),
         ):
             with self.subTest(snapshot=snapshot):
                 self.assertEqual(
