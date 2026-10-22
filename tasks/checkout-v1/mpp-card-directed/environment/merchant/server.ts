@@ -15,7 +15,7 @@ const mppx = Mppx.create({
   secretKey: randomBytes(32).toString('hex'),
 });
 const charge = mppx.stripe.charge({
-  amount: '12', currency: 'usd', description: 'Tempo Notebook', externalId: orderId,
+  amount: '12', currency: 'usd', decimals: 2, description: 'Tempo Notebook', externalId: orderId,
   paymentIntentOptions: { metadata: { checkout_trial_id: trialId, order_id: orderId } },
 });
 const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p><a href="/buy">Buy notebook</a></main></body></html>';
