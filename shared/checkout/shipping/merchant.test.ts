@@ -37,6 +37,11 @@ test('shipping form and API preserve entered fields and bind immutable orders', 
     const post = async (shipping: any) => fetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping }) });
     assert.equal((await post({ name: 'Missing fields' })).status, 400);
     assert.equal((await post({ ...address, country: 'United States' })).status, 400);
+    const mixedCase = await fetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'Application/JSON ; charset=utf-8' }, body: JSON.stringify({ shipping: address }) });
+    assert.equal(mixedCase.status, 201);
+    const missingHeader = await fetch(base + '/shipping', { method: 'POST', body: JSON.stringify({ shipping: address }) });
+    assert.equal(missingHeader.status, 400);
+    assert.match((await missingHeader.json()).error, /Content-Type: application\/json/);
     const first = await post(address);
     assert.equal(first.status, 201);
     const a = await first.json();
@@ -52,7 +57,7 @@ test('shipping form and API preserve entered fields and bind immutable orders', 
     assert.deepEqual(current.shipping, address);
     assert.equal((await fetch(base + '/shipping?order_id=' + a.orderId, { method: 'PUT' })).status, 404);
     assert.equal(shippingOrders().filter((o: any) => o.id === a.orderId).length, 1);
-    assert.deepEqual(shippingOrders()[0].shipping, address);
+    assert.deepEqual(shippingOrders().find((o: any) => o.id === a.orderId).shipping, address);
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()));
     rmSync(directory, { recursive: true, force: true });

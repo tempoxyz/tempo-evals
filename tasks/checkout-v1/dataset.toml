@@ -27,19 +27,19 @@ digest = "sha256:41489c997c9a9ee5d770c5a195b16bc36420b520d0a80af25e1bffab3aab10b
 
 [[tasks]]
 name = "checkout-v1/mppcard-shipping-directed"
-digest = "sha256:310dfa759019a00bf6475dcbd248066c8adecf0c557c32c57abb9e5eacd87d6a"
+digest = "sha256:fc945a3140768b999d6e940b82f6245c57a60a500b662e878f3b19ac55564d59"
 
 [[tasks]]
 name = "checkout-v1/mppcard-shipping-discover"
-digest = "sha256:fac81aa697a09f2a09015d9188d6b13f9577cdfe02ac49838c418522f1f5d854"
+digest = "sha256:f884f4d92f675963d42c7915943727eacb5c8f94a55433387644f7883d89b060"
 
 [[tasks]]
 name = "checkout-v1/mppousd-shipping-directed"
-digest = "sha256:31e79a22502c3c283b981d08d9c5b2f10f90065d4cd1645c727c6282ce84c9ff"
+digest = "sha256:218e5ce5bbfb68de3e926426df9c5465ddfe391b43580c2aa315abb7a434066a"
 
 [[tasks]]
 name = "checkout-v1/mppousd-shipping-discover"
-digest = "sha256:d36d89d9e18e0cf21967a1bd1d41bdeeac1e76cdb4468a763db7a6876a61dc42"
+digest = "sha256:c9d597f087f5e5c6469c7ae6526beb3004ead724ce4350163ab9855c7674e80b"
 
 [[tasks]]
 name = "checkout-v1/paypal-directed"
@@ -51,11 +51,11 @@ digest = "sha256:9dbfcd28cf8de009e31ed5262fa7d3e9eaa2da8e3ae4c15cc2386dcdef9fb3f
 
 [[tasks]]
 name = "checkout-v1/paypal-shipping-directed"
-digest = "sha256:7d7b6880511c6465e71d16b32f805248864e92ef13c65ffda94da7f16d348e90"
+digest = "sha256:295049aee3c8e081a115e67e9a494238ad456ef5590734f0b7bee89a6dec6ae9"
 
 [[tasks]]
 name = "checkout-v1/paypal-shipping-discover"
-digest = "sha256:f25c7659e2cea99346b6e58c0923b32d7cd9125f86330d88e653c44cb5ef50b9"
+digest = "sha256:9fadbeab531314f92bd066ee935fd353360c732f5d05c70bf91ee46109bfd03b"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-directed"
@@ -75,17 +75,17 @@ digest = "sha256:e0351777ca8ce76326b22d65a6eaf1773b66221254e55d06048fc7e7b8d9de5
 
 [[tasks]]
 name = "checkout-v1/stripecard-shipping-directed"
-digest = "sha256:5320f040e306ccf98a9aa64bd00554d90b12bf559d9cc191951a9d60e31d5d3f"
+digest = "sha256:50470036e62e3d7890a7d923454070e30a546ff61d6867325a3d9e28545ccca2"
 
 [[tasks]]
 name = "checkout-v1/stripecard-shipping-discover"
-digest = "sha256:95d8ae3fb31508274ad4110eb59e699fdc90dc7a80859ce8a889a40642d17dce"
+digest = "sha256:d2b52ab5d624e611895fe89daccc446d873134883d8f9191b8424068c7f0734c"
 
 [[tasks]]
 name = "checkout-v1/stripelink-shipping-directed"
-digest = "sha256:cfdcf17d21ec7348b73d85e060fe8ce055d5b872ff10b7c2ae5b486c2ea905b7"
+digest = "sha256:4bd3fcadaa9b420af42d2fa15da934fb8013143824e71fcba8c165a4be654319"
 
 [[tasks]]
 name = "checkout-v1/stripelink-shipping-discover"
-digest = "sha256:a294bfbac3b4ec0824ba7a511bf94e4c2579d12ca8a2b20c926615a0546d5c4f"
+digest = "sha256:00d1c255e1d473f8f88d006a7d155a52e78109dc9de56f5af57832fa054ff5ba"
 
