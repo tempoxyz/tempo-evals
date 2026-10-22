@@ -11,11 +11,11 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v1/mpp-card-directed"
-digest = "sha256:25dbdc50fe36fd71b4542ae3840831abe92d71c9ee133cfb8ca8d8ce3e7629ab"
+digest = "sha256:7c52aceb93d169f6d5fb083677c1bd18370a1e36a0cbb22df8d2143fff67ff16"
 
 [[tasks]]
 name = "checkout-v1/mpp-card-discover"
-digest = "sha256:39084ceb8b5283a599aa48fc8f6bc10ff5d49d99029b9bf870d14e38ea7dcaf9"
+digest = "sha256:0ea32532db5a2a87701778ad362c4c3ea508344354bba677a4c694aed43cf18a"
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-directed"
