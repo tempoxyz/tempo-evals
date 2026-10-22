@@ -21,7 +21,8 @@ independently of the prompt condition.
 
 ## Payment prompt pairs
 
-Every merchant has two native Harbor tasks in the same dataset:
+Every merchant has discover/directed native Harbor tasks in each scenario.
+The baseline pairs are:
 
 | Discover task | Directed task | Added instruction |
 | --- | --- | --- |
@@ -76,7 +77,9 @@ respect the repository's three-token task-name limit:
 `npm run sync` generates these variants using `scripts/checkout_shipping.py`
 and the shared assets in `shared/checkout/shipping/`, then generates their
 directed peers through the existing prompt-pair mechanism. Edit the shared
-shipping assets or original payment adapter; do not edit generated task copies.
+shipping assets and its checked-in merchant adapters; do not edit generated task
+copies. Payment verifiers, snapshots, wallet setup and oracles reuse the original
+payment tasks.
 The wallet, Link enrollment, browser profiles, time limits, payment checks,
 quality formula, item, quantity and $12 total are shared with the baseline.
 Use `--task-filter '*-shipping-*'` to run the shipping cohort.
