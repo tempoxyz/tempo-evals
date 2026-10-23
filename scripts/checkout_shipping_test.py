@@ -129,7 +129,13 @@ class CheckoutShippingTest(unittest.TestCase):
                     del missing["shippingOrders"][0]["shipping"]["line2"]
                     self.assertFalse(verifier.check(missing)[0])
                     unpaid = copy.deepcopy(paid)
-                    for key in ("sessions", "intents", "orders", "deliveries"):
+                    for key in (
+                        "sessions",
+                        "intents",
+                        "orders",
+                        "deliveries",
+                        "transactions",
+                    ):
                         if key in unpaid:
                             unpaid[key] = []
                     self.assertFalse(verifier.check(unpaid)[0])
@@ -156,12 +162,15 @@ class CheckoutShippingTest(unittest.TestCase):
                 finally:
                     sys.path[:] = original_path
 
-    def test_shipping_is_shared_by_the_ten_default_tasks(self):
+    def test_shipping_is_shared_by_all_checkout_tasks(self):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs()
+        expected |= {
+            slug.rsplit("-", 1)[0] + "-prepared-" + slug.rsplit("-", 1)[1]
+            for slug in sync_shared.TASKS_CONFIG["checkout"]["prepared"]
+        }
         self.assertEqual({p.name for p in tasks}, expected)
-        self.assertEqual(len(tasks), 10)
         for task in tasks:
             with self.subTest(task=task.name):
                 self.assertNotIn("shipping", task.name)

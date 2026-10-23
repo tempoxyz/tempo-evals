@@ -260,6 +260,9 @@ invalid-name=ignored
 
     def test_checkout_production_all_preflights_before_expanding_jobs(self) -> None:
         credentials = {
+            "BRAINTREE_MERCHANT_ID": "test",
+            "BRAINTREE_PUBLIC_KEY": "test",
+            "BRAINTREE_PRIVATE_KEY": "test",
             "STRIPE_TEST_SECRET_KEY": "sk_test_fake",
             "STRIPE_TEST_PUBLISHABLE_KEY": "pk_test_fake",
             "PAYPAL_SANDBOX_BUYER_EMAIL": "test@example.com",

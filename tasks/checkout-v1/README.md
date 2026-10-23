@@ -1,6 +1,6 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Ten Harbor tasks cover five
+Planned dataset: `tempo/checkout-bench-v1`. Sixteen Harbor tasks cover six
 merchants with required shipping and discover/directed prompts. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
@@ -30,15 +30,50 @@ Every merchant has discover/directed native Harbor tasks:
 | `paypal-discover` | `paypal-directed` | Use PayPal to pay. |
 | `mpp-ousd-discover` | `mpp-ousd-directed` | Use MPP to pay. |
 | `mpp-card-discover` | `mpp-card-directed` | Use card over MPP to pay. |
+| `braintree-card-discover` | `braintree-card-directed` | Use card to pay. |
 
-The five discover tasks are the authored sources. `config/tasks.yaml` declares
+### Prepared MPP tasks
+
+Four additional tasks insert `-prepared-` before the prompt condition:
+`mpp-card-prepared-discover`, `mpp-card-prepared-directed`,
+`mpp-ousd-prepared-discover`, and `mpp-ousd-prepared-directed`.
+They share their cold source's merchant, wallet, oracle and grading. The agent
+image additionally installs pinned mppx, viem and tsx under `/opt/mpp-client`
+and the prompt points to a generic client usage guide. This measures a prepared
+client plus instructions, separately from cold discovery. It does not test
+preinstallation alone or an already authenticated browser wallet.
+
+`config/tasks.yaml` lists the source tasks; sync generates all prepared copies
+from those sources and `shared/checkout/prepared/`. Metadata and exports record
+`mpp_client_profile=prepared` (existing tasks export `cold`). Prepared and cold
+results remain separate in quality summaries. Use
+`--task-filter 'mpp-*-prepared-*'` to run the four new tasks with any browser
+profile. Existing cold prompts and runtime dependencies remain unchanged.
+
+### Braintree card
+
+The Braintree pair uses Hosted Fields for card entry and an explicitly sandbox
+gateway. Set `BRAINTREE_MERCHANT_ID`, `BRAINTREE_PUBLIC_KEY`, and
+`BRAINTREE_PRIVATE_KEY` in the ignored checkout env file. The new task's wallet
+uses Braintree-compatible Mastercard test details, which also support its
+shared Stripe Link enrollment. The merchant keys stay in the trusted sidecar.
+
+The verifier searches sandbox transactions by a unique trial reference, even
+when a checkout response was lost, and requires exactly one unrefunded card
+sale for USD 12 submitted for settlement, settling or settled. Authorization
+alone is insufficient. The reference must match the immutable shipping order;
+the common shipping verifier checks the complete requested destination. Every
+trial has independent orders and wallet state, so shared merchant credentials
+do not serialize concurrent runs.
+
+The six discover tasks are the authored sources. `config/tasks.yaml` declares
 peer names and method instructions; `npm run sync` generates their standalone
 directed task directories. Edit the source task to change a pair's merchant,
 wallet setup, oracle, verifier, or scoring. Only the task name, provenance marker,
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all ten tasks, including oracle runs. Use
+`--task-suite checkout` runs all sixteen tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -63,7 +98,7 @@ Every checkout task requires the same recipient and full shipping destination.
 Shipping is part of the default task, alongside buying one Tempo Notebook for
 $12; there are no separate shipping task variants.
 
-The five discover tasks own their merchant adapters, provider snapshots and
+The six discover tasks own their merchant adapters, provider snapshots and
 oracles. Shared shipping input, order storage, address fixture and verifier
 live in `shared/checkout/shipping/`; `npm run sync` copies these assets into
 each task before generating directed peers. The provider-specific
@@ -77,7 +112,7 @@ apartment/suite, city, state code, postal code and country code. The apartment
 field is optional in the generic store but required by this task's destination.
 API clients can submit the same fields as a `shipping` JSON object to
 `POST /shipping`; the response returns an order-specific `paymentUrl`. This is
-available across all five merchants. Agents choose their own interaction tools.
+available across all six merchants. Agents choose their own interaction tools.
 
 Submitted destinations are stored as immutable, trial-local orders. The store
 checks input structure, not whether it matches the expected answer. Payment
@@ -192,8 +227,8 @@ npm run bench:production -- --task-suite checkout --profile all \
   --verifier-image "$(npm run --silent verifier-image:ref)"
 ```
 
-This is 180 trials: five merchants, two prompt conditions, three browser
-profiles, six models. The model configuration pins Claude Code and Codex
+The original ten-task baseline had 180 trials. The expanded sixteen-task suite
+has 288 trials across three browser profiles and six models. The model configuration pins Claude Code and Codex
 versions through native Harbor agent kwargs; existing model configs are unchanged.
 
 Keep each native job directory to recompute quality later. `trials.csv` exposes
@@ -236,7 +271,7 @@ included in this fallback.
 
 ## Current merchants
 
-All five merchant scenarios request one Tempo Notebook for at most $12 and use
+All six merchant scenarios request one Tempo Notebook for at most $12 and use
 the same purchase request and Playwright browser. Each trial wallet lists its
 prepared payment methods. Only directed prompts name the method to use. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
@@ -253,6 +288,7 @@ merchant through it.
 | `mpp-ousd-discover` | MPP OUSD paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient OUSD balance |
 | `mpp-card-discover` | Stripe MPP card paid endpoint only | One notebook delivery and MPP receipt matched to a captured, unrefunded sandbox card PaymentIntent |
 | `paypal-discover` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
+| `braintree-card-discover` | Braintree Hosted Fields card form | One unrefunded sandbox card sale submitted for settlement and matching shipping order |
 Every trial runs the same wallet, Link enrollment, and browser services before
 the agent starts. After Link enrollment, a shared Compose readiness step opens
 the merchant through the selected browser. A broken browser connection fails
@@ -260,8 +296,9 @@ environment setup before the agent starts. The wallet service creates a fresh
 Tempo testnet payer and confirms its faucet funding independently of other
 trials. Link enrollment prepares a unique identity using a synthetic sandbox card. The agent sees the
 same wallet fields and payment methods across tasks; merchant and verifier
-sidecars differ. MPP agents receive no preinstalled payment helper or payment
-SDK and may install the dependencies they choose. Merchant credentials stay in
+sidecars differ. Cold MPP agents receive no preinstalled payment helper or payment
+SDK and may install the dependencies they choose. Prepared tasks add the client
+and guide described above. Merchant credentials stay in
 trusted sidecars.
 
 The common Link setup is authored in `shared/checkout/wallet/link_setup.js`
@@ -296,7 +333,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all ten discover/directed tasks per job. Model trials retain the shared pair
+all sixteen tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

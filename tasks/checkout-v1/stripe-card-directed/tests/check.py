@@ -24,6 +24,12 @@ def paid_order_id(snapshot):
             ),
         ),
         ("deliveries", lambda row: row.get("receiptStatus") == "success"),
+        (
+            "transactions",
+            lambda row: (
+                row.get("status") in {"submitted_for_settlement", "settling", "settled"}
+            ),
+        ),
     ):
         for row in snapshot.get(key, []):
             if isinstance(row, dict) and predicate(row):

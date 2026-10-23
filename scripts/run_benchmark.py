@@ -427,6 +427,17 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             missing = [name for name in required if not os.environ.get(name)]
             if missing:
                 raise RuntimeError(f"PayPal checkout runs require {', '.join(missing)}")
+        if "braintree-card-discover" in selected:
+            required = (
+                "BRAINTREE_MERCHANT_ID",
+                "BRAINTREE_PUBLIC_KEY",
+                "BRAINTREE_PRIVATE_KEY",
+            )
+            missing = [name for name in required if not os.environ.get(name)]
+            if missing:
+                raise RuntimeError(
+                    f"Braintree checkout runs require {', '.join(missing)}"
+                )
     effective_agents = effective_agent_names(variant, options)
     needs_agent_auth = variant.get("needs_agent_auth") and effective_agents
     if needs_agent_auth and "claude-code" in effective_agents and not has_claude_auth():

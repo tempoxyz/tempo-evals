@@ -10,3 +10,4 @@ tasks/mpp/*/tests/correctness/verify.sh linguist-generated=true
 tasks/mpp/*/tests/quality/check.py linguist-generated=true
 tasks/mpp/*/tests/test.sh linguist-generated=true
 tasks/checkout-v1/*-directed/** linguist-generated=true
+tasks/checkout-v1/*-prepared-*/** linguist-generated=true

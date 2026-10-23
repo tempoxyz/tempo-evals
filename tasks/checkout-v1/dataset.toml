@@ -10,42 +10,66 @@ name = "Tempo Labs"
 
 
 [[tasks]]
+name = "checkout-v1/braintree-card-directed"
+digest = "sha256:b391cc1c0676dbcc1f2f332523b79ed0bec348b44f0534e10c59b322c9af7842"
+
+[[tasks]]
+name = "checkout-v1/braintree-card-discover"
+digest = "sha256:90fccb916f5538616fabb4b6dea2d085eb573d34b5c06b143055bc2150db2a94"
+
+[[tasks]]
 name = "checkout-v1/mpp-card-directed"
-digest = "sha256:4212e704890d007a3f854f52998375a0de3f8eefc434664f3bd39c4ff7d79b63"
+digest = "sha256:e5048ab3ef370a33acdb28e65abc03ae2cb4b15be3b5e03600f9471912c26fea"
 
 [[tasks]]
 name = "checkout-v1/mpp-card-discover"
-digest = "sha256:cb4238df1eb44fdc6c345e628dc576ecbdbcdebcc920540215b1246b1962de44"
+digest = "sha256:f88d3355c288016fc03bf829cf0d2d73de5b92b233cc1a0f3e09c7cf748cde9a"
+
+[[tasks]]
+name = "checkout-v1/mpp-card-prepared-directed"
+digest = "sha256:2d4059b2ea51e469d9f57472140ac6ca49ee590568493a4d870209886445b082"
+
+[[tasks]]
+name = "checkout-v1/mpp-card-prepared-discover"
+digest = "sha256:e3731d1c100f55ff30bd571f9e1957fe1f7ef75656c528feeb1631b88a8e5463"
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-directed"
-digest = "sha256:a7fac8ee787b976ab76e0b63ffc143b950a272a3e5ccab35325458e35a02ea25"
+digest = "sha256:69e088c7f1164861281ce4139e8c62c87eb5149124337c6becf0830cc53b53ce"
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-discover"
-digest = "sha256:cf91fdaa5ba05776548abe55c8a82f0cbec3169a56468da9892e5ab7e17d98c8"
+digest = "sha256:0f60edbe5b2be092db1a312f06d157799a26b38d0003fd9b3c9eb165fd4bb2e6"
+
+[[tasks]]
+name = "checkout-v1/mpp-ousd-prepared-directed"
+digest = "sha256:85e25fa17a273a1dc96a5acb7afb7e5c17a9acd9c79bced491c9876f3b8fdad5"
+
+[[tasks]]
+name = "checkout-v1/mpp-ousd-prepared-discover"
+digest = "sha256:9114cc3f199b2c6f725b2aaf130b382bb552fd6e98e02d077894743e3ff9ccfb"
 
 [[tasks]]
 name = "checkout-v1/paypal-directed"
-digest = "sha256:2f6571bc482db1427e2eb86bf3fcd89446566189c855c92b73478a56b5bec404"
+digest = "sha256:6a51b60ed01cd49562a772684e434e93d9420169475b98d82e12cecc56c89a82"
 
 [[tasks]]
 name = "checkout-v1/paypal-discover"
-digest = "sha256:563672a047a8c365997290f436c2bb47ef02291d0aa3d6fb24cb129644e7fd3f"
+digest = "sha256:3fef0858eb5266d7265efe5edf975bb45d86a38d221b55e8b0b4e2384d071d17"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-directed"
-digest = "sha256:a8a99021c27975ad3ef895bd8327818c5858fabe63411146244dc8ea556492ca"
+digest = "sha256:eb1474cb2c2f3da472258f60afbfe3fffe78a6e1338c557fb55385c48bb12f3a"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-discover"
-digest = "sha256:39cfdb4ff846cf25304c6422f8de76a45dfb925650832f0ae633504aa29a407a"
+digest = "sha256:82e957a3703e681ae751b9bfee118c51694c3d4a3baf77d1421513b9f6980484"
 
 [[tasks]]
 name = "checkout-v1/stripe-link-directed"
-digest = "sha256:a7feaacf790eb7cd2a31d64117f5534b0cb341252899cfa8a0a17641ae659edc"
+digest = "sha256:89dd2988eb9a62086a84cdfedd8e2ea70f598b2d32e7abed17570fb2526c54b2"
 
 [[tasks]]
 name = "checkout-v1/stripe-link-discover"
-digest = "sha256:6313963376f25ead39505fbd29d7c0e4e848736cf82de0425e995ef2b758d25c"
+digest = "sha256:43881bde13ad555a42bb0110a153e7fd5638a694de340680c2ad7a54e20c3b75"
 

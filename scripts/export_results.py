@@ -75,6 +75,7 @@ TRIAL_COLUMNS = [
     "result_path",
 ]
 CHECKOUT_TRIAL_COLUMNS = [
+    "mpp_client_profile",
     "scenario_id",
     "prompt_condition",
     "required_method",
@@ -102,7 +103,12 @@ CHECKOUT_TRIAL_COLUMNS = [
     "trajectory_path",
     "quality_unavailable",
 ]
-CHECKOUT_SUMMARY_COLUMNS = ["scenario_id", "prompt_condition", "required_method"]
+CHECKOUT_SUMMARY_COLUMNS = [
+    "scenario_id",
+    "prompt_condition",
+    "required_method",
+    "mpp_client_profile",
+]
 
 SUMMARY_COLUMNS = [
     "run_id",
@@ -262,12 +268,21 @@ def checkout_task_metadata(task_name: str, task_path: str = "") -> JsonObject:
 
 def checkout_prompt_metadata(task_name: str, task_path: str = "") -> dict[str, str]:
     metadata = checkout_task_metadata(task_name, task_path)
-    if all(key in metadata for key in CHECKOUT_SUMMARY_COLUMNS):
-        return {key: as_string(metadata.get(key)) for key in CHECKOUT_SUMMARY_COLUMNS}
+    if all(
+        key in metadata
+        for key in ("scenario_id", "prompt_condition", "required_method")
+    ):
+        return {
+            key: as_string(
+                metadata.get(key, "cold" if key == "mpp_client_profile" else "")
+            )
+            for key in CHECKOUT_SUMMARY_COLUMNS
+        }
     return {
         "scenario_id": task_name,
         "prompt_condition": "unknown",
         "required_method": "",
+        "mpp_client_profile": "unknown",
     }
 
 
@@ -996,6 +1011,10 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
         frame["prompt_condition"] = frame["prompt_condition"].fillna("")
         group_columns = [*group_columns, "prompt_condition"]
         columns = [*columns, "prompt_condition"]
+        if "mpp_client_profile" in frame:
+            frame["mpp_client_profile"] = frame["mpp_client_profile"].fillna("")
+            group_columns = [*group_columns, "mpp_client_profile"]
+            columns = [*columns, "mpp_client_profile"]
     task_quality = frame.groupby(
         [*group_columns, "task_family"], as_index=False, sort=False
     ).agg(quality_at_k=("_quality", "max"))

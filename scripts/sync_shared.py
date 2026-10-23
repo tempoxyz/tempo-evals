@@ -347,6 +347,66 @@ def sync_checkout_prompt_variants() -> None:
         )
 
 
+def sync_checkout_prepared_variants() -> None:
+    """Keep the prepared-client intervention separate from the cold tasks."""
+    for slug in TASKS_CONFIG["checkout"].get("prepared", []):
+        source = CHECKOUT_TASKS_DIR / slug
+        target_slug = slug.rsplit("-", 1)[0] + "-prepared-" + slug.rsplit("-", 1)[1]
+        target = CHECKOUT_TASKS_DIR / target_slug
+        remove_path(target)
+        shutil.copytree(
+            source,
+            target,
+            ignore=shutil.ignore_patterns(
+                "node_modules",
+                "__pycache__",
+                "*.pyc",
+                "package-lock.json",
+                ".env",
+                ".env.*",
+            ),
+        )
+        metadata = tomlkit.parse((target / "task.toml").read_text())
+        metadata["task"]["name"] = f"checkout-v1/{target_slug}"
+        metadata["metadata"]["mpp_client_profile"] = "prepared"
+        write_file(target / "task.toml", tomlkit.dumps(metadata))
+        for filename in ("package.json", "npm-shrinkwrap.json", "README.md"):
+            copy_file(
+                CHECKOUT_SHARED_DIR / "prepared" / filename,
+                target / "environment/prepared" / filename,
+            )
+        dockerfile = target / "environment/Dockerfile"
+        dockerfile.write_text(
+            dockerfile.read_text() + "\nCOPY prepared /opt/mpp-client/\n"
+            "RUN cd /opt/mpp-client && "
+            "npm ci --ignore-scripts --no-audit --no-fund\n"
+        )
+        instruction = (source / "instruction.md").read_text()
+        marker = uuid.uuid5(uuid.NAMESPACE_URL, f"checkout-v1/{target_slug}")
+        instruction = re.sub(
+            r"<!-- stable-bench-canary: [0-9a-f-]+ -->",
+            f"<!-- stable-bench-canary: {marker} -->",
+            instruction,
+            count=1,
+        )
+        instruction = instruction.replace(
+            "You may consult public documentation and install software.",
+            "You may consult public documentation and install software.\n"
+            "The mppx payment client is preinstalled at `/opt/mpp-client`; "
+            "its usage guide\nis `/opt/mpp-client/README.md`. "
+            "Available tools do not imply merchant acceptance.",
+        )
+        write_file(target / "instruction.md", instruction)
+        write_file(
+            target / "README.md",
+            f"<!-- Generated from {slug} by npm run sync; edit the source task. -->\n"
+            + (source / "README.md").read_text()
+            + "\n## Prepared client\n\nmppx and its dependencies are installed "
+            "with a generic usage guide. Merchant, wallet, oracle and "
+            "verification match the cold task.\n",
+        )
+
+
 def write_mpp_dataset_manifest() -> None:
     dataset_path = MPP_TASKS_DIR / "dataset.toml"
     digests = read_manifest_digests(dataset_path)
@@ -407,6 +467,7 @@ def main() -> None:
     sync_checkout_grading()
     sync_checkout_shipping()
     sync_checkout_prompt_variants()
+    sync_checkout_prepared_variants()
     write_dataset_manifest()
     write_mcp_dataset_manifest()
     write_mpp_dataset_manifest()

@@ -12,6 +12,50 @@ from scripts import sync_shared
 
 
 class SyncSharedTest(unittest.TestCase):
+    def test_prepared_tasks_preserve_cold_payment_and_grading_contracts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory)
+            for slug in sync_shared.TASKS_CONFIG["checkout"]["prepared"]:
+                shutil.copytree(sync_shared.CHECKOUT_TASKS_DIR / slug, checkout / slug)
+            before = {
+                p.relative_to(checkout): p.read_bytes()
+                for p in checkout.rglob("*")
+                if p.is_file()
+            }
+            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+                sync_shared.sync_checkout_prepared_variants()
+                for slug in sync_shared.TASKS_CONFIG["checkout"]["prepared"]:
+                    name, condition = slug.rsplit("-", 1)
+                    source, target = (
+                        checkout / slug,
+                        checkout / f"{name}-prepared-{condition}",
+                    )
+                    task = tomllib.loads((target / "task.toml").read_text())
+                    self.assertEqual(task["metadata"]["mpp_client_profile"], "prepared")
+                    self.assertEqual(task["metadata"]["prompt_condition"], condition)
+                    for part in (
+                        "solution",
+                        "tests",
+                        "environment/merchant",
+                        "environment/wallet",
+                        "environment/link",
+                    ):
+                        for file in (source / part).rglob("*"):
+                            if file.is_file() and "__pycache__" not in file.parts:
+                                self.assertEqual(
+                                    file.read_bytes(),
+                                    (target / file.relative_to(source)).read_bytes(),
+                                )
+                    self.assertTrue(
+                        (target / "environment/prepared/npm-shrinkwrap.json").is_file()
+                    )
+                    self.assertIn(
+                        "/opt/mpp-client/README.md",
+                        (target / "instruction.md").read_text(),
+                    )
+                for relative, content in before.items():
+                    self.assertEqual((checkout / relative).read_bytes(), content)
+
     def test_checkout_prompt_pairs_share_every_runtime_and_verifier_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory)
