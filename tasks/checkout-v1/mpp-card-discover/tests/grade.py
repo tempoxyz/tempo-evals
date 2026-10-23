@@ -34,7 +34,8 @@ def trajectory_metrics(trajectory: object) -> dict:
             if type(count) is not int or count < 0:
                 raise ValueError("invalid_turn_count")
             turns += count
-            calls = step.get("tool_calls", [])
+            calls = step.get("tool_calls")
+            calls = [] if calls is None else calls
             if not isinstance(calls, list) or any(
                 not isinstance(call, dict) for call in calls
             ):

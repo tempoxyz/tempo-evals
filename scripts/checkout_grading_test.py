@@ -60,6 +60,18 @@ class CheckoutGradingTest(unittest.TestCase):
         self.assertLess(metrics["scores"]["tools"], baseline["scores"]["tools"])
         self.assertEqual(efficiency_metrics(trajectory(), 2)["scores"]["retries"], 0.25)
 
+    def test_null_tool_calls_are_empty_but_malformed_values_are_rejected(self) -> None:
+        data = trajectory()
+        data["steps"][1]["tool_calls"] = None
+        self.assertEqual(efficiency_metrics(data, 0)["tool_calls"], 9)
+        for malformed in (False, {}, "", [None]):
+            data["steps"][1]["tool_calls"] = malformed
+            with (
+                self.subTest(calls=malformed),
+                self.assertRaisesRegex(ValueError, "invalid_tool_calls"),
+            ):
+                efficiency_metrics(data, 0)
+
     def test_missing_telemetry_is_not_a_perfect_score(self) -> None:
         for data, attempts in (
             (None, 0),
