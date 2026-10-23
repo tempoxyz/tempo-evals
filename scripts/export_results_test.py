@@ -561,6 +561,70 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(metrics["native_mcp_calls"], 1)
             self.assertEqual(metrics["native_failed_tool_calls"], 1)
 
+    def test_checkout_recovers_exact_claude_session_without_cli_log(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            job = Path(root)
+            trial_dir = job / "trial"
+            session = "4ab5eb43-50ba-44b5-a666-62681acf3912"
+            result = trial(
+                {
+                    "task_name": "checkout-v1/stripe-card-discover",
+                    "agent_result": {"cost_usd": None},
+                }
+            )
+            write_json(trial_dir / "result.json", result)
+            write_json(trial_dir / "agent/trajectory.json", {"session_id": session})
+            archive = trial_dir / f"agent/sessions/projects/-app/{session}.jsonl"
+            archive.parent.mkdir(parents=True)
+            events = [
+                {
+                    "type": "assistant",
+                    "message": {
+                        "content": [{"type": "tool_use", "id": "a", "name": "Bash"}]
+                    },
+                },
+                {
+                    "type": "user",
+                    "message": {
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": "a",
+                                "is_error": True,
+                            }
+                        ]
+                    },
+                },
+                {
+                    "type": "cost-state",
+                    "totalCostUSD": 0.25,
+                    "hasUnknownModelCost": False,
+                },
+            ]
+
+            def save() -> None:
+                archive.write_text(
+                    "\n".join(json.dumps({**e, "sessionId": session}) for e in events)
+                )
+
+            save()
+            row = export_results(job)["trials"][0]
+            self.assertEqual(row["native_total_tool_calls"], 1)
+            self.assertEqual(row["native_failed_tool_calls"], 1)
+            self.assertEqual(row["cost_usd"], 0.25)
+            result["agent_result"]["cost_usd"] = 0.5
+            write_json(trial_dir / "result.json", result)
+            self.assertEqual(export_results(job)["trials"][0]["cost_usd"], 0.5)
+            result["agent_result"]["cost_usd"] = None
+            write_json(trial_dir / "result.json", result)
+            events[-1]["hasUnknownModelCost"] = True
+            save()
+            self.assertEqual(export_results(job)["trials"][0]["cost_usd"], "")
+            write_json(trial_dir / "agent/trajectory.json", {"session_id": "../other"})
+            self.assertEqual(
+                export_results(job)["trials"][0]["native_total_tool_calls"], ""
+            )
+
     def test_checkout_export_includes_provider_diagnostics(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
             job_dir = Path(root) / "job"

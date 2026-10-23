@@ -7,9 +7,10 @@ import tomllib
 from collections import Counter
 from datetime import datetime
 from functools import cache
-from math import comb
+from math import comb, isfinite
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import pandas as pd
 
@@ -508,7 +509,7 @@ def checkout_tool_metrics(trajectory: JsonObject) -> JsonObject:
     return metrics
 
 
-def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
+def checkout_native_tool_metrics(agent_dir: Path, session_id: str = "") -> JsonObject:
     """Count executed tools, including calls nested in Codex's code tool."""
     metrics: JsonObject = dict.fromkeys(
         (
@@ -521,8 +522,17 @@ def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
     )
     codex = agent_dir / "codex.txt"
     native = codex if codex.exists() else agent_dir / "claude-code.txt"
-    if not native.exists():
-        return metrics
+    archive = False
+    if not native.exists() or not native.stat().st_size:
+        try:
+            session_id = str(UUID(session_id))
+        except ValueError:
+            return metrics
+        matches = list(agent_dir.glob(f"sessions/projects/*/{session_id}.jsonl"))
+        if len(matches) != 1:
+            return metrics
+        native = matches[0]
+        archive = True
     calls: dict[str, str] = {}
     failed: set[str] = set()
     recognized = False
@@ -533,6 +543,19 @@ def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
             continue
         if not isinstance(event, dict):
             continue
+        if archive:
+            if event.get("sessionId") != session_id:
+                continue
+            recognized |= event.get("type") in {"assistant", "user", "cost-state"}
+            cost = as_number(event.get("totalCostUSD"))
+            if (
+                event.get("type") == "cost-state"
+                and event.get("hasUnknownModelCost") is False
+                and cost is not None
+                and isfinite(cost)
+                and cost >= 0
+            ):
+                metrics["cost_usd"] = cost
         if native == codex:
             recognized |= event.get("type") == "thread.started"
             if event.get("type") != "item.completed":
@@ -624,7 +647,11 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     )
     tool_metrics = checkout_tool_metrics(trajectory) if checkout else {}
     native_tools = (
-        checkout_native_tool_metrics(file_path.parent / "agent") if checkout else {}
+        checkout_native_tool_metrics(
+            file_path.parent / "agent", as_string(trajectory.get("session_id"))
+        )
+        if checkout
+        else {}
     )
     snapshot = (
         as_object(
@@ -647,6 +674,9 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
     tokens = token_totals(result)
+    archive_cost = native_tools.pop("cost_usd", "")
+    if tokens["cost"] == "":
+        tokens["cost"] = archive_cost
     trace = trace_metrics(file_path)
     if checkout and trace["calls"] == "" and native_tools.get("native_mcp_calls") != "":
         trace["calls"] = native_tools["native_mcp_calls"]

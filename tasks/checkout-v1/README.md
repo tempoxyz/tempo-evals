@@ -228,6 +228,8 @@ flags/statuses or nonzero command exits. Keep both counts when comparing agent
 harnesses; the timestamped native logs retain the underlying evidence.
 Raw trajectories, verifier details and trusted provider snapshots remain the
 source of evidence, independent of the weighted quality formula.
+If the CLI log is missing, exports can recover Claude calls and recorded cost
+from Harbor's archive for the exact trajectory session. Unknown costs stay blank.
 
 ## Current merchants
 
