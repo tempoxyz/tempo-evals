@@ -207,9 +207,9 @@ Harbor's read-only merchant collection hook retries once after a failed snapshot
 read. Missing merchant evidence is exported as an ineligible `execution_error`
 with quality unavailable; the original Harbor rewards remain preserved.
 
-`checkout_start_count` counts Link checkout requests independently of its
-reused PaymentIntent; other web merchants count Stripe sessions or PayPal
-orders. `credentialed_payment_request_count` is MPP's raw credential-bearing
+`checkout_start_count` counts Link and PayPal checkout requests independently
+of their reused provider orders; the card merchant counts Stripe sessions.
+`credentialed_payment_request_count` is MPP's raw credential-bearing
 request count. These are distinct observations; the current retry score uses
 the existing per-rail proxy. Reported tool errors count native error flags and
 explicit tool-error envelopes, not every failed action inside a shell command.

@@ -5,12 +5,15 @@ const clientId = process.env.PAYPAL_SANDBOX_CLIENT_ID;
 const secret = process.env.PAYPAL_SANDBOX_CLIENT_SECRET;
 if (!clientId || !secret) throw new Error('PayPal sandbox merchant credentials are required');
 const dir = '/var/log/checkout';
-let records: { orderId: string; paypalOrderId: string }[] = [];
-try {
-  records = readFileSync(`${dir}/orders.jsonl`, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse);
-} catch (error) {
-  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+function readLog(name: string) {
+  try {
+    return readFileSync(`${dir}/${name}.jsonl`, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line));
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+    return [];
+  }
 }
+const records: { orderId: string; paypalOrderId: string }[] = readLog('orders');
 const auth = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
   method: 'POST',
   headers: { authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString('base64')}`, 'content-type': 'application/x-www-form-urlencoded' },
@@ -53,4 +56,4 @@ for (const record of records) {
     captureCount: purchase?.payments?.captures?.length ?? 0,
   });
 }
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), orders }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), orders, checkoutStartCount: readLog('checkout-starts').length }, null, 2) + '\n');

@@ -9,6 +9,11 @@ if (!clientId || !secret) throw new Error('PayPal sandbox merchant credentials a
 const api = 'https://api-m.sandbox.paypal.com';
 const log = '/var/log/checkout/orders.jsonl';
 mkdirSync('/var/log/checkout', { recursive: true });
+let records = [];
+try { records = readFileSync(log, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)); }
+catch (error) { if (error.code !== 'ENOENT') throw error; }
+const orders = new Map(records.map(record => [record.orderId, record]));
+const pending = new Map();
 
 async function token() {
   const response = await fetch(`${api}/v1/oauth2/token`, {
@@ -58,30 +63,48 @@ http.createServer(async (request, response) => {
   if (path === '/checkout' && ['GET', 'POST'].includes(request.method)) {
     try {
       const shippingOrder = shipping.get(request);
-    if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
-    const orderId = shippingOrder.id;
-      const order = await paypal('/v2/checkout/orders', 'POST', {
-        intent: 'CAPTURE',
-        purchase_units: [{
-          reference_id: orderId,
-          custom_id: orderId,
-          description: 'Tempo Notebook',
-          amount: { currency_code: 'USD', value: '12.00', breakdown: { item_total: { currency_code: 'USD', value: '12.00' } } },
-          items: [{ name: 'Tempo Notebook', quantity: '1', unit_amount: { currency_code: 'USD', value: '12.00' } }],
-        }],
-        payment_source: { paypal: { experience_context: {
-          locale: 'en-US',
-          return_url: 'http://merchant:3000/return',
-          cancel_url: 'http://merchant:3000/cancel',
-          user_action: 'PAY_NOW',
-          shipping_preference: 'NO_SHIPPING',
-        } } },
-      });
-      const approval = order.links?.find(link => link.rel === 'payer-action')?.href;
-      if (!order.id || !approval || new URL(approval).hostname !== 'www.sandbox.paypal.com')
-        throw new Error('Invalid PayPal sandbox order');
-      appendFileSync(log, JSON.stringify({ orderId, paypalOrderId: order.id }) + '\n');
-      return response.writeHead(303, { location: approval }).end();
+      if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
+      const orderId = shippingOrder.id;
+      appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
+      let operation = pending.get(orderId);
+      if (!operation) {
+        operation = (async () => {
+          const known = orders.get(orderId);
+          if (known) {
+            const current = await paypal(`/v2/checkout/orders/${known.paypalOrderId}`);
+            return { ...known, status: current.status };
+          }
+          const order = await paypal('/v2/checkout/orders', 'POST', {
+            intent: 'CAPTURE',
+            purchase_units: [{
+              reference_id: orderId,
+              custom_id: orderId,
+              description: 'Tempo Notebook',
+              amount: { currency_code: 'USD', value: '12.00', breakdown: { item_total: { currency_code: 'USD', value: '12.00' } } },
+              items: [{ name: 'Tempo Notebook', quantity: '1', unit_amount: { currency_code: 'USD', value: '12.00' } }],
+            }],
+            payment_source: { paypal: { experience_context: {
+              locale: 'en-US',
+              return_url: 'http://merchant:3000/return',
+              cancel_url: 'http://merchant:3000/cancel',
+              user_action: 'PAY_NOW',
+              shipping_preference: 'NO_SHIPPING',
+            } } },
+          });
+          const approval = order.links?.find(link => link.rel === 'payer-action')?.href;
+          if (!order.id || !approval || new URL(approval).hostname !== 'www.sandbox.paypal.com')
+            throw new Error('Invalid PayPal sandbox order');
+          const record = { orderId, paypalOrderId: order.id, approvalUrl: approval };
+          appendFileSync(log, JSON.stringify(record) + '\n');
+          orders.set(orderId, record);
+          return { ...record, status: order.status };
+        })().finally(() => pending.delete(orderId));
+        pending.set(orderId, operation);
+      }
+      const order = await operation;
+      if (order.status === 'COMPLETED') return shipping.paypalReceipt(request, response, paypal);
+      const location = order.status === 'APPROVED' ? `/return?token=${order.paypalOrderId}` : order.approvalUrl;
+      return response.writeHead(303, { location }).end();
     } catch (error) {
       console.error(error);
       return json(response, 502, { error: 'order_unavailable' });
@@ -96,7 +119,12 @@ http.createServer(async (request, response) => {
         .map(line => JSON.parse(line)).find(row => row.paypalOrderId === paypalOrderId);
       if (!known) return json(response, 404, { error: 'unknown_order' });
       // PayPal rejects a second capture, so a repeated call cannot create a second paid order.
-      const order = await paypal(`/v2/checkout/orders/${paypalOrderId}/capture`, 'POST');
+      let order;
+      try { order = await paypal(`/v2/checkout/orders/${paypalOrderId}/capture`, 'POST'); }
+      catch (error) {
+        order = await paypal(`/v2/checkout/orders/${paypalOrderId}`);
+        if (order.status !== 'COMPLETED') throw error;
+      }
       if (order.status !== 'COMPLETED') throw new Error('PayPal capture incomplete');
       return response.writeHead(303, { location: `/complete?order_id=${known.orderId}` }).end();
     } catch (error) {

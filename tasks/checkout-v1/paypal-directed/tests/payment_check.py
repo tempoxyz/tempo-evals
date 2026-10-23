@@ -58,7 +58,13 @@ def main() -> None:
     details = {
         **payment_observations(snapshot),
         "reason": reason,
-        "extra_checkout_attempts": max(0, len(orders) - 1),
+        "extra_checkout_attempts": (
+            max(0, starts - 1)
+            if isinstance(snapshot, dict)
+            and type(starts := snapshot.get("checkoutStartCount")) is int
+            and starts >= 0
+            else None
+        ),
         "payment_method": method,
         "checkout_stage": "verified"
         if passed
