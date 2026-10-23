@@ -116,7 +116,7 @@ Options:
                           (default: model config value, otherwise 16)
   --agent-concurrency N   Override per-profile agent concurrency pools
   --max-retries N         Retry transient trial/setup failures
-                          (default: 4 for production, 2 for other Daytona runs)
+                          (0 disables; default: 4 for production, 2 otherwise)
   --agent NAME            Agent for the model variant (default: claude-code)
   --model NAME            Model for the model variant (default: haiku)
   --task-filter GLOB      Include matching task names for model and config variants
@@ -147,6 +147,13 @@ def read_positive_integer(value: str, option: str) -> str:
     return value
 
 
+def read_nonnegative_integer(value: str, option: str) -> str:
+    if not value.isdecimal():
+        msg = f"{option} must be a nonnegative integer"
+        raise argparse.ArgumentTypeError(msg)
+    return value
+
+
 def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("variant", nargs="?")
@@ -168,7 +175,7 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     )
     parser.add_argument(
         "--max-retries",
-        type=lambda value: read_positive_integer(value, "--max-retries"),
+        type=lambda value: read_nonnegative_integer(value, "--max-retries"),
     )
     parser.add_argument("--agent")
     parser.add_argument("--model")

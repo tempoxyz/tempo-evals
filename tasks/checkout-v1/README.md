@@ -203,6 +203,11 @@ time, extra checkout attempts, method, shipping match/mismatches and harness
 version. `trajectory_path` links the original timestamped tool trace. Missing
 telemetry stays unavailable rather than becoming a zero or a perfect score.
 
+Use `--n-attempts 1 --max-retries 0` to retain one native attempt per cell.
+Harbor removes earlier exception-attempt directories when it retries. Rerun
+infrastructure failures separately to preserve their evidence and distinguish
+them from agent checkout failures.
+
 Harbor's read-only merchant collection hook retries once after a failed snapshot
 read. Missing merchant evidence is exported as an ineligible `execution_error`
 with quality unavailable; the original Harbor rewards remain preserved.

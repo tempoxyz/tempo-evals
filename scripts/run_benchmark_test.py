@@ -946,6 +946,11 @@ invalid-name=ignored
 
         self.assertEqual(options["n_attempts"], "1")
 
+    def test_parse_args_can_disable_native_retries(self) -> None:
+        _, options = parse_args(["production-daytona", "--max-retries", "0"])
+
+        self.assertEqual(options["max_retries"], "0")
+
     def test_model_uses_the_requested_task_suite(self) -> None:
         options = {
             "env_file": None,
