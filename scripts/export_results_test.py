@@ -185,6 +185,43 @@ class ExportResultsTest(unittest.TestCase):
                     set(frame["prompt_condition"]), {"discover", "directed"}
                 )
 
+    def test_prepared_mpp_results_stay_separate_from_cold(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-readiness-") as root:
+            job = Path(root)
+            for profile, name, reward in (
+                ("cold", "mpp-card-directed", 0),
+                ("prepared", "mpp-card-prepared-directed", 1),
+            ):
+                write_json(
+                    job / profile / "result.json",
+                    trial(
+                        {
+                            "task_name": f"checkout-v1/{name}",
+                            "trial_name": profile,
+                            "verifier_result": {
+                                "rewards": {"reward": reward, "quality": reward}
+                            },
+                        }
+                    ),
+                )
+            exported = export_results(job)
+            for collection in ("trials", "summary", "quality_summary"):
+                rows = exported[collection]
+                self.assertEqual(len(rows), 2)
+                self.assertEqual(
+                    {row["mpp_client_profile"] for row in rows}, {"cold", "prepared"}
+                )
+                self.assertEqual(
+                    {row["prompt_condition"] for row in rows}, {"directed"}
+                )
+            self.assertEqual(
+                {
+                    row["mpp_client_profile"]: row["mean_quality"]
+                    for row in exported["quality_summary"]
+                },
+                {"cold": 0, "prepared": 1},
+            )
+
     def test_directed_checkout_timeout_keeps_its_assigned_condition(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-prompts-") as root:
             job = Path(root)
