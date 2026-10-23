@@ -103,8 +103,7 @@ http.createServer(async (request, response) => {
       }
       const order = await operation;
       if (order.status === 'COMPLETED') return shipping.paypalReceipt(request, response, paypal);
-      const location = order.status === 'APPROVED' ? `/return?token=${order.paypalOrderId}` : order.approvalUrl;
-      return response.writeHead(303, { location }).end();
+      return response.writeHead(303, { location: order.approvalUrl }).end();
     } catch (error) {
       console.error(error);
       return json(response, 502, { error: 'order_unavailable' });

@@ -78,6 +78,7 @@ test('PayPal inspection and repeated returns keep one captured order', async t =
   for (const key of keys) process.env[key] = 'sandbox-fixture';
   const orders = new Map<string, any>();
   let captures = 0;
+  let declineNextCapture = true;
   t.mock.method(globalThis, 'fetch', async (url: any, init: any) => {
     if (!String(url).startsWith('https://api-m.sandbox.paypal.com/')) return originalFetch(url, init);
     const path = new URL(String(url)).pathname;
@@ -94,6 +95,10 @@ test('PayPal inspection and repeated returns keep one captured order', async t =
     if (!order) return new Response('{}', { status: 404 });
     if (path.endsWith('/capture')) {
       if (order.status !== 'APPROVED') return new Response('{}', { status: 422 });
+      if (declineNextCapture) {
+        declineNextCapture = false;
+        return new Response('{"error":"INSTRUMENT_DECLINED"}', { status: 422 });
+      }
       order.status = 'COMPLETED';
       order.purchase_units[0].payments = { captures: [{ status: 'COMPLETED' }] };
       captures++;
@@ -121,7 +126,9 @@ test('PayPal inspection and repeated returns keep one captured order', async t =
     assert.match((await get(path)).headers.get('location')!, /token=PAYPAL1$/);
     assert.equal((await get('/complete?order_id=' + order.orderId)).status, 409);
     orders.get('PAYPAL1').status = 'APPROVED';
-    assert.equal((await get(path)).headers.get('location'), '/return?token=PAYPAL1');
+    assert.match((await get(path)).headers.get('location')!, /token=PAYPAL1$/);
+    assert.equal((await get('/return?token=PAYPAL1')).status, 502);
+    assert.match((await get(path)).headers.get('location')!, /paypal\.com\/checkoutnow\?token=PAYPAL1$/);
     const returned = await get('/return?token=PAYPAL1');
     assert.equal(returned.status, 303);
     const receipt = await get(returned.headers.get('location')!);
@@ -134,7 +141,7 @@ test('PayPal inspection and repeated returns keep one captured order', async t =
     assert.match((await get('/checkout?order_id=' + second.orderId)).headers.get('location')!, /token=PAYPAL2$/);
     assert.equal(orders.size, 2);
     assert.equal(readFileSync(join(directory, 'orders.jsonl'), 'utf8').trim().split('\n').length, 2);
-    assert.equal(readFileSync(join(directory, 'checkout-starts.jsonl'), 'utf8').trim().split('\n').length, 6);
+    assert.equal(readFileSync(join(directory, 'checkout-starts.jsonl'), 'utf8').trim().split('\n').length, 7);
   } finally {
     if (server) await new Promise<void>(resolve => server!.close(() => resolve()));
     for (const [index, name] of keys.entries()) {

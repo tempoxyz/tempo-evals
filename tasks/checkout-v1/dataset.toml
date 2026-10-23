@@ -27,11 +27,11 @@ digest = "sha256:b00f946b174ad4137262295be9722130cfca6badeeff734ec9f1b2128ecd56e
 
 [[tasks]]
 name = "checkout-v1/paypal-directed"
-digest = "sha256:a89bbdcdbc7804a8fc1ecacadcab2a3614c5df03c50e0b9210cc95180e531cbd"
+digest = "sha256:dd11eb38cf5d6f7d08e665780f4a30535e436cd579b2f9c5f0fc948853dab4e1"
 
 [[tasks]]
 name = "checkout-v1/paypal-discover"
-digest = "sha256:213089f18675f899539f4e862e02e9a84e947fe3490f2653cf41b114e4fb9b0a"
+digest = "sha256:1f542b10c153ae31d5460a7d1ede503cfac32d35e5f35c857225e1e1e207770c"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-directed"
