@@ -78,12 +78,19 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
   process.env.STRIPE_TEST_PUBLISHABLE_KEY = 'pk_test_fixture';
   const byKey = new Map<string, any>();
   const byId = new Map<string, any>();
+  const activeKeys = new Set<string>();
+  let conflicts = 0;
   t.mock.method(globalThis, 'fetch', async (url: any, init: any) => {
     if (!String(url).startsWith('https://api.stripe.com/')) return originalFetch(url, init);
     let intent;
     if (init.method === 'POST') {
       const key = new Headers(init.headers).get('idempotency-key');
       assert.ok(key);
+      if (activeKeys.has(key!)) {
+        conflicts++;
+        return new Response('{"error":"idempotency_key_in_use"}', { status: 409 });
+      }
+      activeKeys.add(key!);
       intent = byKey.get(key!);
       if (!intent) {
         const id = `pi_fixture${byId.size + 1}`;
@@ -92,6 +99,7 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
         byId.set(id, intent);
       }
       await new Promise(resolve => setTimeout(resolve, 15));
+      activeKeys.delete(key!);
     } else intent = byId.get(String(url).split('/').at(-1));
     return new Response(JSON.stringify(intent), { status: intent ? 200 : 404 });
   });
@@ -105,6 +113,7 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
     const checkout = base + '/checkout?order_id=' + order.orderId;
     const pages = await Promise.all([originalFetch(checkout), originalFetch(checkout)]);
     for (const page of pages) assert.match(await page.text(), /pi_fixture1_secret_fixture/);
+    assert.equal(conflicts, 0);
     assert.equal(byId.size, 1);
     assert.equal(readFileSync(join(directory, 'intents.jsonl'), 'utf8').trim().split('\n').length, 1);
     assert.match(await (await originalFetch(checkout)).text(), /pi_fixture1_secret_fixture/);
