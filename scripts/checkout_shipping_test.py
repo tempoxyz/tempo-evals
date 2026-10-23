@@ -3,8 +3,11 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import os
+import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -23,6 +26,38 @@ def load(path, name):
 
 
 class CheckoutShippingTest(unittest.TestCase):
+    def test_collection_retries_read_only_evidence_without_replaying_the_agent(self):
+        task = ROOT / "tasks/checkout-v1/paypal-discover/task.toml"
+        command = tomllib.loads(task.read_text())["verifier"]["collect"][0]["command"]
+        for always_fail in (False, True):
+            with (
+                self.subTest(always_fail=always_fail),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                fake = root / "tsx"
+                fake.write_text(
+                    '#!/bin/sh\nprintf x >> "$COLLECTION_COUNT"\n'
+                    'if [ "$FAIL_ALWAYS" = 1 ] || '
+                    '[ "$(cat "$COLLECTION_COUNT")" = x ]; then exit 1; fi\n'
+                    'printf \'{"trusted":true}\' > "$COLLECTION_OUTPUT"\n'
+                )
+                fake.chmod(0o700)
+                result = subprocess.run(
+                    ["sh", "-c", command],
+                    env={
+                        "PATH": str(root) + ":" + os.defpath,
+                        "COLLECTION_COUNT": str(root / "count"),
+                        "COLLECTION_OUTPUT": str(root / "snapshot.json"),
+                        "FAIL_ALWAYS": str(int(always_fail)),
+                    },
+                    capture_output=True,
+                    timeout=5,
+                )
+                self.assertEqual((root / "count").read_text(), "xx")
+                self.assertEqual(result.returncode, int(always_fail))
+                self.assertEqual((root / "snapshot.json").exists(), not always_fail)
+
     def test_each_payment_adapter_requires_the_paid_orders_exact_address(self):
         for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]:
             with self.subTest(merchant=slug):

@@ -609,6 +609,9 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         if checkout
         else {}
     )
+    evidence_missing = (
+        checkout and checkout_details.get("reason") == "missing_merchant_snapshot"
+    )
     efficiency = (
         as_object(read_json(file_path.parent / "verifier" / "efficiency.json"))
         if checkout
@@ -676,7 +679,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     )
     outcome = (
         "execution_error"
-        if exception_info
+        if exception_info or evidence_missing
         else "passed"
         if passed
         else "verifier_failed"
@@ -696,12 +699,15 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "reward": reward,
         "passed": passed,
         "quality": (
-            value if (value := as_number(rewards.get("quality"))) is not None else ""
+            value
+            if not evidence_missing
+            and (value := as_number(rewards.get("quality"))) is not None
+            else ""
         ),
         "mcp_used": used_mcp,
         "mcp_trace_clean": trace_clean,
         "eligible": (
-            bool(checkout_details) and not exception_info
+            bool(checkout_details) and not (exception_info or evidence_missing)
             if checkout
             else passed and used_mcp and trace_clean
         ),
@@ -782,7 +788,11 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                 "trajectory_path": str(file_path.parent / "agent/trajectory.json")
                 if trajectory
                 else "",
-                "quality_unavailable": as_string(efficiency.get("unavailable")),
+                "quality_unavailable": (
+                    "missing_merchant_snapshot"
+                    if evidence_missing
+                    else as_string(efficiency.get("unavailable"))
+                ),
             }
             if checkout
             else {}
@@ -847,6 +857,10 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame["_passed"] = frame["passed"].astype(int)
     frame["_eligible"] = frame["eligible"].astype(int)
     frame["_error"] = frame["exception_type"].astype(bool).astype(int)
+    checkout_mask = frame["task_family"].str.startswith("checkout-v1/")
+    frame.loc[checkout_mask, "_error"] = (
+        frame.loc[checkout_mask, "outcome"].eq("execution_error").astype(int)
+    )
     checkout_columns = [key for key in CHECKOUT_SUMMARY_COLUMNS if key in frame]
     frame[checkout_columns] = frame[checkout_columns].fillna("")
     telemetry_columns = [

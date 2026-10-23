@@ -203,6 +203,10 @@ time, extra checkout attempts, method, shipping match/mismatches and harness
 version. `trajectory_path` links the original timestamped tool trace. Missing
 telemetry stays unavailable rather than becoming a zero or a perfect score.
 
+Harbor's read-only merchant collection hook retries once after a failed snapshot
+read. Missing merchant evidence is exported as an ineligible `execution_error`
+with quality unavailable; the original Harbor rewards remain preserved.
+
 `checkout_start_count` counts Link checkout requests independently of its
 reused PaymentIntent; other web merchants count Stripe sessions or PayPal
 orders. `credentialed_payment_request_count` is MPP's raw credential-bearing

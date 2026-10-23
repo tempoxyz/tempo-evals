@@ -35,8 +35,8 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts"
-timeout_sec = 90.0
+command = "/srv/node_modules/.bin/tsx /srv/snapshot.ts || (sleep 1 && /srv/node_modules/.bin/tsx /srv/snapshot.ts)"
+timeout_sec = 180.0
 
 [environment]
 cpus = 2

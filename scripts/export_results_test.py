@@ -707,6 +707,40 @@ class ExportResultsTest(unittest.TestCase):
             columns = pd.read_csv(Path(exported["out_dir"]) / "summary.csv").columns
             self.assertIn("pass_5", columns)
 
+    def test_checkout_missing_evidence_is_unscored_and_ineligible(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            job = Path(root) / "job"
+            trial_dir = job / "trial"
+            write_json(
+                trial_dir / "result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v1/paypal-discover",
+                        "verifier_result": {"rewards": {"reward": 0, "quality": 0}},
+                    }
+                ),
+            )
+            details = trial_dir / "verifier/details.json"
+            write_json(details, {"reason": "missing_merchant_snapshot"})
+            exported = export_results(job)
+            row = exported["trials"][0]
+            self.assertFalse(row["eligible"])
+            self.assertEqual(row["outcome"], "execution_error")
+            self.assertEqual(row["quality"], "")
+            self.assertEqual(row["quality_unavailable"], "missing_merchant_snapshot")
+            self.assertEqual(row["rewards"]["quality"], 0)
+            self.assertEqual(exported["summary"][0]["n_errors"], 1)
+            self.assertEqual(exported["quality_summary"][0]["mean_quality"], "")
+            write_json(details, {"reason": "expected_exactly_one_paid_order"})
+            write_json(
+                trial_dir / "artifacts/var/log/checkout/snapshot.json",
+                {"orders": [], "shippingOrders": []},
+            )
+            row = export_results(job)["trials"][0]
+            self.assertTrue(row["eligible"])
+            self.assertEqual(row["quality"], 0)
+            self.assertEqual(row["outcome"], "verifier_failed")
+
     def test_checkout_export_uses_native_quality(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-quality-") as root:
             job_dir = Path(root) / "job"
