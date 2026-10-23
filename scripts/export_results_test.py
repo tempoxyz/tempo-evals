@@ -461,6 +461,14 @@ class ExportResultsTest(unittest.TestCase):
                     "type": "item.completed",
                     "item": {"id": "h", "type": "agent_message"},
                 },
+                {
+                    "type": "item.completed",
+                    "item": {
+                        "id": "i",
+                        "type": "command_execution",
+                        "status": "declined",
+                    },
+                },
             ]
             (agent / "codex.txt").write_bytes(
                 (
@@ -470,15 +478,15 @@ class ExportResultsTest(unittest.TestCase):
                 + b"\xff\n"
             )
             metrics = checkout_native_tool_metrics(agent)
-            self.assertEqual(metrics["native_total_tool_calls"], 7)
+            self.assertEqual(metrics["native_total_tool_calls"], 8)
             self.assertEqual(metrics["native_mcp_calls"], 2)
-            self.assertEqual(metrics["native_failed_tool_calls"], 3)
+            self.assertEqual(metrics["native_failed_tool_calls"], 4)
             self.assertEqual(
                 json.loads(metrics["native_tool_calls_by_name"]),
                 {
                     "mcp__browser__browser_click": 1,
                     "mcp__browser__browser_snapshot": 1,
-                    "exec_command": 1,
+                    "exec_command": 2,
                     "web_search_call": 1,
                     "apply_patch": 1,
                     "custom_tool": 1,
@@ -504,7 +512,7 @@ class ExportResultsTest(unittest.TestCase):
             )
             row = export_results(agent.parent.parent)["trials"][0]
             self.assertEqual(row["total_tool_calls"], 1)
-            self.assertEqual(row["native_total_tool_calls"], 7)
+            self.assertEqual(row["native_total_tool_calls"], 8)
             self.assertEqual(row["mcp_calls"], 2)
             self.assertTrue(row["mcp_used"])
 

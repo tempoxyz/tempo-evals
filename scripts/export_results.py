@@ -559,7 +559,7 @@ def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
                 continue
             calls[call_id] = name
             if (
-                item.get("status") == "failed"
+                item.get("status") in {"failed", "declined"}
                 or item.get("error")
                 or as_object(item.get("result")).get("isError") is True
                 or (isinstance(item.get("exit_code"), int) and item["exit_code"] != 0)
