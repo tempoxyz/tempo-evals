@@ -168,6 +168,10 @@ invalid-name=ignored
                     self.assertIn(
                         output_volume, compose["services"]["browser"]["volumes"]
                     )
+                    self.assertIn(
+                        "checkout-wallet:/wallet:ro",
+                        compose["services"]["browser"]["volumes"],
+                    )
                     compose["services"]["main"]["volumes"].remove(f"{output_volume}:ro")
                     self.assertIsNone(compose["volumes"].pop("checkout-browser-output"))
                     ready = compose["services"].pop("browser-ready")

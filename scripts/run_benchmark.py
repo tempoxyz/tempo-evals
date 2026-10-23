@@ -1301,7 +1301,9 @@ def stage_browser_profile(task_dir: Path, profile: str) -> None:
     output_dir = "/tmp/.playwright-mcp"
     output_volume = f"checkout-browser-output:{output_dir}"
     compose["volumes"]["checkout-browser-output"] = None
-    browser.setdefault("volumes", []).append(output_volume)
+    browser.setdefault("volumes", []).extend(
+        [output_volume, "checkout-wallet:/wallet:ro"]
+    )
     compose["services"]["main"]["volumes"].append(f"{output_volume}:ro")
     browser["command"] += [
         "--no-webmcp",

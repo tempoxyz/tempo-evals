@@ -1,0 +1,65 @@
+services:
+  main:
+    depends_on:
+      wallet:
+        condition: service_completed_successfully
+      merchant:
+        condition: service_healthy
+      browser:
+        condition: service_healthy
+      link:
+        condition: service_started
+    volumes:
+      - checkout-wallet:/wallet:ro
+  wallet:
+    build:
+      context: ./wallet
+    environment:
+      TEMPO_RPC_URL: ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}
+      PAYPAL_SANDBOX_BUYER_EMAIL: ${PAYPAL_SANDBOX_BUYER_EMAIL:?PayPal sandbox buyer email is required}
+      PAYPAL_SANDBOX_BUYER_PASSWORD: ${PAYPAL_SANDBOX_BUYER_PASSWORD:?PayPal sandbox buyer password is required}
+    volumes:
+      - checkout-wallet:/wallet
+    restart: "no"
+
+  merchant:
+    build:
+      context: ./merchant
+    environment:
+      TEMPO_RPC_URL: ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}
+      STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:?Stripe sandbox key is required}
+      PUBLIC_BASE_URL: http://merchant:3000
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  link:
+    build:
+      context: ./link
+    depends_on:
+      wallet:
+        condition: service_completed_successfully
+      merchant:
+        condition: service_healthy
+      browser:
+        condition: service_healthy
+    environment:
+      STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:?Stripe sandbox key is required}
+    volumes:
+      - checkout-wallet:/wallet
+    restart: "no"
+
+  browser:
+    image: mcr.microsoft.com/playwright/mcp@sha256:690763cbb437ee7233f538a953bb5390bf03791eb5c965b471e59d17a6132fcb
+    entrypoint: node
+    command: ["/app/cli.js", "--headless", "--browser", "chromium", "--no-sandbox", "--port", "8931", "--host", "0.0.0.0", "--allowed-hosts", "*", "--isolated"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8931/mcp').then(() => process.exit(0)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  checkout-wallet:

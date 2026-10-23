@@ -1,0 +1,72 @@
+import { shippingOrders } from './shipping.js';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { createPublicClient, http, parseAbiItem, parseEventLogs } from 'viem';
+import { Chain } from 'viem/tempo';
+const ousd = '0x20c0000000000000000000006a37DA5C996874BE';
+const client = createPublicClient({ chain: Chain.testnet, transport: http(process.env.TEMPO_RPC_URL || 'https://rpc.moderato.tempo.xyz') });
+
+const key = process.env.STRIPE_TEST_SECRET_KEY;
+if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
+const dir = '/var/log/checkout';
+let records = [];
+try {
+  records = readFileSync(`${dir}/sessions.jsonl`, 'utf8').trim().split('\n')
+    .filter(Boolean).map(line => JSON.parse(line));
+} catch (error) {
+  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+}
+
+async function stripeGet(path: string) {
+  const response = await fetch(`https://api.stripe.com/v1${path}`, {
+    headers: { authorization: `Bearer ${key}` },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!response.ok) throw new Error(`Stripe retrieval failed: ${response.status}`);
+  return response.json();
+}
+
+const sessions = [];
+for (const record of records) {
+  if (!/^cs_test_[A-Za-z0-9_]+$/.test(record.sessionId)) throw new Error('Invalid session ID');
+  const session = await stripeGet(`/checkout/sessions/${record.sessionId}?expand[]=payment_intent.payment_method&expand[]=payment_intent.latest_charge`);
+  const items = await stripeGet(`/checkout/sessions/${record.sessionId}/line_items?limit=10`);
+  const crypto = session.payment_intent?.latest_charge?.payment_method_details?.crypto;
+  let chainPayment = null;
+  if (crypto?.network === 'tempo' && /^0x[0-9a-fA-F]{64}$/.test(crypto.transaction_hash || '')) {
+    if (await client.getChainId() !== 42431) throw new Error('Expected Tempo testnet');
+    const receipt = await client.getTransactionReceipt({ hash: crypto.transaction_hash });
+    const transfers = parseEventLogs({ abi: [parseAbiItem('event Transfer(address indexed from, address indexed to, uint256 value)')], logs: receipt.logs })
+      .filter(log => log.address.toLowerCase() === ousd.toLowerCase() && log.args.from?.toLowerCase() === crypto.buyer_address?.toLowerCase() && log.args.value === 12000000n);
+    chainPayment = { chainId: 42431, status: receipt.status, transactionHash: receipt.transactionHash, ousdTransfers: transfers.length };
+  }
+  sessions.push({
+    orderId: record.orderId,
+    id: session.id,
+    livemode: session.livemode,
+    clientReferenceId: session.client_reference_id,
+    metadataOrderId: session.metadata?.order_id,
+    status: session.status,
+    paymentStatus: session.payment_status,
+    amountTotal: session.amount_total,
+    currency: session.currency,
+    crypto: crypto ?? null,
+    capturedAmount: session.payment_intent?.latest_charge?.amount_captured ?? null,
+    refundedAmount: session.payment_intent?.latest_charge?.amount_refunded ?? null,
+    chainPayment,
+    paymentIntent: session.payment_intent && typeof session.payment_intent === 'object' ? {
+      id: session.payment_intent.id,
+      status: session.payment_intent.status,
+      amount: session.payment_intent.amount,
+      amountReceived: session.payment_intent.amount_received,
+      currency: session.payment_intent.currency,
+      paymentMethodType: session.payment_intent.payment_method?.type ?? null,
+    } : null,
+    items: items.data.map((item: { description: string; quantity: number; amount_total: number; currency: string }) => ({
+      description: item.description,
+      quantity: item.quantity,
+      amountTotal: item.amount_total,
+      currency: item.currency,
+    })),
+  });
+}
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), sessions }, null, 2) + '\n');

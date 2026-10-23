@@ -41,6 +41,7 @@ class CheckoutShippingTest(unittest.TestCase):
                     paid = copy.deepcopy(fixture.PAID)
                     collection = {
                         "stripe-card-discover": "sessions",
+                        "stripe-crypto-discover": "sessions",
                         "stripe-link-discover": "intents",
                         "paypal-discover": "orders",
                     }.get(slug)
@@ -104,12 +105,12 @@ class CheckoutShippingTest(unittest.TestCase):
                 finally:
                     sys.path[:] = original_path
 
-    def test_shipping_is_shared_by_the_ten_default_tasks(self):
+    def test_shipping_is_shared_by_every_default_task(self):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs()
         self.assertEqual({p.name for p in tasks}, expected)
-        self.assertEqual(len(tasks), 10)
+        self.assertEqual(len(tasks), 2 * len(pairs))
         for task in tasks:
             with self.subTest(task=task.name):
                 self.assertNotIn("shipping", task.name)

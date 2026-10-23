@@ -1,6 +1,6 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Ten Harbor tasks cover five
+Planned dataset: `tempo/checkout-bench-v1`. Twelve Harbor tasks cover six
 merchants with required shipping and discover/directed prompts. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
@@ -26,19 +26,20 @@ Every merchant has discover/directed native Harbor tasks:
 | Discover task | Directed task | Added instruction |
 | --- | --- | --- |
 | `stripe-card-discover` | `stripe-card-directed` | Use card to pay. |
+| `stripe-crypto-discover` | `stripe-crypto-directed` | Use OUSD through Stripe crypto checkout to pay. |
 | `stripe-link-discover` | `stripe-link-directed` | Use Link to pay. |
 | `paypal-discover` | `paypal-directed` | Use PayPal to pay. |
 | `mpp-ousd-discover` | `mpp-ousd-directed` | Use MPP to pay. |
 | `mpp-card-discover` | `mpp-card-directed` | Use card over MPP to pay. |
 
-The five discover tasks are the authored sources. `config/tasks.yaml` declares
+The six discover tasks are the authored sources. `config/tasks.yaml` declares
 peer names and method instructions; `npm run sync` generates their standalone
 directed task directories. Edit the source task to change a pair's merchant,
 wallet setup, oracle, verifier, or scoring. Only the task name, provenance marker,
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all ten tasks, including oracle runs. Use
+`--task-suite checkout` runs all twelve tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -63,7 +64,7 @@ Every checkout task requires the same recipient and full shipping destination.
 Shipping is part of the default task, alongside buying one Tempo Notebook for
 $12; there are no separate shipping task variants.
 
-The five discover tasks own their merchant adapters, provider snapshots and
+The six discover tasks own their merchant adapters, provider snapshots and
 oracles. Shared shipping input, order storage, address fixture and verifier
 live in `shared/checkout/shipping/`; `npm run sync` copies these assets into
 each task before generating directed peers. The provider-specific
@@ -77,7 +78,7 @@ apartment/suite, city, state code, postal code and country code. The apartment
 field is optional in the generic store but required by this task's destination.
 API clients can submit the same fields as a `shipping` JSON object to
 `POST /shipping`; the response returns an order-specific `paymentUrl`. This is
-available across all five merchants. Agents choose their own interaction tools.
+available across all six merchants. Agents choose their own interaction tools.
 
 Submitted destinations are stored as immutable, trial-local orders. The store
 checks input structure, not whether it matches the expected answer. Payment
@@ -182,7 +183,7 @@ the group lacks that metric, including MCP latency and denial counts.
 
 ## Current merchants
 
-All five merchant scenarios request one Tempo Notebook for at most $12 and use
+All six merchant scenarios request one Tempo Notebook for at most $12 and use
 the same purchase request and Playwright browser. Each trial wallet lists its
 prepared payment methods. Only directed prompts name the method to use. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
@@ -195,6 +196,7 @@ merchant through it.
 | Task | Payment surface | Independent proof |
 | --- | --- | --- |
 | `stripe-card-discover` | Stripe Checkout card form | One paid card PaymentIntent and matching order |
+| `stripe-crypto-discover` | Stripe hosted crypto checkout | Paid Stripe crypto session plus linked 12 OUSD transfer on Tempo testnet |
 | `stripe-link-discover` | Link Express Checkout button only | One paid Link PaymentIntent and matching order |
 | `mpp-ousd-discover` | MPP OUSD paid endpoint only | One notebook delivery, successful MPP receipt, and exact trial-recipient OUSD balance |
 | `mpp-card-discover` | Stripe MPP card paid endpoint only | One notebook delivery and MPP receipt matched to a captured, unrefunded sandbox card PaymentIntent |
@@ -236,13 +238,34 @@ repository checks. Browser infrastructure profiles are described below.
 Changes to task prompts, fixtures, verification, or scoring after publication
 must follow the repository's benchmark-major versioning rule.
 
+## Stripe hosted OUSD checkout (blocked sandbox prerequisite)
+
+The new `stripe-crypto-discover`/`stripe-crypto-directed` pair uses Stripe's
+hosted crypto checkout, with the common notebook, shipping form, wallet and
+browser profiles. It requires OUSD on Tempo testnet, not another stablecoin or
+network. The verifier binds Stripe's crypto charge transaction hash to a
+successful 12 OUSD onchain transfer and the paid shipping order; refunds fail.
+
+Live sandbox probes connected the trial wallet, but Stripe rejected Tempo
+Testnet with "We only accept Ethereum, Polygon, or Base for this purchase."
+This merchant pair must remain a draft until OUSD/Tempo sandbox support is
+available and an oracle proves the complete payment. No merchant-owned transfer
+flow substitutes for Stripe checkout.
+
+All checkout browser profiles load the same EIP-1193 test wallet adapter from
+the read-only trial wallet volume. Its MetaMask-compatible discovery entry is
+a benchmark adapter, not the MetaMask extension. Keys stay in the trusted Node
+process, never page JavaScript. Signing and transactions are restricted to Tempo
+testnet, with no mainnet switch. The adapter adds no agent tools or payment
+helpers to the agent container.
+
 ## Browser infrastructure profiles
 
 The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all ten discover/directed tasks per job. Model trials retain the shared pair
+all twelve discover/directed tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

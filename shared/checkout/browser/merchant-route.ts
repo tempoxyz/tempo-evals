@@ -1,9 +1,11 @@
 // Intercept at CDP level: Playwright context.route skips subsequent requests in
 // a redirect chain. Cloud Chromium cannot resolve the trial-private merchant.
+import { installWallet } from "./wallet.js";
 import type { Page } from "playwright-core";
 
 export default async ({ page }: { page: Page }) => {
   const context = page.context();
+  await installWallet(context);
   const cdp = await context.newCDPSession(page);
   cdp.on("Fetch.requestPaused", async ({ requestId, networkId, request }) => {
     try {

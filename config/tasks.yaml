@@ -48,6 +48,10 @@ checkout:
       task: stripe-card-directed
       method: card
       instruction: Use card to pay.
+    stripe-crypto-discover:
+      task: stripe-crypto-directed
+      method: crypto
+      instruction: Use OUSD through Stripe crypto checkout to pay.
     stripe-link-discover:
       task: stripe-link-directed
       method: link
