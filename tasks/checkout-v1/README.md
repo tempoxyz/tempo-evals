@@ -132,17 +132,26 @@ Like the MPP integration suite, publish native Harbor `correctness`, `quality`,
 and `reward` fields. The merchant verifier determines binary `correctness` and
 `reward`. A failed checkout gets zero for all three. After a verified payment,
 RewardKit combines deterministic efficiency criteria into `quality`:
-`0.6 + 0.4 × (0.40 × turn_score + 0.35 × retry_score + 0.25 × time_score)`.
-The existing exporter reports `quality`, `mean_quality`, and `quality_coverage`;
-it does not compute a separate checkout score.
+`0.35 × turn_score + 0.30 × tool_score + 0.20 × retry_score + 0.15 × time_score`.
+There is no success floor. Binary `correctness` and `reward` remain unchanged.
+Report a final checkout score as `100 × mean_quality`, including failed trials
+at zero, beside success rate and raw metrics. Keep prompt conditions separate
+and compare equally weighted, matching task/profile cells.
 
-`turn_score = min(1, 10 / model_turns)`, `retry_score = 1 / (1 +
-extra_checkout_attempts)`, and `time_score = min(1, 180 / trajectory_duration_sec)`.
+`turn_score = 10 / (10 + model_turns)`, `tool_score = 15 / (15 + tool_calls)`,
+`retry_score = 2 ** -extra_checkout_attempts`, and
+`time_score = 60 / (60 + trajectory_duration_sec)`.
 Turns count model calls in the Harbor trajectory, excluding copied context.
+Tools count every tool call in those agent steps, including Bash/research and
+failed calls; batching calls in one turn does not hide their cost. A successful
+10-turn, 10-call, 60-second checkout without retries scores 0.63.
 Trajectory time spans the first user/agent timestamp through the last one;
 Harbor's full agent execution duration is exported separately. Setup and
-verification time do not contribute to quality. The fixed targets are shared
-across merchants and should be calibrated before dataset publication.
+verification time do not contribute to quality. Targets and weights are shared
+across merchants. These unpublished v1 scoring changes make earlier quality
+scores incomparable; recompute from complete saved trajectories when comparing.
+The exporter includes `total_tool_calls` in checkout trial rows, alongside the
+existing `quality`, `mean_quality` and `quality_coverage` fields.
 
 Stripe and PayPal count extra checkout starts. MPP counts requests carrying
 payment credentials beyond the first one; unpaid discovery and 402 challenges

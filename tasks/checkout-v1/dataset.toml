@@ -42,6 +42,10 @@ name = "checkout-v1/stripe-card-discover"
 digest = "sha256:701795c595c9b761dd07f2a5500e07d07aae1154925631e5ad1cfe8f139efbfe"
 
 [[tasks]]
+name = "checkout-v1/stripe-crypto-discover"
+digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[[tasks]]
 name = "checkout-v1/stripe-link-directed"
 digest = "sha256:6a28a9afd8a499ad040213bb875cf68f0cc70661f926ba0b86fc6b6a63e4b35e"
 

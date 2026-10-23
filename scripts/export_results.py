@@ -85,6 +85,7 @@ CHECKOUT_TRIAL_COLUMNS = [
     "extra_checkout_attempts",
     "trajectory_duration_sec",
     "efficiency_model_turns",
+    "total_tool_calls",
     "quality_unavailable",
 ]
 CHECKOUT_SUMMARY_COLUMNS = ["scenario_id", "prompt_condition", "required_method"]
@@ -577,6 +578,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                     "trajectory_duration_sec", ""
                 ),
                 "efficiency_model_turns": efficiency.get("model_turns", ""),
+                "total_tool_calls": efficiency.get("tool_calls", ""),
                 "quality_unavailable": as_string(efficiency.get("unavailable")),
             }
             if checkout

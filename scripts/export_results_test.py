@@ -387,7 +387,7 @@ class ExportResultsTest(unittest.TestCase):
             )
             write_json(
                 trial_dir / "verifier" / "efficiency.json",
-                {"model_turns": 10, "trajectory_duration_sec": 150},
+                {"model_turns": 10, "tool_calls": 3, "trajectory_duration_sec": 150},
             )
             agent_log = trial_dir / "agent" / "claude-code.txt"
             agent_log.parent.mkdir()
@@ -426,6 +426,7 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["extra_checkout_attempts"], 0)
             self.assertEqual(row["model_turns"], 99)
             self.assertEqual(row["efficiency_model_turns"], 10)
+            self.assertEqual(row["total_tool_calls"], 3)
             self.assertEqual(row["trajectory_duration_sec"], 150)
             self.assertEqual(row["mcp_calls"], 2)
             self.assertTrue(row["mcp_used"])

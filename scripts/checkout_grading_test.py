@@ -14,7 +14,7 @@ from shared.checkout.tests.grade import efficiency_metrics, run
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def trajectory(turns: int = 10, seconds: int = 180) -> dict:
+def trajectory(turns: int = 10, seconds: int = 60) -> dict:
     start = datetime(2026, 10, 20, tzinfo=UTC)
     return {
         "steps": [
@@ -22,6 +22,7 @@ def trajectory(turns: int = 10, seconds: int = 180) -> dict:
             *[
                 {
                     "source": "agent",
+                    "tool_calls": [{"function_name": "browser_click"}],
                     "timestamp": (
                         start + timedelta(seconds=seconds * (index + 1) / turns)
                     ).isoformat(),
@@ -36,13 +37,28 @@ class CheckoutGradingTest(unittest.TestCase):
     def test_each_efficiency_metric_penalizes_extra_work(self) -> None:
         self.assertEqual(
             efficiency_metrics(trajectory(), 0)["scores"],
-            {"turns": 1, "retries": 1, "time": 1},
+            {"turns": 0.5, "tools": 0.6, "retries": 1, "time": 0.5},
         )
-        self.assertEqual(efficiency_metrics(trajectory(20), 0)["scores"]["turns"], 0.5)
+        self.assertEqual(
+            efficiency_metrics(trajectory(20), 0)["scores"]["turns"], 1 / 3
+        )
         self.assertEqual(efficiency_metrics(trajectory(), 1)["scores"]["retries"], 0.5)
         self.assertEqual(
-            efficiency_metrics(trajectory(seconds=360), 0)["scores"]["time"], 0.5
+            efficiency_metrics(trajectory(seconds=120), 0)["scores"]["time"], 1 / 3
         )
+
+    def test_all_tool_calls_including_errors_are_charged(self) -> None:
+        data = trajectory()
+        baseline = efficiency_metrics(data, 0)
+        data["steps"][1]["tool_calls"] *= 6
+        data["steps"].append(
+            {"source": "agent", "is_copied_context": True, "tool_calls": [{}] * 100}
+        )
+        metrics = efficiency_metrics(data, 0)
+        self.assertEqual(metrics["tool_calls"], 15)
+        self.assertEqual(metrics["scores"]["tools"], 0.5)
+        self.assertLess(metrics["scores"]["tools"], baseline["scores"]["tools"])
+        self.assertEqual(efficiency_metrics(trajectory(), 2)["scores"]["retries"], 0.25)
 
     def test_missing_telemetry_is_not_a_perfect_score(self) -> None:
         for data, attempts in (
@@ -58,8 +74,8 @@ class CheckoutGradingTest(unittest.TestCase):
 
     def test_native_rewards_with_real_rewardkit(self) -> None:
         for passed, data, attempts, expected_quality in (
-            (True, trajectory(), 0, 1),
-            (True, trajectory(20, 360), 0, 0.87),
+            (True, trajectory(), 0, 0.63),
+            (True, trajectory(20, 120), 0, 0.4952),
             (False, trajectory(20, 360), 2, 0),
             (False, trajectory(), None, 0),
             (False, None, None, 0),

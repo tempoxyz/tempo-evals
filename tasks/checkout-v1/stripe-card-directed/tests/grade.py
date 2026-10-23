@@ -25,6 +25,7 @@ def trajectory_metrics(trajectory: object) -> dict:
         and not step.get("is_copied_context")
     ]
     turns = 0
+    tool_calls = 0
     timestamps = []
     for step in steps:
         if step["source"] == "agent":
@@ -33,6 +34,12 @@ def trajectory_metrics(trajectory: object) -> dict:
             if type(count) is not int or count < 0:
                 raise ValueError("invalid_turn_count")
             turns += count
+            calls = step.get("tool_calls", [])
+            if not isinstance(calls, list) or any(
+                not isinstance(call, dict) for call in calls
+            ):
+                raise ValueError("invalid_tool_calls")
+            tool_calls += len(calls)
         timestamp = step.get("timestamp")
         if not isinstance(timestamp, str):
             raise ValueError("missing_trajectory_timestamps")
@@ -46,6 +53,7 @@ def trajectory_metrics(trajectory: object) -> dict:
         raise ValueError("invalid_trajectory_duration")
     return {
         "model_turns": turns,
+        "tool_calls": tool_calls,
         "trajectory_duration_sec": seconds,
     }
 
@@ -58,9 +66,10 @@ def efficiency_metrics(trajectory: object, extra_attempts: object) -> dict:
         **metrics,
         "extra_checkout_attempts": extra_attempts,
         "scores": {
-            "turns": min(1, 10 / metrics["model_turns"]),
-            "retries": 1 / (1 + extra_attempts),
-            "time": min(1, 180 / metrics["trajectory_duration_sec"]),
+            "turns": 10 / (10 + metrics["model_turns"]),
+            "tools": 15 / (15 + metrics["tool_calls"]),
+            "retries": 2**-extra_attempts,
+            "time": 60 / (60 + metrics["trajectory_duration_sec"]),
         },
     }
 
@@ -112,7 +121,7 @@ def run(tests: Path, log_dir: Path, trajectory_path: Path) -> None:
             check=True,
         )
         quality = json.loads(output.read_text())["reward"]
-        reward["quality"] = round(0.6 + 0.4 * quality, 4)
+        reward["quality"] = quality
     reward_path.write_text(json.dumps(reward) + "\n")
 
 
