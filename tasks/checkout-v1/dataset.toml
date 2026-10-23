@@ -11,11 +11,11 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v1/braintree-card-directed"
-digest = "sha256:b391cc1c0676dbcc1f2f332523b79ed0bec348b44f0534e10c59b322c9af7842"
+digest = "sha256:d732b5a715d848cc8b56841ebfd9bd90ed1e01663e1050042c2f23c2aac16208"
 
 [[tasks]]
 name = "checkout-v1/braintree-card-discover"
-digest = "sha256:90fccb916f5538616fabb4b6dea2d085eb573d34b5c06b143055bc2150db2a94"
+digest = "sha256:bcca373927384f7b01b318a2b886d4899566585e0ae4be9dff6ea90a1bc46a00"
 
 [[tasks]]
 name = "checkout-v1/mpp-card-directed"
@@ -26,14 +26,6 @@ name = "checkout-v1/mpp-card-discover"
 digest = "sha256:f88d3355c288016fc03bf829cf0d2d73de5b92b233cc1a0f3e09c7cf748cde9a"
 
 [[tasks]]
-name = "checkout-v1/mpp-card-prepared-directed"
-digest = "sha256:2d4059b2ea51e469d9f57472140ac6ca49ee590568493a4d870209886445b082"
-
-[[tasks]]
-name = "checkout-v1/mpp-card-prepared-discover"
-digest = "sha256:e3731d1c100f55ff30bd571f9e1957fe1f7ef75656c528feeb1631b88a8e5463"
-
-[[tasks]]
 name = "checkout-v1/mpp-ousd-directed"
 digest = "sha256:69e088c7f1164861281ce4139e8c62c87eb5149124337c6becf0830cc53b53ce"
 
@@ -42,12 +34,20 @@ name = "checkout-v1/mpp-ousd-discover"
 digest = "sha256:0f60edbe5b2be092db1a312f06d157799a26b38d0003fd9b3c9eb165fd4bb2e6"
 
 [[tasks]]
-name = "checkout-v1/mpp-ousd-prepared-directed"
-digest = "sha256:85e25fa17a273a1dc96a5acb7afb7e5c17a9acd9c79bced491c9876f3b8fdad5"
+name = "checkout-v1/mppcard-prepared-directed"
+digest = "sha256:67d9a9dea6ef73ad9e9d1e41a0514131bd52538e2f1cceea531f5807a7f1b826"
 
 [[tasks]]
-name = "checkout-v1/mpp-ousd-prepared-discover"
-digest = "sha256:9114cc3f199b2c6f725b2aaf130b382bb552fd6e98e02d077894743e3ff9ccfb"
+name = "checkout-v1/mppcard-prepared-discover"
+digest = "sha256:026751944816a27c60d7d3facfa95146dc7f1549cebb0b12f280d38ef1610257"
+
+[[tasks]]
+name = "checkout-v1/mppousd-prepared-directed"
+digest = "sha256:f891c91086fc6de14b0566edeb95326b57baf5fe5e2457d5cbc4be004fe82e9c"
+
+[[tasks]]
+name = "checkout-v1/mppousd-prepared-discover"
+digest = "sha256:e6a54fd6b8b42bc89fe8b9c9e1612c58ddcb840ef61e598cc78dd118774bc7a1"
 
 [[tasks]]
 name = "checkout-v1/paypal-directed"

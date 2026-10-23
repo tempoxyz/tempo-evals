@@ -7,7 +7,7 @@ artifacts = [
 ]
 
 [task]
-name = "checkout-v1/mpp-card-prepared-discover"
+name = "checkout-v1/mppcard-prepared-directed"
 description = "Buy a notebook and supply the requested shipping address."
 keywords = ["checkout", "mpp", "card", "payments"]
 
@@ -23,8 +23,8 @@ tags = ["checkout", "mpp", "card", "payments"]
 expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
 scenario_id = "checkout-v1/mpp-card-discover"
-prompt_condition = "discover"
-required_method = ""
+prompt_condition = "directed"
+required_method = "stripe_mpp"
 mpp_client_profile = "prepared"
 
 [agent]

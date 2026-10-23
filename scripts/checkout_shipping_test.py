@@ -166,10 +166,7 @@ class CheckoutShippingTest(unittest.TestCase):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs()
-        expected |= {
-            slug.rsplit("-", 1)[0] + "-prepared-" + slug.rsplit("-", 1)[1]
-            for slug in sync_shared.TASKS_CONFIG["checkout"]["prepared"]
-        }
+        expected |= set(sync_shared.TASKS_CONFIG["checkout"]["prepared"].values())
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:
             with self.subTest(task=task.name):

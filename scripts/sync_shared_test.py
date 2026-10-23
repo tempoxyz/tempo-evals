@@ -28,7 +28,8 @@ class SyncSharedTest(unittest.TestCase):
                     name, condition = slug.rsplit("-", 1)
                     source, target = (
                         checkout / slug,
-                        checkout / f"{name}-prepared-{condition}",
+                        checkout
+                        / sync_shared.TASKS_CONFIG["checkout"]["prepared"][slug],
                     )
                     task = tomllib.loads((target / "task.toml").read_text())
                     self.assertEqual(task["metadata"]["mpp_client_profile"], "prepared")

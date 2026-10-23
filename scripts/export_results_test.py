@@ -190,7 +190,7 @@ class ExportResultsTest(unittest.TestCase):
             job = Path(root)
             for profile, name, reward in (
                 ("cold", "mpp-card-directed", 0),
-                ("prepared", "mpp-card-prepared-directed", 1),
+                ("prepared", "mppcard-prepared-directed", 1),
             ):
                 write_json(
                     job / profile / "result.json",

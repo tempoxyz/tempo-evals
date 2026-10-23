@@ -349,9 +349,8 @@ def sync_checkout_prompt_variants() -> None:
 
 def sync_checkout_prepared_variants() -> None:
     """Keep the prepared-client intervention separate from the cold tasks."""
-    for slug in TASKS_CONFIG["checkout"].get("prepared", []):
+    for slug, target_slug in TASKS_CONFIG["checkout"].get("prepared", {}).items():
         source = CHECKOUT_TASKS_DIR / slug
-        target_slug = slug.rsplit("-", 1)[0] + "-prepared-" + slug.rsplit("-", 1)[1]
         target = CHECKOUT_TASKS_DIR / target_slug
         remove_path(target)
         shutil.copytree(
