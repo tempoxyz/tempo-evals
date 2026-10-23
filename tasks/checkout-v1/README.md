@@ -208,6 +208,14 @@ orders. `credentialed_payment_request_count` is MPP's raw credential-bearing
 request count. These are distinct observations; the current retry score uses
 the existing per-rail proxy. Reported tool errors count native error flags and
 explicit tool-error envelopes, not every failed action inside a shell command.
+
+`native_total_tool_calls`, `native_tool_calls_by_name`, `native_mcp_calls`, and
+`native_failed_tool_calls` preserve executed calls from each CLI's native log.
+These include browser calls nested inside Codex's code tool. The existing
+`total_tool_calls` and efficiency score continue to count Harbor trajectory
+calls, which can be code-tool wrappers. Native failures use explicit error
+flags/statuses or nonzero command exits. Keep both counts when comparing agent
+harnesses; the timestamped native logs retain the underlying evidence.
 Raw trajectories, verifier details and trusted provider snapshots remain the
 source of evidence, independent of the weighted quality formula.
 

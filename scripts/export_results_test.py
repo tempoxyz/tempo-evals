@@ -10,6 +10,7 @@ import pandas as pd
 
 from scripts.compare_mcp_results import compare, summarize_quality_comparison
 from scripts.export_results import (
+    checkout_native_tool_metrics,
     checkout_tool_metrics,
     export_results,
     parse_task_name,
@@ -411,6 +412,126 @@ class ExportResultsTest(unittest.TestCase):
             )["total_tool_calls"],
             "",
         )
+
+    def test_codex_native_tools_include_nested_calls_and_deduplicate(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            agent = Path(root) / "trial" / "agent"
+            agent.mkdir(parents=True)
+            events = [
+                {"type": "thread.started", "thread_id": "test"},
+                {
+                    "type": "item.completed",
+                    "item": {
+                        "id": "a",
+                        "type": "mcp_tool_call",
+                        "server": "browser",
+                        "tool": "browser_click",
+                        "status": "completed",
+                    },
+                },
+                {
+                    "type": "item.completed",
+                    "item": {
+                        "id": "b",
+                        "type": "mcp_tool_call",
+                        "server": "browser",
+                        "tool": "browser_snapshot",
+                        "status": "failed",
+                        "error": {"message": "unavailable"},
+                    },
+                },
+                {
+                    "type": "item.completed",
+                    "item": {"id": "c", "type": "command_execution", "exit_code": 1},
+                },
+                {
+                    "type": "item.completed",
+                    "item": {"id": "d", "type": "web_search", "status": "completed"},
+                },
+            ]
+            (agent / "codex.txt").write_text(
+                "\n".join(json.dumps(e) for e in [*events, events[1]]) + "\nnot json\n"
+            )
+            metrics = checkout_native_tool_metrics(agent)
+            self.assertEqual(metrics["native_total_tool_calls"], 4)
+            self.assertEqual(metrics["native_mcp_calls"], 2)
+            self.assertEqual(metrics["native_failed_tool_calls"], 2)
+            self.assertEqual(
+                json.loads(metrics["native_tool_calls_by_name"]),
+                {
+                    "mcp__browser__browser_click": 1,
+                    "mcp__browser__browser_snapshot": 1,
+                    "exec_command": 1,
+                    "web_search_call": 1,
+                },
+            )
+            write_json(
+                agent.parent / "result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v1/paypal-discover",
+                        "agent_info": {"name": "codex", "model_info": {"name": "test"}},
+                    }
+                ),
+            )
+            write_json(
+                agent / "trajectory.json",
+                {
+                    "steps": [
+                        {"source": "agent", "tool_calls": [{"function_name": "exec"}]}
+                    ]
+                },
+            )
+            row = export_results(agent.parent.parent)["trials"][0]
+            self.assertEqual(row["total_tool_calls"], 1)
+            self.assertEqual(row["native_total_tool_calls"], 4)
+            self.assertEqual(row["mcp_calls"], 2)
+            self.assertTrue(row["mcp_used"])
+
+    def test_claude_native_tools_distinguish_missing_and_recorded_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            agent = Path(root)
+            self.assertEqual(
+                checkout_native_tool_metrics(agent)["native_total_tool_calls"], ""
+            )
+            native = agent / "claude-code.txt"
+            native.write_text('{"type":"system","subtype":"init"}\n')
+            self.assertEqual(
+                checkout_native_tool_metrics(agent)["native_total_tool_calls"], 0
+            )
+            events = [
+                {
+                    "type": "assistant",
+                    "message": {
+                        "content": [
+                            {"type": "tool_use", "id": "a", "name": "Bash"},
+                            {
+                                "type": "tool_use",
+                                "id": "b",
+                                "name": "mcp__browser__browser_click",
+                            },
+                        ]
+                    },
+                },
+                {
+                    "type": "user",
+                    "message": {
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": "a",
+                                "is_error": True,
+                            }
+                        ]
+                    },
+                },
+            ]
+            with native.open("a") as output:
+                output.write("\n".join(json.dumps(e) for e in events + events) + "\n")
+            metrics = checkout_native_tool_metrics(agent)
+            self.assertEqual(metrics["native_total_tool_calls"], 2)
+            self.assertEqual(metrics["native_mcp_calls"], 1)
+            self.assertEqual(metrics["native_failed_tool_calls"], 1)
 
     def test_checkout_export_includes_provider_diagnostics(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:

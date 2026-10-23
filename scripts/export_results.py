@@ -89,6 +89,10 @@ CHECKOUT_TRIAL_COLUMNS = [
     "total_tool_calls",
     "tool_calls_by_name",
     "reported_tool_error_count",
+    "native_total_tool_calls",
+    "native_tool_calls_by_name",
+    "native_mcp_calls",
+    "native_failed_tool_calls",
     "agent_harness_version",
     "checkout_start_count",
     "credentialed_payment_request_count",
@@ -504,6 +508,84 @@ def checkout_tool_metrics(trajectory: JsonObject) -> JsonObject:
     return metrics
 
 
+def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
+    """Count executed tools, including calls nested in Codex's code tool."""
+    metrics: JsonObject = dict.fromkeys(
+        (
+            "native_total_tool_calls",
+            "native_tool_calls_by_name",
+            "native_mcp_calls",
+            "native_failed_tool_calls",
+        ),
+        "",
+    )
+    codex = agent_dir / "codex.txt"
+    native = codex if codex.exists() else agent_dir / "claude-code.txt"
+    if not native.exists():
+        return metrics
+    calls: dict[str, str] = {}
+    failed: set[str] = set()
+    recognized = False
+    for line in native.read_text().splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        if native == codex:
+            recognized |= event.get("type") == "thread.started"
+            if event.get("type") != "item.completed":
+                continue
+            item = as_object(event.get("item"))
+            kind = item.get("type")
+            name = (
+                f"mcp__{item.get('server')}__{item.get('tool')}"
+                if kind == "mcp_tool_call"
+                else "exec_command"
+                if kind == "command_execution"
+                else "web_search_call"
+                if kind == "web_search"
+                else ""
+            )
+            call_id = as_string(item.get("id"))
+            if not name or not call_id:
+                continue
+            calls[call_id] = name
+            if (
+                item.get("status") == "failed"
+                or item.get("error")
+                or as_object(item.get("result")).get("isError") is True
+                or (isinstance(item.get("exit_code"), int) and item["exit_code"] != 0)
+            ):
+                failed.add(call_id)
+        else:
+            recognized |= (
+                event.get("type") == "system" and event.get("subtype") == "init"
+            )
+            content = as_object(event.get("message")).get("content")
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") == "tool_use" and block.get("id"):
+                    calls[str(block["id"])] = as_string(block.get("name")) or "unknown"
+                elif (
+                    block.get("type") == "tool_result" and block.get("is_error") is True
+                ):
+                    failed.add(as_string(block.get("tool_use_id")))
+    if recognized:
+        counts = Counter(calls.values())
+        metrics.update(
+            native_total_tool_calls=len(calls),
+            native_tool_calls_by_name=json.dumps(dict(sorted(counts.items()))),
+            native_mcp_calls=sum(name.startswith("mcp__") for name in calls.values()),
+            native_failed_tool_calls=len(failed & calls.keys()),
+        )
+    return metrics
+
+
 def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | None:
     result = read_json(file_path)
     if not result or not isinstance(result.get("task_name"), str):
@@ -532,6 +614,9 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         else {}
     )
     tool_metrics = checkout_tool_metrics(trajectory) if checkout else {}
+    native_tools = (
+        checkout_native_tool_metrics(file_path.parent / "agent") if checkout else {}
+    )
     snapshot = (
         as_object(
             read_json(file_path.parent / "artifacts/var/log/checkout/snapshot.json")
@@ -549,6 +634,8 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     reward = primary_reward(rewards)
     tokens = token_totals(result)
     trace = trace_metrics(file_path)
+    if checkout and trace["calls"] == "" and native_tools.get("native_mcp_calls") != "":
+        trace["calls"] = native_tools["native_mcp_calls"]
     if (
         checkout
         and trace["calls"] == ""
@@ -665,6 +752,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                 ),
                 "efficiency_model_turns": efficiency.get("model_turns", ""),
                 **tool_metrics,
+                **native_tools,
                 "total_tool_calls": efficiency.get(
                     "tool_calls", tool_metrics.get("total_tool_calls", "")
                 ),
