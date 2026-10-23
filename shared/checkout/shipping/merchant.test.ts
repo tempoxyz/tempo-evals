@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -60,6 +60,72 @@ test('shipping form and API preserve entered fields and bind immutable orders', 
     assert.deepEqual(shippingOrders().find((o: any) => o.id === a.orderId).shipping, address);
   } finally {
     await new Promise<void>(resolve => server.close(() => resolve()));
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('Link inspection, refresh and concurrent requests reuse one intent per order', async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'checkout-link-'));
+  writeFileSync(join(directory, 'package.json'), '{"type":"module"}');
+  writeFileSync(join(directory, 'shipping.js'), source.replace("'/var/log/checkout'", JSON.stringify(directory)));
+  const merchant = readFileSync(new URL('../../../tasks/checkout-v1/stripe-link-discover/environment/merchant/server.js', import.meta.url), 'utf8');
+  writeFileSync(join(directory, 'server.js'), merchant.replaceAll('/var/log/checkout', directory)
+    .replace('http.createServer(', 'export const server = http.createServer(')
+    .replace(".listen(3000, '0.0.0.0')", ".listen(0, '127.0.0.1')"));
+  const originalFetch = globalThis.fetch;
+  const originalKeys = [process.env.STRIPE_TEST_SECRET_KEY, process.env.STRIPE_TEST_PUBLISHABLE_KEY];
+  process.env.STRIPE_TEST_SECRET_KEY = 'sk_test_fixture';
+  process.env.STRIPE_TEST_PUBLISHABLE_KEY = 'pk_test_fixture';
+  const byKey = new Map<string, any>();
+  const byId = new Map<string, any>();
+  t.mock.method(globalThis, 'fetch', async (url: any, init: any) => {
+    if (!String(url).startsWith('https://api.stripe.com/')) return originalFetch(url, init);
+    let intent;
+    if (init.method === 'POST') {
+      const key = new Headers(init.headers).get('idempotency-key');
+      assert.ok(key);
+      intent = byKey.get(key!);
+      if (!intent) {
+        const id = `pi_fixture${byId.size + 1}`;
+        intent = { id, client_secret: `${id}_secret_fixture`, livemode: false, status: 'requires_payment_method' };
+        byKey.set(key!, intent);
+        byId.set(id, intent);
+      }
+      await new Promise(resolve => setTimeout(resolve, 15));
+    } else intent = byId.get(String(url).split('/').at(-1));
+    return new Response(JSON.stringify(intent), { status: intent ? 200 : 404 });
+  });
+  let server: http.Server | undefined;
+  try {
+    ({ server } = await import(pathToFileURL(join(directory, 'server.js')).href));
+    if (!server!.address()) await new Promise(resolve => server!.once('listening', resolve));
+    const base = `http://127.0.0.1:${(server!.address() as any).port}`;
+    const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
+    const order = await (await originalFetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+    const checkout = base + '/checkout?order_id=' + order.orderId;
+    const pages = await Promise.all([originalFetch(checkout), originalFetch(checkout)]);
+    for (const page of pages) assert.match(await page.text(), /pi_fixture1_secret_fixture/);
+    assert.equal(byId.size, 1);
+    assert.equal(readFileSync(join(directory, 'intents.jsonl'), 'utf8').trim().split('\n').length, 1);
+    assert.match(await (await originalFetch(checkout)).text(), /pi_fixture1_secret_fixture/);
+    assert.equal((await originalFetch(base + '/complete?order_id=' + order.orderId)).status, 409);
+    byId.get('pi_fixture1').status = 'succeeded';
+    const complete = await originalFetch(base + '/complete?order_id=' + order.orderId);
+    assert.equal(complete.status, 200);
+    assert.match(await complete.text(), /Apt 4B/);
+    assert.match(await (await originalFetch(checkout)).text(), /Payment confirmed/);
+    assert.equal(byId.size, 1);
+    const second = await (await originalFetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+    assert.match(await (await originalFetch(base + '/checkout?order_id=' + second.orderId)).text(), /pi_fixture2_secret_fixture/);
+    assert.equal(byId.size, 2);
+    assert.equal(readFileSync(join(directory, 'intents.jsonl'), 'utf8').trim().split('\n').length, 2);
+    assert.equal((await originalFetch(base + '/complete?order_id=unknown')).status, 404);
+  } finally {
+    if (server) await new Promise<void>(resolve => server!.close(() => resolve()));
+    for (const [index, name] of ['STRIPE_TEST_SECRET_KEY', 'STRIPE_TEST_PUBLISHABLE_KEY'].entries()) {
+      if (originalKeys[index] === undefined) delete process.env[name];
+      else process.env[name] = originalKeys[index];
+    }
     rmSync(directory, { recursive: true, force: true });
   }
 });
