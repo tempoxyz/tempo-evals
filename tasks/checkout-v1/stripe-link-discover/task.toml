@@ -35,7 +35,7 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "tsx /srv/snapshot.ts || (sleep 1 && tsx /srv/snapshot.ts)"
+command = "timeout -k 2s 80s tsx /srv/snapshot.ts || (sleep 1 && timeout -k 2s 80s tsx /srv/snapshot.ts)"
 timeout_sec = 180.0
 
 [environment]
