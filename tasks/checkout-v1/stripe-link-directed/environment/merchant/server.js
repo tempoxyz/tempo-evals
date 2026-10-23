@@ -1,6 +1,7 @@
 import { createShipping } from './shipping.js';
 const shipping = createShipping('/checkout');
 import http from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, appendFileSync, readFileSync } from 'node:fs';
 
 const key = process.env.STRIPE_TEST_SECRET_KEY;
@@ -68,6 +69,7 @@ http.createServer(async (request, response) => {
     const shippingOrder = shipping.get(request);
     if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
     const orderId = shippingOrder.id;
+    appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
     const form = new URLSearchParams({
       amount: '1200',
       currency: 'usd',
@@ -82,9 +84,10 @@ http.createServer(async (request, response) => {
       if (!operation) {
         operation = (async () => {
           const existing = intents.get(orderId);
+          // A failed creation has not exposed a client secret, so its retry can use a fresh key.
           const stripe = await fetch(`https://api.stripe.com/v1/payment_intents${existing ? `/${existing}` : ''}`, {
             method: existing ? 'GET' : 'POST',
-            headers: { authorization: `Bearer ${key}`, 'content-type': 'application/x-www-form-urlencoded', 'idempotency-key': `checkout-link-${orderId}` },
+            headers: { authorization: `Bearer ${key}`, 'content-type': 'application/x-www-form-urlencoded', ...(existing ? {} : { 'idempotency-key': `checkout-link-${orderId}-${randomUUID()}` }) },
             body: existing ? undefined : form,
             signal: AbortSignal.timeout(30000),
           });

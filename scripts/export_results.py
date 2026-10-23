@@ -635,6 +635,11 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         for key in ("sessions", "intents", "orders")
         if isinstance(snapshot.get(key), list)
     ]
+    start_count = snapshot.get(
+        "checkoutStartCount", sum(map(len, starts)) if starts else ""
+    )
+    if type(start_count) is not int or start_count < 0:
+        start_count = ""
     docs_source = result_docs_source(result, task["profile"], context)
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
@@ -762,7 +767,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                 "total_tool_calls": efficiency.get(
                     "tool_calls", tool_metrics.get("total_tool_calls", "")
                 ),
-                "checkout_start_count": sum(map(len, starts)) if starts else "",
+                "checkout_start_count": start_count,
                 "credentialed_payment_request_count": snapshot.get(
                     "paymentAttemptCount", ""
                 ),

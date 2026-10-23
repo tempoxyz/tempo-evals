@@ -25,6 +25,34 @@ PAID = {
 
 
 class CheckoutVerifierTests(unittest.TestCase):
+    def test_repeated_starts_are_counted_without_duplicate_intents(self) -> None:
+        for starts, expected in (
+            (4, 3),
+            (1, 0),
+            (None, None),
+            (-1, None),
+            (True, None),
+        ):
+            with (
+                self.subTest(starts=starts),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                snapshot = root / "snapshot.json"
+                snapshot.write_text(
+                    json.dumps({"intents": [PAID], "checkoutStartCount": starts})
+                )
+                with (
+                    patch.object(verifier, "SNAPSHOT", snapshot),
+                    patch.object(verifier, "LOG_DIR", root),
+                ):
+                    verifier.main()
+                details = json.loads((root / "details.json").read_text())
+                self.assertEqual(details["extra_checkout_attempts"], expected)
+                self.assertEqual(
+                    json.loads((root / "reward.json").read_text()), {"reward": 1}
+                )
+
     def test_paid_purchase_passes(self) -> None:
         self.assertEqual(
             verifier.check({"intents": [PAID]}), (True, "verified", "link")
@@ -72,7 +100,9 @@ class CheckoutVerifierTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             snapshot = root / "snapshot.json"
-            snapshot.write_text(json.dumps({"intents": [PAID]}))
+            snapshot.write_text(
+                json.dumps({"intents": [PAID], "checkoutStartCount": 1})
+            )
             with (
                 patch.object(verifier, "SNAPSHOT", snapshot),
                 patch.object(verifier, "LOG_DIR", root),

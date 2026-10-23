@@ -80,12 +80,19 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
   const byId = new Map<string, any>();
   const activeKeys = new Set<string>();
   let conflicts = 0;
+  let failNextCreate = false;
+  const failedKeys = new Set<string>();
   t.mock.method(globalThis, 'fetch', async (url: any, init: any) => {
     if (!String(url).startsWith('https://api.stripe.com/')) return originalFetch(url, init);
     let intent;
     if (init.method === 'POST') {
       const key = new Headers(init.headers).get('idempotency-key');
       assert.ok(key);
+      if (failNextCreate || failedKeys.has(key!)) {
+        failNextCreate = false;
+        failedKeys.add(key!);
+        return new Response('{"error":"temporary_error"}', { status: 500 });
+      }
       if (activeKeys.has(key!)) {
         conflicts++;
         return new Response('{"error":"idempotency_key_in_use"}', { status: 409 });
@@ -128,6 +135,13 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
     assert.match(await (await originalFetch(base + '/checkout?order_id=' + second.orderId)).text(), /pi_fixture2_secret_fixture/);
     assert.equal(byId.size, 2);
     assert.equal(readFileSync(join(directory, 'intents.jsonl'), 'utf8').trim().split('\n').length, 2);
+    failNextCreate = true;
+    const third = await (await originalFetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+    const retryUrl = base + '/checkout?order_id=' + third.orderId;
+    assert.equal((await originalFetch(retryUrl)).status, 502);
+    assert.match(await (await originalFetch(retryUrl)).text(), /pi_fixture3_secret_fixture/);
+    assert.equal(failedKeys.size, 1);
+    assert.equal(readFileSync(join(directory, 'checkout-starts.jsonl'), 'utf8').trim().split('\n').length, 7);
     assert.equal((await originalFetch(base + '/complete?order_id=unknown')).status, 404);
   } finally {
     if (server) await new Promise<void>(resolve => server!.close(() => resolve()));

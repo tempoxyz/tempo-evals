@@ -4,13 +4,15 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const key = process.env.STRIPE_TEST_SECRET_KEY;
 if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
 const dir = '/var/log/checkout';
-let records = [];
-try {
-  records = readFileSync(`${dir}/intents.jsonl`, 'utf8').trim().split('\n')
-    .filter(Boolean).map(line => JSON.parse(line));
-} catch (error) {
-  if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+function readLog(name: string) {
+  try {
+    return readFileSync(`${dir}/${name}.jsonl`, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line));
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
+    return [];
+  }
 }
+const records = readLog('intents');
 
 async function stripeGet(path: string) {
   const response = await fetch(`https://api.stripe.com/v1${path}`, {
@@ -40,4 +42,4 @@ for (const record of records) {
     paymentMethodType: intent.payment_method?.type ?? null,
   });
 }
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), intents }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), intents, checkoutStartCount: readLog('checkout-starts').length }, null, 2) + '\n');

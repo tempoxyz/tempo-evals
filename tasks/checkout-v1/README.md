@@ -203,7 +203,8 @@ time, extra checkout attempts, method, shipping match/mismatches and harness
 version. `trajectory_path` links the original timestamped tool trace. Missing
 telemetry stays unavailable rather than becoming a zero or a perfect score.
 
-`checkout_start_count` is the raw count of Stripe sessions/intents or PayPal
+`checkout_start_count` counts Link checkout requests independently of its
+reused PaymentIntent; other web merchants count Stripe sessions or PayPal
 orders. `credentialed_payment_request_count` is MPP's raw credential-bearing
 request count. These are distinct observations; the current retry score uses
 the existing per-rail proxy. Reported tool errors count native error flags and

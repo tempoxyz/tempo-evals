@@ -645,6 +645,20 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(exported["summary"][0]["mcp_calls"], 2)
             self.assertEqual(exported["summary"][0]["mcp_latency_ms"], "")
             self.assertEqual(exported["summary"][0]["mcp_denied_calls"], "")
+            write_json(
+                trial_dir / "artifacts/var/log/checkout/snapshot.json",
+                {"intents": [{}], "checkoutStartCount": 4},
+            )
+            self.assertEqual(
+                export_results(job_dir)["trials"][0]["checkout_start_count"], 4
+            )
+            write_json(
+                trial_dir / "artifacts/var/log/checkout/snapshot.json",
+                {"intents": [{}], "checkoutStartCount": -1},
+            )
+            self.assertEqual(
+                export_results(job_dir)["trials"][0]["checkout_start_count"], ""
+            )
             self.assertTrue(row["eligible"])
             columns = pd.read_csv(Path(exported["out_dir"]) / "trials.csv").columns
             self.assertIn("payment_provider_type", columns)
