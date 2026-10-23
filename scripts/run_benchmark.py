@@ -680,6 +680,7 @@ def normalize_production_model(
         "n_concurrent": agent_concurrency
         or validate_optional_positive_integer(n_concurrent, "n_concurrent"),
         "concurrency_group": string_field(value, "concurrency_group"),
+        "version": string_field(value, "version"),
     }
 
 
@@ -831,6 +832,8 @@ def production_agent(model: dict[str, Any]) -> dict[str, Any]:
         agent["n_concurrent"] = int(model["n_concurrent"])
     if model.get("concurrency_group"):
         agent["concurrency_group"] = model["concurrency_group"]
+    if model.get("version"):
+        agent["kwargs"] = {"version": model["version"]}
     return agent
 
 

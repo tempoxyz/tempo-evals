@@ -1,0 +1,34 @@
+# Checkout baseline: three model strengths per provider; pinned native harnesses.
+judge_model: anthropic/claude-haiku-4-5-20251001
+n_concurrent_trials: 2
+models:
+- agent: claude-code
+  model_name: claude-haiku-4-5-20251001
+  n_concurrent: 2
+  concurrency_group: anthropic
+  version: 2.1.309
+- agent: claude-code
+  model_name: claude-sonnet-5
+  n_concurrent: 2
+  concurrency_group: anthropic
+  version: 2.1.309
+- agent: claude-code
+  model_name: claude-opus-5-5
+  n_concurrent: 2
+  concurrency_group: anthropic
+  version: 2.1.309
+- agent: codex
+  model_name: gpt-5.6-luna
+  n_concurrent: 2
+  concurrency_group: openai
+  version: 0.163.0
+- agent: codex
+  model_name: gpt-5.6-terra
+  n_concurrent: 2
+  concurrency_group: openai
+  version: 0.163.0
+- agent: codex
+  model_name: gpt-6.1-sol
+  n_concurrent: 2
+  concurrency_group: openai
+  version: 0.163.0

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import tomllib
+from collections import Counter
 from datetime import datetime
 from functools import cache
 from math import comb
@@ -86,6 +87,14 @@ CHECKOUT_TRIAL_COLUMNS = [
     "trajectory_duration_sec",
     "efficiency_model_turns",
     "total_tool_calls",
+    "tool_calls_by_name",
+    "reported_tool_error_count",
+    "agent_harness_version",
+    "checkout_start_count",
+    "credentialed_payment_request_count",
+    "shipping_address_match",
+    "shipping_mismatched_fields",
+    "trajectory_path",
     "quality_unavailable",
 ]
 CHECKOUT_SUMMARY_COLUMNS = ["scenario_id", "prompt_condition", "required_method"]
@@ -436,6 +445,65 @@ def pass_reward(
     return reward
 
 
+def checkout_tool_metrics(trajectory: JsonObject) -> JsonObject:
+    metrics: JsonObject = {
+        "total_tool_calls": "",
+        "tool_calls_by_name": "",
+        "reported_tool_error_count": "",
+        "agent_harness_version": as_string(
+            as_object(trajectory.get("agent")).get("version")
+        ),
+    }
+    if not isinstance(steps := trajectory.get("steps"), list):
+        return metrics
+    counts: Counter[str] = Counter()
+    errors: set[str] = set()
+    for index, step in enumerate(steps):
+        if (
+            not isinstance(step, dict)
+            or step.get("source") != "agent"
+            or step.get("is_copied_context")
+        ):
+            continue
+        calls = step.get("tool_calls")
+        calls = [] if calls is None else calls
+        if not isinstance(calls, list) or any(
+            not isinstance(call, dict) for call in calls
+        ):
+            return metrics
+        counts.update(
+            as_string(call.get("function_name")) or "unknown" for call in calls
+        )
+        for result_index, result in enumerate(
+            as_object(step.get("observation")).get("results") or []
+        ):
+            if not isinstance(result, dict):
+                continue
+            raw = as_object(
+                as_object(
+                    as_object(result.get("extra")).get("tool_result_metadata")
+                ).get("raw_tool_result")
+            )
+            content = result.get("content")
+            if raw.get("is_error") is True or (
+                isinstance(content, str)
+                and (
+                    content.startswith("### Error")
+                    or "<tool_use_error>" in content
+                    or "[error] tool reported failure" in content
+                )
+            ):
+                errors.add(
+                    as_string(result.get("source_call_id")) or f"{index}:{result_index}"
+                )
+    metrics.update(
+        total_tool_calls=sum(counts.values()),
+        tool_calls_by_name=json.dumps(dict(sorted(counts.items()))),
+        reported_tool_error_count=len(errors),
+    )
+    return metrics
+
+
 def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | None:
     result = read_json(file_path)
     if not result or not isinstance(result.get("task_name"), str):
@@ -458,24 +526,42 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         if checkout
         else {}
     )
+    trajectory = (
+        as_object(read_json(file_path.parent / "agent" / "trajectory.json"))
+        if checkout
+        else {}
+    )
+    tool_metrics = checkout_tool_metrics(trajectory) if checkout else {}
+    snapshot = (
+        as_object(
+            read_json(file_path.parent / "artifacts/var/log/checkout/snapshot.json")
+        )
+        if checkout
+        else {}
+    )
+    starts = [
+        snapshot[key]
+        for key in ("sessions", "intents", "orders")
+        if isinstance(snapshot.get(key), list)
+    ]
     docs_source = result_docs_source(result, task["profile"], context)
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
     tokens = token_totals(result)
     trace = trace_metrics(file_path)
-    if checkout and trace["calls"] == "":
-        trajectory = as_object(
-            read_json(file_path.parent / "agent" / "trajectory.json")
+    if (
+        checkout
+        and trace["calls"] == ""
+        and isinstance(steps := trajectory.get("steps"), list)
+    ):
+        trace["calls"] = sum(
+            as_string(as_object(call).get("function_name")).startswith("mcp__")
+            for step in steps
+            if isinstance(step, dict)
+            and step.get("source") == "agent"
+            and not step.get("is_copied_context")
+            for call in step.get("tool_calls") or []
         )
-        if isinstance(steps := trajectory.get("steps"), list):
-            trace["calls"] = sum(
-                as_string(as_object(call).get("function_name")).startswith("mcp__")
-                for step in steps
-                if isinstance(step, dict)
-                and step.get("source") == "agent"
-                and not step.get("is_copied_context")
-                for call in step.get("tool_calls") or []
-            )
     validation = validation_metrics(file_path)
     if (
         judge_available := as_number(rewards.get("quality_judge_available"))
@@ -578,7 +664,25 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                     "trajectory_duration_sec", ""
                 ),
                 "efficiency_model_turns": efficiency.get("model_turns", ""),
-                "total_tool_calls": efficiency.get("tool_calls", ""),
+                **tool_metrics,
+                "total_tool_calls": efficiency.get(
+                    "tool_calls", tool_metrics.get("total_tool_calls", "")
+                ),
+                "checkout_start_count": sum(map(len, starts)) if starts else "",
+                "credentialed_payment_request_count": snapshot.get(
+                    "paymentAttemptCount", ""
+                ),
+                "shipping_address_match": checkout_details.get(
+                    "shipping_address_match", ""
+                ),
+                "shipping_mismatched_fields": json.dumps(
+                    checkout_details["shipping_mismatched_fields"]
+                )
+                if isinstance(checkout_details.get("shipping_mismatched_fields"), list)
+                else "",
+                "trajectory_path": str(file_path.parent / "agent/trajectory.json")
+                if trajectory
+                else "",
                 "quality_unavailable": as_string(efficiency.get("unavailable")),
             }
             if checkout

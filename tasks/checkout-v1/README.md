@@ -180,6 +180,37 @@ When no MCP bridge trace exists, checkout exports count `mcp_calls` from native
 agent trajectory tool calls. Checkout summary totals stay blank if any trial in
 the group lacks that metric, including MCP latency and denial counts.
 
+## Raw metrics and the six-model baseline
+
+Run the ten tasks across all browser profiles with three models per provider:
+
+```sh
+npm run bench:production -- --task-suite checkout --profile all \
+  --models-config config/models.checkout.yaml --n-attempts 1 \
+  --concurrency 2 --agent-concurrency 2 --env-file /path/to/.env.local-checkout \
+  --agent-image "$(npm run --silent agent-image:ref)" \
+  --verifier-image "$(npm run --silent verifier-image:ref)"
+```
+
+This is 180 trials: five merchants, two prompt conditions, three browser
+profiles, six models. The model configuration pins Claude Code and Codex
+versions through native Harbor agent kwargs; existing model configs are unchanged.
+
+Keep each native job directory to recompute quality later. `trials.csv` exposes
+binary outcome, model/trajectory turns, total tool calls and counts by tool name,
+reported tool errors, model-provider tokens/cache/cost, setup/agent/verifier/wall
+time, extra checkout attempts, method, shipping match/mismatches and harness
+version. `trajectory_path` links the original timestamped tool trace. Missing
+telemetry stays unavailable rather than becoming a zero or a perfect score.
+
+`checkout_start_count` is the raw count of Stripe sessions/intents or PayPal
+orders. `credentialed_payment_request_count` is MPP's raw credential-bearing
+request count. These are distinct observations; the current retry score uses
+the existing per-rail proxy. Reported tool errors count native error flags and
+explicit tool-error envelopes, not every failed action inside a shell command.
+Raw trajectories, verifier details and trusted provider snapshots remain the
+source of evidence, independent of the weighted quality formula.
+
 ## Current merchants
 
 All five merchant scenarios request one Tempo Notebook for at most $12 and use

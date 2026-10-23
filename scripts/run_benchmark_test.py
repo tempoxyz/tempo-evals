@@ -1033,6 +1033,28 @@ invalid-name=ignored
 
         preflight.assert_not_called()
 
+    def test_checkout_matrix_pins_native_agent_versions(self) -> None:
+        from harbor.models.job.config import JobConfig
+
+        models = parse_model_config("config/models.checkout.yaml", None)
+        config = render_job_config(
+            production_job(
+                "checkout-pinned", models, {"task_suite": "checkout", "n_attempts": "1"}
+            ),
+            benchmark=None,
+        )
+        native = JobConfig.model_validate(config)
+        self.assertEqual(len(native.agents), 6)
+        for agent in native.agents:
+            self.assertEqual(
+                agent.kwargs["version"],
+                "2.1.309" if agent.name == "claude-code" else "0.163.0",
+            )
+        ordinary = render_job_config(
+            production_job("ordinary", production_model_config(), {}), benchmark=None
+        )
+        self.assertNotIn("kwargs", ordinary["agents"][0])
+
     def test_production_job_uses_native_name_and_requested_attempts(self) -> None:
         run_id = "mpp-bench-v1-production-20260714T202823Z-docs"
         job = production_job(

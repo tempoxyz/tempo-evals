@@ -10,6 +10,7 @@ import pandas as pd
 
 from scripts.compare_mcp_results import compare, summarize_quality_comparison
 from scripts.export_results import (
+    checkout_tool_metrics,
     export_results,
     parse_task_name,
     profile_from_trial,
@@ -362,6 +363,55 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(summary_json["n_trials"], 3)
             self.assertEqual(summary_json["reward_keys"], ["correctness", "reward"])
 
+    def test_checkout_raw_tools_preserve_errors_names_and_missing_data(self) -> None:
+        metrics = checkout_tool_metrics(
+            {
+                "agent": {"version": "pinned"},
+                "steps": [
+                    {
+                        "source": "agent",
+                        "tool_calls": [
+                            {"function_name": "Bash"},
+                            {"function_name": "mcp__browser__browser_click"},
+                        ],
+                        "observation": {
+                            "results": [
+                                {
+                                    "source_call_id": "call-1",
+                                    "content": "### Error: missing element",
+                                },
+                                {
+                                    "source_call_id": "call-1",
+                                    "content": "[error] tool reported failure",
+                                },
+                            ]
+                        },
+                    },
+                    {"source": "agent", "tool_calls": None},
+                    {
+                        "source": "agent",
+                        "is_copied_context": True,
+                        "tool_calls": [{"function_name": "Read"}],
+                    },
+                ],
+            }
+        )
+        self.assertEqual(metrics["total_tool_calls"], 2)
+        self.assertEqual(
+            json.loads(metrics["tool_calls_by_name"]),
+            {"Bash": 1, "mcp__browser__browser_click": 1},
+        )
+        self.assertEqual(metrics["reported_tool_error_count"], 1)
+        self.assertEqual(metrics["agent_harness_version"], "pinned")
+        self.assertEqual(checkout_tool_metrics({})["total_tool_calls"], "")
+        self.assertEqual(checkout_tool_metrics({"steps": []})["total_tool_calls"], 0)
+        self.assertEqual(
+            checkout_tool_metrics(
+                {"steps": [{"source": "agent", "tool_calls": False}]}
+            )["total_tool_calls"],
+            "",
+        )
+
     def test_checkout_export_includes_provider_diagnostics(self) -> None:
         with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
             job_dir = Path(root) / "job"
@@ -383,7 +433,13 @@ class ExportResultsTest(unittest.TestCase):
                     "checkout_stage": "verified",
                     "payment_provider_type": "stripe_sandbox",
                     "extra_checkout_attempts": 0,
+                    "shipping_address_match": True,
+                    "shipping_mismatched_fields": [],
                 },
+            )
+            write_json(
+                trial_dir / "artifacts/var/log/checkout/snapshot.json",
+                {"sessions": [{}, {}], "paymentAttemptCount": 3},
             )
             write_json(
                 trial_dir / "verifier" / "efficiency.json",
@@ -427,6 +483,11 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(row["model_turns"], 99)
             self.assertEqual(row["efficiency_model_turns"], 10)
             self.assertEqual(row["total_tool_calls"], 3)
+            self.assertEqual(row["checkout_start_count"], 2)
+            self.assertEqual(row["credentialed_payment_request_count"], 3)
+            self.assertTrue(row["shipping_address_match"])
+            self.assertEqual(row["shipping_mismatched_fields"], "[]")
+            self.assertEqual(sum(json.loads(row["tool_calls_by_name"]).values()), 3)
             self.assertEqual(row["trajectory_duration_sec"], 150)
             self.assertEqual(row["mcp_calls"], 2)
             self.assertTrue(row["mcp_used"])

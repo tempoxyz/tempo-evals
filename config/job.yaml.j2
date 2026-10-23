@@ -44,6 +44,9 @@ agents:
     concurrency_group: {{ agent.concurrency_group | tojson }}
 {% endif %}
 {% if agent.name == "claude-code" %}
+{% if agent.get("kwargs") %}
+    kwargs: {{ agent.kwargs | tojson }}
+{% endif %}
     env:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 {% if environment_type == "docker" %}
@@ -54,6 +57,9 @@ agents:
 {% endif %}
 {% elif agent.name == "codex" %}
     kwargs:
+{% if agent.get("kwargs", {}).get("version") %}
+      version: {{ agent.kwargs.version | tojson }}
+{% endif %}
       web_search: {{ codex_web_search | tojson }}
     env:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
