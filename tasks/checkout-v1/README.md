@@ -229,7 +229,10 @@ harnesses; the timestamped native logs retain the underlying evidence.
 Raw trajectories, verifier details and trusted provider snapshots remain the
 source of evidence, independent of the weighted quality formula.
 If the CLI log is missing, exports can recover Claude calls and recorded cost
-from Harbor's archive for the exact trajectory session. Unknown costs stay blank.
+from Harbor's archive for the exact trajectory session. The last cost state
+determines cost; unknown costs stay blank. Archive tool counts stay blank when
+the main transcript delegates to subagents, whose separate transcripts are not
+included in this fallback.
 
 ## Current merchants
 

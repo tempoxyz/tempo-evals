@@ -536,6 +536,7 @@ def checkout_native_tool_metrics(agent_dir: Path, session_id: str = "") -> JsonO
     calls: dict[str, str] = {}
     failed: set[str] = set()
     recognized = False
+    archive_delegation = False
     for line in native.read_text(errors="replace").splitlines():
         try:
             event = json.loads(line)
@@ -547,15 +548,16 @@ def checkout_native_tool_metrics(agent_dir: Path, session_id: str = "") -> JsonO
             if event.get("sessionId") != session_id:
                 continue
             recognized |= event.get("type") in {"assistant", "user", "cost-state"}
-            cost = as_number(event.get("totalCostUSD"))
-            if (
-                event.get("type") == "cost-state"
-                and event.get("hasUnknownModelCost") is False
-                and cost is not None
-                and isfinite(cost)
-                and cost >= 0
-            ):
-                metrics["cost_usd"] = cost
+            if event.get("type") == "cost-state":
+                metrics.pop("cost_usd", None)
+                cost = as_number(event.get("totalCostUSD"))
+                if (
+                    event.get("hasUnknownModelCost") is False
+                    and cost is not None
+                    and isfinite(cost)
+                    and cost >= 0
+                ):
+                    metrics["cost_usd"] = cost
         if native == codex:
             recognized |= event.get("type") == "thread.started"
             if event.get("type") != "item.completed":
@@ -600,11 +602,15 @@ def checkout_native_tool_metrics(agent_dir: Path, session_id: str = "") -> JsonO
                     continue
                 if block.get("type") == "tool_use" and block.get("id"):
                     calls[str(block["id"])] = as_string(block.get("name")) or "unknown"
+                    archive_delegation |= archive and block.get("name") in {
+                        "Task",
+                        "Agent",
+                    }
                 elif (
                     block.get("type") == "tool_result" and block.get("is_error") is True
                 ):
                     failed.add(as_string(block.get("tool_use_id")))
-    if recognized:
+    if recognized and not archive_delegation:
         counts = Counter(calls.values())
         metrics.update(
             native_total_tool_calls=len(calls),

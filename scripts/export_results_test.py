@@ -617,9 +617,27 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(export_results(job)["trials"][0]["cost_usd"], 0.5)
             result["agent_result"]["cost_usd"] = None
             write_json(trial_dir / "result.json", result)
-            events[-1]["hasUnknownModelCost"] = True
+            for unknown, cost in ((True, 0.3), (False, -1), (False, float("inf"))):
+                events.append(
+                    {
+                        "type": "cost-state",
+                        "totalCostUSD": cost,
+                        "hasUnknownModelCost": unknown,
+                    }
+                )
+                save()
+                self.assertEqual(export_results(job)["trials"][0]["cost_usd"], "")
+                events.pop()
+            events.append({**events[-1], "totalCostUSD": 0.4})
             save()
-            self.assertEqual(export_results(job)["trials"][0]["cost_usd"], "")
+            self.assertEqual(export_results(job)["trials"][0]["cost_usd"], 0.4)
+            for name in ("Task", "Agent"):
+                events[0]["message"]["content"][0]["name"] = name
+                save()
+                row = export_results(job)["trials"][0]
+                self.assertEqual(row["native_total_tool_calls"], "")
+                self.assertEqual(row["native_failed_tool_calls"], "")
+                self.assertEqual(row["cost_usd"], 0.4)
             write_json(trial_dir / "agent/trajectory.json", {"session_id": "../other"})
             self.assertEqual(
                 export_results(job)["trials"][0]["native_total_tool_calls"], ""
