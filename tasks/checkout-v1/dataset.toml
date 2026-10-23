@@ -11,11 +11,11 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v1/braintree-card-directed"
-digest = "sha256:d732b5a715d848cc8b56841ebfd9bd90ed1e01663e1050042c2f23c2aac16208"
+digest = "sha256:117c452db2357a0fb590a0a343745c5e6ed6f3f7188f27774aa64ec4da761d2f"
 
 [[tasks]]
 name = "checkout-v1/braintree-card-discover"
-digest = "sha256:bcca373927384f7b01b318a2b886d4899566585e0ae4be9dff6ea90a1bc46a00"
+digest = "sha256:893ba946301cfc5cca15fff9a0b692562abe3e382ad52f5888014492481b831b"
 
 [[tasks]]
 name = "checkout-v1/mpp-card-directed"

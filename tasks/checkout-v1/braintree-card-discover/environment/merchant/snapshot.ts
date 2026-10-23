@@ -3,10 +3,21 @@ import { directory, gateway, readLog } from './gateway.ts';
 import { shippingOrders } from './shipping.js';
 
 const trialId = readFileSync(`${directory}/trial-id`, 'utf8');
-const transactions: any[] = [];
+const found = new Map<string, any>();
 // Search the provider, including successful charges whose HTTP response was lost.
 const stream = gateway.transaction.search(search => search.orderId().startsWith(`${trialId}:`));
 for await (const transaction of stream) {
+  found.set(transaction.id, transaction);
+}
+// Search indexing can lag a newly completed sale. Direct retrieval is the
+// authority for recorded transactions; retain search results to catch charges
+// whose response was lost and duplicate payments.
+for (const record of readLog('transactions')) {
+  const transaction = await gateway.transaction.find(record.transactionId);
+  found.set(transaction.id, transaction);
+}
+const transactions: any[] = [];
+for (const transaction of found.values()) {
   const account = await gateway.merchantAccount.find(transaction.merchantAccountId);
   transactions.push({
     id: transaction.id, orderId: transaction.orderId.slice(trialId.length + 1),

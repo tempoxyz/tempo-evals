@@ -61,7 +61,17 @@ def main() -> None:
         "payment_provider_type": "braintree_sandbox"
         if isinstance(snapshot, dict)
         else None,
-        "checkout_stage": "verified" if passed else "payment_unverified",
+        "checkout_stage": (
+            "verified"
+            if passed
+            else "merchant_snapshot_missing"
+            if not isinstance(snapshot, dict)
+            else "payment_observed_unverified"
+            if snapshot.get("transactions")
+            else "session_created"
+            if snapshot.get("checkoutStartCount", 0) > 0
+            else "checkout_not_started"
+        ),
         "extra_checkout_attempts": max(0, snapshot["checkoutStartCount"] - 1)
         if isinstance(snapshot, dict)
         and type(snapshot.get("checkoutStartCount")) is int
