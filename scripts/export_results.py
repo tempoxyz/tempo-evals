@@ -526,7 +526,7 @@ def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
     calls: dict[str, str] = {}
     failed: set[str] = set()
     recognized = False
-    for line in native.read_text().splitlines():
+    for line in native.read_text(errors="replace").splitlines():
         try:
             event = json.loads(line)
         except ValueError:
@@ -539,6 +539,8 @@ def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
                 continue
             item = as_object(event.get("item"))
             kind = item.get("type")
+            if kind in {"agent_message", "reasoning", "error"}:
+                continue
             name = (
                 f"mcp__{item.get('server')}__{item.get('tool')}"
                 if kind == "mcp_tool_call"
@@ -546,7 +548,11 @@ def checkout_native_tool_metrics(agent_dir: Path) -> JsonObject:
                 if kind == "command_execution"
                 else "web_search_call"
                 if kind == "web_search"
-                else ""
+                else "apply_patch"
+                if kind == "file_change"
+                else "update_plan"
+                if kind == "todo_list"
+                else as_string(kind)
             )
             call_id = as_string(item.get("id"))
             if not name or not call_id:

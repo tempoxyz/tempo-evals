@@ -448,14 +448,31 @@ class ExportResultsTest(unittest.TestCase):
                     "type": "item.completed",
                     "item": {"id": "d", "type": "web_search", "status": "completed"},
                 },
+                {
+                    "type": "item.completed",
+                    "item": {"id": "e", "type": "file_change", "status": "failed"},
+                },
+                {
+                    "type": "item.completed",
+                    "item": {"id": "f", "type": "custom_tool", "status": "completed"},
+                },
+                {"type": "item.completed", "item": {"id": "g", "type": "todo_list"}},
+                {
+                    "type": "item.completed",
+                    "item": {"id": "h", "type": "agent_message"},
+                },
             ]
-            (agent / "codex.txt").write_text(
-                "\n".join(json.dumps(e) for e in [*events, events[1]]) + "\nnot json\n"
+            (agent / "codex.txt").write_bytes(
+                (
+                    "\n".join(json.dumps(e) for e in [*events, events[1]])
+                    + "\nnot json\n"
+                ).encode()
+                + b"\xff\n"
             )
             metrics = checkout_native_tool_metrics(agent)
-            self.assertEqual(metrics["native_total_tool_calls"], 4)
+            self.assertEqual(metrics["native_total_tool_calls"], 7)
             self.assertEqual(metrics["native_mcp_calls"], 2)
-            self.assertEqual(metrics["native_failed_tool_calls"], 2)
+            self.assertEqual(metrics["native_failed_tool_calls"], 3)
             self.assertEqual(
                 json.loads(metrics["native_tool_calls_by_name"]),
                 {
@@ -463,6 +480,9 @@ class ExportResultsTest(unittest.TestCase):
                     "mcp__browser__browser_snapshot": 1,
                     "exec_command": 1,
                     "web_search_call": 1,
+                    "apply_patch": 1,
+                    "custom_tool": 1,
+                    "update_plan": 1,
                 },
             )
             write_json(
@@ -484,7 +504,7 @@ class ExportResultsTest(unittest.TestCase):
             )
             row = export_results(agent.parent.parent)["trials"][0]
             self.assertEqual(row["total_tool_calls"], 1)
-            self.assertEqual(row["native_total_tool_calls"], 4)
+            self.assertEqual(row["native_total_tool_calls"], 7)
             self.assertEqual(row["mcp_calls"], 2)
             self.assertTrue(row["mcp_used"])
 
