@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:52f11d106aed8f1a9668a67628148ac8407af0e0700bc4312d005a00adf73bc6"
+digest = "sha256:8fd6567634e98f53ba05402b5406071eb91c952c4406a763858dae7bce31b6ec"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:1db59a4162a0e44d1a99da36c802610a167ed0acbab9ced36d20a2ba601f896e"
+digest = "sha256:58d839da4fb0cbd58e0abc2a94726344b2ce5dd78d255d6931183872761b5dfa"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:f2b4f2e398877078220cb58dd208012ebfed52f0cf37947bf586813b27780fe5"
+digest = "sha256:96fc8d535f999d22952df107f808ca77e3bb8e7fb989818fec61e23abab00381"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:09af03d28dbe2d4721258e9538cbee31248e10f7ac139f78f61d78fe0fad5d1d"
+digest = "sha256:514ca0a667a21b7f568e75e3b20f458ecd52ded2b166928a5aeb3b04b739578a"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:98bd5e7f71d67715285bc4e6d6867277d07efbcee8884330cad0df0150159635"
+digest = "sha256:4a063711117cf487848228733347f648e5ddd0894f99ca74022f5b2c9c665c1b"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:f7707506552cd00eb9d7279bc5358a1b502b0e33bc6b31be148ef9a2dabacf04"
+digest = "sha256:16831dec5067518e2d185b8a8a84a106f0a9af6ecaca94b4e0c8808cc23236a5"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:49c968360a1b3ed8aac07a937a4c103107728db97f345a21b530cb9c5e655ff1"
+digest = "sha256:e52b2c5f83d93fc6d9fa0ef93a03c559d374260cc43c754ada8172de5ea4cdea"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:e2c30bd2b1c6225c8417b531d8cafaa9ae2f63fc0584fc1209a06ede811669c2"
+digest = "sha256:5c7ef90c7d6db390725ddad466d145163cc0bf8cd688d3db07f5440d85229daf"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:088a29d4c56481707628beec871170d04b12acc6910e5a4bc684987207627f7b"
+digest = "sha256:211dd0e14a0e0b99cb8c443e73fc1ab8193858a9fb94fe2f085016dd44a8fb96"
 
