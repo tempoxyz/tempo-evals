@@ -68,7 +68,6 @@ export function readLog(name: string): any[] {
 export function cartUrl(order: { id: string; shipping: Record<string, string> }) {
   const trial = state();
   const url = new URL(`https://${shop}/cart/${variantId.split('/').at(-1)}:1`);
-  url.searchParams.set('storefront', 'true');
   url.searchParams.set('attributes[checkout_trial]', trial.trialId);
   url.searchParams.set('attributes[checkout_order]', order.id);
   url.searchParams.set('checkout[email]', trial.email);

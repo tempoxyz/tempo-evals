@@ -88,7 +88,7 @@ password is shopper access only; Admin app credentials never reach the agent.
 
 The common shipping form forwards the agent's submitted destination into a
 Shopify cart permalink; it never supplies the verifier's expected address.
-The browser continues through the store cart and hosted checkout. Each trial
+The browser continues to Shopify's hosted checkout through a cart permalink. Each trial
 uses its own wallet/contact email, browser session and cart order references.
 The shared catalog is configured once; trials never mutate it or share carts.
 
