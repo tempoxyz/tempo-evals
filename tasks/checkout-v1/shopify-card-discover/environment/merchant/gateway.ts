@@ -35,6 +35,7 @@ export async function catalog() {
   const data = await graphql(`query($id: ID!) {
     shop { myshopifyDomain currencyCode plan { partnerDevelopment } }
     productVariant(id: $id) { id price taxable inventoryItem { requiresShipping } product { title status } }
+    orders(first: 1) { nodes { id email shippingAddress { name address1 address2 city provinceCode zip countryCodeV2 } } }
   }`, { id: variantId });
   const item = data.productVariant;
   if (data.shop.myshopifyDomain !== shop || data.shop.plan.partnerDevelopment !== true || data.shop.currencyCode !== 'USD'

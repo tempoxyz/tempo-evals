@@ -76,12 +76,13 @@ Payments processing. Set `SHOPIFY_SHOP` (the full `*.myshopify.com` domain),
 variant ID), and `SHOPIFY_STOREFRONT_PASSWORD` in the ignored checkout env file.
 Create the app and dev store under the same Shopify organization; install the
 app with `read_orders`, `read_products`, and `write_products` for catalog setup.
+Select custom distribution so the verifier can read protected test-order data.
 Client credentials mint short-lived Admin API tokens in trusted sidecars.
 
 Seed one active, published, non-taxable, physical Tempo Notebook at USD 12,
 with SKU `TEMPO-NOTEBOOK`, untracked inventory and free US shipping. Activate
 Shopify's test payment gateway. Runtime setup checks the development-store flag,
-currency and product configuration. The wallet retains its normal Stripe/Link
+currency, product configuration and order/address read access. The wallet retains its normal Stripe/Link
 card and adds `storefront.password` and `storefront.testCard`; Shopify's test
 gateway uses card number `1` for an approved test transaction. The storefront
 password is shopper access only; Admin app credentials never reach the agent.
