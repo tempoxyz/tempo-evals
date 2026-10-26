@@ -102,6 +102,9 @@ manual payment statuses, wrong items/addresses and real transactions fail.
 The unique contact email also correlates purchases made through the storefront
 after its password gate drops cart attributes; those tracking fields are not
 an extra agent requirement.
+Its retry proxy counts distinct checkout order handoffs, so resuming the same
+cart after unlocking the dev store is not another attempt. The snapshot also
+retains the raw handoff request count.
 Run `--task-filter 'shopify-card-*'` for the pair on any existing browser profile.
 
 The seven discover tasks are the authored sources. `config/tasks.yaml` declares

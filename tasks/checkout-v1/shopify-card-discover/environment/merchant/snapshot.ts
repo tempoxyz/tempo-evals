@@ -4,6 +4,7 @@ import { catalog, directory, orders, readLog, state, variantId } from './gateway
 
 const shop = await catalog();
 const payments = await orders();
+const starts = readLog('checkout-starts');
 // Grade the final address Shopify actually recorded, including any edits in
 // hosted checkout. The local form alone never proves the fulfillment address.
 const addresses = payments.map(order => ({
@@ -17,5 +18,6 @@ const addresses = payments.map(order => ({
 writeFileSync(`${directory}/snapshot.json`, JSON.stringify({
   provider: 'shopify_test_gateway', ...state(), shop, expectedVariantId: variantId,
   orders: payments, shippingOrders: addresses,
-  checkoutStartCount: readLog('checkout-starts').length,
+  checkoutStartCount: new Set(starts.map(row => row.orderId)).size,
+  checkoutHandoffRequestCount: starts.length,
 }, null, 2) + '\n');
