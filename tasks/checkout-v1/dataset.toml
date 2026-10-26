@@ -59,11 +59,11 @@ digest = "sha256:e67363b0441bbca8c2cf4c7107a644af5810ab3d131e206026a95ba9867ec5c
 
 [[tasks]]
 name = "checkout-v1/shopify-card-directed"
-digest = "sha256:e267fc5375da1c7792a3bbf79ec87576b3b9a2eee47d98bab15cff24468eb3a2"
+digest = "sha256:c05c2de5e2cdf0ee279f0409e950704c30db665647af6085298d57efbd18f68f"
 
 [[tasks]]
 name = "checkout-v1/shopify-card-discover"
-digest = "sha256:61fc7dc70bda8fb2f9d3788091de95439de24bcb02a2fb392beafeed0225fdbe"
+digest = "sha256:c7a654d828b69ddf872218038cef140995e0d4da4667a4a21de60433d355b2fa"
 
 [[tasks]]
 name = "checkout-v1/stripe-card-directed"
