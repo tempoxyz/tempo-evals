@@ -263,6 +263,11 @@ invalid-name=ignored
             "BRAINTREE_MERCHANT_ID": "test",
             "BRAINTREE_PUBLIC_KEY": "test",
             "BRAINTREE_PRIVATE_KEY": "test",
+            "SHOPIFY_SHOP": "test.myshopify.com",
+            "SHOPIFY_CLIENT_ID": "test",
+            "SHOPIFY_CLIENT_SECRET": "test",
+            "SHOPIFY_VARIANT_ID": "gid://shopify/ProductVariant/1",
+            "SHOPIFY_STOREFRONT_PASSWORD": "test",
             "STRIPE_TEST_SECRET_KEY": "sk_test_fake",
             "STRIPE_TEST_PUBLISHABLE_KEY": "pk_test_fake",
             "PAYPAL_SANDBOX_BUYER_EMAIL": "test@example.com",
@@ -568,6 +573,7 @@ invalid-name=ignored
         for slug, missing in (
             ("stripe-link-directed", "STRIPE_TEST_PUBLISHABLE_KEY"),
             ("paypal-directed", "PAYPAL_SANDBOX_CLIENT_ID"),
+            ("shopify-card-directed", "SHOPIFY_SHOP"),
         ):
             for selection in (
                 {"task_filter": slug},

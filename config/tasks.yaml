@@ -68,6 +68,10 @@ checkout:
       task: braintree-card-directed
       method: card
       instruction: Use card to pay.
+    shopify-card-discover:
+      task: shopify-card-directed
+      method: card
+      instruction: Use card to pay.
   prepared:
     mpp-card-discover: mppcard-prepared-discover
     mpp-card-directed: mppcard-prepared-directed

@@ -1,6 +1,6 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Sixteen Harbor tasks cover six
+Planned dataset: `tempo/checkout-bench-v1`. Eighteen Harbor tasks cover seven
 merchants with required shipping and discover/directed prompts. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
@@ -31,6 +31,7 @@ Every merchant has discover/directed native Harbor tasks:
 | `mpp-ousd-discover` | `mpp-ousd-directed` | Use MPP to pay. |
 | `mpp-card-discover` | `mpp-card-directed` | Use card over MPP to pay. |
 | `braintree-card-discover` | `braintree-card-directed` | Use card to pay. |
+| `shopify-card-discover` | `shopify-card-directed` | Use card to pay. |
 
 ### Prepared MPP tasks
 
@@ -66,14 +67,47 @@ the common shipping verifier checks the complete requested destination. Every
 trial has independent orders and wallet state, so shared merchant credentials
 do not serialize concurrent runs.
 
-The six discover tasks are the authored sources. `config/tasks.yaml` declares
+### Shopify storefront
+
+The Shopify pair uses a dedicated development store and Shopify's test payment
+gateway. This measures a hosted storefront/card-form workflow, not live Shopify
+Payments processing. Set `SHOPIFY_SHOP` (the full `*.myshopify.com` domain),
+`SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `SHOPIFY_VARIANT_ID` (the GraphQL
+variant ID), and `SHOPIFY_STOREFRONT_PASSWORD` in the ignored checkout env file.
+Create the app and dev store under the same Shopify organization; install the
+app with `read_orders`, `read_products`, and `write_products` for catalog setup.
+Client credentials mint short-lived Admin API tokens in trusted sidecars.
+
+Seed one active, published, non-taxable, physical Tempo Notebook at USD 12,
+with SKU `TEMPO-NOTEBOOK`, untracked inventory and free US shipping. Activate
+Shopify's test payment gateway. Runtime setup checks the development-store flag,
+currency and product configuration. The wallet retains its normal Stripe/Link
+card and adds `storefront.password` and `storefront.testCard`; Shopify's test
+gateway uses card number `1` for an approved test transaction. The storefront
+password is shopper access only; Admin app credentials never reach the agent.
+
+The common shipping form forwards the agent's submitted destination into a
+Shopify cart permalink; it never supplies the verifier's expected address.
+The browser continues through the store cart and hosted checkout. Each trial
+uses its own wallet/contact email, browser session and cart order references.
+The shared catalog is configured once; trials never mutate it or share carts.
+
+The snapshot reads Shopify orders independently, matching trial attributes or
+unique contact email. Correctness requires exactly one successful test-gateway
+sale/capture and paid, unrefunded order for the correct variant, quantity and
+USD 12 total. It verifies the final shipping address returned by Shopify,
+including changes made in hosted checkout. Duplicate or refunded purchases,
+manual payment statuses, wrong items/addresses and real transactions fail.
+Run `--task-filter 'shopify-card-*'` for the pair on any existing browser profile.
+
+The seven discover tasks are the authored sources. `config/tasks.yaml` declares
 peer names and method instructions; `npm run sync` generates their standalone
 directed task directories. Edit the source task to change a pair's merchant,
 wallet setup, oracle, verifier, or scoring. Only the task name, provenance marker,
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all sixteen tasks, including oracle runs. Use
+`--task-suite checkout` runs all eighteen tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -98,7 +132,7 @@ Every checkout task requires the same recipient and full shipping destination.
 Shipping is part of the default task, alongside buying one Tempo Notebook for
 $12; there are no separate shipping task variants.
 
-The six discover tasks own their merchant adapters, provider snapshots and
+The seven discover tasks own their merchant adapters, provider snapshots and
 oracles. Shared shipping input, order storage, address fixture and verifier
 live in `shared/checkout/shipping/`; `npm run sync` copies these assets into
 each task before generating directed peers. The provider-specific
@@ -112,7 +146,7 @@ apartment/suite, city, state code, postal code and country code. The apartment
 field is optional in the generic store but required by this task's destination.
 API clients can submit the same fields as a `shipping` JSON object to
 `POST /shipping`; the response returns an order-specific `paymentUrl`. This is
-available across all six merchants. Agents choose their own interaction tools.
+available across all seven merchants. Agents choose their own interaction tools.
 
 Submitted destinations are stored as immutable, trial-local orders. The store
 checks input structure, not whether it matches the expected answer. Payment
@@ -217,7 +251,7 @@ the group lacks that metric, including MCP latency and denial counts.
 
 ## Raw metrics and the six-model baseline
 
-Run the ten tasks across all browser profiles with three models per provider:
+Run the suite across all browser profiles with three models per provider:
 
 ```sh
 npm run bench:production -- --task-suite checkout --profile all \
@@ -227,8 +261,8 @@ npm run bench:production -- --task-suite checkout --profile all \
   --verifier-image "$(npm run --silent verifier-image:ref)"
 ```
 
-The original ten-task baseline had 180 trials. The expanded sixteen-task suite
-has 288 trials across three browser profiles and six models. The model configuration pins Claude Code and Codex
+The original ten-task baseline had 180 trials. The expanded eighteen-task suite
+has 324 trials across three browser profiles and six models. The model configuration pins Claude Code and Codex
 versions through native Harbor agent kwargs; existing model configs are unchanged.
 
 Keep each native job directory to recompute quality later. `trials.csv` exposes
@@ -271,7 +305,7 @@ included in this fallback.
 
 ## Current merchants
 
-All six merchant scenarios request one Tempo Notebook for at most $12 and use
+All seven merchant scenarios request one Tempo Notebook for at most $12 and use
 the same purchase request and Playwright browser. Each trial wallet lists its
 prepared payment methods. Only directed prompts name the method to use. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
@@ -289,14 +323,16 @@ merchant through it.
 | `mpp-card-discover` | Stripe MPP card paid endpoint only | One notebook delivery and MPP receipt matched to a captured, unrefunded sandbox card PaymentIntent |
 | `paypal-discover` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
 | `braintree-card-discover` | Braintree Hosted Fields card form | One unrefunded sandbox card sale submitted for settlement and matching shipping order |
+| `shopify-card-discover` | Shopify development storefront and test card gateway | One paid, unrefunded test order with matching variant, total, trial and provider-recorded shipping address |
 Every trial runs the same wallet, Link enrollment, and browser services before
 the agent starts. After Link enrollment, a shared Compose readiness step opens
 the merchant through the selected browser. A broken browser connection fails
 environment setup before the agent starts. The wallet service creates a fresh
 Tempo testnet payer and confirms its faucet funding independently of other
 trials. Link enrollment prepares a unique identity using a synthetic sandbox card. The agent sees the
-same wallet fields and payment methods across tasks; merchant and verifier
-sidecars differ. Cold MPP agents receive no preinstalled payment helper or payment
+same base wallet inventory across tasks; merchant and verifier sidecars differ.
+Shopify adds shopper access and test-gateway details under `wallet.storefront`,
+and Braintree uses a compatible sandbox card fixture. Cold MPP agents receive no preinstalled payment helper or payment
 SDK and may install the dependencies they choose. Prepared tasks add the client
 and guide described above. Merchant credentials stay in
 trusted sidecars.
@@ -333,7 +369,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all sixteen tasks per job. Model trials retain the shared pair
+all eighteen tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

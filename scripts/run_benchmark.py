@@ -438,6 +438,19 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
                 raise RuntimeError(
                     f"Braintree checkout runs require {', '.join(missing)}"
                 )
+        if "shopify-card-discover" in selected:
+            required = (
+                "SHOPIFY_SHOP",
+                "SHOPIFY_CLIENT_ID",
+                "SHOPIFY_CLIENT_SECRET",
+                "SHOPIFY_VARIANT_ID",
+                "SHOPIFY_STOREFRONT_PASSWORD",
+            )
+            missing = [name for name in required if not os.environ.get(name)]
+            if missing:
+                raise RuntimeError(
+                    f"Shopify checkout runs require {', '.join(missing)}"
+                )
     effective_agents = effective_agent_names(variant, options)
     needs_agent_auth = variant.get("needs_agent_auth") and effective_agents
     if needs_agent_auth and "claude-code" in effective_agents and not has_claude_auth():

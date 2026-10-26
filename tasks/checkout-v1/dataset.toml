@@ -58,6 +58,14 @@ name = "checkout-v1/paypal-discover"
 digest = "sha256:3fef0858eb5266d7265efe5edf975bb45d86a38d221b55e8b0b4e2384d071d17"
 
 [[tasks]]
+name = "checkout-v1/shopify-card-directed"
+digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[[tasks]]
+name = "checkout-v1/shopify-card-discover"
+digest = "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+
+[[tasks]]
 name = "checkout-v1/stripe-card-directed"
 digest = "sha256:eb1474cb2c2f3da472258f60afbfe3fffe78a6e1338c557fb55385c48bb12f3a"
 

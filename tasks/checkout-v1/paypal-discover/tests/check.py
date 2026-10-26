@@ -19,8 +19,14 @@ def paid_order_id(snapshot):
         (
             "orders",
             lambda row: (
-                isinstance(row.get("capture"), dict)
-                and row["capture"].get("status") == "COMPLETED"
+                (
+                    isinstance(row.get("capture"), dict)
+                    and row["capture"].get("status") == "COMPLETED"
+                )
+                or (
+                    snapshot.get("provider") == "shopify_test_gateway"
+                    and row.get("financialStatus") == "PAID"
+                )
             ),
         ),
         ("deliveries", lambda row: row.get("receiptStatus") == "success"),
