@@ -48,8 +48,9 @@ def check(snapshot):
         or shop.get("plan", {}).get("partnerDevelopment") is not True
         or shop.get("currencyCode") != "USD"
         or not snapshot.get("trialId")
-        or order.get("trialReference") != snapshot["trialId"]
-        or order.get("orderId") not in snapshot.get("draftOrderIds", [])
+        or order.get("trialReference") not in (None, snapshot["trialId"])
+        or not order.get("id")
+        or order.get("orderId") != order["id"]
         or order.get("email") != snapshot.get("email")
         or order.get("test") is not True
         or charge.get("test") is not True

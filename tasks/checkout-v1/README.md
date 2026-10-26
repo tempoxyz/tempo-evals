@@ -99,6 +99,9 @@ sale/capture and paid, unrefunded order for the correct variant, quantity and
 USD 12 total. It verifies the final shipping address returned by Shopify,
 including changes made in hosted checkout. Duplicate or refunded purchases,
 manual payment statuses, wrong items/addresses and real transactions fail.
+The unique contact email also correlates purchases made through the storefront
+after its password gate drops cart attributes; those tracking fields are not
+an extra agent requirement.
 Run `--task-filter 'shopify-card-*'` for the pair on any existing browser profile.
 
 The seven discover tasks are the authored sources. `config/tasks.yaml` declares

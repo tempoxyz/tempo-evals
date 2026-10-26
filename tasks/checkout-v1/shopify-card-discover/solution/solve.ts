@@ -66,7 +66,7 @@ async function main(): Promise<void> {
     await page.getByRole('textbox', { name: 'Email', exact: true }).fill(${JSON.stringify(email)});
     async function fillField(label, value) {
       // Shopify labels the iframe and its inner input differently.
-      await page.frameLocator('iframe[title="' + label + '"]').getByRole('textbox').fill(value, { timeout: 60000 });
+      await page.frameLocator('iframe[title$="' + label + '"]').getByRole('textbox').fill(value, { timeout: 60000 });
     }
     await fillField('Card number', ${JSON.stringify(card.number)});
     await fillField('Expiration date (MM / YY)', ${JSON.stringify(card.expMonth + '/' + String(card.expYear).slice(-2))});

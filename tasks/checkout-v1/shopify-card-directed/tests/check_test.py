@@ -2,6 +2,7 @@
 import copy
 import unittest
 
+import check as shipping_verifier
 import payment_check as verifier
 
 PAID = {
@@ -10,12 +11,11 @@ PAID = {
     "email": "trial@example.com",
     "shop": {"currencyCode": "USD", "plan": {"partnerDevelopment": True}},
     "expectedVariantId": "gid://shopify/ProductVariant/1",
-    "draftOrderIds": ["order"],
     "checkoutStartCount": 1,
     "orders": [
         {
             "id": "gid://shopify/Order/1",
-            "orderId": "order",
+            "orderId": "gid://shopify/Order/1",
             "trialReference": "trial",
             "email": "trial@example.com",
             "financialStatus": "PAID",
@@ -59,6 +59,21 @@ PAID = {
 
 
 class PaymentCheckTest(unittest.TestCase):
+    def test_storefront_purchase_without_cart_attributes_passes(self):
+        snapshot = copy.deepcopy(PAID)
+        snapshot["orders"][0]["trialReference"] = None
+        snapshot["shippingOrders"] = [
+            {
+                "id": snapshot["orders"][0]["id"],
+                "shipping": copy.deepcopy(shipping_verifier.EXPECTED),
+            }
+        ]
+        self.assertTrue(shipping_verifier.check(snapshot)[0])
+        snapshot["shippingOrders"][0]["shipping"]["line2"] = "Apt 9"
+        self.assertFalse(shipping_verifier.check(snapshot)[0])
+        snapshot["orders"][0]["email"] = "another@example.com"
+        self.assertFalse(verifier.check(snapshot)[0])
+
     def test_paid_order_passes_and_unpaid_order_fails(self):
         self.assertTrue(verifier.check(PAID)[0])
         for status in ["PENDING", "AUTHORIZED", "REFUNDED", "PARTIALLY_PAID"]:

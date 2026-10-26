@@ -34,12 +34,13 @@ export async function graphql(query: string, variables: object = {}): Promise<an
 export async function catalog() {
   const data = await graphql(`query($id: ID!) {
     shop { myshopifyDomain currencyCode plan { partnerDevelopment } }
-    productVariant(id: $id) { id price taxable inventoryItem { requiresShipping } product { title status } }
+    productVariant(id: $id) { id price taxable inventoryItem { requiresShipping sku tracked } product { title status } }
     orders(first: 1) { nodes { id email shippingAddress { name address1 address2 city provinceCode zip countryCodeV2 } } }
   }`, { id: variantId });
   const item = data.productVariant;
   if (data.shop.myshopifyDomain !== shop || data.shop.plan.partnerDevelopment !== true || data.shop.currencyCode !== 'USD'
     || !item || item.price !== '12.00' || item.taxable !== false || item.inventoryItem.requiresShipping !== true
+    || item.inventoryItem.sku !== 'TEMPO-NOTEBOOK' || item.inventoryItem.tracked !== false
     || item.product.title !== 'Tempo Notebook' || item.product.status !== 'ACTIVE') {
     throw new Error('Shopify dev-store notebook configuration mismatch');
   }
@@ -90,7 +91,7 @@ export async function orders() {
   let after: string | null = null;
   do {
     const data = await graphql(`query($query: String!, $after: String) {
-      orders(first: 100, after: $after, query: $query, sortKey: CREATED_AT) {
+      orders(first: 20, after: $after, query: $query, sortKey: CREATED_AT) {
         pageInfo { hasNextPage endCursor }
         nodes {
           id email test cancelledAt displayFinancialStatus customAttributes { key value }
@@ -112,7 +113,7 @@ export async function orders() {
         return values.length === 1 ? values[0].value : null;
       };
       if (attribute('checkout_trial') === trial.trialId || order.email?.toLowerCase() === trial.email.toLowerCase()) {
-        result.push({ ...order, orderId: attribute('checkout_order'), trialReference: attribute('checkout_trial'), financialStatus: order.displayFinancialStatus,
+        result.push({ ...order, orderId: order.id, checkoutOrderReference: attribute('checkout_order'), trialReference: attribute('checkout_trial'), financialStatus: order.displayFinancialStatus,
           paymentMethodType: order.transactions.some((t: any) => t.gateway === 'bogus') ? 'card' : null });
       }
     }
