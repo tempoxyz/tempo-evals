@@ -264,6 +264,8 @@ def sync_checkout_shipping() -> None:
             ("oracle.ts", "solution/shipping.ts"),
             ("address.json", "solution/shipping.json"),
             ("address.json", "tests/shipping.json"),
+            ("order.json", "solution/order.json"),
+            ("order.json", "tests/order.json"),
             ("check.py", "tests/check.py"),
         ):
             copy_file(CHECKOUT_SHARED_DIR / "shipping" / source, task_dir / target)
@@ -406,6 +408,87 @@ def sync_checkout_prepared_variants() -> None:
         )
 
 
+def sync_checkout_cart_variants() -> None:
+    """Generate directed cart-store tasks from the authored discover tasks.
+
+    A cart task keeps its source's payment adapter, wallet, oracle and payment
+    verification. Only the store module, order fixture and purchase request
+    differ, and they are the same for every payment method.
+    """
+    cart = CHECKOUT_SHARED_DIR / "cart"
+    for slug, target_slug in TASKS_CONFIG["checkout"].get("cart", {}).items():
+        source = CHECKOUT_TASKS_DIR / slug
+        target = CHECKOUT_TASKS_DIR / target_slug
+        prompt = TASKS_CONFIG["checkout"]["directed"][slug]
+        remove_path(target)
+        shutil.copytree(
+            source,
+            target,
+            ignore=shutil.ignore_patterns(
+                "node_modules",
+                "__pycache__",
+                "*.pyc",
+                "package-lock.json",
+                ".env",
+                ".env.*",
+                "*.pem",
+                "*.key",
+                ".DS_Store",
+                # Source unit tests use the single-notebook fixture.
+                "check_test.py",
+            ),
+        )
+        for name, destination in (
+            ("merchant.js", "environment/merchant/shipping.js"),
+            ("oracle.ts", "solution/shipping.ts"),
+            ("order.json", "solution/order.json"),
+            ("order.json", "tests/order.json"),
+        ):
+            copy_file(cart / name, target / destination)
+        metadata = tomlkit.parse((source / "task.toml").read_text())
+        metadata["task"]["name"] = f"checkout-v1/{target_slug}"
+        metadata["task"]["description"] = (
+            "Buy a multi-item cart within budget and supply the requested "
+            "shipping address."
+        )
+        metadata["metadata"].update(
+            scenario_id=f"checkout-v1/{target_slug}",
+            prompt_condition="directed",
+            required_method=prompt["method"],
+            store="cart",
+            source_task=slug,
+        )
+        write_file(target / "task.toml", tomlkit.dumps(metadata))
+        instruction = (source / "instruction.md").read_text()
+        request = re.search(
+            r"^# Buy a notebook\n.*?Complete the purchase once\.\n",
+            instruction,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        if not request:
+            raise ValueError(f"{source}: expected the notebook purchase request")
+        marker = uuid.uuid5(uuid.NAMESPACE_URL, f"checkout-v1/{target_slug}")
+        instruction = re.sub(
+            r"<!-- stable-bench-canary: [0-9a-f-]+ -->",
+            f"<!-- stable-bench-canary: {marker} -->",
+            instruction[: request.start()]
+            + (cart / "request.md").read_text()
+            + f"{prompt['instruction']}\n"
+            + instruction[request.end() :],
+            count=1,
+        )
+        write_file(target / "instruction.md", instruction)
+        write_file(
+            target / "README.md",
+            f"<!-- Generated from {slug} by npm run sync; edit the source task "
+            "and shared/checkout/cart. -->\n"
+            + CHECKOUT_CANARY.replace("# ", "<!-- ", 1).rstrip("\n")
+            + " -->\n"
+            + (cart / "README.md").read_text()
+            + f"\n## Payment instruction\n\n{prompt['instruction']}\n",
+        )
+
+
 def write_mpp_dataset_manifest() -> None:
     dataset_path = MPP_TASKS_DIR / "dataset.toml"
     digests = read_manifest_digests(dataset_path)
@@ -467,6 +550,7 @@ def main() -> None:
     sync_checkout_shipping()
     sync_checkout_prompt_variants()
     sync_checkout_prepared_variants()
+    sync_checkout_cart_variants()
     write_dataset_manifest()
     write_mcp_dataset_manifest()
     write_mpp_dataset_manifest()

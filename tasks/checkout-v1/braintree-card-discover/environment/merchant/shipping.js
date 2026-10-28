@@ -60,7 +60,8 @@ export function createShipping(paymentPath) {
       // Validate input shape, never the task's expected address. Incorrect valid
       // destinations can be purchased and must fail independent verification.
       if (!/^[A-Za-z]{2}$/.test(shipping.country)) throw new Error('Use a two-letter country code');
-      const order = { id: randomUUID(), shipping, source: isJson ? 'json' : 'form' };
+      // Rail adapters charge the order's description and total (USD cents).
+      const order = { id: randomUUID(), shipping, source: isJson ? 'json' : 'form', description: 'Tempo Notebook', total: 1200 };
       appendFileSync(file, JSON.stringify(order) + '\n');
       orders.set(order.id, order);
       const paymentUrl = `http://merchant:3000${paymentPath}?order_id=${order.id}`;

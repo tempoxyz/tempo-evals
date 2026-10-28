@@ -1,7 +1,8 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Eighteen Harbor tasks cover seven
-merchants with required shipping and discover/directed prompts. The dataset is not published.
+Planned dataset: `tempo/checkout-bench-v1`. Twenty Harbor tasks cover seven
+merchants with required shipping and discover/directed prompts, plus a cart
+store on two payment methods. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
@@ -114,7 +115,7 @@ wallet setup, oracle, verifier, or scoring. Only the task name, provenance marke
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all eighteen tasks, including oracle runs. Use
+`--task-suite checkout` runs all twenty tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -132,6 +133,38 @@ checkouts. It is blank when unknown or when multiple methods were observed;
 not imply success. The existing success-only `payment_method` column remains.
 Shared observation and grading code lives in `shared/checkout/tests/` and is
 copied into every checkout task by `npm run sync`.
+
+## Cart store
+
+Cart tasks put a payment method's unchanged adapter behind a harder store, to
+separate models that pass the single-notebook tasks. The request is two A5
+dotted Tempo Notebooks and one Tempo Pen for at most $35, shipped to the usual
+address. The store lists notebooks in two sizes (A5 $12, A4 $14) and three page
+styles, a pen ($4) and a sticker pack ($3). The form defaults to one A4 lined
+notebook and preselects Express shipping ($15); only Standard ($5) keeps the
+order within budget, at $33. API clients can `GET /catalog` and `POST /shipping`
+with `items`, `shippingOption` and `shipping`; the response includes the total.
+
+| Cart task | Source task | Added instruction |
+| --- | --- | --- |
+| `cart-stripe-card-directed` | `stripe-card-discover` | Use card to pay. |
+| `cart-mpp-ousd-directed` | `mpp-ousd-discover` | Use MPP to pay. |
+
+`config/tasks.yaml` lists the sources under `checkout.cart`; sync generates each
+cart task from its source and `shared/checkout/cart/`. Only the store module,
+order fixture, oracle helper and purchase request differ from the source task,
+and they are the same for every payment method. Cart tasks are directed only,
+so the method is not a second variable. Their `scenario_id` is their own; the
+`source_task` metadata selects the source's credential checks.
+
+Every store records an immutable order with its description and total in USD
+cents, and every payment adapter charges that order: the single-notebook store
+always records "Tempo Notebook" for 1200. Each payment check requires the
+provider payment to match the description and total in `tests/order.json`.
+The shared `tests/check.py` then requires the paid order's total and, for the
+cart, its exact lines and shipping option. A paid order that differs fails as
+`order_mismatch`; details and exports record `order_match` and
+`order_mismatched_fields` (`total`, `lines`, `shippingOption`).
 
 ## Required shipping
 
@@ -376,7 +409,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all eighteen tasks per job. Model trials retain the shared pair
+all twenty tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 
