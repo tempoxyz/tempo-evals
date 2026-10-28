@@ -72,6 +72,10 @@ checkout:
       task: shopify-card-directed
       method: card
       instruction: Use card to pay.
+    x402-usdc-discover:
+      task: x402-usdc-directed
+      method: x402
+      instruction: Use x402 to pay.
   prepared:
     mpp-card-discover: mppcard-prepared-discover
     mpp-card-directed: mppcard-prepared-directed

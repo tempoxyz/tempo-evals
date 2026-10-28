@@ -16,7 +16,7 @@ export function shippingOrders() {
     return [];
   }
 }
-export function createShipping(paymentPath) {
+export function createShipping(paymentPath, { price = '12.00' } = {}) {
   mkdirSync(directory, { recursive: true });
   const orders = new Map(shippingOrders().map(order => [order.id, order]));
   function get(request) {
@@ -29,7 +29,7 @@ export function createShipping(paymentPath) {
     const order = orders.get(orderId);
     if (!order) return json(response, 404, { error: 'Unknown order' });
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(
-      `<!doctype html><title>Order confirmed</title><h1>Payment confirmed</h1><p>Tempo Notebook · Quantity 1 · $12.00</p><h2>Shipping destination</h2><address>${Object.values(order.shipping).map(escape).join('<br>')}</address><p>Order ${escape(order.id)}</p>`);
+      `<!doctype html><title>Order confirmed</title><h1>Payment confirmed</h1><p>Tempo Notebook · Quantity 1 · $${escape(price)}</p><h2>Shipping destination</h2><address>${Object.values(order.shipping).map(escape).join('<br>')}</address><p>Order ${escape(order.id)}</p>`);
   }
   async function handle(request, response) {
     const path = new URL(request.url || '/', 'http://merchant:3000').pathname;
@@ -37,7 +37,7 @@ export function createShipping(paymentPath) {
       const inputs = Object.entries(fields).map(([name, label]) =>
         `<label for="${name}">${label}</label><input id="${name}" name="${name}" ${name === 'line2' ? '' : 'required'} maxlength="200" autocomplete="shipping ${({ name: 'name', line1: 'address-line1', line2: 'address-line2', city: 'address-level2', state: 'address-level1', postalCode: 'postal-code', country: 'country' })[name]}">`).join('');
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(
-        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Notebook Store</title><style>body{font:16px system-ui;max-width:480px;margin:32px auto}label,input{display:block}input{box-sizing:border-box;width:100%;padding:8px;margin:4px 0 12px}button{padding:12px}</style></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00 total, including shipping</p><h2>Shipping address</h2><form method="post" action="/shipping">${inputs}<button>Continue to payment</button></form><p>API clients can POST JSON to /shipping with Content-Type: application/json and a shipping object containing name, line1, line2, city, state, postalCode, country. Follow the returned paymentUrl to pay.</p></main></body></html>`);
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Notebook Store</title><style>body{font:16px system-ui;max-width:480px;margin:32px auto}label,input{display:block}input{box-sizing:border-box;width:100%;padding:8px;margin:4px 0 12px}button{padding:12px}</style></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $${escape(price)} total, including shipping</p><h2>Shipping address</h2><form method="post" action="/shipping">${inputs}<button>Continue to payment</button></form><p>API clients can POST JSON to /shipping with Content-Type: application/json and a shipping object containing name, line1, line2, city, state, postalCode, country. Follow the returned paymentUrl to pay.</p></main></body></html>`);
       return true;
     }
     if (path !== '/shipping' || request.method !== 'POST') return false;
