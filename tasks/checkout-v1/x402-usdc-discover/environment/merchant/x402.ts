@@ -25,12 +25,12 @@ export const retryingFetch: typeof fetch = async (input, init) => {
     try {
       response = await fetch(input, init);
     } catch (error) {
-      if (attempt >= 6) throw error;
+      if (attempt >= 6 || init?.signal?.aborted) throw error;
     }
     if (response) {
       if (attempt >= 6 || !(await retryable(response))) return response;
     }
-    await sleep(500 * 2 ** attempt + Math.floor(Math.random() * 500));
+    await sleep(500 * 2 ** attempt + Math.floor(Math.random() * 500), undefined, { signal: init?.signal ?? undefined });
   }
 };
 
@@ -48,7 +48,7 @@ async function retryable(response: Response) {
 // Moves USDC from a key the trusted sidecar holds through the facilitator, which
 // pays gas. Funding and recovery never share a nonce, so trials do not wait on
 // each other.
-export async function transfer(from: PrivateKeyAccount, to: `0x${string}`, amount: bigint) {
+export async function transfer(from: PrivateKeyAccount, to: `0x${string}`, amount: bigint, deadline?: AbortSignal) {
   const now = Math.floor(Date.now() / 1000);
   const authorization = {
     from: getAddress(from.address), to: getAddress(to), value: amount.toString(),
@@ -71,7 +71,7 @@ export async function transfer(from: PrivateKeyAccount, to: `0x${string}`, amoun
       paymentPayload: { x402Version: 2, resource: { url: 'http://merchant:3000/', description: 'Checkout trial wallet', mimeType: 'application/json' }, accepted: requirements, payload: { signature, authorization } },
       paymentRequirements: requirements,
     }),
-    signal: AbortSignal.timeout(60_000),
+    signal: deadline ? AbortSignal.any([AbortSignal.timeout(60_000), deadline]) : AbortSignal.timeout(60_000),
   });
   const result = await response.json().catch(() => null) as { success?: boolean; transaction?: string; errorReason?: string } | null;
   if (!response.ok || !result?.success || !result.transaction) throw new Error(`USDC transfer failed: ${response.status} ${result?.errorReason ?? ''}`);

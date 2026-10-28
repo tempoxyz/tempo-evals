@@ -36,7 +36,8 @@ for (const record of records) {
   let transfers: { from: string; to: string; value: string }[] = [];
   if (settlement && /^0x[0-9a-fA-F]{64}$/.test(settlement.transaction)) {
     try {
-      const tx = await client.getTransactionReceipt({ hash: settlement.transaction as `0x${string}` });
+      // The facilitator can answer before the RPC indexes its receipt.
+      const tx = await client.waitForTransactionReceipt({ hash: settlement.transaction as `0x${string}`, timeout: 30_000 });
       txStatus = tx.status;
       transfers = tx.logs.filter(log => log.address.toLowerCase() === usdc.toLowerCase()).flatMap(log => {
         try {
@@ -44,7 +45,11 @@ for (const record of records) {
           return [{ from: event.args.from, to: event.args.to, value: event.args.value.toString() }];
         } catch { return []; }
       });
-    } catch { /* An unconfirmed transaction cannot verify the order. */ }
+    } catch (error) {
+      // Fail collection so its retry runs, rather than recording a valid
+      // payment as unconfirmed.
+      throw new Error(`Settlement receipt unavailable: ${error instanceof Error ? error.message : error}`);
+    }
   }
   deliveries.push({
     orderId: record.orderId, item: record.item, quantity: record.quantity, amount: record.amount, currency: record.currency,
@@ -55,24 +60,32 @@ for (const record of records) {
   });
 }
 
-// Record the buyer's remaining balance once, then return it to the funding
-// wallet. A repeated collection reuses the first observation.
+// Record the buyer's remaining balance once and write the evidence before the
+// best-effort return of that balance to the funding wallet, which is bounded
+// below the collection timeout. A repeated collection reuses the observation.
 let recovery = existsSync(`${dir}/recovery.json`) ? JSON.parse(readFileSync(`${dir}/recovery.json`, 'utf8')) : null;
 if (!recovery) {
-  const remaining = await balanceOf(buyer);
-  recovery = { buyerBalance: remaining.toString(), transaction: null as string | null, error: null as string | null };
+  recovery = { buyerBalance: (await balanceOf(buyer)).toString(), transaction: null as string | null, error: null as string | null };
   writeFileSync(`${dir}/recovery.json`, JSON.stringify(recovery));
+}
+function writeSnapshot() {
+  writeFileSync(`${dir}/snapshot.json`, JSON.stringify({
+    shippingOrders: shippingOrders(), recipient, usdc, buyer, deliveries, paymentAttemptCount,
+    buyerBalanceAfterAgent: recovery.buyerBalance, recoveryTransaction: recovery.transaction,
+  }, null, 2) + '\n');
+}
+writeSnapshot();
+if (!recovery.transaction) {
+  const remaining = await balanceOf(buyer).catch(() => 0n);
   if (remaining > 0n) {
     try {
       const wallet = JSON.parse(readFileSync('/wallet/wallet.json', 'utf8'));
-      recovery.transaction = await transfer(privateKeyToAccount(wallet.baseSepolia.privateKey), recipient, remaining);
+      recovery.transaction = await transfer(privateKeyToAccount(wallet.baseSepolia.privateKey), recipient, remaining, AbortSignal.timeout(25_000));
+      recovery.error = null;
     } catch (error) {
       recovery.error = error instanceof Error ? error.message : String(error);
     }
     writeFileSync(`${dir}/recovery.json`, JSON.stringify(recovery));
+    writeSnapshot();
   }
 }
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({
-  shippingOrders: shippingOrders(), recipient, usdc, buyer, deliveries, paymentAttemptCount,
-  buyerBalanceAfterAgent: recovery.buyerBalance, recoveryTransaction: recovery.transaction,
-}, null, 2) + '\n');
