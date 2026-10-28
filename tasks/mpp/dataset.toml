@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:52f11d106aed8f1a9668a67628148ac8407af0e0700bc4312d005a00adf73bc6"
+digest = "sha256:1c92d494dcc3715607e0313661883662896e3dafcff1967b28c60ba26289c351"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:1db59a4162a0e44d1a99da36c802610a167ed0acbab9ced36d20a2ba601f896e"
+digest = "sha256:dd40a0062ea602d00c9334f2ed43c041ce1574a1ea7a404e28893995828032b1"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:f2b4f2e398877078220cb58dd208012ebfed52f0cf37947bf586813b27780fe5"
+digest = "sha256:c8ba3e4d51e10ac025f70d86f77d0353031035dc69e84d066f1059106e8766ba"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:09af03d28dbe2d4721258e9538cbee31248e10f7ac139f78f61d78fe0fad5d1d"
+digest = "sha256:1f5a8b9786d4cf6a1ab4262daf0d8e56f100065871e87ec77b127e581114a52d"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:98bd5e7f71d67715285bc4e6d6867277d07efbcee8884330cad0df0150159635"
+digest = "sha256:aa459991fa822ed0a54f2a742a08d32dd82974d99627d89d7d451047498e068c"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:f7707506552cd00eb9d7279bc5358a1b502b0e33bc6b31be148ef9a2dabacf04"
+digest = "sha256:d8356785124b930a9fb7e10a2bdbe5c6b1ab5c65c954b0f4d28311c6402c03a0"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:49c968360a1b3ed8aac07a937a4c103107728db97f345a21b530cb9c5e655ff1"
+digest = "sha256:31f10d6f90160df6b9a7a57144db57336e58443157d4588f03300705eeae33a9"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:e2c30bd2b1c6225c8417b531d8cafaa9ae2f63fc0584fc1209a06ede811669c2"
+digest = "sha256:6ddb399f1a04a86327044ef48f78ffeec4a9c35d50006e0cd1b86ea0dc16852c"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:088a29d4c56481707628beec871170d04b12acc6910e5a4bc684987207627f7b"
+digest = "sha256:b3b84ed7c0185257c69b9a49aca4296732550276191a366a65ce5b1ea35add16"
 
