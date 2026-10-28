@@ -29,7 +29,9 @@ export const retryingFetch: typeof fetch = async (input, init) => {
   for (let attempt = 1; ; attempt++) {
     response = undefined;
     try {
-      response = await fetch(input, init);
+      // Each attempt gets its own timeout; the caller's signal bounds them all.
+      const attemptSignal = AbortSignal.timeout(30_000);
+      response = await fetch(input, { ...init, signal: init?.signal ? AbortSignal.any([init.signal, attemptSignal]) : attemptSignal });
     } catch (error) {
       failure = error;
     }
@@ -126,7 +128,7 @@ export async function transfer(from: PrivateKeyAccount, to: `0x${string}`, amoun
       paymentPayload: { x402Version: 2, resource: { url: 'http://merchant:3000/', description: 'Checkout trial wallet', mimeType: 'application/json' }, accepted: requirements, payload: { signature, authorization } },
       paymentRequirements: requirements,
     }),
-    signal: deadline ? AbortSignal.any([AbortSignal.timeout(60_000), deadline]) : AbortSignal.timeout(60_000),
+    signal: deadline,
   });
   const result = await response.json().catch(() => null) as { success?: boolean; transaction?: string; errorReason?: string } | null;
   if (!response.ok || !result?.success || !result.transaction) throw new Error(`USDC transfer failed: ${response.status} ${result?.errorReason ?? ''}`);

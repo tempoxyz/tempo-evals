@@ -83,9 +83,9 @@ digest = "sha256:780ba879a9ca0d20c1c4596b7af65de3493fa99cbcbb445bb074246cf109a51
 
 [[tasks]]
 name = "checkout-v1/x402-usdc-directed"
-digest = "sha256:417367ee8342281d22f0000ad2c7fe08ce98a86331d4819e16090b6d15b6c52d"
+digest = "sha256:fdb4f2c11aa8431789c935de01e1c719e42e405980f5e632dd0f5f949e9251f9"
 
 [[tasks]]
 name = "checkout-v1/x402-usdc-discover"
-digest = "sha256:3793a308abfb025dfbc9ced817dee9ef4c294ec1538feb326a4a7e744b73bec8"
+digest = "sha256:37c17ef1060d32e9728a3d7d796e2711abce85751385648d458083867efa6360"
 
