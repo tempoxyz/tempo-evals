@@ -18,14 +18,6 @@ name = "checkout-v1/braintree-card-discover"
 digest = "sha256:981bb303407b75ee4939cc084ca11be68b74ba351c478981b57904bd18eab1f0"
 
 [[tasks]]
-name = "checkout-v1/cart-mpp-ousd-directed"
-digest = "sha256:92ca9d30d3d5ab9d62f9e3c06d56c65bf67352384b9ce8d06bced0b27f26f14f"
-
-[[tasks]]
-name = "checkout-v1/cart-stripe-card-directed"
-digest = "sha256:ca964c7addea696a77882bcdffc77736d6a5f2b9d19dba622776f3d74044eb26"
-
-[[tasks]]
 name = "checkout-v1/mpp-card-directed"
 digest = "sha256:a49b4cb17d8bd35df5e6cee406a121a56af0f448a59623de5d0887545d52695b"
 
@@ -48,6 +40,10 @@ digest = "sha256:ac8cfc8f0a4ff14662bb7de404d19af93a60068c41f192ff807f408ff78ed3c
 [[tasks]]
 name = "checkout-v1/mppcard-prepared-discover"
 digest = "sha256:39e20633f79453e638538357c479e2675232bc7120840d5854f4b27c5f42ff35"
+
+[[tasks]]
+name = "checkout-v1/mppousd-cart-directed"
+digest = "sha256:be2743af111a10b230171a5326dd6335798be7849fd7d058767f189e1ac6eb23"
 
 [[tasks]]
 name = "checkout-v1/mppousd-prepared-directed"
@@ -88,4 +84,8 @@ digest = "sha256:b303949c6d7037deb4e455a9e7248961644d2985dbe51e71385b4496aee3dbc
 [[tasks]]
 name = "checkout-v1/stripe-link-discover"
 digest = "sha256:66ac3b920e9d29b9a270fc16a37b95afc1f9b7ea193dd7d8946ed481168f6351"
+
+[[tasks]]
+name = "checkout-v1/stripecard-cart-directed"
+digest = "sha256:06151d8773edb62c36832bc1774bb185def1d30503c28a6b864dd2b59a52c798"
 

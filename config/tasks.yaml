@@ -76,8 +76,8 @@ checkout:
   # variants, quantities and a budget-bound shipping choice. Sync generates
   # directed cart tasks from these discover sources and shared/checkout/cart/.
   cart:
-    stripe-card-discover: cart-stripe-card-directed
-    mpp-ousd-discover: cart-mpp-ousd-directed
+    stripe-card-discover: stripecard-cart-directed
+    mpp-ousd-discover: mppousd-cart-directed
   prepared:
     mpp-card-discover: mppcard-prepared-discover
     mpp-card-directed: mppcard-prepared-directed

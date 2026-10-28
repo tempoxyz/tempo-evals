@@ -147,8 +147,8 @@ with `items`, `shippingOption` and `shipping`; the response includes the total.
 
 | Cart task | Source task | Added instruction |
 | --- | --- | --- |
-| `cart-stripe-card-directed` | `stripe-card-discover` | Use card to pay. |
-| `cart-mpp-ousd-directed` | `mpp-ousd-discover` | Use MPP to pay. |
+| `stripecard-cart-directed` | `stripe-card-discover` | Use card to pay. |
+| `mppousd-cart-directed` | `mpp-ousd-discover` | Use MPP to pay. |
 
 `config/tasks.yaml` lists the sources under `checkout.cart`; sync generates each
 cart task from its source and `shared/checkout/cart/`. Only the store module,
