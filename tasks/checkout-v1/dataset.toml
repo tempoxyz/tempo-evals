@@ -43,7 +43,7 @@ digest = "sha256:49855a4ec0a3e41be4d74c85692ab03cf8eade73d8e6aa945cfd208a8f0b237
 
 [[tasks]]
 name = "checkout-v1/mppousd-cart-directed"
-digest = "sha256:ac3227486375716b600af354205fa0c520ef48ea9065de634234af0f1c98a0b1"
+digest = "sha256:232e2ae8491299369ee56a8b6cc6aa9c95bac624047caaf4eaf3bac50e200f24"
 
 [[tasks]]
 name = "checkout-v1/mppousd-prepared-directed"
@@ -87,7 +87,7 @@ digest = "sha256:475435f1c94045731a72cc4b0e11a9e9d449f935c22aeef1f4b98c60cb1303e
 
 [[tasks]]
 name = "checkout-v1/stripecard-cart-directed"
-digest = "sha256:2098191663e614d5d4c7816ef4c2daa77d43ab59f9524b4101679c9433a0aca6"
+digest = "sha256:46c74227e97484f312c7cbcd1023feac55abad7e0d6dc981c1c1ae47a50ca9ea"
 
 [[tasks]]
 name = "checkout-v1/x402-usdc-directed"

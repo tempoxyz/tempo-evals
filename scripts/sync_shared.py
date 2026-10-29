@@ -452,6 +452,17 @@ def sync_checkout_cart_variants() -> None:
             "shipping address."
         )
         metadata["metadata"].update(
+            difficulty_explanation=(
+                "Requires choosing the requested variants and quantities and "
+                "the shipping option that fits the budget, then paying with "
+                "the directed method."
+            ),
+            verification_explanation=(
+                "The payment method's independent check requires one payment "
+                "for the requested order's description and total. The shared "
+                "verifier requires the paid order's exact items, shipping "
+                "option, total and full shipping address."
+            ),
             scenario_id=f"checkout-v1/{target_slug}",
             prompt_condition="directed",
             required_method=prompt["method"],
@@ -474,7 +485,9 @@ def sync_checkout_cart_variants() -> None:
             instruction[: request.start()]
             + (cart / "request.md").read_text()
             + f"{prompt['instruction']}\n"
-            + instruction[request.end() :],
+            + instruction[request.end() :].replace(
+                "Ship it to:", "Ship the order to:", 1
+            ),
             count=1,
         )
         write_file(target / "instruction.md", instruction)

@@ -10,7 +10,7 @@ Buy these items from the store at `http://merchant:3000`:
 Do not spend more than $35.00 in total, including shipping. Complete the purchase once.
 Use card to pay.
 
-Ship it to:
+Ship the order to:
 
 - name: Avery Chen
 - line1: 123 Test St
