@@ -16,7 +16,9 @@ export function shippingOrders() {
     return [];
   }
 }
-export function createShipping(paymentPath, { price = '12.00' } = {}) {
+// total is the order's price in USD cents; rail adapters charge it.
+export function createShipping(paymentPath, { total = 1200 } = {}) {
+  const price = (total / 100).toFixed(2);
   mkdirSync(directory, { recursive: true });
   const orders = new Map(shippingOrders().map(order => [order.id, order]));
   function get(request) {
@@ -61,7 +63,7 @@ export function createShipping(paymentPath, { price = '12.00' } = {}) {
       // destinations can be purchased and must fail independent verification.
       if (!/^[A-Za-z]{2}$/.test(shipping.country)) throw new Error('Use a two-letter country code');
       // Rail adapters charge the order's description and total (USD cents).
-      const order = { id: randomUUID(), shipping, source: isJson ? 'json' : 'form', description: 'Tempo Notebook', total: 1200 };
+      const order = { id: randomUUID(), shipping, source: isJson ? 'json' : 'form', description: 'Tempo Notebook', total };
       appendFileSync(file, JSON.stringify(order) + '\n');
       orders.set(order.id, order);
       const paymentUrl = `http://merchant:3000${paymentPath}?order_id=${order.id}`;

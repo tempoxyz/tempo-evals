@@ -94,7 +94,9 @@ The funding key stays in the trusted merchant sidecar.
 The verifier requires exactly one delivery, a successful x402 settlement on
 Base Sepolia, and a confirmed settlement transaction with exactly one USDC
 transfer: 1 USDC from the trial buyer to the merchant. The common shipping check
-then joins the delivery to its order. `buyer_balance_after_agent` records USDC
+then joins the delivery to its order and requires that order's recorded total
+to be $1.00: `config/tasks.yaml` sets `order_totals` for the pair, which sync
+writes into its expected `order.json`. `buyer_balance_after_agent` records USDC
 the buyer still held before recovery.
 
 Every task's wallet lists a `baseSepolia` account controlled by the same key
