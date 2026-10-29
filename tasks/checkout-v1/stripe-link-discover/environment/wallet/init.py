@@ -12,6 +12,7 @@ from urllib.request import Request, urlopen
 from eth_account import Account
 
 RPC = os.environ.get("TEMPO_RPC_URL", "https://rpc.moderato.tempo.xyz")
+BASE_SEPOLIA_RPC = os.environ.get("BASE_SEPOLIA_RPC_URL", "https://sepolia.base.org")
 LINK_EMAIL = f"tempo-checkout-{uuid.uuid4().hex}@example.com"
 AREA_CODES = [
     "202",
@@ -76,6 +77,14 @@ wallet = {
     "tempo": {
         "chainId": 42431,
         "rpcUrl": RPC,
+        "address": account.address,
+        "privateKey": "0x" + account.key.hex().removeprefix("0x"),
+    },
+    # The same key controls a Base Sepolia account. It is listed in every
+    # task so the wallet does not reveal which merchant accepts x402.
+    "baseSepolia": {
+        "chainId": 84532,
+        "rpcUrl": BASE_SEPOLIA_RPC,
         "address": account.address,
         "privateKey": "0x" + account.key.hex().removeprefix("0x"),
     },

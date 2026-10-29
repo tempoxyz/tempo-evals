@@ -440,6 +440,10 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
                 raise RuntimeError(
                     f"Braintree checkout runs require {', '.join(missing)}"
                 )
+        if "x402-usdc-discover" in selected and not re.fullmatch(
+            r"0x[0-9a-fA-F]{64}", os.environ.get("X402_FUNDING_PRIVATE_KEY", "")
+        ):
+            raise RuntimeError("x402 checkout requires X402_FUNDING_PRIVATE_KEY")
         if "shopify-card-discover" in selected:
             required = (
                 "SHOPIFY_SHOP",
