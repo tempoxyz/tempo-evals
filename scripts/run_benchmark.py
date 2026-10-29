@@ -210,6 +210,9 @@ def parse_args(argv: list[str]) -> tuple[str | None, dict[str, Any]]:
     return namespace.variant, vars(namespace)
 
 
+_ENV_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*$")
+
+
 def load_env_file(file_path: str | None) -> None:
     if not file_path:
         return
@@ -227,7 +230,7 @@ def load_env_file(file_path: str | None) -> None:
     for binding in bindings:
         if (
             binding.key is not None
-            and binding.key.isidentifier()
+            and _ENV_KEY_RE.match(binding.key)
             and binding.value is not None
         ):
             os.environ.setdefault(binding.key, binding.value)
