@@ -35,14 +35,16 @@ Every merchant has discover/directed native Harbor tasks:
 | `shopify-card-discover` | `shopify-card-directed` | Use card to pay. |
 | `x402-usdc-discover` | `x402-usdc-directed` | Use x402 to pay. |
 
-### Prepared MPP tasks
+### Prepared client tasks
 
-Four additional tasks use compact rail names to keep Harbor task slugs short:
+Six additional tasks use compact rail names to keep Harbor task slugs short:
 `mppcard-prepared-discover`, `mppcard-prepared-directed`,
-`mppousd-prepared-discover`, and `mppousd-prepared-directed`.
+`mppousd-prepared-discover`, `mppousd-prepared-directed`,
+`x402usdc-prepared-discover`, and `x402usdc-prepared-directed`.
 They share their cold source's merchant, wallet, oracle and grading. The agent
 image additionally installs pinned mppx, viem and tsx under `/opt/mpp-client`
-and the prompt points to a generic client usage guide. This measures a prepared
+and the prompt points to one generic client usage guide, the same for every
+prepared task, with card, Tempo and Base Sepolia USDC (x402) examples. This measures a prepared
 client plus instructions, separately from cold discovery. It does not test
 preinstallation alone or an already authenticated browser wallet.
 
@@ -50,7 +52,7 @@ preinstallation alone or an already authenticated browser wallet.
 from those sources and `shared/checkout/prepared/`. Metadata and exports record
 `mpp_client_profile=prepared` (existing tasks export `cold`). Prepared and cold
 results remain separate in quality summaries. Use
-`--task-filter '*-prepared-*'` to run the four new tasks with any browser
+`--task-filter '*-prepared-*'` to run the six prepared tasks with any browser
 profile. Existing cold prompts and runtime dependencies remain unchanged.
 
 ### Braintree card
