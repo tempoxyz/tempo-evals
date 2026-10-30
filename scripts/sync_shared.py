@@ -41,10 +41,12 @@ CHECKOUT_BENCHMARK = BENCHMARKS_CONFIG["checkout"]
 CHECKOUT_ORDER_TOTALS = {
     task: total
     for source, total in TASKS_CONFIG["checkout"].get("order_totals", {}).items()
-    for task in (
+    for peer in (
         source,
         TASKS_CONFIG["checkout"]["directed"].get(source, {}).get("task"),
     )
+    if peer
+    for task in (peer, TASKS_CONFIG["checkout"].get("prepared", {}).get(peer))
     if task
 }
 AGENT_IMAGE: str = TASKS_CONFIG["images"]["agent"]

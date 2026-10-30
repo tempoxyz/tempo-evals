@@ -355,7 +355,12 @@ class CheckoutShippingTest(unittest.TestCase):
                     sys.path[:] = original_path
 
     def test_x402_pair_expects_its_one_dollar_order(self):
-        for slug in ("x402-usdc-discover", "x402-usdc-directed"):
+        for slug in (
+            "x402-usdc-discover",
+            "x402-usdc-directed",
+            "x402usdc-prepared-discover",
+            "x402usdc-prepared-directed",
+        ):
             with self.subTest(task=slug):
                 task = ROOT / "tasks/checkout-v1" / slug
                 for target in ("solution/order.json", "tests/order.json"):

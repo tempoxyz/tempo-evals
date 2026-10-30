@@ -97,6 +97,8 @@ checkout:
     mpp-card-directed: mppcard-prepared-directed
     mpp-ousd-discover: mppousd-prepared-discover
     mpp-ousd-directed: mppousd-prepared-directed
+    x402-usdc-discover: x402usdc-prepared-discover
+    x402-usdc-directed: x402usdc-prepared-directed
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.

@@ -47,11 +47,11 @@ digest = "sha256:f734cd242d4b4b58abb35341026a5ee3439301bdf0738e92a2e94c7f9f68696
 
 [[tasks]]
 name = "checkout-v1/mppcard-prepared-directed"
-digest = "sha256:3f0b98930ca40642d96d446b5bff6a10e94fb3623e194517ceeac419d4472dca"
+digest = "sha256:4b2ef45d704960fa61201ac5c909814089bf33ac3062d83a9afae107720cd2bd"
 
 [[tasks]]
 name = "checkout-v1/mppcard-prepared-discover"
-digest = "sha256:1cfd08109ba2ec57406b3cc13e133e5180d71fa50e3c65194c5471c3066840f3"
+digest = "sha256:3b002cea3e5959ab2a39aab482df03827b9f59dbe4716c37b40d7370dd4a62c8"
 
 [[tasks]]
 name = "checkout-v1/mppousd-cart-directed"
@@ -59,11 +59,11 @@ digest = "sha256:10311f25f390dd362ab5c702776625d869625597c0f72d68c0fd2826cfb2bf1
 
 [[tasks]]
 name = "checkout-v1/mppousd-prepared-directed"
-digest = "sha256:c76678c39023939d5dcdc249bc974bb20ab12a124744bc7c3532cde9e358c329"
+digest = "sha256:3d555278b925e15857f35368865fc533fe6119c7786968d8b62c9dba52060531"
 
 [[tasks]]
 name = "checkout-v1/mppousd-prepared-discover"
-digest = "sha256:30d989cbcb6904d39ab46826e78eeb89cf2f83ab804dbc3d9773c69aaea07c22"
+digest = "sha256:5d0d0af701af1f573ba4a5a93616c7ab239d2b78d9bf0149b325d8039f0c0799"
 
 [[tasks]]
 name = "checkout-v1/paypal-cart-directed"
@@ -120,4 +120,12 @@ digest = "sha256:75e3d9eedc2affba8cb8f239b6998120eec924969e41728f5fcecfe69844a6a
 [[tasks]]
 name = "checkout-v1/x402-usdc-discover"
 digest = "sha256:5288f4cb9855e240d16998c0ad6d735ef9e26f08a6e11818b1aa2dbab05e8eb1"
+
+[[tasks]]
+name = "checkout-v1/x402usdc-prepared-directed"
+digest = "sha256:9df9e4294796bae1096bc08b48b40750573dfe7f3eab28f24695868a4a7f087c"
+
+[[tasks]]
+name = "checkout-v1/x402usdc-prepared-discover"
+digest = "sha256:5d7e9474e510cc4da60a610486d33a0346fd34a0db7ba4ccb82015c15feafb58"
 
