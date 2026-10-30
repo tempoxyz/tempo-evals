@@ -86,6 +86,11 @@ async function cartLines(lines: { sku: string; quantity: number; unitAmount: num
   });
 }
 
+// Fail setup unless every cart item is a published variant at the store's price.
+export async function checkCartCatalog(items: { sku: string; unitAmount: number }[]) {
+  await cartLines(items.map(item => ({ ...item, quantity: 1 })));
+}
+
 export async function cartUrl(order: { id: string; shipping: Record<string, string>; lines?: { sku: string; quantity: number; unitAmount: number }[] }) {
   const trial = state();
   // A cart order adds every line; the single-notebook store adds one notebook.

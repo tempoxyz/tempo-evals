@@ -26,6 +26,9 @@ const shippingOptions = {
 };
 const money = cents => `$${(cents / 100).toFixed(2)}`;
 const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+// Every catalog item with its price, for merchants that mirror the catalog
+// in an outside store (Shopify) and check it before reporting healthy.
+export const cartCatalog = () => [...catalog].map(([sku, product]) => ({ sku, unitAmount: product.amount }));
 export function shippingOrders() {
   try { return readFileSync(file, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)); }
   catch (error) {
