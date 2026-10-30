@@ -234,14 +234,53 @@ class CheckoutShippingTest(unittest.TestCase):
                         }
                     ],
                 }
-            raise AssertionError(f"add a cart payment fixture for {slug}")
+            # Other rails: their single-notebook fixture with the cart's
+            # description and total in place of the notebook's.
+            source = ROOT / "tasks/checkout-v1" / slug / "tests"
+            original_path = sys.path[:]
+            try:
+                sys.path.insert(0, str(source))
+                checker = load(source / "payment_check.py", "cart_fixture_check")
+                with patch.dict(sys.modules, {"payment_check": checker}):
+                    fixture = load(source / "check_test.py", "cart_fixture")
+            finally:
+                sys.path[:] = original_path
+
+            # The source's own price, such as x402's $1.00 in USDC base units.
+            price = json.loads((source / "order.json").read_text())["total"]
+
+            def swap(value):
+                if isinstance(value, dict):
+                    return {key: swap(item) for key, item in value.items()}
+                if isinstance(value, list):
+                    return [swap(item) for item in value]
+                if value == price and type(value) is int:
+                    return total
+                if value == f"{price / 100:.2f}":
+                    return f"{total / 100:.2f}"
+                if value == str(price * 10_000):
+                    return str(total * 10_000)
+                if value == f"{price / 100:g}":
+                    return f"{total / 100:g}"
+                if value == "Tempo Notebook":
+                    return description
+                return value
+
+            paid = swap(copy.deepcopy(fixture.PAID))
+            collection = {
+                "stripe-link-discover": "intents",
+                "paypal-discover": "orders",
+            }.get(slug)
+            return {collection: [paid]} if collection else paid
 
         def snapshot(slug, lines, option, total, description, paid=None):
+            charged = payment(slug, total if paid is None else paid, description)
             return {
-                **payment(slug, total if paid is None else paid, description),
+                **charged,
                 "shippingOrders": [
                     {
-                        "id": "order-1",
+                        # verifier is the cart task's check module, set below.
+                        "id": verifier.paid_order_id(charged),
                         "shipping": address,
                         "lines": lines,
                         "shippingOption": option,
@@ -304,12 +343,13 @@ class CheckoutShippingTest(unittest.TestCase):
                         paid=1200,
                     )
                     self.assertFalse(verifier.check(underpaid)[0])
-                    renamed = copy.deepcopy(good)
-                    for key in ("sessions", "deliveries"):
-                        for row in renamed.get(key, []):
-                            row["item"] = "Tempo Notebook"
-                            for item in row.get("items", []):
-                                item["description"] = "Tempo Notebook"
+                    if slug in {"braintree-card-discover", "shopify-card-discover"}:
+                        # These payments carry an amount but no description.
+                        continue
+                    renamed = {
+                        **payment(slug, order["total"], "Tempo Notebook"),
+                        "shippingOrders": good["shippingOrders"],
+                    }
                     self.assertFalse(verifier.check(renamed)[0])
                 finally:
                     sys.path[:] = original_path

@@ -9,6 +9,8 @@ from observation import payment_observations
 
 SNAPSHOT = Path("/var/log/checkout/snapshot.json")
 LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
+ORDER = json.loads(Path(__file__).with_name("order.json").read_text())
+PRICE = f"{ORDER['total'] / 100:.2f}"
 CAPTURED = {"submitted_for_settlement", "settling", "settled"}
 
 
@@ -37,7 +39,7 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or payment.get("status") not in CAPTURED
         or payment.get("type") != "sale"
         or payment.get("paymentMethodType") != "credit_card"
-        or payment.get("amount") != "12.00"
+        or payment.get("amount") != PRICE
         or payment.get("currency") != "USD"
         or payment.get("merchantCurrency") != "USD"
         or not payment.get("merchantAccountId")

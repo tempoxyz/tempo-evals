@@ -9,6 +9,8 @@ from observation import payment_observations
 
 SNAPSHOT = Path("/var/log/checkout/snapshot.json")
 LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
+ORDER = json.loads(Path(__file__).with_name("order.json").read_text())
+PRICE = f"{ORDER['total'] / 100:.2f}"
 
 
 def check(snapshot: object) -> tuple[bool, str, str | None]:
@@ -30,9 +32,9 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or not snapshot.get("orderId")
         or not snapshot.get("trialId")
         or delivery.get("orderId") != snapshot["orderId"]
-        or delivery.get("item") != "Tempo Notebook"
+        or delivery.get("item") != ORDER["description"]
         or delivery.get("quantity") != 1
-        or delivery.get("amount") != "12.00"
+        or delivery.get("amount") != PRICE
         or delivery.get("currency") != "USD"
         or delivery.get("receiptStatus") != "success"
         or delivery.get("receiptMethod") != "stripe"
@@ -41,8 +43,8 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or intent.get("trialId") != snapshot["trialId"]
         or intent.get("orderId") != snapshot["orderId"]
         or intent.get("livemode") is not False
-        or intent.get("amount") != 1200
-        or intent.get("amountReceived") != 1200
+        or intent.get("amount") != ORDER["total"]
+        or intent.get("amountReceived") != ORDER["total"]
         or intent.get("currency") != "usd"
         or intent.get("paymentMethodType") != "card"
         or not isinstance(charge, dict)
@@ -53,8 +55,8 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or charge.get("paid") is not True
         or charge.get("captured") is not True
         or charge.get("refunded") is not False
-        or charge.get("amount") != 1200
-        or charge.get("amountCaptured") != 1200
+        or charge.get("amount") != ORDER["total"]
+        or charge.get("amountCaptured") != ORDER["total"]
         or charge.get("amountRefunded") != 0
         or charge.get("currency") != "usd"
         or charge.get("paymentMethodType") != "card"

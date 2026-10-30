@@ -1,6 +1,7 @@
 {
   "description": "2 x Tempo Notebook (A5, Dotted), 1 x Tempo Pen, Standard shipping",
   "total": 3300,
+  "budget": 3500,
   "lines": [
     { "sku": "notebook-a5-dotted", "quantity": 2 },
     { "sku": "pen", "quantity": 1 }

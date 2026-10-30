@@ -9,6 +9,8 @@ from observation import payment_observations
 
 SNAPSHOT = Path("/var/log/checkout/snapshot.json")
 LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
+ORDER = json.loads(Path(__file__).with_name("order.json").read_text())
+PRICE = f"{ORDER['total'] / 100:.2f}"
 
 
 def check(snapshot: object) -> tuple[bool, str, str | None]:
@@ -28,10 +30,10 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or not str(intent.get("id", "")).startswith("pi_")
         or not intent.get("orderId")
         or intent.get("orderId") != intent.get("metadataOrderId")
-        or intent.get("item") != "Tempo Notebook"
-        or intent.get("description") != "Tempo Notebook"
-        or intent.get("amount") != 1200
-        or intent.get("amountReceived") != 1200
+        or intent.get("item") != ORDER["description"]
+        or intent.get("description") != ORDER["description"]
+        or intent.get("amount") != ORDER["total"]
+        or intent.get("amountReceived") != ORDER["total"]
         or intent.get("currency") != "usd"
         or intent.get("paymentMethodTypes") not in (["card", "link"], ["link", "card"])
     ):
