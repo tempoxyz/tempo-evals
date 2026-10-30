@@ -22,7 +22,6 @@ PAID = {
             "receiptStatus": "success",
             "receiptMethod": "stripe",
             "receiptReference": "pi_1",
-            "receiptExternalId": "order-1",
         }
     ],
     "payments": [
@@ -74,7 +73,7 @@ class MppCardVerifierTests(unittest.TestCase):
     def test_receipt_order_and_provider_must_match(self):
         for section, field, value in (
             ("deliveries", "receiptReference", "pi_other"),
-            ("deliveries", "receiptExternalId", "other-order"),
+            ("deliveries", "orderId", "other-order"),
             ("deliveries", "receiptStatus", "failed"),
             ("deliveries", "receiptMethod", "tempo"),
             ("deliveries", "item", "Other item"),

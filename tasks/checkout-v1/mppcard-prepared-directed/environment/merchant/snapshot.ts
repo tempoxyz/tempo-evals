@@ -52,7 +52,6 @@ const deliveries = records('deliveries').map(record => {
   return {
     orderId: record.orderId, item: record.item, quantity: record.quantity, amount: record.amount, currency: record.currency,
     receiptStatus: receipt?.status, receiptMethod: receipt?.method, receiptReference: receipt?.reference,
-    receiptExternalId: receipt?.externalId,
   };
 });
 const paymentAttemptCount = records('attempts').filter(record => record.paymentAttempt === true).length;
