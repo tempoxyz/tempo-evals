@@ -21,5 +21,7 @@ Your trial wallet is at `/wallet/wallet.json`. It lists your prepared Tempo
 testnet and Base Sepolia testnet wallets and sandbox payment methods (card, Link, and a PayPal buyer). You have a browser available for checkout.
 
 You may consult public documentation and install software.
+The mppx payment client is preinstalled at `/opt/mpp-client`; its usage guide
+is `/opt/mpp-client/README.md`. Available tools do not imply merchant acceptance.
 
 You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.

@@ -12,50 +12,45 @@ from scripts import sync_shared
 
 
 class SyncSharedTest(unittest.TestCase):
-    def test_prepared_tasks_preserve_cold_payment_and_grading_contracts(self):
+    def test_prepared_client_reaches_source_directed_and_cart_tasks(self):
+        prepared = sync_shared.TASKS_CONFIG["checkout"]["prepared"]
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory)
-            for slug in sync_shared.TASKS_CONFIG["checkout"]["prepared"]:
+            for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]:
                 shutil.copytree(sync_shared.CHECKOUT_TASKS_DIR / slug, checkout / slug)
-            before = {
-                p.relative_to(checkout): p.read_bytes()
-                for p in checkout.rglob("*")
-                if p.is_file()
-            }
             with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
-                sync_shared.sync_checkout_prepared_variants()
-                for slug in sync_shared.TASKS_CONFIG["checkout"]["prepared"]:
-                    name, condition = slug.rsplit("-", 1)
-                    source, target = (
-                        checkout / slug,
-                        checkout
-                        / sync_shared.TASKS_CONFIG["checkout"]["prepared"][slug],
-                    )
-                    task = tomllib.loads((target / "task.toml").read_text())
-                    self.assertEqual(task["metadata"]["mpp_client_profile"], "prepared")
-                    self.assertEqual(task["metadata"]["prompt_condition"], condition)
-                    for part in (
-                        "solution",
-                        "tests",
-                        "environment/merchant",
-                        "environment/wallet",
-                        "environment/link",
-                    ):
-                        for file in (source / part).rglob("*"):
-                            if file.is_file() and "__pycache__" not in file.parts:
-                                self.assertEqual(
-                                    file.read_bytes(),
-                                    (target / file.relative_to(source)).read_bytes(),
-                                )
-                    self.assertTrue(
-                        (target / "environment/prepared/npm-shrinkwrap.json").is_file()
-                    )
-                    self.assertIn(
-                        "/opt/mpp-client/README.md",
-                        (target / "instruction.md").read_text(),
-                    )
-                for relative, content in before.items():
-                    self.assertEqual((checkout / relative).read_bytes(), content)
+                sync_shared.sync_checkout_prepared_client()
+                sync_shared.sync_checkout_prompt_variants()
+                sync_shared.sync_checkout_cart_variants()
+                sources = {
+                    sync_shared.TASKS_CONFIG["checkout"]["directed"][slug]["task"]: slug
+                    for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]
+                }
+                sources |= {slug: slug for slug in sources.values()}
+                sources |= {
+                    task: slug for task, (slug, _) in sync_shared.cart_tasks().items()
+                }
+                for task, source in sources.items():
+                    with self.subTest(task=task):
+                        target = checkout / task
+                        metadata = tomllib.loads((target / "task.toml").read_text())
+                        dockerfile = (target / "environment/Dockerfile").read_text()
+                        instruction = (target / "instruction.md").read_text()
+                        if source in prepared:
+                            self.assertEqual(
+                                metadata["metadata"]["mpp_client_profile"], "prepared"
+                            )
+                            self.assertIn("/opt/mpp-client", dockerfile)
+                            self.assertIn("/opt/mpp-client/README.md", instruction)
+                            self.assertTrue(
+                                (
+                                    target / "environment/prepared/npm-shrinkwrap.json"
+                                ).is_file()
+                            )
+                        else:
+                            self.assertNotIn("mpp_client_profile", metadata["metadata"])
+                            self.assertNotIn("/opt/mpp-client", dockerfile)
+                            self.assertNotIn("/opt/mpp-client", instruction)
 
     def test_checkout_prompt_pairs_share_every_runtime_and_verifier_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

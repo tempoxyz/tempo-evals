@@ -12,3 +12,7 @@ The separate verifier matches one notebook delivery and its MPP receipt to an in
 ## Shipping requirement
 
 Submit the task's recipient and full shipping address before payment. The separate verifier joins the provider-confirmed payment to the immutable merchant shipping order; incorrect or missing fields fail even after payment.
+
+## Prepared client
+
+mppx and its dependencies are preinstalled with a generic usage guide; the prompt points to it. The guide contains no payment code.
