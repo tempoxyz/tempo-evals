@@ -29,4 +29,4 @@ Use your wallet’s Link email as the order contact email.
 
 You may consult public documentation and install software.
 
-You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
+You have 900 seconds to complete this task.

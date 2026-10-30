@@ -25,4 +25,4 @@ You may consult public documentation and install software.
 The mppx payment client is preinstalled at `/opt/mpp-client`; its usage guide
 is `/opt/mpp-client/README.md`. Available tools do not imply merchant acceptance.
 
-You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
+You have 900 seconds to complete this task.
