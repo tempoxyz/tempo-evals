@@ -10,7 +10,10 @@ from observation import payment_observations
 SNAPSHOT = Path("/var/log/checkout/snapshot.json")
 LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
 USDC = "0x036cbd53842c5426634e7929541ec2318f3dcf7e"
-PRICE = 1_000_000
+# The expected order total (USD cents) is the price; USDC has 6 decimals.
+ORDER = json.loads(Path(__file__).with_name("order.json").read_text())
+TOTAL = ORDER["total"]
+PRICE = TOTAL * 10_000
 
 
 def address(value: object) -> str | None:
@@ -39,9 +42,9 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     if (
         not isinstance(delivery, dict)
         or not delivery.get("orderId")
-        or delivery.get("item") != "Tempo Notebook"
+        or delivery.get("item") != ORDER["description"]
         or delivery.get("quantity") != 1
-        or delivery.get("amount") != "1.00"
+        or delivery.get("amount") != f"{TOTAL / 100:.2f}"
         or delivery.get("currency") != "USD"
         or delivery.get("receiptStatus") != "success"
         or delivery.get("receiptMethod") != "x402"

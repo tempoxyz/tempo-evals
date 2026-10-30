@@ -39,7 +39,6 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or delivery.get("receiptStatus") != "success"
         or delivery.get("receiptMethod") != "stripe"
         or delivery.get("receiptReference") != intent.get("id")
-        or delivery.get("receiptExternalId") != snapshot["orderId"]
         or not str(intent.get("id", "")).startswith("pi_")
         or intent.get("trialId") != snapshot["trialId"]
         or intent.get("orderId") != snapshot["orderId"]

@@ -1,8 +1,8 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Twenty-six Harbor tasks cover eight
+Planned dataset: `tempo/checkout-bench-v1`. Twenty-seven Harbor tasks cover eight
 merchants with required shipping and discover/directed prompts, plus a cart
-store on six payment methods. The dataset is not published.
+store on seven payment methods. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
@@ -94,7 +94,9 @@ The funding key stays in the trusted merchant sidecar.
 The verifier requires exactly one delivery, a successful x402 settlement on
 Base Sepolia, and a confirmed settlement transaction with exactly one USDC
 transfer: 1 USDC from the trial buyer to the merchant. The common shipping check
-then joins the delivery to its order. `buyer_balance_after_agent` records USDC
+then joins the delivery to its order and requires that order's recorded total
+to be $1.00: `config/tasks.yaml` sets `order_totals` for the pair, which sync
+writes into its expected `order.json`. `buyer_balance_after_agent` records USDC
 the buyer still held before recovery.
 
 Every task's wallet lists a `baseSepolia` account controlled by the same key
@@ -148,7 +150,7 @@ wallet setup, oracle, verifier, or scoring. Only the task name, provenance marke
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all twenty-six tasks, including oracle runs. Use
+`--task-suite checkout` runs all twenty-seven tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -186,13 +188,16 @@ with `items`, `shippingOption` and `shipping`; the response includes the total.
 | `braintree-cart-directed` | `braintree-card-discover` | Use card to pay. |
 | `mppcard-cart-directed` | `mpp-card-discover` | Use card over MPP to pay. |
 | `mppousd-cart-directed` | `mpp-ousd-discover` | Use MPP to pay. |
+| `x402-cart-directed` | `x402-usdc-discover` | Use x402 to pay. |
 
 Every cart task also raises the prepared card token's limit
 (`card.sharedPaymentTokenMaxAmount`) to the $35 budget through the Link setup
-service's `SPT_MAX_AMOUNT`; single-notebook tasks keep the $12 limit. Shopify
-and x402 have no cart task yet: Shopify needs the cart catalog and shipping
-rates in its development store, and x402 charges 1 USDC rather than the order
-total.
+service's `SPT_MAX_AMOUNT`; single-notebook tasks keep the $12 limit. The x402
+cart charges the full $33 in Base Sepolia USDC: its merchant funds the buyer
+with the $35 budget (`BUYER_FUNDING_CENTS`) rather than one notebook's $1, so each
+trial reserves 35 USDC from the funding wallet and a successful one leaves $2
+with its buyer. Shopify has no cart task yet: it needs the cart catalog and
+shipping rates in its development store.
 
 `config/tasks.yaml` lists the sources under `checkout.cart`; sync generates each
 cart task from its source and `shared/checkout/cart/`. Only the store module,
@@ -234,9 +239,10 @@ available across all eight merchants. Agents choose their own interaction tools.
 
 Submitted destinations are stored as immutable, trial-local orders. The store
 checks input structure, not whether it matches the expected answer. Payment
-references use that shipping order ID. Stripe MPP credentials bind the order
-through `externalId`; OUSD MPP challenges use an explicit per-order scope before
-proxying the delivery endpoint. A shipping order cannot be changed after
+references use that shipping order ID. Both MPP merchants share one server and
+differ only in the advertised method: each binds its challenge to the order with
+an explicit per-order scope before proxying the delivery endpoint, and the card
+merchant also tags its PaymentIntent with the order ID. A shipping order cannot be changed after
 creation; another submission creates a distinct draft. In the form adapters,
 merchant-managed shipping is collected before provider checkout; PSP billing
 addresses and PayPal's saved addresses do not replace this destination.
@@ -454,7 +460,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all twenty-six tasks per job. Model trials retain the shared pair
+all twenty-seven tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

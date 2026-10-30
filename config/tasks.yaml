@@ -79,6 +79,10 @@ checkout:
   # Cart store: the same payment adapters behind a multi-item catalog with
   # variants, quantities and a budget-bound shipping choice. Sync generates
   # directed cart tasks from these discover sources and shared/checkout/cart/.
+  # Order totals in USD cents for merchants that do not charge $12; sync writes
+  # them into the source task and its directed peer's expected order.
+  order_totals:
+    x402-usdc-discover: 100
   cart:
     stripe-card-discover: stripecard-cart-directed
     stripe-link-discover: link-cart-directed
@@ -86,6 +90,7 @@ checkout:
     braintree-card-discover: braintree-cart-directed
     mpp-card-discover: mppcard-cart-directed
     mpp-ousd-discover: mppousd-cart-directed
+    x402-usdc-discover: x402-cart-directed
   prepared:
     mpp-card-discover: mppcard-prepared-discover
     mpp-card-directed: mppcard-prepared-directed
