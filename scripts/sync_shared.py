@@ -37,6 +37,16 @@ STABLE_BENCHMARK = BENCHMARKS_CONFIG["tempo"]
 MCP_BENCHMARK = BENCHMARKS_CONFIG["tempo-mcp"]
 MPP_BENCHMARK = BENCHMARKS_CONFIG["mpp"]
 CHECKOUT_BENCHMARK = BENCHMARKS_CONFIG["checkout"]
+# Order totals (USD cents) for merchants that do not charge the default $12.
+CHECKOUT_ORDER_TOTALS = {
+    task: total
+    for source, total in TASKS_CONFIG["checkout"].get("order_totals", {}).items()
+    for task in (
+        source,
+        TASKS_CONFIG["checkout"]["directed"].get(source, {}).get("task"),
+    )
+    if task
+}
 AGENT_IMAGE: str = TASKS_CONFIG["images"]["agent"]
 VERIFIER_IMAGE: str = TASKS_CONFIG["images"]["verifier"]
 MPP_SHARED_FILES: list[dict[str, Any]] = TASKS_CONFIG["mpp"]["shared_files"]
@@ -269,6 +279,16 @@ def sync_checkout_shipping() -> None:
             ("check.py", "tests/check.py"),
         ):
             copy_file(CHECKOUT_SHARED_DIR / "shipping" / source, task_dir / target)
+        total = CHECKOUT_ORDER_TOTALS.get(task_dir.name)
+        if total is not None:
+            order = json.loads(
+                (CHECKOUT_SHARED_DIR / "shipping/order.json").read_text()
+            )
+            for target in ("solution/order.json", "tests/order.json"):
+                write_file(
+                    task_dir / target,
+                    json.dumps({**order, "total": total}, indent=2) + "\n",
+                )
 
 
 def sync_checkout_wallet() -> None:

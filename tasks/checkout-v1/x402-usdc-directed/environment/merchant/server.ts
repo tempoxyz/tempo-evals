@@ -1,5 +1,8 @@
 import { createShipping } from './shipping.js';
-const shipping = createShipping('/buy', { price: '1.00' });
+// The notebook costs $1.00 (100 cents) here so one funding balance covers more
+// concurrent trials; the order record, charge and verifier all use this total.
+const total = 100;
+const shipping = createShipping('/buy', { total });
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from 'node:fs';
@@ -8,7 +11,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { Mppx, NodeListener, Request as ServerRequest, evm } from 'mppx/server';
 import { balanceOf, facilitator, retryingFetch, transfer, usdc } from './x402.js';
 
-const amount = 1_000_000n;
+const amount = BigInt(total) * 10_000n; // USDC has 6 decimals
 const fundingKey = process.env.X402_FUNDING_PRIVATE_KEY as `0x${string}`;
 if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING_PRIVATE_KEY is required');
 // Payments return to the funding wallet, so successful trials refill it.
@@ -20,7 +23,8 @@ const mppx = Mppx.create({
 });
 // Charge on the order's own payment URL, so the x402 challenge's resource is the
 // URL the agent requested. The scope binds the payment to that shipping order.
-const charge = (orderId: string) => mppx.evm.charge({ amount: '1', description: 'Tempo Notebook', scope: orderId });
+const charge = (order: { id: string; total: number; description: string }) =>
+  mppx.evm.charge({ amount: String(order.total / 100), description: order.description, scope: order.id });
 const dir = '/var/log/checkout';
 const log = `${dir}/deliveries.jsonl`;
 const attemptsLog = `${dir}/attempts.jsonl`;
@@ -38,7 +42,7 @@ if (!existsSync(`${dir}/funding.json`)) {
   writeFileSync(`${dir}/funding.json`, JSON.stringify({ buyer, amount: amount.toString(), transaction }));
 }
 writeFileSync(`${dir}/merchant.json`, JSON.stringify({ recipient, usdc, buyer }));
-const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $1.00</p><a href="/buy">Buy notebook</a></main></body></html>';
+const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $'+(total / 100).toFixed(2)+'</p><a href="/buy">Buy notebook</a></main></body></html>';
 
 http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
@@ -56,7 +60,7 @@ http.createServer(async (request, response) => {
     try {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
-      const result = await charge(shippingOrder.id)(ServerRequest.fromNodeListener(request, response));
+      const result = await charge(shippingOrder)(ServerRequest.fromNodeListener(request, response));
       if (result.status === 402) {
         // Advertise only x402: drop the native MPP challenge and its MPP-specific
         // problem body, and return the x402 payment requirements instead.
@@ -67,7 +71,7 @@ http.createServer(async (request, response) => {
         const body = required ? Buffer.from(required, 'base64').toString('utf8') : '{}';
         return NodeListener.sendResponse(response, new Response(body, { status: 402, headers }));
       }
-      const order = { orderId: shippingOrder.id, item: 'Tempo Notebook', quantity: 1, amount: '1.00', currency: 'USD' };
+      const order = { orderId: shippingOrder.id, item: shippingOrder.description, quantity: 1, amount: (shippingOrder.total / 100).toFixed(2), currency: 'USD' };
       const paid = result.withReceipt(Response.json(order));
       appendFileSync(log, JSON.stringify({ ...order, receipt: paid.headers.get('payment-receipt'), paymentResponse: paid.headers.get('payment-response') }) + '\n');
       return NodeListener.sendResponse(response, paid);

@@ -19,7 +19,8 @@ async function main() {
   const response = await mppx.rawFetch(shippingOrder.paymentUrl, { headers: { accept: 'application/json', 'payment-signature': credential } });
   if (!response.ok || !response.headers.get('payment-response')) throw new Error(`Purchase failed: ${response.status}`);
   const order = await response.json();
-  if (order.item !== 'Tempo Notebook' || order.amount !== '1.00') throw new Error('Wrong item or amount');
+  const expected = JSON.parse(readFileSync('/solution/order.json', 'utf8'));
+  if (order.item !== expected.description || order.amount !== (expected.total / 100).toFixed(2)) throw new Error('Wrong item or amount');
   console.log('Oracle x402 checkout completed');
 }
 

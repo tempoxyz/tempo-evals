@@ -105,10 +105,16 @@ class CheckoutShippingTest(unittest.TestCase):
                             "id": order_id,
                             "shipping": copy.deepcopy(verifier.EXPECTED),
                             "description": "Tempo Notebook",
-                            "total": 1200,
+                            "total": verifier.EXPECTED_ORDER["total"],
                         }
                     ]
                     self.assertTrue(verifier.check(paid)[0])
+                    # The paid order must record the merchant's own price.
+                    mispriced = copy.deepcopy(paid)
+                    mispriced["shippingOrders"][0]["total"] += 100
+                    self.assertEqual(
+                        verifier.check(mispriced), (False, "order_mismatch", None)
+                    )
                     for field in verifier.EXPECTED:
                         wrong = copy.deepcopy(paid)
                         wrong["shippingOrders"][0]["shipping"][field] = "wrong"
@@ -128,7 +134,7 @@ class CheckoutShippingTest(unittest.TestCase):
                             {
                                 "id": "another-order",
                                 "shipping": verifier.EXPECTED,
-                                "total": 1200,
+                                "total": verifier.EXPECTED_ORDER["total"],
                             }
                         ],
                         paid["shippingOrders"] * 2,
@@ -308,6 +314,18 @@ class CheckoutShippingTest(unittest.TestCase):
                 finally:
                     sys.path[:] = original_path
 
+    def test_x402_pair_expects_its_one_dollar_order(self):
+        for slug in ("x402-usdc-discover", "x402-usdc-directed"):
+            with self.subTest(task=slug):
+                task = ROOT / "tasks/checkout-v1" / slug
+                for target in ("solution/order.json", "tests/order.json"):
+                    self.assertEqual(
+                        json.loads((task / target).read_text())["total"], 100
+                    )
+                server = (task / "environment/merchant/server.ts").read_text()
+                self.assertIn("const total = 100;", server)
+                self.assertIn("createShipping('/buy', { total })", server)
+
     def test_shipping_is_shared_by_all_checkout_tasks(self):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
@@ -323,8 +341,6 @@ class CheckoutShippingTest(unittest.TestCase):
                 for directory, source, target in (
                     (store, "merchant.js", "environment/merchant/shipping.js"),
                     (store, "oracle.ts", "solution/shipping.ts"),
-                    (store, "order.json", "solution/order.json"),
-                    (store, "order.json", "tests/order.json"),
                     (SHARED, "address.json", "solution/shipping.json"),
                     (SHARED, "address.json", "tests/shipping.json"),
                     (SHARED, "check.py", "tests/check.py"),
@@ -333,6 +349,12 @@ class CheckoutShippingTest(unittest.TestCase):
                         (task / target).read_bytes(),
                         (directory / source).read_bytes(),
                     )
+                order = json.loads((store / "order.json").read_text())
+                total = sync_shared.CHECKOUT_ORDER_TOTALS.get(task.name)
+                if total is not None:
+                    order["total"] = total
+                for target in ("solution/order.json", "tests/order.json"):
+                    self.assertEqual(json.loads((task / target).read_text()), order)
                 instruction = (task / "instruction.md").read_text()
                 self.assertIn("including the apartment", instruction)
                 for field, value in json.loads(
