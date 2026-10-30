@@ -227,9 +227,10 @@ available across all eight merchants. Agents choose their own interaction tools.
 
 Submitted destinations are stored as immutable, trial-local orders. The store
 checks input structure, not whether it matches the expected answer. Payment
-references use that shipping order ID. Stripe MPP credentials bind the order
-through `externalId`; OUSD MPP challenges use an explicit per-order scope before
-proxying the delivery endpoint. A shipping order cannot be changed after
+references use that shipping order ID. Both MPP merchants share one server and
+differ only in the advertised method: each binds its challenge to the order with
+an explicit per-order scope before proxying the delivery endpoint, and the card
+merchant also tags its PaymentIntent with the order ID. A shipping order cannot be changed after
 creation; another submission creates a distinct draft. In the form adapters,
 merchant-managed shipping is collected before provider checkout; PSP billing
 addresses and PayPal's saved addresses do not replace this destination.
