@@ -15,11 +15,11 @@ const mppx = Mppx.create({
   methods: [tempo({ currencies: [ousd], getClient: () => client, recipient, testnet: true })],
   secretKey: randomBytes(32).toString('hex'),
 });
-const proxy = (orderId: string) => Proxy.create({
+const proxy = (order: { id: string; description: string; total: number }) => Proxy.create({
   services: [{
     id: 'notebook',
     baseUrl: 'http://127.0.0.1:3001',
-    routes: { 'GET /deliver': mppx.tempo.charge({ amount: '12', description: 'Tempo Notebook', scope: orderId }) },
+    routes: { 'GET /deliver': mppx.tempo.charge({ amount: String(order.total / 100), description: order.description, scope: order.id }) },
   }],
 });
 const log = '/var/log/checkout/deliveries.jsonl';
@@ -29,9 +29,10 @@ writeFileSync('/var/log/checkout/merchant.json', JSON.stringify({ recipient, ous
 const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p><a href="/buy">Buy notebook</a></main></body></html>';
 
 http.createServer((request, response) => {
-  if (new URL(request.url || '/', 'http://merchant:3000').pathname !== '/deliver' || request.method !== 'GET') return response.writeHead(404).end('Not found');
+  const order = shipping.get(request);
+  if (new URL(request.url || '/', 'http://merchant:3000').pathname !== '/deliver' || request.method !== 'GET' || !order) return response.writeHead(404).end('Not found');
   return response.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({
-    orderId: new URL(request.url || '/', 'http://merchant:3000').searchParams.get('order_id'), item: 'Tempo Notebook', quantity: 1, amount: '12.00', currency: 'USD',
+    orderId: order.id, item: order.description, quantity: 1, amount: (order.total / 100).toFixed(2), currency: 'USD',
   }));
 }).listen(3001, '127.0.0.1');
 
@@ -52,7 +53,7 @@ http.createServer(async (request, response) => {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
       const incoming = ServerRequest.fromNodeListener(request, response);
-      const paid = await proxy(shippingOrder.id).fetch(new Request(`http://merchant:3000/notebook/deliver?order_id=${shippingOrder.id}`, incoming));
+      const paid = await proxy(shippingOrder).fetch(new Request(`http://merchant:3000/notebook/deliver?order_id=${shippingOrder.id}`, incoming));
       if (paid.ok) {
         const order = await paid.clone().json() as { orderId: string; item: string; quantity: number; amount: string; currency: string };
         appendFileSync(log, JSON.stringify({ ...order, receipt: paid.headers.get('payment-receipt') }) + '\n');

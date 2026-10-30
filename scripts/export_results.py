@@ -100,6 +100,8 @@ CHECKOUT_TRIAL_COLUMNS = [
     "credentialed_payment_request_count",
     "shipping_address_match",
     "shipping_mismatched_fields",
+    "order_match",
+    "order_mismatched_fields",
     "trajectory_path",
     "quality_unavailable",
 ]
@@ -835,6 +837,12 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                     checkout_details["shipping_mismatched_fields"]
                 )
                 if isinstance(checkout_details.get("shipping_mismatched_fields"), list)
+                else "",
+                "order_match": checkout_details.get("order_match", ""),
+                "order_mismatched_fields": json.dumps(
+                    checkout_details["order_mismatched_fields"]
+                )
+                if isinstance(checkout_details.get("order_mismatched_fields"), list)
                 else "",
                 "trajectory_path": str(file_path.parent / "agent/trajectory.json")
                 if trajectory

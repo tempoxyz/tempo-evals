@@ -72,6 +72,20 @@ checkout:
       task: shopify-card-directed
       method: card
       instruction: Use card to pay.
+    x402-usdc-discover:
+      task: x402-usdc-directed
+      method: x402
+      instruction: Use x402 to pay.
+  # Cart store: the same payment adapters behind a multi-item catalog with
+  # variants, quantities and a budget-bound shipping choice. Sync generates
+  # directed cart tasks from these discover sources and shared/checkout/cart/.
+  # Order totals in USD cents for merchants that do not charge $12; sync writes
+  # them into the source task and its directed peer's expected order.
+  order_totals:
+    x402-usdc-discover: 100
+  cart:
+    stripe-card-discover: stripecard-cart-directed
+    mpp-ousd-discover: mppousd-cart-directed
   prepared:
     mpp-card-discover: mppcard-prepared-discover
     mpp-card-directed: mppcard-prepared-directed

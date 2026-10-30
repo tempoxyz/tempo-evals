@@ -101,9 +101,20 @@ class CheckoutShippingTest(unittest.TestCase):
                     order_id = verifier.paid_order_id(paid)
                     self.assertTrue(order_id)
                     paid["shippingOrders"] = [
-                        {"id": order_id, "shipping": copy.deepcopy(verifier.EXPECTED)}
+                        {
+                            "id": order_id,
+                            "shipping": copy.deepcopy(verifier.EXPECTED),
+                            "description": "Tempo Notebook",
+                            "total": verifier.EXPECTED_ORDER["total"],
+                        }
                     ]
                     self.assertTrue(verifier.check(paid)[0])
+                    # The paid order must record the merchant's own price.
+                    mispriced = copy.deepcopy(paid)
+                    mispriced["shippingOrders"][0]["total"] += 100
+                    self.assertEqual(
+                        verifier.check(mispriced), (False, "order_mismatch", None)
+                    )
                     for field in verifier.EXPECTED:
                         wrong = copy.deepcopy(paid)
                         wrong["shippingOrders"][0]["shipping"][field] = "wrong"
@@ -119,7 +130,13 @@ class CheckoutShippingTest(unittest.TestCase):
                         )
                     for value in (
                         [],
-                        [{"id": "another-order", "shipping": verifier.EXPECTED}],
+                        [
+                            {
+                                "id": "another-order",
+                                "shipping": verifier.EXPECTED,
+                                "total": verifier.EXPECTED_ORDER["total"],
+                            }
+                        ],
                         paid["shippingOrders"] * 2,
                     ):
                         wrong = copy.deepcopy(paid)
@@ -162,25 +179,182 @@ class CheckoutShippingTest(unittest.TestCase):
                 finally:
                     sys.path[:] = original_path
 
+    def test_cart_tasks_require_the_requested_cart_and_its_payment(self):
+        order = json.loads((SHARED.parent / "cart/order.json").read_text())
+        address = json.loads((SHARED / "address.json").read_text())
+
+        def payment(slug, total, description):
+            if slug == "stripe-card-discover":
+                return {
+                    "sessions": [
+                        {
+                            "orderId": "order-1",
+                            "id": "cs_test_one",
+                            "livemode": False,
+                            "clientReferenceId": "order-1",
+                            "metadataOrderId": "order-1",
+                            "status": "complete",
+                            "paymentStatus": "paid",
+                            "amountTotal": total,
+                            "currency": "usd",
+                            "paymentIntent": {
+                                "id": "pi_one",
+                                "status": "succeeded",
+                                "amount": total,
+                                "amountReceived": total,
+                                "currency": "usd",
+                                "paymentMethodType": "card",
+                            },
+                            "items": [
+                                {
+                                    "description": description,
+                                    "quantity": 1,
+                                    "amountTotal": total,
+                                    "currency": "usd",
+                                }
+                            ],
+                        }
+                    ]
+                }
+            if slug == "mpp-ousd-discover":
+                return {
+                    "recipient": "0x" + "1" * 40,
+                    "ousd": "0x20c0000000000000000000006a37DA5C996874BE",
+                    "decimals": 6,
+                    "balance": str(total * 10**4),
+                    "deliveries": [
+                        {
+                            "orderId": "order-1",
+                            "item": description,
+                            "quantity": 1,
+                            "amount": f"{total / 100:.2f}",
+                            "currency": "USD",
+                            "receiptStatus": "success",
+                            "receiptMethod": "tempo",
+                        }
+                    ],
+                }
+            raise AssertionError(f"add a cart payment fixture for {slug}")
+
+        def snapshot(slug, lines, option, total, description, paid=None):
+            return {
+                **payment(slug, total if paid is None else paid, description),
+                "shippingOrders": [
+                    {
+                        "id": "order-1",
+                        "shipping": address,
+                        "lines": lines,
+                        "shippingOption": option,
+                        "total": total,
+                        "description": description,
+                    }
+                ],
+            }
+
+        for slug, target in sync_shared.TASKS_CONFIG["checkout"]["cart"].items():
+            with self.subTest(task=target):
+                tests = ROOT / "tasks/checkout-v1" / target / "tests"
+                original_path = sys.path[:]
+                try:
+                    sys.path.insert(0, str(tests))
+                    payment_check = load(tests / "payment_check.py", "cart_payment")
+                    with patch.dict(sys.modules, {"payment_check": payment_check}):
+                        verifier = load(tests / "check.py", "cart_check")
+                    good = snapshot(
+                        slug,
+                        order["lines"],
+                        "standard",
+                        order["total"],
+                        order["description"],
+                    )
+                    self.assertTrue(verifier.check(good)[0])
+                    express = snapshot(
+                        slug,
+                        order["lines"],
+                        "express",
+                        4300,
+                        order["description"].replace("Standard", "Express"),
+                    )
+                    a4 = [
+                        {"sku": "notebook-a4-dotted", "quantity": 2},
+                        order["lines"][1],
+                    ]
+                    one = [{**order["lines"][0], "quantity": 1}, order["lines"][1]]
+                    for wrong, fields in (
+                        (express, ["total", "shippingOption"]),
+                        (snapshot(slug, a4, "standard", 3700, "x"), ["total", "lines"]),
+                        (
+                            snapshot(slug, one, "standard", 2100, "x"),
+                            ["total", "lines"],
+                        ),
+                    ):
+                        self.assertEqual(
+                            verifier.check(wrong), (False, "order_mismatch", None)
+                        )
+                        self.assertEqual(
+                            verifier.order_details(wrong)["order_mismatched_fields"],
+                            fields,
+                        )
+                    underpaid = snapshot(
+                        slug,
+                        order["lines"],
+                        "standard",
+                        order["total"],
+                        order["description"],
+                        paid=1200,
+                    )
+                    self.assertFalse(verifier.check(underpaid)[0])
+                    renamed = copy.deepcopy(good)
+                    for key in ("sessions", "deliveries"):
+                        for row in renamed.get(key, []):
+                            row["item"] = "Tempo Notebook"
+                            for item in row.get("items", []):
+                                item["description"] = "Tempo Notebook"
+                    self.assertFalse(verifier.check(renamed)[0])
+                finally:
+                    sys.path[:] = original_path
+
+    def test_x402_pair_expects_its_one_dollar_order(self):
+        for slug in ("x402-usdc-discover", "x402-usdc-directed"):
+            with self.subTest(task=slug):
+                task = ROOT / "tasks/checkout-v1" / slug
+                for target in ("solution/order.json", "tests/order.json"):
+                    self.assertEqual(
+                        json.loads((task / target).read_text())["total"], 100
+                    )
+                server = (task / "environment/merchant/server.ts").read_text()
+                self.assertIn("const total = 100;", server)
+                self.assertIn("createShipping('/buy', { total })", server)
+
     def test_shipping_is_shared_by_all_checkout_tasks(self):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs()
         expected |= set(sync_shared.TASKS_CONFIG["checkout"]["prepared"].values())
+        carts = set(sync_shared.TASKS_CONFIG["checkout"]["cart"].values())
+        expected |= carts
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:
             with self.subTest(task=task.name):
                 self.assertNotIn("shipping", task.name)
-                for source, target in (
-                    ("merchant.js", "environment/merchant/shipping.js"),
-                    ("oracle.ts", "solution/shipping.ts"),
-                    ("address.json", "solution/shipping.json"),
-                    ("address.json", "tests/shipping.json"),
-                    ("check.py", "tests/check.py"),
+                store = SHARED.parent / ("cart" if task.name in carts else "shipping")
+                for directory, source, target in (
+                    (store, "merchant.js", "environment/merchant/shipping.js"),
+                    (store, "oracle.ts", "solution/shipping.ts"),
+                    (SHARED, "address.json", "solution/shipping.json"),
+                    (SHARED, "address.json", "tests/shipping.json"),
+                    (SHARED, "check.py", "tests/check.py"),
                 ):
                     self.assertEqual(
-                        (task / target).read_bytes(), (SHARED / source).read_bytes()
+                        (task / target).read_bytes(),
+                        (directory / source).read_bytes(),
                     )
+                order = json.loads((store / "order.json").read_text())
+                total = sync_shared.CHECKOUT_ORDER_TOTALS.get(task.name)
+                if total is not None:
+                    order["total"] = total
+                for target in ("solution/order.json", "tests/order.json"):
+                    self.assertEqual(json.loads((task / target).read_text()), order)
                 instruction = (task / "instruction.md").read_text()
                 self.assertIn("including the apartment", instruction)
                 for field, value in json.loads(

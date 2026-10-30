@@ -279,6 +279,7 @@ invalid-name=ignored
             "BROWSERBASE_API_KEY": "test",
             "BROWSERBASE_PROJECT_ID": "test",
             "KERNEL_API_KEY": "test",
+            "X402_FUNDING_PRIVATE_KEY": "0x" + "1" * 64,
         }
         args = [
             "production-daytona",
@@ -551,6 +552,24 @@ invalid-name=ignored
             preflight(
                 {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-discover"}
             )
+
+    def test_x402_checkout_preflight_requires_funding_key(self) -> None:
+        env = {
+            "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
+            "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
+            "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+        }
+        for task_filter in ("x402-usdc-discover", "x402-usdc-directed"):
+            with (
+                self.subTest(task_filter=task_filter),
+                patch.dict(os.environ, env, clear=True),
+                self.assertRaisesRegex(RuntimeError, "X402_FUNDING_PRIVATE_KEY"),
+            ):
+                preflight({}, {"task_suite": "checkout", "task_filter": task_filter})
+        with patch.dict(
+            os.environ, {**env, "X402_FUNDING_PRIVATE_KEY": "0x" + "1" * 64}, clear=True
+        ):
+            preflight({}, {"task_suite": "checkout", "task_filter": "x402-usdc-*"})
 
     def test_paypal_checkout_preflight_requires_sandbox_credentials(self) -> None:
         with (

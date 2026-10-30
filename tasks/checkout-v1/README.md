@@ -1,7 +1,8 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Eighteen Harbor tasks cover seven
-merchants with required shipping and discover/directed prompts. The dataset is not published.
+Planned dataset: `tempo/checkout-bench-v1`. Twenty-two Harbor tasks cover eight
+merchants with required shipping and discover/directed prompts, plus a cart
+store on two payment methods. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
@@ -32,6 +33,7 @@ Every merchant has discover/directed native Harbor tasks:
 | `mpp-card-discover` | `mpp-card-directed` | Use card over MPP to pay. |
 | `braintree-card-discover` | `braintree-card-directed` | Use card to pay. |
 | `shopify-card-discover` | `shopify-card-directed` | Use card to pay. |
+| `x402-usdc-discover` | `x402-usdc-directed` | Use x402 to pay. |
 
 ### Prepared MPP tasks
 
@@ -66,6 +68,40 @@ alone is insufficient. The reference must match the immutable shipping order;
 the common shipping verifier checks the complete requested destination. Every
 trial has independent orders and wallet state, so shared merchant credentials
 do not serialize concurrent runs.
+
+### x402 USDC
+
+The x402 pair copies the OUSD MPP merchant and changes only the advertised
+payment: the same shipping form, `POST /shipping` and per-order `/buy` URL
+charge through mppx's `evm.charge` with an x402 challenge for Base Sepolia
+USDC (`eip155:84532`). The merchant removes the native MPP challenge, binds
+each charge to its shipping order with the route scope, and settles through the
+public x402 facilitator (`X402_FACILITATOR_URL`, default
+`https://x402.org/facilitator`). The notebook costs 1 USDC, not $12, so one
+funding balance supports more concurrent trials; the prompt keeps the common
+$12 spending limit. Compare its spend in USDC, not against the $12 merchants.
+
+Set `X402_FUNDING_PRIVATE_KEY` in the ignored checkout env file. Before the
+merchant reports healthy it sends exactly 1 USDC from that wallet to the trial's
+buyer through the facilitator, which pays gas, so neither wallet needs ETH and
+concurrent trials never share a transaction nonce. Payments go to the funding
+wallet, and the snapshot returns any USDC left in the buyer after the agent stops,
+so the balance recycles. The public facilitator sometimes fails to broadcast
+concurrent settlements; funding, recovery and the merchant's settlement retry
+those failures, which cannot pay twice because each authorization settles once.
+The funding key stays in the trusted merchant sidecar.
+
+The verifier requires exactly one delivery, a successful x402 settlement on
+Base Sepolia, and a confirmed settlement transaction with exactly one USDC
+transfer: 1 USDC from the trial buyer to the merchant. The common shipping check
+then joins the delivery to its order and requires that order's recorded total
+to be $1.00: `config/tasks.yaml` sets `order_totals` for the pair, which sync
+writes into its expected `order.json`. `buyer_balance_after_agent` records USDC
+the buyer still held before recovery.
+
+Every task's wallet lists a `baseSepolia` account controlled by the same key
+as its Tempo account, so the inventory does not reveal which merchant accepts
+x402. Only the x402 tasks fund it.
 
 ### Shopify storefront
 
@@ -107,14 +143,14 @@ cart after unlocking the dev store is not another attempt. The snapshot also
 retains the raw handoff request count.
 Run `--task-filter 'shopify-card-*'` for the pair on any existing browser profile.
 
-The seven discover tasks are the authored sources. `config/tasks.yaml` declares
+The eight discover tasks are the authored sources. `config/tasks.yaml` declares
 peer names and method instructions; `npm run sync` generates their standalone
 directed task directories. Edit the source task to change a pair's merchant,
 wallet setup, oracle, verifier, or scoring. Only the task name, provenance marker,
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all eighteen tasks, including oracle runs. Use
+`--task-suite checkout` runs all twenty-two tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -124,7 +160,7 @@ runs.
 Native `task.toml` fields record `scenario_id`, `prompt_condition`, and
 `required_method`. Preflight reuses the scenario identity for credential checks.
 Exports prefer the trial's staged task metadata and keep prompt conditions
-separate in task and suite quality summaries. OUSD MPP's method is `tempo_mpp`; card MPP's method is `stripe_mpp`.
+separate in task and suite quality summaries. OUSD MPP's method is `tempo_mpp`; card MPP's method is `stripe_mpp`; x402's method is `x402`.
 
 `observed_method` comes from provider or receipt evidence, including failed
 checkouts. It is blank when unknown or when multiple methods were observed;
@@ -133,13 +169,45 @@ not imply success. The existing success-only `payment_method` column remains.
 Shared observation and grading code lives in `shared/checkout/tests/` and is
 copied into every checkout task by `npm run sync`.
 
+## Cart store
+
+Cart tasks put a payment method's unchanged adapter behind a harder store, to
+separate models that pass the single-notebook tasks. The request is two A5
+dotted Tempo Notebooks and one Tempo Pen for at most $35, shipped to the usual
+address. The store lists notebooks in two sizes (A5 $12, A4 $14) and three page
+styles, a pen ($4) and a sticker pack ($3). The form defaults to one A4 lined
+notebook and preselects Express shipping ($15); only Standard ($5) keeps the
+order within budget, at $33. API clients can `GET /catalog` and `POST /shipping`
+with `items`, `shippingOption` and `shipping`; the response includes the total.
+
+| Cart task | Source task | Added instruction |
+| --- | --- | --- |
+| `stripecard-cart-directed` | `stripe-card-discover` | Use card to pay. |
+| `mppousd-cart-directed` | `mpp-ousd-discover` | Use MPP to pay. |
+
+`config/tasks.yaml` lists the sources under `checkout.cart`; sync generates each
+cart task from its source and `shared/checkout/cart/`. Only the store module,
+order fixture, oracle helper and purchase request differ from the source task,
+and they are the same for every payment method. Cart tasks are directed only,
+so the method is not a second variable. Their `scenario_id` is their own; the
+`source_task` metadata selects the source's credential checks.
+
+Every store records an immutable order with its description and total in USD
+cents, and every payment adapter charges that order: the single-notebook store
+always records "Tempo Notebook" for 1200. Each payment check requires the
+provider payment to match the description and total in `tests/order.json`.
+The shared `tests/check.py` then requires the paid order's total and, for the
+cart, its exact lines and shipping option. A paid order that differs fails as
+`order_mismatch`; details and exports record `order_match` and
+`order_mismatched_fields` (`total`, `lines`, `shippingOption`).
+
 ## Required shipping
 
 Every checkout task requires the same recipient and full shipping destination.
 Shipping is part of the default task, alongside buying one Tempo Notebook for
 $12; there are no separate shipping task variants.
 
-The seven discover tasks own their merchant adapters, provider snapshots and
+The eight discover tasks own their merchant adapters, provider snapshots and
 oracles. Shared shipping input, order storage, address fixture and verifier
 live in `shared/checkout/shipping/`; `npm run sync` copies these assets into
 each task before generating directed peers. The provider-specific
@@ -153,7 +221,7 @@ apartment/suite, city, state code, postal code and country code. The apartment
 field is optional in the generic store but required by this task's destination.
 API clients can submit the same fields as a `shipping` JSON object to
 `POST /shipping`; the response returns an order-specific `paymentUrl`. This is
-available across all seven merchants. Agents choose their own interaction tools.
+available across all eight merchants. Agents choose their own interaction tools.
 
 Submitted destinations are stored as immutable, trial-local orders. The store
 checks input structure, not whether it matches the expected answer. Payment
@@ -242,7 +310,7 @@ The shared grader and RewardKit criteria are authored in
 `shared/checkout/tests/` and copied into each task by `npm run sync`. Merchant
 correctness checks remain task-owned. Report `pass@1`, all-five-pass
 reliability (`pass^5`), tokens, turns, tool calls, wall time, and provider cost
-from repeated Harbor trials. Provider sandbox payments and Tempo testnet
+from repeated Harbor trials. Provider sandbox payments, Base Sepolia transfers and Tempo testnet
 transfers must be identified separately in results.
 The exporter leaves `pass_5` blank with fewer than five trials. With at least
 five, it reports the fraction of five-trial subsets in which every checkout
@@ -291,7 +359,7 @@ with quality unavailable; the original Harbor rewards remain preserved.
 
 `checkout_start_count` counts Link and PayPal checkout requests independently
 of their reused provider orders; the card merchant counts Stripe sessions.
-`credentialed_payment_request_count` is MPP's raw credential-bearing
+`credentialed_payment_request_count` is MPP's and x402's raw credential-bearing
 request count. These are distinct observations; the current retry score uses
 the existing per-rail proxy. Reported tool errors count native error flags and
 explicit tool-error envelopes, not every failed action inside a shell command.
@@ -313,7 +381,7 @@ included in this fallback.
 
 ## Current merchants
 
-All seven merchant scenarios request one Tempo Notebook for at most $12 and use
+All eight merchant scenarios request one Tempo Notebook for at most $12 and use
 the same purchase request and Playwright browser. Each trial wallet lists its
 prepared payment methods. Only directed prompts name the method to use. Each
 merchant runs in a trusted sidecar and exposes only its own checkout flow.
@@ -332,6 +400,7 @@ merchant through it.
 | `paypal-discover` | Merchant PayPal checkout button and hosted sandbox buyer approval form | One completed PayPal order and capture |
 | `braintree-card-discover` | Braintree Hosted Fields card form | One unrefunded sandbox card sale submitted for settlement and matching shipping order |
 | `shopify-card-discover` | Shopify development storefront and test card gateway | One paid, unrefunded test order with matching variant, total, trial and provider-recorded shipping address |
+| `x402-usdc-discover` | x402 Base Sepolia USDC paid endpoint only | One notebook delivery, successful x402 settlement and confirmed 1 USDC transfer from the trial buyer |
 Every trial runs the same wallet, Link enrollment, and browser services before
 the agent starts. After Link enrollment, a shared Compose readiness step opens
 the merchant through the selected browser. A broken browser connection fails
@@ -377,7 +446,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all eighteen tasks per job. Model trials retain the shared pair
+all twenty-two tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

@@ -65,10 +65,16 @@ class PaymentCheckTest(unittest.TestCase):
         snapshot["shippingOrders"] = [
             {
                 "id": snapshot["orders"][0]["id"],
+                "total": 1200,
                 "shipping": copy.deepcopy(shipping_verifier.EXPECTED),
             }
         ]
         self.assertTrue(shipping_verifier.check(snapshot)[0])
+        snapshot["shippingOrders"][0]["total"] = None
+        self.assertEqual(
+            shipping_verifier.check(snapshot), (False, "order_mismatch", None)
+        )
+        snapshot["shippingOrders"][0]["total"] = 1200
         snapshot["shippingOrders"][0]["shipping"]["line2"] = "Apt 9"
         self.assertFalse(shipping_verifier.check(snapshot)[0])
         snapshot["orders"][0]["email"] = "another@example.com"

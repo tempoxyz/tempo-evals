@@ -404,8 +404,10 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
             metadata = tomlkit.parse(
                 (Path("tasks/checkout-v1") / name / "task.toml").read_text()
             )["metadata"]
+            # Cart tasks need their source payment method's credentials.
             selected.add(
-                metadata.get("scenario_id", f"checkout-v1/{name}").rsplit("/", 1)[-1]
+                metadata.get("source_task")
+                or metadata.get("scenario_id", f"checkout-v1/{name}").rsplit("/", 1)[-1]
             )
         if not os.environ.get("STRIPE_TEST_SECRET_KEY", "").startswith("sk_test_"):
             raise RuntimeError("Stripe checkout requires STRIPE_TEST_SECRET_KEY")
@@ -438,6 +440,10 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
                 raise RuntimeError(
                     f"Braintree checkout runs require {', '.join(missing)}"
                 )
+        if "x402-usdc-discover" in selected and not re.fullmatch(
+            r"0x[0-9a-fA-F]{64}", os.environ.get("X402_FUNDING_PRIVATE_KEY", "")
+        ):
+            raise RuntimeError("x402 checkout requires X402_FUNDING_PRIVATE_KEY")
         if "shopify-card-discover" in selected:
             required = (
                 "SHOPIFY_SHOP",

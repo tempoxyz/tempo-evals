@@ -19,7 +19,7 @@ Ship it to:
 The completed order must use this full shipping address, including the apartment.
 
 Your trial wallet is at `/wallet/wallet.json`. It lists your prepared Tempo
-testnet wallet and sandbox payment methods (card, Link, and a PayPal buyer). You have a browser available for checkout.
+testnet and Base Sepolia testnet wallets and sandbox payment methods (card, Link, and a PayPal buyer). You have a browser available for checkout.
 For store access and test-gateway credentials, also consult `wallet.storefront`.
 Use your wallet’s Link email as the order contact email.
 

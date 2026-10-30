@@ -9,6 +9,7 @@ from observation import payment_observations
 
 SNAPSHOT = Path("/var/log/checkout/snapshot.json")
 LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
+ORDER = json.loads(Path(__file__).with_name("order.json").read_text())
 
 
 def check(snapshot: object) -> tuple[bool, str, str | None]:
@@ -24,9 +25,9 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     intent = session.get("paymentIntent")
     expected_item = [
         {
-            "description": "Tempo Notebook",
+            "description": ORDER["description"],
             "quantity": 1,
-            "amountTotal": 1200,
+            "amountTotal": ORDER["total"],
             "currency": "usd",
         }
     ]
@@ -36,14 +37,14 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
         or session.get("orderId") != session.get("clientReferenceId")
         or session.get("orderId") != session.get("metadataOrderId")
         or session.get("status") != "complete"
-        or session.get("amountTotal") != 1200
+        or session.get("amountTotal") != ORDER["total"]
         or session.get("currency") != "usd"
         or session.get("items") != expected_item
         or not isinstance(intent, dict)
         or not str(intent.get("id", "")).startswith("pi_")
         or intent.get("status") != "succeeded"
-        or intent.get("amount") != 1200
-        or intent.get("amountReceived") != 1200
+        or intent.get("amount") != ORDER["total"]
+        or intent.get("amountReceived") != ORDER["total"]
         or intent.get("currency") != "usd"
     ):
         return False, "payment_or_order_mismatch", None
