@@ -44,6 +44,8 @@ async function main(): Promise<void> {
   }
 
   const card = wallet.card;
+  const expected = JSON.parse(readFileSync('/solution/order.json', 'utf8'));
+  const payLabel = 'Pay.*' + (expected.total / 100).toFixed(2).replace('.', '\\.');
   const email = wallet.link.email;
   const script = `async (page) => {
   let stage = 'start';
@@ -99,7 +101,7 @@ async function main(): Promise<void> {
   const state = popup.locator('select[name="billingAddress.administrativeArea"]');
   if (await state.count()) await state.selectOption('CA');
   stage = 'billing-complete';
-  const pay = popup.getByRole('button', { name: /Pay.*12\.00/ });
+  const pay = popup.getByRole('button', { name: new RegExp(${JSON.stringify(payLabel)}) });
   await popup.locator('[data-testid="pay-button"]:not([class*="--incomplete"])').waitFor({ state: 'visible', timeout: 10000 });
   await pay.click({ timeout: 10000 });
   stage = 'payment-submitted';

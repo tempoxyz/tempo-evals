@@ -25,10 +25,10 @@ const home = `<!doctype html><html><head><meta charset="utf-8"><title>Notebook S
 <body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p>
 <form method="post" action="/checkout"><button>Buy notebook</button></form></main></body></html>`;
 
-function paymentPage(clientSecret, orderId) {
+function paymentPage(clientSecret, orderId, order) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Notebook checkout</title>
 <script src="https://js.stripe.com/v3/"></script></head><body><main>
-<h1>Tempo Notebook</h1><p>One notebook · $12.00</p>
+<h1>Checkout</h1><p>${order.description} · $${(order.total / 100).toFixed(2)}</p>
 <div id="express-checkout-element"></div>
 <p id="status" role="status"></p></main><script>
 const stripe = Stripe(${JSON.stringify(publishableKey)});
@@ -71,13 +71,13 @@ http.createServer(async (request, response) => {
     const orderId = shippingOrder.id;
     appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
     const form = new URLSearchParams({
-      amount: '1200',
+      amount: String(shippingOrder.total),
       currency: 'usd',
       'payment_method_types[0]': 'link',
       'payment_method_types[1]': 'card',
-      description: 'Tempo Notebook',
+      description: shippingOrder.description,
       'metadata[order_id]': orderId,
-      'metadata[item]': 'Tempo Notebook',
+      'metadata[item]': shippingOrder.description,
     });
     try {
       let operation = pending.get(orderId);
@@ -105,7 +105,7 @@ http.createServer(async (request, response) => {
       }
       const intent = await operation;
       if (intent.status === 'succeeded') return shipping.receipt(response, orderId);
-      return html(response, paymentPage(intent.client_secret, orderId));
+      return html(response, paymentPage(intent.client_secret, orderId, shippingOrder));
     } catch (error) {
       console.error(error);
       return response.writeHead(502).end('Checkout temporarily unavailable');

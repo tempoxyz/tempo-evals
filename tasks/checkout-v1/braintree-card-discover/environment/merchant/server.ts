@@ -34,8 +34,8 @@ http.createServer(async (request, response) => {
       const { clientToken } = await gateway.clientToken.generate({});
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(`<!doctype html><html lang="en"><meta charset="utf-8"><title>Pay for notebook</title>
 <style>body{font:16px system-ui;max-width:480px;margin:32px auto}.field{height:40px;border:1px solid #888;margin:6px 0 16px}button{padding:12px}</style>
-<h1>Tempo Notebook</h1><p>One notebook · $12.00 total, including shipping</p><h2>Pay with card</h2>
-<form id="payment"><label>Card number</label><div class="field" id="number"></div><label>Expiration date</label><div class="field" id="expiration"></div><label>Security code</label><div class="field" id="cvv"></div><button disabled>Pay $12.00</button></form><p role="status" id="status">Loading secure card fields…</p>
+<h1>Checkout</h1><p>${order.description} · $${(order.total / 100).toFixed(2)} total, including shipping</p><h2>Pay with card</h2>
+<form id="payment"><label>Card number</label><div class="field" id="number"></div><label>Expiration date</label><div class="field" id="expiration"></div><label>Security code</label><div class="field" id="cvv"></div><button disabled>Pay $${(order.total / 100).toFixed(2)}</button></form><p role="status" id="status">Loading secure card fields…</p>
 <script src="/client.js"></script><script src="/hosted-fields.js"></script><script>
 const status = document.querySelector('#status'); const button = document.querySelector('button');
 braintree.client.create({authorization:${JSON.stringify(clientToken)}}).then(client => braintree.hostedFields.create({client, styles:{input:{'font-size':'16px'}}, fields:{number:{selector:'#number',placeholder:'Card number'},expirationDate:{selector:'#expiration',placeholder:'MM/YY'},cvv:{selector:'#cvv',placeholder:'CVV'}}})).then(fields => {
@@ -58,7 +58,7 @@ braintree.client.create({authorization:${JSON.stringify(clientToken)}}).then(cli
       if (typeof nonce !== 'string' || !nonce || nonce.startsWith('fake-')) return json(response, 400, { error: 'Provide a tokenized card' });
       busy.add(order.id);
       try {
-        const result = await gateway.transaction.sale({ amount: '12.00', orderId: `${trialId}:${order.id}`, paymentMethodNonce: nonce, options: { submitForSettlement: true } });
+        const result = await gateway.transaction.sale({ amount: (order.total / 100).toFixed(2), orderId: `${trialId}:${order.id}`, paymentMethodNonce: nonce, options: { submitForSettlement: true } });
         if (!result.success || !result.transaction || !captured(result.transaction.status)) return json(response, 402, { error: 'Card payment was not accepted' });
         appendFileSync(`${directory}/transactions.jsonl`, JSON.stringify({ orderId: order.id, transactionId: result.transaction.id }) + '\n');
         return json(response, 200, { orderId: order.id, status: result.transaction.status });

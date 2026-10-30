@@ -1,8 +1,8 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Twenty-two Harbor tasks cover eight
+Planned dataset: `tempo/checkout-bench-v1`. Twenty-six Harbor tasks cover eight
 merchants with required shipping and discover/directed prompts, plus a cart
-store on two payment methods. The dataset is not published.
+store on six payment methods. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
@@ -148,7 +148,7 @@ wallet setup, oracle, verifier, or scoring. Only the task name, provenance marke
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all twenty-two tasks, including oracle runs. Use
+`--task-suite checkout` runs all twenty-six tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -181,7 +181,18 @@ with `items`, `shippingOption` and `shipping`; the response includes the total.
 | Cart task | Source task | Added instruction |
 | --- | --- | --- |
 | `stripecard-cart-directed` | `stripe-card-discover` | Use card to pay. |
+| `link-cart-directed` | `stripe-link-discover` | Use Link to pay. |
+| `paypal-cart-directed` | `paypal-discover` | Use PayPal to pay. |
+| `braintree-cart-directed` | `braintree-card-discover` | Use card to pay. |
+| `mppcard-cart-directed` | `mpp-card-discover` | Use card over MPP to pay. |
 | `mppousd-cart-directed` | `mpp-ousd-discover` | Use MPP to pay. |
+
+Every cart task also raises the prepared card token's limit
+(`card.sharedPaymentTokenMaxAmount`) to the $35 budget through the Link setup
+service's `SPT_MAX_AMOUNT`; single-notebook tasks keep the $12 limit. Shopify
+and x402 have no cart task yet: Shopify needs the cart catalog and shipping
+rates in its development store, and x402 charges 1 USDC rather than the order
+total.
 
 `config/tasks.yaml` lists the sources under `checkout.cart`; sync generates each
 cart task from its source and `shared/checkout/cart/`. Only the store module,
@@ -443,7 +454,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all twenty-two tasks per job. Model trials retain the shared pair
+all twenty-six tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

@@ -65,6 +65,7 @@ http.createServer(async (request, response) => {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
       const orderId = shippingOrder.id;
+      const price = (shippingOrder.total / 100).toFixed(2);
       appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
       let operation = pending.get(orderId);
       if (!operation) {
@@ -79,9 +80,9 @@ http.createServer(async (request, response) => {
             purchase_units: [{
               reference_id: orderId,
               custom_id: orderId,
-              description: 'Tempo Notebook',
-              amount: { currency_code: 'USD', value: '12.00', breakdown: { item_total: { currency_code: 'USD', value: '12.00' } } },
-              items: [{ name: 'Tempo Notebook', quantity: '1', unit_amount: { currency_code: 'USD', value: '12.00' } }],
+              description: shippingOrder.description,
+              amount: { currency_code: 'USD', value: price, breakdown: { item_total: { currency_code: 'USD', value: price } } },
+              items: [{ name: shippingOrder.description, quantity: '1', unit_amount: { currency_code: 'USD', value: price } }],
             }],
             payment_source: { paypal: { experience_context: {
               locale: 'en-US',

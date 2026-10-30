@@ -81,6 +81,10 @@ checkout:
   # directed cart tasks from these discover sources and shared/checkout/cart/.
   cart:
     stripe-card-discover: stripecard-cart-directed
+    stripe-link-discover: link-cart-directed
+    paypal-discover: paypal-cart-directed
+    braintree-card-discover: braintree-cart-directed
+    mpp-card-discover: mppcard-cart-directed
     mpp-ousd-discover: mppousd-cart-directed
   prepared:
     mpp-card-discover: mppcard-prepared-discover

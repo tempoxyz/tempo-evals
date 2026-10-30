@@ -16,8 +16,8 @@ const mppx = Mppx.create({
   methods: [stripe.charge({ secretKey: key, networkId: 'internal', paymentMethodTypes: ['card'] })],
   secretKey: randomBytes(32).toString('hex'),
 });
-const charge = (orderId: string) => mppx.stripe.charge({
-  amount: '12', currency: 'usd', decimals: 2, description: 'Tempo Notebook', externalId: orderId,
+const charge = (orderId: string, order: { description: string; total: number }) => mppx.stripe.charge({
+  amount: String(order.total / 100), currency: 'usd', decimals: 2, description: order.description, externalId: orderId,
   paymentIntentOptions: { metadata: { checkout_trial_id: trialId, order_id: orderId } },
 });
 const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p><a href="/buy">Buy notebook</a></main></body></html>';
@@ -35,9 +35,9 @@ http.createServer(async (request, response) => {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
       const orderId = shippingOrder.id;
-      const paid = await charge(orderId)(ServerRequest.fromNodeListener(request, response));
+      const paid = await charge(orderId, shippingOrder)(ServerRequest.fromNodeListener(request, response));
       if (paid.status === 402) return NodeListener.sendResponse(response, paid.challenge);
-      const order = { orderId, shipping: shippingOrder.shipping, item: 'Tempo Notebook', quantity: 1, amount: '12.00', currency: 'USD' };
+      const order = { orderId, shipping: shippingOrder.shipping, item: shippingOrder.description, quantity: 1, amount: (shippingOrder.total / 100).toFixed(2), currency: 'USD' };
       const result = paid.withReceipt(Response.json(order));
       appendFileSync(`${dir}/deliveries.jsonl`, JSON.stringify({ ...order, receipt: result.headers.get('payment-receipt') }) + '\n');
       return NodeListener.sendResponse(response, result);
