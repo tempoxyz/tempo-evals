@@ -321,6 +321,7 @@ invalid-name=ignored
                     "STRIPE_TEST_PUBLISHABLE_KEY": "pk_test_fake",
                     "PAYPAL_SANDBOX_BUYER_EMAIL": "test@example.com",
                     "PAYPAL_SANDBOX_BUYER_PASSWORD": "test",
+                    "SHOPIFY_STOREFRONT_PASSWORD": "test",
                     "PAYPAL_SANDBOX_CLIENT_ID": "test",
                     "PAYPAL_SANDBOX_CLIENT_SECRET": "test",
                     "DAYTONA_API_KEY": "test",
@@ -546,6 +547,7 @@ invalid-name=ignored
                 "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
                 "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
                 "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+                "SHOPIFY_STOREFRONT_PASSWORD": "password",
             },
             clear=True,
         ):
@@ -558,6 +560,7 @@ invalid-name=ignored
             "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
             "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
             "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+            "SHOPIFY_STOREFRONT_PASSWORD": "password",
         }
         for task_filter in ("x402-usdc-discover", "x402-usdc-directed"):
             with (
@@ -579,6 +582,7 @@ invalid-name=ignored
                     "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
                     "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
                     "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+                    "SHOPIFY_STOREFRONT_PASSWORD": "password",
                 },
                 clear=True,
             ),
@@ -606,6 +610,7 @@ invalid-name=ignored
                             "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
                             "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
                             "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+                            "SHOPIFY_STOREFRONT_PASSWORD": "password",
                         },
                         clear=True,
                     ),
@@ -621,6 +626,7 @@ invalid-name=ignored
                     "STRIPE_TEST_SECRET_KEY": "sk_test_dummy",
                     "PAYPAL_SANDBOX_BUYER_EMAIL": "buyer@example.com",
                     "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
+                    "SHOPIFY_STOREFRONT_PASSWORD": "password",
                 },
                 clear=True,
             ),

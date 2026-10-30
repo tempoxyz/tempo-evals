@@ -94,12 +94,6 @@ checkout:
     mpp-ousd-discover: mppousd-cart
     x402-usdc-discover: x402-cart
     shopify-card-discover: shopify-cart
-  # Source tasks whose agent image includes the prepared payment client
-  # (shared/checkout/prepared). Their directed and cart copies inherit it.
-  prepared:
-    - mpp-card-discover
-    - mpp-ousd-discover
-    - x402-usdc-discover
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.

@@ -9,16 +9,16 @@ benchmark jobs.
 
 ## Task matrix
 
-| Payment method | Notebook discover | Notebook directed | Cart discover | Cart directed | Client |
-| --- | --- | --- | --- | --- | --- |
-| Stripe card | `stripe-card-discover` | `stripe-card-directed` | `stripecard-cart-discover` | `stripecard-cart-directed` | browser |
-| Stripe Link | `stripe-link-discover` | `stripe-link-directed` | `link-cart-discover` | `link-cart-directed` | browser |
-| PayPal | `paypal-discover` | `paypal-directed` | `paypal-cart-discover` | `paypal-cart-directed` | browser |
-| Braintree card | `braintree-card-discover` | `braintree-card-directed` | `braintree-cart-discover` | `braintree-cart-directed` | browser |
-| Shopify card | `shopify-card-discover` | `shopify-card-directed` | `shopify-cart-discover` | `shopify-cart-directed` | browser |
-| MPP OUSD | `mpp-ousd-discover` | `mpp-ousd-directed` | `mppousd-cart-discover` | `mppousd-cart-directed` | prepared |
-| MPP card | `mpp-card-discover` | `mpp-card-directed` | `mppcard-cart-discover` | `mppcard-cart-directed` | prepared |
-| x402 USDC | `x402-usdc-discover` | `x402-usdc-directed` | `x402-cart-discover` | `x402-cart-directed` | prepared |
+| Payment method | Notebook discover | Notebook directed | Cart discover | Cart directed |
+| --- | --- | --- | --- | --- |
+| Stripe card | `stripe-card-discover` | `stripe-card-directed` | `stripecard-cart-discover` | `stripecard-cart-directed` |
+| Stripe Link | `stripe-link-discover` | `stripe-link-directed` | `link-cart-discover` | `link-cart-directed` |
+| PayPal | `paypal-discover` | `paypal-directed` | `paypal-cart-discover` | `paypal-cart-directed` |
+| Braintree card | `braintree-card-discover` | `braintree-card-directed` | `braintree-cart-discover` | `braintree-cart-directed` |
+| Shopify card | `shopify-card-discover` | `shopify-card-directed` | `shopify-cart-discover` | `shopify-cart-directed` |
+| MPP OUSD | `mpp-ousd-discover` | `mpp-ousd-directed` | `mppousd-cart-discover` | `mppousd-cart-directed` |
+| MPP card | `mpp-card-discover` | `mpp-card-directed` | `mppcard-cart-discover` | `mppcard-cart-directed` |
+| x402 USDC | `x402-usdc-discover` | `x402-usdc-directed` | `x402-cart-discover` | `x402-cart-directed` |
 
 Every task runs on each of the three browser profiles (`local`,
 `browserbase`, `kernel`), so one attempt per model is 96 trials.
@@ -26,8 +26,8 @@ Every task runs on each of the three browser profiles (`local`,
 ## What It Measures
 
 An agent receives a request to buy a specific item from a test merchant. The
-instruction lists the payment capabilities available in the same benchmark
-wallet inventory for every task. By default it does not prescribe a method or
+instruction points to the same tool bundle, with the same wallet inventory,
+in every task. By default it does not prescribe a method or
 disclose which methods the merchant accepts. The agent chooses a route and
 completes the purchase without a trial reset or human intervention.
 
@@ -51,23 +51,22 @@ Every merchant has discover/directed native Harbor tasks:
 | `shopify-card-discover` | `shopify-card-directed` | Use card to pay. |
 | `x402-usdc-discover` | `x402-usdc-directed` | Use x402 to pay. |
 
-### Prepared payment client
+### Agent tool bundle
 
-The MPP OUSD, MPP card and x402 tasks, including their directed and cart
-copies, install pinned mppx, viem and tsx under `/opt/mpp-client` in the agent
-image. The prompt points to one minimal setup note, the same for every one of
-these tasks: what is installed and how to run scripts there, with no payment
-code. The other rails pay in the browser and get no client. Agents may still
-install other software. This does not test an already authenticated browser
-wallet.
+Every task gives the agent one directory, `/opt/agent`, with identical
+contents: the trial wallet at `wallet/wallet.json` (the wallet volume mounted
+read-only), pinned mppx, viem and tsx, and a short README that lists both and
+how to run scripts there, with no payment code. Every prompt says only "Your
+wallet and tools are in `/opt/agent`" and asks for the wallet's Link email as
+the order contact. Because the bundle, wallet fields and prompt text are the
+same for every rail, nothing but the merchant itself tells a discover agent
+which method the store accepts. Agents may still install other software. This
+does not test an already authenticated browser wallet.
 
-`config/tasks.yaml` lists the prepared source tasks under `checkout.prepared`;
-sync copies `shared/checkout/prepared/` into them and adds the install to
-their generated Dockerfile, and their directed and cart copies inherit both.
-The setup note is authored in each source task's `instruction.md`. Metadata
-and exports record `mpp_client_profile=prepared`; other tasks export `cold`.
-There are no separate cold variants of these rails, so their results are not
-comparable with earlier cold-client runs.
+The bundle is authored in `shared/checkout/agent/`; sync copies it into every
+task's `environment/agent/` and adds its install to the generated agent
+Dockerfile. Metadata and exports record `mpp_client_profile=prepared` for every
+task; runs before the bundle exported `cold`, and the two are not comparable.
 
 ### Braintree card
 
@@ -134,9 +133,10 @@ Client credentials mint short-lived Admin API tokens in trusted sidecars.
 Seed one active, published, non-taxable, physical Tempo Notebook at USD 12,
 with SKU `TEMPO-NOTEBOOK`, untracked inventory and free US shipping. Activate
 Shopify's test payment gateway. Runtime setup checks the development-store flag,
-currency, product configuration and order/address read access. The wallet retains its normal Stripe/Link
-card and adds `storefront.password` and `storefront.testCard`; Shopify's test
-gateway uses card number `1` for an approved test transaction. The storefront
+currency, product configuration and order/address read access. Every task's wallet lists its normal Stripe/Link
+card plus `storefront.password` and `storefront.testCard`, so the storefront
+fields do not single out this merchant; Shopify's test gateway uses card number
+`1` for an approved test transaction. The storefront
 password is shopper access only; Admin app credentials never reach the agent.
 
 The common shipping form forwards the agent's submitted destination into a
@@ -453,11 +453,9 @@ the merchant through the selected browser. A broken browser connection fails
 environment setup before the agent starts. The wallet service creates a fresh
 Tempo testnet payer and confirms its faucet funding independently of other
 trials. Link enrollment prepares a unique identity using a synthetic sandbox card. The agent sees the
-same base wallet inventory across tasks; merchant and verifier sidecars differ.
-Shopify adds shopper access and test-gateway details under `wallet.storefront`,
-and Braintree uses a compatible sandbox card fixture. The MPP and x402 tasks preinstall the payment client and guide
-described above; browser-rail tasks have no payment SDK preinstalled. Agents
-may install any other dependencies they choose. Merchant credentials stay in
+same wallet inventory and tool bundle across tasks; merchant and verifier
+sidecars differ. Braintree uses a compatible sandbox card fixture. Agents may
+install any other dependencies they choose. Merchant credentials stay in
 trusted sidecars.
 
 The common Link setup is authored in `shared/checkout/wallet/link_setup.js`
@@ -473,7 +471,8 @@ only Stripe MPP card payments and independently lists this trial's Stripe
 PaymentIntents during verification, including charges without a delivery.
 
 Set `STRIPE_TEST_SECRET_KEY`, `PAYPAL_SANDBOX_BUYER_EMAIL`, and
-`PAYPAL_SANDBOX_BUYER_PASSWORD` for every checkout task. Link also requires
+`PAYPAL_SANDBOX_BUYER_PASSWORD` and `SHOPIFY_STOREFRONT_PASSWORD` for every
+checkout task. Link also requires
 `STRIPE_TEST_PUBLISHABLE_KEY`; PayPal also requires
 `PAYPAL_SANDBOX_CLIENT_ID` and `PAYPAL_SANDBOX_CLIENT_SECRET`. Independent
 Tempo wallets and Link identities need no shared funding pool, so the checkout
