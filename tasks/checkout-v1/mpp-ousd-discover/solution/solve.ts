@@ -8,7 +8,7 @@ import { Mppx, tempo } from 'mppx/client';
 
 const url = process.argv[2];
 if (!url?.startsWith('http://merchant:3000/')) throw new Error('Provide a merchant purchase URL');
-const wallet = JSON.parse(readFileSync('/wallet/wallet.json', 'utf8'));
+const wallet = JSON.parse(readFileSync('/opt/agent/wallet/wallet.json', 'utf8'));
 const expected = JSON.parse(readFileSync('/solution/order.json', 'utf8'));
 const account = privateKeyToAccount(wallet.tempo.privateKey);
 const client = createClient({ account, chain: Chain.testnet, transport: http(wallet.tempo.rpcUrl) });

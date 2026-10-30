@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import pandas as pd
 
@@ -186,11 +187,29 @@ class ExportResultsTest(unittest.TestCase):
                 )
 
     def test_prepared_mpp_results_stay_separate_from_cold(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="checkout-readiness-") as root:
+        # Current tasks are all prepared; earlier runs recorded cold tasks
+        # whose metadata has no mpp_client_profile.
+        from scripts import export_results as module
+
+        original = module.checkout_task_metadata
+
+        def metadata(task_name: str, task_path: str = "") -> dict[str, Any]:
+            if task_name == "checkout-v1/legacy-cold-directed":
+                return {
+                    "scenario_id": "checkout-v1/legacy-cold-discover",
+                    "prompt_condition": "directed",
+                    "required_method": "stripe_mpp",
+                }
+            return original(task_name, task_path)
+
+        with (
+            tempfile.TemporaryDirectory(prefix="checkout-readiness-") as root,
+            patch.object(module, "checkout_task_metadata", metadata),
+        ):
             job = Path(root)
             for profile, name, reward in (
-                ("cold", "mpp-card-directed", 0),
-                ("prepared", "mppcard-prepared-directed", 1),
+                ("cold", "legacy-cold-directed", 0),
+                ("prepared", "mpp-card-directed", 1),
             ):
                 write_json(
                     job / profile / "result.json",

@@ -290,7 +290,7 @@ class CheckoutShippingTest(unittest.TestCase):
                 ],
             }
 
-        for slug, target in sync_shared.TASKS_CONFIG["checkout"]["cart"].items():
+        for target, (slug, _) in sync_shared.cart_tasks().items():
             with self.subTest(task=target):
                 tests = ROOT / "tasks/checkout-v1" / target / "tests"
                 original_path = sys.path[:]
@@ -358,8 +358,6 @@ class CheckoutShippingTest(unittest.TestCase):
         for slug in (
             "x402-usdc-discover",
             "x402-usdc-directed",
-            "x402usdc-prepared-discover",
-            "x402usdc-prepared-directed",
         ):
             with self.subTest(task=slug):
                 task = ROOT / "tasks/checkout-v1" / slug
@@ -375,8 +373,7 @@ class CheckoutShippingTest(unittest.TestCase):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs()
-        expected |= set(sync_shared.TASKS_CONFIG["checkout"]["prepared"].values())
-        carts = set(sync_shared.TASKS_CONFIG["checkout"]["cart"].values())
+        carts = set(sync_shared.cart_tasks())
         expected |= carts
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:

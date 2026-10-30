@@ -98,6 +98,17 @@ wallet = {
         "email": os.environ.get("PAYPAL_SANDBOX_BUYER_EMAIL", ""),
         "password": os.environ.get("PAYPAL_SANDBOX_BUYER_PASSWORD", ""),
     },
+    # Listed in every task so the wallet does not reveal the Shopify merchant.
+    "storefront": {
+        "password": os.environ["SHOPIFY_STOREFRONT_PASSWORD"],
+        "testCard": {
+            "number": "1",
+            "name": "Bogus Gateway",
+            "expMonth": "12",
+            "expYear": str(year),
+            "cvc": "123",
+        },
+    },
     "link": {
         "email": LINK_EMAIL,
         "phone": LINK_PHONE,

@@ -1,17 +1,33 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Twenty-eight Harbor tasks cover eight
-merchants with required shipping and discover/directed prompts, plus a cart
-store on all eight payment methods. The dataset is not published.
-Checkout tasks can only be
-selected with `--task-suite checkout` and are excluded from the default and
-`all` benchmark jobs.
+Planned dataset: `tempo/checkout-bench-v1`. Thirty-two Harbor tasks cover eight
+payment methods. Each method has a single-notebook merchant and a cart store,
+and each store has a discover and a directed prompt, all with required
+shipping. The dataset is not published. Checkout tasks can only be selected
+with `--task-suite checkout` and are excluded from the default and `all`
+benchmark jobs.
+
+## Task matrix
+
+| Payment method | Notebook discover | Notebook directed | Cart discover | Cart directed |
+| --- | --- | --- | --- | --- |
+| Stripe card | `stripe-card-discover` | `stripe-card-directed` | `stripecard-cart-discover` | `stripecard-cart-directed` |
+| Stripe Link | `stripe-link-discover` | `stripe-link-directed` | `link-cart-discover` | `link-cart-directed` |
+| PayPal | `paypal-discover` | `paypal-directed` | `paypal-cart-discover` | `paypal-cart-directed` |
+| Braintree card | `braintree-card-discover` | `braintree-card-directed` | `braintree-cart-discover` | `braintree-cart-directed` |
+| Shopify card | `shopify-card-discover` | `shopify-card-directed` | `shopify-cart-discover` | `shopify-cart-directed` |
+| MPP OUSD | `mpp-ousd-discover` | `mpp-ousd-directed` | `mppousd-cart-discover` | `mppousd-cart-directed` |
+| MPP card | `mpp-card-discover` | `mpp-card-directed` | `mppcard-cart-discover` | `mppcard-cart-directed` |
+| x402 USDC | `x402-usdc-discover` | `x402-usdc-directed` | `x402-cart-discover` | `x402-cart-directed` |
+
+Every task runs on each of the three browser profiles (`local`,
+`browserbase`, `kernel`), so one attempt per model is 96 trials.
 
 ## What It Measures
 
 An agent receives a request to buy a specific item from a test merchant. The
-instruction lists the payment capabilities available in the same benchmark
-wallet inventory for every task. By default it does not prescribe a method or
+instruction points to the same tool bundle, with the same wallet inventory,
+in every task. By default it does not prescribe a method or
 disclose which methods the merchant accepts. The agent chooses a route and
 completes the purchase without a trial reset or human intervention.
 
@@ -35,25 +51,22 @@ Every merchant has discover/directed native Harbor tasks:
 | `shopify-card-discover` | `shopify-card-directed` | Use card to pay. |
 | `x402-usdc-discover` | `x402-usdc-directed` | Use x402 to pay. |
 
-### Prepared client tasks
+### Agent tool bundle
 
-Six additional tasks use compact rail names to keep Harbor task slugs short:
-`mppcard-prepared-discover`, `mppcard-prepared-directed`,
-`mppousd-prepared-discover`, `mppousd-prepared-directed`,
-`x402usdc-prepared-discover`, and `x402usdc-prepared-directed`.
-They share their cold source's merchant, wallet, oracle and grading. The agent
-image additionally installs pinned mppx, viem and tsx under `/opt/mpp-client`
-and the prompt points to one minimal setup note, the same for every prepared
-task: what is installed and how to run scripts there, with no payment code. This measures a prepared
-client plus instructions, separately from cold discovery. It does not test
-preinstallation alone or an already authenticated browser wallet.
+Every task gives the agent one directory, `/opt/agent`, with identical
+contents: the trial wallet at `wallet/wallet.json` (the wallet volume mounted
+read-only), pinned mppx, viem and tsx, and a short README that lists both and
+how to run scripts there, with no payment code. Every prompt says only "Your
+wallet and tools are in `/opt/agent`" and asks for the wallet's Link email as
+the order contact. Because the bundle, wallet fields and prompt text are the
+same for every rail, nothing but the merchant itself tells a discover agent
+which method the store accepts. Agents may still install other software. This
+does not test an already authenticated browser wallet.
 
-`config/tasks.yaml` lists the source tasks; sync generates all prepared copies
-from those sources and `shared/checkout/prepared/`. Metadata and exports record
-`mpp_client_profile=prepared` (existing tasks export `cold`). Prepared and cold
-results remain separate in quality summaries. Use
-`--task-filter '*-prepared-*'` to run the six prepared tasks with any browser
-profile. Existing cold prompts and runtime dependencies remain unchanged.
+The bundle is authored in `shared/checkout/agent/`; sync copies it into every
+task's `environment/agent/` and adds its install to the generated agent
+Dockerfile. Metadata and exports record `mpp_client_profile=prepared` for every
+task; runs before the bundle exported `cold`, and the two are not comparable.
 
 ### Braintree card
 
@@ -120,9 +133,10 @@ Client credentials mint short-lived Admin API tokens in trusted sidecars.
 Seed one active, published, non-taxable, physical Tempo Notebook at USD 12,
 with SKU `TEMPO-NOTEBOOK`, untracked inventory and free US shipping. Activate
 Shopify's test payment gateway. Runtime setup checks the development-store flag,
-currency, product configuration and order/address read access. The wallet retains its normal Stripe/Link
-card and adds `storefront.password` and `storefront.testCard`; Shopify's test
-gateway uses card number `1` for an approved test transaction. The storefront
+currency, product configuration and order/address read access. Every task's wallet lists its normal Stripe/Link
+card plus `storefront.password` and `storefront.testCard`, so the storefront
+fields do not single out this merchant; Shopify's test gateway uses card number
+`1` for an approved test transaction. The storefront
 password is shopper access only; Admin app credentials never reach the agent.
 
 The common shipping form forwards the agent's submitted destination into a
@@ -145,16 +159,17 @@ cart after unlocking the dev store is not another attempt. The snapshot also
 retains the raw handoff request count.
 Run `--task-filter 'shopify-card-*'` for the pair on any existing browser profile.
 
-The eight discover tasks are the authored sources. `config/tasks.yaml` declares
-peer names and method instructions; `npm run sync` generates their standalone
-directed task directories. Edit the source task to change a pair's merchant,
+The eight single-notebook discover tasks are the authored sources.
+`config/tasks.yaml` declares peer names and method instructions; `npm run sync`
+generates their standalone directed and cart task directories. Edit the source task to change a pair's merchant,
 wallet setup, oracle, verifier, or scoring. Only the task name, provenance marker,
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all twenty-eight tasks, including oracle runs. Use
+`--task-suite checkout` runs all thirty-two tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
-for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
+for directed only, `--task-filter '*-cart-*'` for the cart store, or
+`--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
 Harbor environment, merchant instance, and funded wallet, including concurrent
 runs.
@@ -182,16 +197,16 @@ notebook and preselects Express shipping ($15); only Standard ($5) keeps the
 order within budget, at $33. API clients can `GET /catalog` and `POST /shipping`
 with `items`, `shippingOption` and `shipping`; the response includes the total.
 
-| Cart task | Source task | Added instruction |
-| --- | --- | --- |
-| `stripecard-cart-directed` | `stripe-card-discover` | Use card to pay. |
-| `link-cart-directed` | `stripe-link-discover` | Use Link to pay. |
-| `paypal-cart-directed` | `paypal-discover` | Use PayPal to pay. |
-| `braintree-cart-directed` | `braintree-card-discover` | Use card to pay. |
-| `mppcard-cart-directed` | `mpp-card-discover` | Use card over MPP to pay. |
-| `mppousd-cart-directed` | `mpp-ousd-discover` | Use MPP to pay. |
-| `x402-cart-directed` | `x402-usdc-discover` | Use x402 to pay. |
-| `shopify-cart-directed` | `shopify-card-discover` | Use card to pay. |
+| Cart discover task | Cart directed task | Source task | Directed instruction |
+| --- | --- | --- | --- |
+| `stripecard-cart-discover` | `stripecard-cart-directed` | `stripe-card-discover` | Use card to pay. |
+| `link-cart-discover` | `link-cart-directed` | `stripe-link-discover` | Use Link to pay. |
+| `paypal-cart-discover` | `paypal-cart-directed` | `paypal-discover` | Use PayPal to pay. |
+| `braintree-cart-discover` | `braintree-cart-directed` | `braintree-card-discover` | Use card to pay. |
+| `mppcard-cart-discover` | `mppcard-cart-directed` | `mpp-card-discover` | Use card over MPP to pay. |
+| `mppousd-cart-discover` | `mppousd-cart-directed` | `mpp-ousd-discover` | Use MPP to pay. |
+| `x402-cart-discover` | `x402-cart-directed` | `x402-usdc-discover` | Use x402 to pay. |
+| `shopify-cart-discover` | `shopify-cart-directed` | `shopify-card-discover` | Use card to pay. |
 
 Every cart task also raises the prepared card token's limit
 (`card.sharedPaymentTokenMaxAmount`) to the $35 budget through the Link setup
@@ -211,12 +226,16 @@ so the Express default trap applies only to the other payment methods. The
 snapshot grades the items, shipping option, total and address Shopify
 recorded.
 
-`config/tasks.yaml` lists the sources under `checkout.cart`; sync generates each
-cart task from its source and `shared/checkout/cart/`. Only the store module,
-order fixture, oracle helper and purchase request differ from the source task,
-and they are the same for every payment method. Cart tasks are directed only,
-so the method is not a second variable. Their `scenario_id` is their own; the
-`source_task` metadata selects the source's credential checks.
+`config/tasks.yaml` maps each source to a cart prefix under `checkout.cart`;
+sync generates `<prefix>-discover` and `<prefix>-directed` from the source and
+`shared/checkout/cart/`. Only the store module, order fixture, oracle helper
+and purchase request differ from the source task, and they are the same for
+every payment method. Like the single-notebook pairs, the cart pair differs only
+in the added payment instruction; the discover prompt names no method, so a
+cart discover trial measures route choice against a store that accepts only
+its source's method. Both tasks of a cart pair share the `scenario_id` of the
+discover task; the `source_task` metadata selects the source's credential
+checks.
 
 Every store records an immutable order with its description and total in USD
 cents, and every payment adapter charges that order: the single-notebook store
@@ -363,8 +382,9 @@ npm run bench:production -- --task-suite checkout --profile all \
   --verifier-image "$(npm run --silent verifier-image:ref)"
 ```
 
-The original ten-task baseline had 180 trials. The expanded eighteen-task suite
-has 324 trials across three browser profiles and six models. The model configuration pins Claude Code and Codex
+The full matrix is 32 tasks × 3 browser profiles × 6 models = 576 trials per
+attempt. `pass_5` needs at least five attempts per cell (`--n-attempts 5`,
+2,880 trials); with one attempt it stays blank. The model configuration pins Claude Code and Codex
 versions through native Harbor agent kwargs; existing model configs are unchanged.
 
 Keep each native job directory to recompute quality later. `trials.csv` exposes
@@ -433,11 +453,9 @@ the merchant through the selected browser. A broken browser connection fails
 environment setup before the agent starts. The wallet service creates a fresh
 Tempo testnet payer and confirms its faucet funding independently of other
 trials. Link enrollment prepares a unique identity using a synthetic sandbox card. The agent sees the
-same base wallet inventory across tasks; merchant and verifier sidecars differ.
-Shopify adds shopper access and test-gateway details under `wallet.storefront`,
-and Braintree uses a compatible sandbox card fixture. Cold MPP agents receive no preinstalled payment helper or payment
-SDK and may install the dependencies they choose. Prepared tasks add the client
-and guide described above. Merchant credentials stay in
+same wallet inventory and tool bundle across tasks; merchant and verifier
+sidecars differ. Braintree uses a compatible sandbox card fixture. Agents may
+install any other dependencies they choose. Merchant credentials stay in
 trusted sidecars.
 
 The common Link setup is authored in `shared/checkout/wallet/link_setup.js`
@@ -453,7 +471,8 @@ only Stripe MPP card payments and independently lists this trial's Stripe
 PaymentIntents during verification, including charges without a delivery.
 
 Set `STRIPE_TEST_SECRET_KEY`, `PAYPAL_SANDBOX_BUYER_EMAIL`, and
-`PAYPAL_SANDBOX_BUYER_PASSWORD` for every checkout task. Link also requires
+`PAYPAL_SANDBOX_BUYER_PASSWORD` and `SHOPIFY_STOREFRONT_PASSWORD` for every
+checkout task. Link also requires
 `STRIPE_TEST_PUBLISHABLE_KEY`; PayPal also requires
 `PAYPAL_SANDBOX_CLIENT_ID` and `PAYPAL_SANDBOX_CLIENT_SECRET`. Independent
 Tempo wallets and Link identities need no shared funding pool, so the checkout
@@ -472,7 +491,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all twenty-eight tasks per job. Model trials retain the shared pair
+all thirty-two tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 
