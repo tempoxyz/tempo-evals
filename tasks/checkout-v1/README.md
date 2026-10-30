@@ -1,8 +1,8 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1`. Twenty-seven Harbor tasks cover eight
+Planned dataset: `tempo/checkout-bench-v1`. Twenty-eight Harbor tasks cover eight
 merchants with required shipping and discover/directed prompts, plus a cart
-store on seven payment methods. The dataset is not published.
+store on all eight payment methods. The dataset is not published.
 Checkout tasks can only be
 selected with `--task-suite checkout` and are excluded from the default and
 `all` benchmark jobs.
@@ -150,7 +150,7 @@ wallet setup, oracle, verifier, or scoring. Only the task name, provenance marke
 prompt-condition metadata, and added payment instruction differ within a pair.
 Generated task copies are marked as generated in GitHub diffs.
 
-`--task-suite checkout` runs all twenty-seven tasks, including oracle runs. Use
+`--task-suite checkout` runs all twenty-eight tasks, including oracle runs. Use
 `--task-filter '*-discover'` for discover only, `--task-filter '*-directed'`
 for directed only, or `--task-filter 'stripe-card-*'` for one merchant pair.
 No prompt-mode flag is required. Each task and attempt receives a separate
@@ -189,6 +189,7 @@ with `items`, `shippingOption` and `shipping`; the response includes the total.
 | `mppcard-cart-directed` | `mpp-card-discover` | Use card over MPP to pay. |
 | `mppousd-cart-directed` | `mpp-ousd-discover` | Use MPP to pay. |
 | `x402-cart-directed` | `x402-usdc-discover` | Use x402 to pay. |
+| `shopify-cart-directed` | `shopify-card-discover` | Use card to pay. |
 
 Every cart task also raises the prepared card token's limit
 (`card.sharedPaymentTokenMaxAmount`) to the $35 budget through the Link setup
@@ -196,8 +197,17 @@ service's `SPT_MAX_AMOUNT`; single-notebook tasks keep the $12 limit. The x402
 cart charges the full $33 in Base Sepolia USDC: its merchant funds the buyer
 with the $35 budget (`BUYER_FUNDING_CENTS`) rather than one notebook's $1, so each
 trial reserves 35 USDC from the funding wallet and a successful one leaves $2
-with its buyer. Shopify has no cart task yet: it needs the cart catalog and
-shipping rates in its development store.
+with its buyer.
+
+The Shopify cart hands every line to a Shopify cart permalink. The dev store
+holds the cart catalog as published products with SKUs
+`TEMPO-NOTEBOOK-<SIZE>-<PAGES>`, `TEMPO-PEN` and `TEMPO-STICKERS` at the store's
+prices, collected as "Cart items". Its United States market charges Standard
+$5 for cart items (free for the single notebook) and Express $15. Shopify
+chooses shipping in its own checkout, where it preselects the cheapest rate,
+so the Express default trap applies only to the other payment methods. The
+snapshot grades the items, shipping option, total and address Shopify
+recorded.
 
 `config/tasks.yaml` lists the sources under `checkout.cart`; sync generates each
 cart task from its source and `shared/checkout/cart/`. Only the store module,
@@ -460,7 +470,7 @@ The original design varies browser infrastructure while keeping the browser
 tool identical. Checkout supports `--profile local`, `--profile browserbase`,
 and `--profile kernel`. Omitting the flag (or using the existing `docs` default)
 selects local. `--profile all` launches three ordinary Harbor jobs, selecting
-all twenty-seven tasks per job. Model trials retain the shared pair
+all twenty-eight tasks per job. Model trials retain the shared pair
 ID. Existing
 profile behavior for other suites is unchanged.
 

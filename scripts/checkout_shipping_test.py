@@ -260,6 +260,8 @@ class CheckoutShippingTest(unittest.TestCase):
                     return f"{total / 100:.2f}"
                 if value == str(price * 10_000):
                     return str(total * 10_000)
+                if value == f"{price / 100:g}":
+                    return f"{total / 100:g}"
                 if value == "Tempo Notebook":
                     return description
                 return value
@@ -341,8 +343,8 @@ class CheckoutShippingTest(unittest.TestCase):
                         paid=1200,
                     )
                     self.assertFalse(verifier.check(underpaid)[0])
-                    if slug == "braintree-card-discover":
-                        # Braintree sales carry an amount but no description.
+                    if slug in {"braintree-card-discover", "shopify-card-discover"}:
+                        # These payments carry an amount but no description.
                         continue
                     renamed = {
                         **payment(slug, order["total"], "Tempo Notebook"),

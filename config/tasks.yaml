@@ -91,6 +91,7 @@ checkout:
     mpp-card-discover: mppcard-cart-directed
     mpp-ousd-discover: mppousd-cart-directed
     x402-usdc-discover: x402-cart-directed
+    shopify-card-discover: shopify-cart-directed
   prepared:
     mpp-card-discover: mppcard-prepared-discover
     mpp-card-directed: mppcard-prepared-directed
