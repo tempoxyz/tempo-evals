@@ -43,8 +43,8 @@ Six additional tasks use compact rail names to keep Harbor task slugs short:
 `x402usdc-prepared-discover`, and `x402usdc-prepared-directed`.
 They share their cold source's merchant, wallet, oracle and grading. The agent
 image additionally installs pinned mppx, viem and tsx under `/opt/mpp-client`
-and the prompt points to one generic client usage guide, the same for every
-prepared task, with card, Tempo and Base Sepolia USDC (x402) examples. This measures a prepared
+and the prompt points to one minimal setup note, the same for every prepared
+task: what is installed and how to run scripts there, with no payment code. This measures a prepared
 client plus instructions, separately from cold discovery. It does not test
 preinstallation alone or an already authenticated browser wallet.
 
