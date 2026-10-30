@@ -492,6 +492,30 @@ def sync_checkout_cart_variants() -> None:
             source_task=slug,
         )
         write_file(target / "task.toml", tomlkit.dumps(metadata))
+        # The prepared card token's limit is the task's spending limit.
+        budget = json.loads((cart / "order.json").read_text())["budget"]
+        compose = (target / "environment/docker-compose.yaml").read_text()
+        link = re.search(
+            r"^  link:\n(?:    .*\n|\n)*?    environment:\n", compose, re.MULTILINE
+        )
+        if not link:
+            raise ValueError(f"{source}: expected a link service environment")
+        write_file(
+            target / "environment/docker-compose.yaml",
+            compose[: link.end()]
+            + f'      SPT_MAX_AMOUNT: "{budget}"\n'
+            + compose[link.end() :],
+        )
+        # An x402 buyer is funded with the budget, not a single notebook's price.
+        compose = (target / "environment/docker-compose.yaml").read_text()
+        if "X402_FUNDING_PRIVATE_KEY" in compose:
+            key = "      X402_FUNDING_PRIVATE_KEY:"
+            write_file(
+                target / "environment/docker-compose.yaml",
+                compose.replace(
+                    key, f'      BUYER_FUNDING_CENTS: "{budget}"\n{key}', 1
+                ),
+            )
         instruction = (source / "instruction.md").read_text()
         request = re.search(
             r"^# Buy a notebook\n.*?Complete the purchase once\.\n",

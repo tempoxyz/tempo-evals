@@ -129,24 +129,27 @@ async function main() {
     // Prepare the same one-use card credential for every checkout task. The
     // test helper grants this account an SPT without exposing its API key.
     const expiresAt = Math.floor(Date.now() / 1000) + 7200;
+    // The token's limit is the task's spending limit in cents (cart tasks set it).
+    const maxAmount = Number(process.env.SPT_MAX_AMOUNT || '1200');
+    if (!Number.isInteger(maxAmount) || maxAmount <= 0) throw new Error('Invalid SPT_MAX_AMOUNT');
     const token = await stripe('/test_helpers/shared_payment/granted_tokens', {
       method: 'POST',
       headers: { 'Stripe-Version': '2026-07-29.preview' },
       body: new URLSearchParams({
         payment_method: 'pm_card_visa',
         'usage_limits[currency]': 'usd',
-        'usage_limits[max_amount]': '1200',
+        'usage_limits[max_amount]': String(maxAmount),
         'usage_limits[expires_at]': String(expiresAt),
       }),
     });
     if (!token.id?.startsWith('spt_') || token.livemode !== false
       || token.payment_method_details?.type !== 'card'
-      || token.usage_limits?.max_amount !== 1200 || token.usage_limits?.currency !== 'usd') {
+      || token.usage_limits?.max_amount !== maxAmount || token.usage_limits?.currency !== 'usd') {
       throw new Error('Stripe did not prepare a sandbox card token');
     }
     wallet.card.sharedPaymentToken = token.id;
     wallet.card.sharedPaymentTokenExpiresAt = expiresAt;
-    wallet.card.sharedPaymentTokenMaxAmount = 1200;
+    wallet.card.sharedPaymentTokenMaxAmount = maxAmount;
     wallet.card.sharedPaymentTokenCurrency = 'usd';
     wallet.link.phone = phone;
     writeFileSync('/wallet/wallet.json', JSON.stringify(wallet, null, 2) + '\n');

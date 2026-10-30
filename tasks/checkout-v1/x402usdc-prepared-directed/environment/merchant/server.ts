@@ -11,7 +11,9 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { Mppx, NodeListener, Request as ServerRequest, evm } from 'mppx/server';
 import { balanceOf, facilitator, retryingFetch, transfer, usdc } from './x402.js';
 
-const amount = BigInt(total) * 10_000n; // USDC has 6 decimals
+// The buyer gets the price, or the task's whole budget when the store sets the
+// order total itself (cart tasks), so its balance does not reveal the answer.
+const amount = BigInt(process.env.BUYER_FUNDING_CENTS || total) * 10_000n; // USDC has 6 decimals
 const fundingKey = process.env.X402_FUNDING_PRIVATE_KEY as `0x${string}`;
 if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING_PRIVATE_KEY is required');
 // Payments return to the funding wallet, so successful trials refill it.
