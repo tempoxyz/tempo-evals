@@ -23,4 +23,4 @@ testnet and Base Sepolia testnet wallets and sandbox payment methods (card, Link
 
 You may consult public documentation and install software.
 
-You have 900 seconds to complete this task. Do not cheat by using online solutions or hints specific to this task.
+You have 900 seconds to complete this task.
