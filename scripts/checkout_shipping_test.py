@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -273,8 +274,14 @@ class CheckoutShippingTest(unittest.TestCase):
             }.get(slug)
             return {collection: [paid]} if collection else paid
 
+        def charge(slug, total):
+            # x402 settles every order for 1 USDC, whatever its store total.
+            return 100 if slug == "x402-usdc-discover" else total
+
         def snapshot(slug, lines, option, total, description, paid=None):
-            charged = payment(slug, total if paid is None else paid, description)
+            charged = payment(
+                slug, charge(slug, total) if paid is None else paid, description
+            )
             return {
                 **charged,
                 "shippingOrders": [
@@ -347,7 +354,7 @@ class CheckoutShippingTest(unittest.TestCase):
                         # These payments carry an amount but no description.
                         continue
                     renamed = {
-                        **payment(slug, order["total"], "Tempo Notebook"),
+                        **payment(slug, charge(slug, order["total"]), "Tempo Notebook"),
                         "shippingOrders": good["shippingOrders"],
                     }
                     self.assertFalse(verifier.check(renamed)[0])
@@ -367,7 +374,28 @@ class CheckoutShippingTest(unittest.TestCase):
                     )
                 server = (task / "environment/merchant/server.ts").read_text()
                 self.assertIn("const total = 100;", server)
+                self.assertIn("const chargeCents = 100;", server)
                 self.assertIn("createShipping('/buy', { total })", server)
+
+    def test_task_env_forwards_every_variable_compose_requires(self):
+        # Harbor interpolates compose files only with the task's [environment.env].
+        for task in sorted((ROOT / "tasks/checkout-v1").glob("*/task.toml")):
+            env = tomllib.loads(task.read_text())["environment"].get("env", {})
+            compose = (task.parent / "environment/docker-compose.yaml").read_text()
+            required = set(re.findall(r"\$\{([A-Z0-9_]+):\?", compose))
+            with self.subTest(task=task.parent.name):
+                self.assertEqual(set(), required - set(env))
+
+    def test_healthcheck_reads_the_wallet_where_main_mounts_it(self):
+        # Harbor runs the task healthcheck in the agent (main) container.
+        for task in sorted((ROOT / "tasks/checkout-v1").glob("*/task.toml")):
+            command = tomllib.loads(task.read_text())["environment"]["healthcheck"][
+                "command"
+            ]
+            compose = (task.parent / "environment/docker-compose.yaml").read_text()
+            mount = re.search(r"checkout-wallet:(\S+?):ro", compose).group(1)
+            with self.subTest(task=task.parent.name):
+                self.assertEqual(f"test -f {mount}/link-ready", command)
 
     def test_shipping_is_shared_by_all_checkout_tasks(self):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
