@@ -50,8 +50,10 @@ install software, and the 900-second limit.
 **Tool bundle.** `/opt/agent` has the same contents in every task: the trial
 wallet at `wallet/wallet.json` (the wallet volume, mounted read-only), pinned
 mppx, viem and tsx, and a short README listing both and how to run scripts there,
-with no payment code. Because bundle, wallet fields and prompt match across
-rails, only the merchant tells a discover agent which method it accepts. Agents
+with no payment code. Bundle, wallet fields and prompt match across rails, so
+in a discover task only the merchant tells the agent which method it accepts,
+with one exception: Braintree wallets carry a Mastercard test number
+(`5555555555554444`) where every other wallet has `4242424242424242`. Agents
 may install other software. No authenticated browser wallet is provided.
 
 **Setup.** Every trial runs the same wallet, Link enrollment and browser
@@ -61,9 +63,9 @@ services before the agent starts:
   funding. The same key controls a `baseSepolia` account, listed in every wallet
   and funded only by x402 tasks.
 - Every wallet lists a sandbox card, Link, a PayPal sandbox buyer and Shopify
-  storefront access (`storefront.password`, `storefront.testCard`), so no field
-  singles out a merchant. Braintree tasks use a Braintree-compatible Mastercard
-  test card, which also supports Link enrollment.
+  storefront access (`storefront.password`, `storefront.testCard`). Braintree
+  tasks swap in a Braintree-compatible Mastercard test card, which also supports
+  Link enrollment; that card number is the only wallet field that differs.
 - Link enrollment (`shared/checkout/wallet/link_setup.js`) creates a unique
   identity with a synthetic sandbox card and a unique, one-use Stripe sandbox
   shared payment token (SPT) under `card.sharedPaymentToken`, expiring in two
@@ -385,11 +387,14 @@ runner, and other suites' profiles are unaffected.
 
 ## Authoring
 
-The eight notebook discover tasks are the authored sources; edit them to change
-a merchant, wallet setup, oracle, verifier or scoring. `npm run sync` copies the
-shared assets into every task (`shared/checkout/wallet/`, `shipping/` and
-`tests/`, and the `agent/` bundle into `environment/agent/` with its install
-appended to the generated agent Dockerfile) and generates the rest from
+The eight notebook discover tasks own their merchant, wallet service
+(`environment/wallet/`), oracle and payment check (`tests/payment_check.py`);
+edit those there. Shared files are canonical in `shared/checkout/`, and
+`npm run sync` overwrites their copies in every task: Link setup
+(`wallet/link_setup.js`), the shipping store, fixtures and `tests/check.py`
+(`shipping/`), the grader, observation and quality criteria (`tests/`), and the
+tool bundle (`agent/`, into `environment/agent/` with its install appended to the
+generated agent Dockerfile). Sync then generates the rest from
 `config/tasks.yaml`:
 `checkout.directed` names each directed peer, its method and instruction;
 `checkout.cart` maps each source to a cart prefix, from which it builds
