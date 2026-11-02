@@ -379,6 +379,17 @@ class CheckoutShippingTest(unittest.TestCase):
             with self.subTest(task=task.parent.name):
                 self.assertEqual(set(), required - set(env))
 
+    def test_healthcheck_reads_the_wallet_where_main_mounts_it(self):
+        # Harbor runs the task healthcheck in the agent (main) container.
+        for task in sorted((ROOT / "tasks/checkout-v1").glob("*/task.toml")):
+            command = tomllib.loads(task.read_text())["environment"]["healthcheck"][
+                "command"
+            ]
+            compose = (task.parent / "environment/docker-compose.yaml").read_text()
+            mount = re.search(r"checkout-wallet:(\S+?):ro", compose).group(1)
+            with self.subTest(task=task.parent.name):
+                self.assertEqual(f"test -f {mount}/link-ready", command)
+
     def test_shipping_is_shared_by_all_checkout_tasks(self):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
