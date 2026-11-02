@@ -92,9 +92,11 @@ charge through mppx's `evm.charge` with an x402 challenge for Base Sepolia
 USDC (`eip155:84532`). The merchant removes the native MPP challenge, binds
 each charge to its shipping order with the route scope, and settles through the
 public x402 facilitator (`X402_FACILITATOR_URL`, default
-`https://x402.org/facilitator`). The notebook costs 1 USDC, not $12, so one
-funding balance supports more concurrent trials; the prompt keeps the common
-$12 spending limit. Compare its spend in USDC, not against the $12 merchants.
+`https://x402.org/facilitator`). Every x402 order, notebook or cart, settles
+for exactly 1 USDC, so one funding balance supports more concurrent trials; the
+prompts keep the common spending limits. The notebook store also shows $1.00,
+while the cart store shows its usual $33 total and its 402 challenge asks for
+1 USDC. Compare its spend in USDC, not against the other merchants.
 
 Set `X402_FUNDING_PRIVATE_KEY` in the ignored checkout env file. Before the
 merchant reports healthy it sends exactly 1 USDC from that wallet to the trial's
@@ -109,9 +111,9 @@ The funding key stays in the trusted merchant sidecar.
 The verifier requires exactly one delivery, a successful x402 settlement on
 Base Sepolia, and a confirmed settlement transaction with exactly one USDC
 transfer: 1 USDC from the trial buyer to the merchant. The common shipping check
-then joins the delivery to its order and requires that order's recorded total
-to be $1.00: `config/tasks.yaml` sets `order_totals` for the pair, which sync
-writes into its expected `order.json`. `buyer_balance_after_agent` records USDC
+then joins the delivery to its order and requires that order's recorded total:
+$1.00 for the notebook (`config/tasks.yaml` sets `order_totals` for the pair,
+which sync writes into its expected `order.json`) and $33 for the cart. `buyer_balance_after_agent` records USDC
 the buyer still held before recovery.
 
 Every task's wallet lists a `baseSepolia` account controlled by the same key
@@ -211,10 +213,8 @@ with `items`, `shippingOption` and `shipping`; the response includes the total.
 Every cart task also raises the prepared card token's limit
 (`card.sharedPaymentTokenMaxAmount`) to the $35 budget through the Link setup
 service's `SPT_MAX_AMOUNT`; single-notebook tasks keep the $12 limit. The x402
-cart charges the full $33 in Base Sepolia USDC: its merchant funds the buyer
-with the $35 budget (`BUYER_FUNDING_CENTS`) rather than one notebook's $1, so each
-trial reserves 35 USDC from the funding wallet and a successful one leaves $2
-with its buyer.
+cart, like the x402 notebook, funds its buyer with 1 USDC and settles the order
+for exactly 1 USDC, so each x402 trial reserves 1 USDC from the funding wallet.
 
 The Shopify cart hands every line to a Shopify cart permalink. The dev store
 holds the cart catalog as published products with SKUs
