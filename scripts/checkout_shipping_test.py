@@ -274,8 +274,14 @@ class CheckoutShippingTest(unittest.TestCase):
             }.get(slug)
             return {collection: [paid]} if collection else paid
 
+        def charge(slug, total):
+            # x402 settles every order for 1 USDC, whatever its store total.
+            return 100 if slug == "x402-usdc-discover" else total
+
         def snapshot(slug, lines, option, total, description, paid=None):
-            charged = payment(slug, total if paid is None else paid, description)
+            charged = payment(
+                slug, charge(slug, total) if paid is None else paid, description
+            )
             return {
                 **charged,
                 "shippingOrders": [
@@ -348,7 +354,7 @@ class CheckoutShippingTest(unittest.TestCase):
                         # These payments carry an amount but no description.
                         continue
                     renamed = {
-                        **payment(slug, order["total"], "Tempo Notebook"),
+                        **payment(slug, charge(slug, order["total"]), "Tempo Notebook"),
                         "shippingOrders": good["shippingOrders"],
                     }
                     self.assertFalse(verifier.check(renamed)[0])
@@ -368,6 +374,7 @@ class CheckoutShippingTest(unittest.TestCase):
                     )
                 server = (task / "environment/merchant/server.ts").read_text()
                 self.assertIn("const total = 100;", server)
+                self.assertIn("const chargeCents = 100;", server)
                 self.assertIn("createShipping('/buy', { total })", server)
 
     def test_task_env_forwards_every_variable_compose_requires(self):
