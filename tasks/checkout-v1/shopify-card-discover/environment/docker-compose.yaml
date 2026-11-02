@@ -10,7 +10,7 @@ services:
       link:
         condition: service_started
     volumes:
-      - checkout-wallet:/wallet:ro
+      - checkout-wallet:/opt/agent/wallet:ro
   wallet:
     build:
       context: ./wallet

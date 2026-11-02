@@ -13,7 +13,3 @@ The payment method's independent check requires one payment for exactly the requ
 ## Payment instruction
 
 Use MPP to pay.
-
-## Prepared client
-
-mppx and its dependencies are preinstalled with a generic usage guide, as in the source task.

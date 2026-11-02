@@ -9,7 +9,3 @@ Buy two A5 dotted Tempo Notebooks and one Tempo Pen within a $35 budget from a s
 ## Verification
 
 The payment method's independent check requires one payment for exactly the requested order's description and $33 total. The shared verifier then requires the paid order to contain exactly the requested items and quantities, Standard shipping, the $33 total and the full shipping address. A success page alone does not count.
-
-## Prepared client
-
-mppx and its dependencies are preinstalled with a generic usage guide, as in the source task.

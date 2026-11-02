@@ -1143,9 +1143,9 @@ def export_results(
         [
             *QUALITY_SUMMARY_COLUMNS,
             *(
-                ["prompt_condition"]
-                if any("prompt_condition" in row for row in quality_summary)
-                else []
+                key
+                for key in ("prompt_condition", "mpp_client_profile")
+                if any(key in row for row in quality_summary)
             ),
         ],
         quality_summary,

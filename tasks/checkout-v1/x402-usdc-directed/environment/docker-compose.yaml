@@ -10,7 +10,7 @@ services:
       link:
         condition: service_started
     volumes:
-      - checkout-wallet:/wallet:ro
+      - checkout-wallet:/opt/agent/wallet:ro
   wallet:
     build:
       context: ./wallet
@@ -19,6 +19,7 @@ services:
       PAYPAL_SANDBOX_BUYER_EMAIL: ${PAYPAL_SANDBOX_BUYER_EMAIL:?PayPal sandbox buyer email is required}
       PAYPAL_SANDBOX_BUYER_PASSWORD: ${PAYPAL_SANDBOX_BUYER_PASSWORD:?PayPal sandbox buyer password is required}
       BASE_SEPOLIA_RPC_URL: ${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}
+      SHOPIFY_STOREFRONT_PASSWORD: ${SHOPIFY_STOREFRONT_PASSWORD:?Shopify storefront password is required}
     volumes:
       - checkout-wallet:/wallet
     restart: "no"

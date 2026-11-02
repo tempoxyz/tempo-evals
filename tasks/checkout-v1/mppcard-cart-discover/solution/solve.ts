@@ -7,7 +7,7 @@ const expected = JSON.parse(readFileSync('/solution/order.json', 'utf8'));
 
 async function main() {
   const shippingOrder = await createShippingOrder();
-  const wallet = JSON.parse(readFileSync('/wallet/wallet.json', 'utf8'));
+  const wallet = JSON.parse(readFileSync('/opt/agent/wallet/wallet.json', 'utf8'));
   const mppx = Mppx.create({
     methods: [stripe.charge({
       paymentMethod: 'card',

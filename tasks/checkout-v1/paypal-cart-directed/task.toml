@@ -25,6 +25,7 @@ relevant_experience = "Browser automation and sandbox checkout flows."
 scenario_id = "checkout-v1/paypal-cart-discover"
 prompt_condition = "directed"
 required_method = "paypal"
+mpp_client_profile = "prepared"
 store = "cart"
 source_task = "paypal-discover"
 

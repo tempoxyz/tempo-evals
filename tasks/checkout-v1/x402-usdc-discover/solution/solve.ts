@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { privateKeyToAccount } from 'viem/accounts';
 import { Mppx, evm } from 'mppx/client';
 
-const wallet = JSON.parse(readFileSync('/wallet/wallet.json', 'utf8'));
+const wallet = JSON.parse(readFileSync('/opt/agent/wallet/wallet.json', 'utf8'));
 const expected = JSON.parse(readFileSync('/solution/order.json', 'utf8'));
 const account = privateKeyToAccount(wallet.baseSepolia.privateKey);
 const mppx = Mppx.create({

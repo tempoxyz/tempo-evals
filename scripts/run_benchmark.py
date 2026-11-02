@@ -418,7 +418,11 @@ def preflight(variant: dict[str, Any], options: dict[str, Any]) -> None:
                 "Stripe Link checkout requires STRIPE_TEST_PUBLISHABLE_KEY"
             )
         if selected:
-            required = ("PAYPAL_SANDBOX_BUYER_EMAIL", "PAYPAL_SANDBOX_BUYER_PASSWORD")
+            required = (
+                "PAYPAL_SANDBOX_BUYER_EMAIL",
+                "PAYPAL_SANDBOX_BUYER_PASSWORD",
+                "SHOPIFY_STOREFRONT_PASSWORD",
+            )
             missing = [name for name in required if not os.environ.get(name)]
             if missing:
                 raise RuntimeError(

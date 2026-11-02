@@ -12,45 +12,40 @@ from scripts import sync_shared
 
 
 class SyncSharedTest(unittest.TestCase):
-    def test_prepared_client_reaches_source_directed_and_cart_tasks(self):
-        prepared = sync_shared.TASKS_CONFIG["checkout"]["prepared"]
-        with tempfile.TemporaryDirectory() as directory:
-            checkout = Path(directory)
-            for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]:
-                shutil.copytree(sync_shared.CHECKOUT_TASKS_DIR / slug, checkout / slug)
-            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
-                sync_shared.sync_checkout_prepared_client()
-                sync_shared.sync_checkout_prompt_variants()
-                sync_shared.sync_checkout_cart_variants()
-                sources = {
-                    sync_shared.TASKS_CONFIG["checkout"]["directed"][slug]["task"]: slug
-                    for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]
-                }
-                sources |= {slug: slug for slug in sources.values()}
-                sources |= {
-                    task: slug for task, (slug, _) in sync_shared.cart_tasks().items()
-                }
-                for task, source in sources.items():
-                    with self.subTest(task=task):
-                        target = checkout / task
-                        metadata = tomllib.loads((target / "task.toml").read_text())
-                        dockerfile = (target / "environment/Dockerfile").read_text()
-                        instruction = (target / "instruction.md").read_text()
-                        if source in prepared:
-                            self.assertEqual(
-                                metadata["metadata"]["mpp_client_profile"], "prepared"
-                            )
-                            self.assertIn("/opt/mpp-client", dockerfile)
-                            self.assertIn("/opt/mpp-client/README.md", instruction)
-                            self.assertTrue(
-                                (
-                                    target / "environment/prepared/npm-shrinkwrap.json"
-                                ).is_file()
-                            )
-                        else:
-                            self.assertNotIn("mpp_client_profile", metadata["metadata"])
-                            self.assertNotIn("/opt/mpp-client", dockerfile)
-                            self.assertNotIn("/opt/mpp-client", instruction)
+    def test_every_checkout_task_gets_the_same_agent_bundle(self):
+        tasks = sync_shared.checkout_task_dirs()
+        self.assertEqual(len(tasks), 32)
+        bundle = sync_shared.CHECKOUT_SHARED_DIR / "agent"
+        prompts = set()
+        for task in tasks:
+            with self.subTest(task=task.name):
+                for name in ("package.json", "npm-shrinkwrap.json", "README.md"):
+                    self.assertEqual(
+                        (task / "environment/agent" / name).read_bytes(),
+                        (bundle / name).read_bytes(),
+                    )
+                self.assertFalse((task / "environment/prepared").exists())
+                self.assertIn(
+                    sync_shared.CHECKOUT_AGENT_DOCKERFILE,
+                    (task / "environment/Dockerfile").read_text(),
+                )
+                self.assertIn(
+                    "checkout-wallet:/opt/agent/wallet:ro",
+                    (task / "environment/docker-compose.yaml").read_text(),
+                )
+                self.assertIn(
+                    '"storefront"',
+                    (task / "environment/wallet/init.py").read_text(),
+                )
+                metadata = tomllib.loads((task / "task.toml").read_text())
+                self.assertEqual(metadata["metadata"]["mpp_client_profile"], "prepared")
+                # Apart from the store request and the directed method
+                # sentence, every prompt is the same: nothing hints the rail.
+                text = (task / "instruction.md").read_text()
+                text = re.sub(r"<!-- stable-bench-canary: [0-9a-f-]+ -->", "", text)
+                text = re.sub(r"^Use .* to pay\.\n", "", text, flags=re.M)
+                prompts.add(text)
+        self.assertEqual(len(prompts), 2)
 
     def test_checkout_prompt_pairs_share_every_runtime_and_verifier_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -253,7 +248,8 @@ class SyncSharedTest(unittest.TestCase):
                         (task_dir / "environment" / "Dockerfile").read_text(),
                         sync_shared.ENVIRONMENT_DOCKERFILE.replace(
                             "FROM ", canary + "FROM ", 1
-                        ),
+                        )
+                        + (sync_shared.CHECKOUT_AGENT_DOCKERFILE if canary else ""),
                     )
                     self.assertEqual(
                         (task_dir / "tests" / "Dockerfile").read_text(),
