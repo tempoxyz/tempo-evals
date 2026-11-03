@@ -67,19 +67,19 @@ digest = "sha256:6c7d38ae7003359c8d047f54f09d93412475b00d469239ba4163e83bbd5a31d
 
 [[tasks]]
 name = "checkout-v1/ousd-form-directed"
-digest = "sha256:5d0c4f8e897a29a55980e4227829a173a8a21ee129b525630a0e2eb2104fef92"
+digest = "sha256:1a3c0ed9e4c047ef8287c0ac7291f367e30cf3b3e8e19162ab12a613eaf1c2e3"
 
 [[tasks]]
 name = "checkout-v1/ousd-form-discover"
-digest = "sha256:b7956f9c421a24c3ec699555411d5dda758cc5a129438d1abe1918f4a8106862"
+digest = "sha256:671830128f76a8b97810f2b2dc95774087cca89da9e63bc2e5db06e57687ef30"
 
 [[tasks]]
 name = "checkout-v1/ousdform-cart-directed"
-digest = "sha256:e89544c2e675b23d0948448e32e05fb7067dba3bebb28aee4ca23a20b8780163"
+digest = "sha256:c9765f11de2ffe6ccb2c99d1c83a164dbe827a81cacbb47828019283a2bac911"
 
 [[tasks]]
 name = "checkout-v1/ousdform-cart-discover"
-digest = "sha256:9db999f255ddc378f93e7d195834692b94e79854119ee24886f086fee07a49d2"
+digest = "sha256:b1dccb18ebc9015e7b9296827b9dddb1dceb1851e5ca52ff1d49921e79f45565"
 
 [[tasks]]
 name = "checkout-v1/paypal-cart-directed"

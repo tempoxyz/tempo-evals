@@ -21,6 +21,8 @@ writeFileSync(dir + '/merchant.json', JSON.stringify({ ousd, decimals }));
 const read = (file: string) => existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)) : [];
 const deposits = new Map<string, string>(read(depositsLog).map(row => [row.orderId, row.address]));
 const delivered = new Set<string>(read(deliveriesLog).map(row => row.orderId));
+// One confirmation runs at a time per order, so overlapping confirms cannot record it twice.
+const confirming = new Map<string, Promise<unknown>>();
 function depositFor(orderId: string) {
   let address = deposits.get(orderId);
   if (!address) {
@@ -56,6 +58,13 @@ http.createServer(async (request, response) => {
     const address = depositFor(order.id);
     if (path === '/pay' && request.method === 'GET') return html(response, 200, page(order, address));
     if (path !== '/pay/confirm' || request.method !== 'POST') return response.writeHead(405).end('Method not allowed');
+    const previous = confirming.get(order.id) ?? Promise.resolve();
+    let release = () => {};
+    const turn = new Promise<void>(resolve => { release = resolve; });
+    confirming.set(order.id, previous.then(() => turn));
+    await previous;
+    try {
+    if (delivered.has(order.id)) return shipping.receipt(response, order.id);
     appendFileSync(attemptsLog, JSON.stringify({ orderId: order.id }) + '\n');
     const balance = await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [address] });
     const due = BigInt(order.total) * 10n ** BigInt(decimals) / 100n;
@@ -68,6 +77,9 @@ http.createServer(async (request, response) => {
       receiptStatus: 'success', receiptMethod: 'tempo_transfer', depositAddress: address,
     }) + '\n');
     return shipping.receipt(response, order.id);
+    } finally {
+      release();
+    }
   } catch (error) {
     console.error(error);
     return response.writeHead(502).end('Checkout temporarily unavailable');

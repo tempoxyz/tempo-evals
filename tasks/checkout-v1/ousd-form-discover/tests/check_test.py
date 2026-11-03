@@ -32,7 +32,7 @@ class OusdFormVerifierTests(unittest.TestCase):
     def test_paid_order_passes(self):
         self.assertEqual(verifier.check(PAID), (True, "verified", "tempo_transfer"))
 
-    def test_retries_count_extra_paid_deposits(self):
+    def test_retries_count_extra_confirm_requests(self):
         for count, expected in ((1, 0), (2, 1), (None, None)):
             with self.subTest(count=count), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)

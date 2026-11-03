@@ -193,7 +193,8 @@ The buyer sends the transfer from their wallet and presses Confirm payment
 the order once it holds the total. A transfer that is never confirmed is money
 spent without an order. The verifier reads every issued deposit address and
 requires exactly the total at the paid order's address and nothing anywhere
-else. Retries count deposit addresses that received OUSD beyond the first. It
+else. Retries count Confirm payment requests beyond the first; overlapping confirms
+for one order are handled one at a time, so an order is recorded once. It
 measures the same wallet and token as MPP OUSD, paid through a form instead of a
 protocol.
 
@@ -259,8 +260,8 @@ failed calls, however batched. Time spans the first to last user/agent timestamp
 setup and verification are excluded. Weights and targets are shared across
 merchants. Extra attempts are per-rail proxies, not counts of every failed
 submission: Stripe and PayPal count extra checkout starts, MPP and x402 count
-credential-bearing requests beyond the first, and the OUSD form counts paid
-deposit addresses beyond the first (unpaid discovery and 402
+credential-bearing requests beyond the first, and the OUSD form counts Confirm
+payment requests beyond the first (unpaid discovery and 402
 challenges are not retries). Missing trajectory data or attempt counts leave a
 successful trial's quality absent.
 
