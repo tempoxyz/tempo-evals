@@ -76,6 +76,10 @@ checkout:
       task: x402-usdc-directed
       method: x402
       instruction: Use x402 to pay.
+    ousd-form-discover:
+      task: ousd-form-directed
+      method: tempo_transfer
+      instruction: Use OUSD to pay.
   # Cart store: the same payment adapters behind a multi-item catalog with
   # variants, quantities and a budget-bound shipping choice. Sync generates
   # directed cart tasks from these discover sources and shared/checkout/cart/.
@@ -94,6 +98,7 @@ checkout:
     mpp-ousd-discover: mppousd-cart
     x402-usdc-discover: x402-cart
     shopify-card-discover: shopify-cart
+    ousd-form-discover: ousdform-cart
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.
