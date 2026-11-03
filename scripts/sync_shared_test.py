@@ -14,7 +14,7 @@ from scripts import sync_shared
 class SyncSharedTest(unittest.TestCase):
     def test_every_checkout_task_gets_the_same_agent_bundle(self):
         tasks = sync_shared.checkout_task_dirs()
-        self.assertEqual(len(tasks), 32)
+        self.assertEqual(len(tasks), 36)
         bundle = sync_shared.CHECKOUT_SHARED_DIR / "agent"
         prompts = set()
         for task in tasks:

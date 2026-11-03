@@ -1,7 +1,7 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1` (not published). Thirty-two Harbor
-tasks cover eight payment methods. Each method has a single-notebook store and a
+Planned dataset: `tempo/checkout-bench-v1` (not published). Thirty-six Harbor
+tasks cover nine payment methods. Each method has a single-notebook store and a
 cart store, and each store has a discover and a directed prompt. Every task
 requires shipping. Select them only with `--task-suite checkout`; the default and
 `all` jobs exclude them.
@@ -18,9 +18,10 @@ requires shipping. Select them only with `--task-suite checkout`; the default an
 | MPP OUSD (`tempo_mpp`) | `mpp-ousd-discover` | `mpp-ousd-directed` | `mppousd-cart-discover` | `mppousd-cart-directed` | Use MPP to pay. |
 | MPP card (`stripe_mpp`) | `mpp-card-discover` | `mpp-card-directed` | `mppcard-cart-discover` | `mppcard-cart-directed` | Use card over MPP to pay. |
 | x402 USDC (`x402`) | `x402-usdc-discover` | `x402-usdc-directed` | `x402-cart-discover` | `x402-cart-directed` | Use x402 to pay. |
+| OUSD form (`tempo_transfer`) | `ousd-form-discover` | `ousd-form-directed` | `ousdform-cart-discover` | `ousdform-cart-directed` | Use OUSD to pay. |
 
 Every task runs on three browser profiles (`local`, `browserbase`, `kernel`),
-so one attempt per model is 96 trials.
+so one attempt per model is 108 trials.
 
 ## What it measures
 
@@ -49,8 +50,12 @@ install software, and the 900-second limit.
 
 **Tool bundle.** `/opt/agent` has the same contents in every task: the trial
 wallet at `wallet/wallet.json` (the wallet volume, mounted read-only), pinned
-mppx, viem and tsx, and a short README listing both and how to run scripts there,
-with no payment code. Bundle, wallet fields and prompt match across rails, so
+mppx, viem and tsx, and a README listing both, how to run scripts there, and a
+short working example for each scripted payment: an MPP challenge paid from the
+Tempo account or with the prepared card token, an x402 challenge paid from the
+Base Sepolia account, and a direct Tempo stablecoin transfer. The examples cover
+every scripted rail, so they do not say which one a store accepts; card, Link
+and PayPal remain browser forms. Bundle, wallet fields and prompt match across rails, so
 in a discover task only the merchant tells the agent which method it accepts,
 with one exception: Braintree wallets carry a Mastercard test number
 (`5555555555554444`) where every other wallet has `4242424242424242`. Agents
@@ -128,6 +133,7 @@ merchant also tags its PaymentIntent with the order ID.
 | MPP OUSD | MPP OUSD paid endpoint only | One delivery, a successful MPP receipt and the exact trial-recipient OUSD balance |
 | MPP card | Stripe MPP card paid endpoint only | One delivery and MPP receipt matched to a captured, unrefunded sandbox card PaymentIntent |
 | x402 USDC | x402 Base Sepolia USDC paid endpoint only | One delivery, a successful x402 settlement and a confirmed 1 USDC transfer from the trial buyer |
+| OUSD form | Hosted checkout page with an order-specific Tempo deposit address and a confirm button | One confirmed order and exactly its total in OUSD at that order's deposit address, with no other deposits |
 
 **PayPal.** Orders request US English for the hosted checkout.
 
@@ -177,6 +183,19 @@ edits in hosted checkout. Duplicate, refunded, manual-payment, wrong-item,
 wrong-address and real transactions fail. The retry proxy counts distinct
 checkout handoffs, so resuming a cart after unlocking the store is not a retry;
 the raw handoff request count is kept too.
+
+**OUSD form.** The stablecoin counterpart of the card forms, built on the MPP
+OUSD merchant with the same shipping form and `POST /shipping`. Instead of a 402
+challenge, the order's payment page (`/pay`) is an HTML checkout showing the
+total, the OUSD token, Tempo testnet and a fresh deposit address for that order.
+The buyer sends the transfer from their wallet and presses Confirm payment
+(`POST /pay/confirm`); the store checks the deposit balance onchain and records
+the order once it holds the total. A transfer that is never confirmed is money
+spent without an order. The verifier reads every issued deposit address and
+requires exactly the total at the paid order's address and nothing anywhere
+else. Retries count deposit addresses that received OUSD beyond the first. It
+measures the same wallet and token as MPP OUSD, paid through a form instead of a
+protocol.
 
 **x402.** Copies the MPP OUSD merchant and changes only the advertised payment:
 the same shipping form, `POST /shipping` and per-order `/buy` URL charge through
@@ -239,8 +258,9 @@ context. Tool calls count every call in those steps, including Bash, research an
 failed calls, however batched. Time spans the first to last user/agent timestamp;
 setup and verification are excluded. Weights and targets are shared across
 merchants. Extra attempts are per-rail proxies, not counts of every failed
-submission: Stripe and PayPal count extra checkout starts, and MPP and x402 count
-credential-bearing requests beyond the first (unpaid discovery and 402
+submission: Stripe and PayPal count extra checkout starts, MPP and x402 count
+credential-bearing requests beyond the first, and the OUSD form counts paid
+deposit addresses beyond the first (unpaid discovery and 402
 challenges are not retries). Missing trajectory data or attempt counts leave a
 successful trial's quality absent.
 
@@ -341,8 +361,8 @@ npm run bench:production -- --task-suite checkout --profile all \
   --verifier-image "$(npm run --silent verifier-image:ref)"
 ```
 
-The full matrix is 32 tasks × 3 profiles × 6 models = 576 trials per attempt;
-`pass_5` needs `--n-attempts 5` (2,880 trials). Use
+The full matrix is 36 tasks × 3 profiles × 6 models = 648 trials per attempt;
+`pass_5` needs `--n-attempts 5` (3,240 trials). Use
 `--n-attempts 1 --max-retries 0` to keep one native attempt per cell: Harbor deletes earlier
 exception-attempt directories when it retries, so rerun infrastructure failures
 separately to keep their evidence apart from agent failures.
@@ -357,7 +377,7 @@ the runner does not otherwise cap concurrency.
 
 `--profile local` (also the default, including the `docs` default),
 `browserbase` or `kernel` vary browser infrastructure while keeping the browser
-tool identical; `--profile all` launches three ordinary Harbor jobs with all 32
+tool identical; `--profile all` launches three ordinary Harbor jobs with all 36
 tasks each, and model trials keep the shared pair ID. Profiles are staged at
 run time by the existing task-copy pipeline, with no extra task directories or
 runner, and other suites' profiles are unaffected.
@@ -387,7 +407,7 @@ runner, and other suites' profiles are unaffected.
 
 ## Authoring
 
-The eight notebook discover tasks own their merchant, wallet service
+The nine notebook discover tasks own their merchant, wallet service
 (`environment/wallet/`), oracle and payment check (`tests/payment_check.py`);
 edit those there. Shared files are canonical in `shared/checkout/`, and
 `npm run sync` overwrites their copies in every task: Link setup
