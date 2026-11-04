@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -14,6 +16,7 @@ import tomlkit
 import yaml
 
 from scripts.run_benchmark import (
+    CHECKOUT_PROFILES,
     MCP_CODE_PROFILE,
     MCP_DIRECT_PROFILE,
     MCP_PROFILE,
@@ -21,8 +24,10 @@ from scripts.run_benchmark import (
     apply_pair_id,
     apply_profile,
     build_images,
+    checkout_compose_overlay,
     daytona_images,
     finalize_config,
+    image_ref,
     load_env_file,
     main,
     parse_args,
@@ -124,6 +129,63 @@ invalid-name=ignored
                 self.assertEqual(agent["env"], {"CHECKOUT_BROWSER_PROFILE": profile})
                 self.assertNotIn("mcp_servers", agent)
 
+    def test_committed_checkout_tasks_are_the_local_browser_profile(self) -> None:
+        shared = Path("shared/checkout/browser")
+        build_files = sorted(
+            path.name
+            for path in shared.iterdir()
+            if path.is_file() and not path.name.endswith(".test.ts")
+        )
+        volume = "checkout-browser-output"
+        output = f"{volume}:/tmp/.playwright-mcp"
+        completed = {"condition": "service_completed_successfully"}
+        tasks = sorted(Path("tasks/checkout-v1").glob("*/task.toml"))
+        self.assertEqual(len(tasks), 36)
+        for task_file in tasks:
+            task = task_file.parent
+            with self.subTest(task=task.name):
+                # Exports label runs without a profile browser-mcp, so the
+                # committed task leaves the profile to the run's agent env.
+                metadata = tomlkit.parse(task_file.read_text())["metadata"]
+                self.assertNotIn("browser_profile", metadata)
+                # Harbor uploads only environment/, so the build lives there.
+                copied = task / "environment/browser"
+                self.assertEqual(
+                    sorted(path.name for path in copied.iterdir()), build_files
+                )
+                for name in build_files:
+                    self.assertEqual(
+                        (copied / name).read_bytes(), (shared / name).read_bytes()
+                    )
+                compose = yaml.safe_load(
+                    (task / "environment/docker-compose.yaml").read_text()
+                )
+                services = compose["services"]
+                self.assertEqual(set(compose["volumes"]), {"checkout-wallet", volume})
+                main = services["main"]
+                self.assertEqual(main["depends_on"]["link"], completed)
+                self.assertEqual(main["depends_on"]["browser-ready"], completed)
+                self.assertIn(f"{output}:ro", main["volumes"])
+                browser = services["browser"]
+                self.assertEqual(browser["build"], {"context": "./browser"})
+                self.assertNotIn("image", browser)
+                self.assertEqual(browser["volumes"], [output])
+                command = browser["command"]
+                self.assertIn("--no-webmcp", command)
+                for flag, value in (
+                    ("--output-dir", "/tmp/.playwright-mcp"),
+                    ("--file-paths", "absolute"),
+                    ("--config", "/opt/checkout/browser.json"),
+                    ("--init-page", "/opt/checkout/merchant-route.ts"),
+                ):
+                    self.assertEqual(command[command.index(flag) + 1], value)
+                self.assertNotIn("--cdp-endpoint", command)
+                ready = services["browser-ready"]
+                self.assertEqual(ready["build"], browser["build"])
+                self.assertEqual(ready["command"], ["/opt/checkout/ready.ts"])
+                self.assertEqual(ready["depends_on"], {"link": completed})
+                self.assertNotIn("browser-session", services)
+
     def test_checkout_profiles_only_change_browser_infrastructure(self) -> None:
         with tempfile.TemporaryDirectory() as root:
             for profile in ("local", "browserbase", "kernel"):
@@ -133,96 +195,128 @@ invalid-name=ignored
                     if not (task / "task.toml").exists():
                         continue
                     source = Path("tasks/checkout-v1") / task.name
+                    # Every profile runs the committed compose unchanged.
                     for path in source.rglob("*"):
                         if (
                             path.is_file()
                             and "node_modules" not in path.parts
-                            and path.name
-                            not in {
-                                "task.toml",
-                                "docker-compose.yaml",
-                                "package-lock.json",
-                            }
+                            and path.name not in {"task.toml", "package-lock.json"}
                         ):
                             self.assertEqual(
                                 path.read_bytes(),
                                 (task / path.relative_to(source)).read_bytes(),
                             )
+                    if profile == "local":
+                        self.assertEqual(
+                            (task / "task.toml").read_bytes(),
+                            (source / "task.toml").read_bytes(),
+                        )
+                        continue
                     native = tomlkit.parse((task / "task.toml").read_text())
                     original = tomlkit.parse((source / "task.toml").read_text())
                     self.assertEqual(native["metadata"].pop("browser_profile"), profile)
-                    for key in set(native["environment"]["env"]) - set(
+                    added = set(native["environment"]["env"]) - set(
                         original["environment"]["env"]
-                    ):
+                    )
+                    self.assertEqual(
+                        added, set(CHECKOUT_PROFILES[profile]["credentials"])
+                    )
+                    for key in added:
                         self.assertEqual(
                             native["environment"]["env"].pop(key), "${" + key + "}"
                         )
                     self.assertEqual(native, original)
-                    compose = yaml.safe_load(
-                        (task / "environment/docker-compose.yaml").read_text()
+
+    def test_checkout_cloud_profiles_add_only_a_checked_in_overlay(self) -> None:
+        for profile in ("local", "browserbase", "kernel"):
+            with self.subTest(profile=profile):
+                config = apply_profile({"agents": [{"name": "oracle"}]}, profile)
+                overlay = checkout_compose_overlay(profile)
+                if profile == "local":
+                    self.assertIsNone(overlay)
+                    self.assertNotIn("environment", config)
+                    continue
+                self.assertEqual(
+                    config["environment"]["extra_docker_compose"], [overlay]
+                )
+                services = yaml.safe_load(Path(overlay).read_text())["services"]
+                self.assertEqual(set(services), {"browser", "browser-session"})
+                self.assertEqual(
+                    services["browser"],
+                    {
+                        "environment": {
+                            "PLAYWRIGHT_MCP_CDP_ENDPOINT": "ws://browser-session:9222"
+                        },
+                        "depends_on": {
+                            "browser-session": {"condition": "service_healthy"}
+                        },
+                    },
+                )
+                session = services["browser-session"]
+                self.assertEqual(session["build"], {"context": "./browser"})
+                self.assertEqual(session["command"], ["/opt/checkout/session.ts"])
+                credentials = CHECKOUT_PROFILES[profile]["credentials"]
+                self.assertEqual(
+                    set(session["environment"]),
+                    {"CHECKOUT_BROWSER_PROFILE", *credentials},
+                )
+                self.assertEqual(
+                    session["environment"]["CHECKOUT_BROWSER_PROFILE"], profile
+                )
+                for key in credentials:
+                    self.assertTrue(
+                        session["environment"][key].startswith("${" + key + ":?")
                     )
-                    original_compose = yaml.safe_load(
-                        (source / "environment/docker-compose.yaml").read_text()
-                    )
-                    output_volume = "checkout-browser-output:/tmp/.playwright-mcp"
-                    self.assertIn(
-                        output_volume, compose["services"]["browser"]["volumes"]
-                    )
-                    compose["services"]["main"]["volumes"].remove(f"{output_volume}:ro")
-                    self.assertIsNone(compose["volumes"].pop("checkout-browser-output"))
-                    ready = compose["services"].pop("browser-ready")
-                    self.assertEqual(
-                        ready["depends_on"],
-                        {"link": {"condition": "service_completed_successfully"}},
-                    )
-                    self.assertEqual(ready["command"], ["/opt/checkout/ready.ts"])
-                    self.assertEqual(
-                        ready["build"], compose["services"]["browser"]["build"]
-                    )
-                    self.assertEqual(
-                        compose["services"]["main"]["depends_on"].pop("browser-ready"),
-                        {"condition": "service_completed_successfully"},
-                    )
-                    browser_command = compose["services"]["browser"]["command"]
-                    self.assertIn("--no-webmcp", browser_command)
-                    self.assertEqual(
-                        browser_command[browser_command.index("--output-dir") + 1],
-                        "/tmp/.playwright-mcp",
-                    )
-                    self.assertEqual(
-                        browser_command[browser_command.index("--file-paths") + 1],
-                        "absolute",
-                    )
-                    for name in ("main", "merchant", "wallet", "link"):
-                        self.assertEqual(
-                            compose["services"][name],
-                            original_compose["services"][name],
-                        )
-                    self.assertEqual(compose["volumes"], original_compose["volumes"])
-                    self.assertNotIn("environment", compose["services"]["browser"])
-                    self.assertNotIn(
-                        "browser-session",
-                        compose["services"]["main"].get("environment", {}),
-                    )
-                    if profile == "local":
-                        self.assertNotIn("browser-session", compose["services"])
-                    else:
-                        self.assertIn(
-                            "ws://browser-session:9222",
-                            compose["services"]["browser"]["command"],
-                        )
-                        provider_env = compose["services"]["browser-session"][
-                            "environment"
-                        ]
-                        self.assertEqual(
-                            provider_env["CHECKOUT_BROWSER_PROFILE"], profile
-                        )
-                        self.assertNotIn(
-                            "KERNEL_API_KEY"
-                            if profile == "browserbase"
-                            else "BROWSERBASE_API_KEY",
-                            provider_env,
-                        )
+
+    @unittest.skipUnless(shutil.which("docker"), "docker compose is not installed")
+    def test_checkout_cloud_overlay_merges_with_committed_compose(self) -> None:
+        environment = Path("tasks/checkout-v1/stripe-link-discover/environment")
+        compose_file = environment / "docker-compose.yaml"
+        required = re.findall(r"\$\{([A-Z0-9_]+):\?", compose_file.read_text())
+        env = {key: "test" for key in required} | {
+            "PATH": os.environ.get("PATH", ""),
+            "BROWSERBASE_API_KEY": "test",
+            "BROWSERBASE_PROJECT_ID": "test",
+            "KERNEL_API_KEY": "test",
+        }
+
+        # Harbor's own base file defines main's image; stand in for it here.
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        harbor_base = Path(directory.name) / "docker-compose-base.yaml"
+        harbor_base.write_text("services:\n  main:\n    image: agent\n")
+
+        def merged(*overlays: str) -> dict[str, Any]:
+            paths = (harbor_base, compose_file, *overlays)
+            files = [arg for path in paths for arg in ("-f", str(path))]
+            command = ["docker", "compose", "--project-directory"]
+            command += [str(environment.resolve()), *files, "config", "--format"]
+            result = subprocess.run(
+                [*command, "json"], capture_output=True, text=True, env=env
+            )
+            if result.returncode != 0 and "is not a docker command" in result.stderr:
+                self.skipTest("docker compose plugin is not available")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            return json.loads(result.stdout)["services"]
+
+        local = merged()
+        for profile in ("browserbase", "kernel"):
+            with self.subTest(profile=profile):
+                cloud = merged(str(checkout_compose_overlay(profile)))
+                self.assertEqual(
+                    cloud["browser"]["command"], local["browser"]["command"]
+                )
+                self.assertEqual(
+                    cloud["browser"]["environment"]["PLAYWRIGHT_MCP_CDP_ENDPOINT"],
+                    "ws://browser-session:9222",
+                )
+                self.assertIn("browser-session", cloud["browser"]["depends_on"])
+                self.assertEqual(
+                    cloud["browser-session"]["build"]["context"],
+                    str((environment / "browser").resolve()),
+                )
+                for name in ("main", "browser-ready", "link", "merchant", "wallet"):
+                    self.assertEqual(cloud[name], local[name])
 
     def test_checkout_cloud_profiles_do_not_enable_other_suite_profiles(self) -> None:
         for profile in ("local", "browserbase", "kernel"):
@@ -1007,6 +1101,37 @@ invalid-name=ignored
             ["--path", "tasks/mpp"],
         )
 
+    def test_checkout_model_run_adds_only_the_cloud_overlay(self) -> None:
+        for profile in ("local", "kernel"):
+            options = {
+                "env_file": None,
+                "job_name": f"checkout-model-{profile}",
+                "profile": profile,
+                "sync": False,
+                "task_suite": "checkout",
+                "tasks": "tasks/checkout-v1/stripe-card-discover",
+            }
+            with (
+                self.subTest(profile=profile),
+                patch("scripts.run_benchmark.preflight"),
+                patch("scripts.run_benchmark.build_images"),
+                patch(
+                    "scripts.run_benchmark.stage_direct_task_path",
+                    return_value="staged/stripe-card-discover",
+                ),
+                patch("scripts.run_benchmark.run") as run,
+            ):
+                run_benchmark_variant("model", options)
+                args = run.call_args.args[1]
+                overlays = [
+                    args[index + 1]
+                    for index, arg in enumerate(args)
+                    if arg == "--extra-docker-compose"
+                ]
+                expected = checkout_compose_overlay(profile)
+                self.assertEqual(overlays, [expected] if expected else [])
+                self.assertIn(f"CHECKOUT_BROWSER_PROFILE={profile}", args)
+
     def test_model_disables_hosted_web_search_only_for_codex(self) -> None:
         for agent, expected in (
             (None, []),
@@ -1377,6 +1502,36 @@ invalid-name=ignored
             copy.assert_called_once_with(
                 Path("tasks/checkout-v1"), staging_root / "tasks/checkout-v1"
             )
+
+    def test_daytona_image_override_replaces_only_agent_and_verifier_bases(
+        self,
+    ) -> None:
+        images = {
+            "agent": "ghcr.io/example/agent@sha256:" + "a" * 64,
+            "verifier": "ghcr.io/example/verifier@sha256:" + "b" * 64,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            staging_root = Path(directory)
+            stage_task_datasets(staging_root, None, images=images, checkout=True)
+            for task in (staging_root / "tasks/checkout-v1").iterdir():
+                if not (task / "task.toml").exists():
+                    continue
+                source = Path("tasks/checkout-v1") / task.name
+                for role, dockerfile in (
+                    ("agent", "environment/Dockerfile"),
+                    ("verifier", "tests/Dockerfile"),
+                ):
+                    self.assertEqual(
+                        (task / dockerfile).read_text(),
+                        (source / dockerfile)
+                        .read_text()
+                        .replace(f"FROM {image_ref(role)}", f"FROM {images[role]}"),
+                    )
+                # The browser build keeps its own pinned MCP base image.
+                self.assertEqual(
+                    (task / "environment/browser/Dockerfile").read_bytes(),
+                    (source / "environment/browser/Dockerfile").read_bytes(),
+                )
 
     def test_staged_pinned_docs_proxy_only_docs_hostname(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

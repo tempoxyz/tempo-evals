@@ -145,12 +145,67 @@ class SyncSharedTest(unittest.TestCase):
             with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
                 sync_shared.sync_checkout_wallet()
             for name in ("first", "second"):
-                self.assertEqual(
-                    (checkout / name / "environment/link/link_setup.js").read_bytes(),
-                    (
-                        sync_shared.CHECKOUT_SHARED_DIR / "wallet/link_setup.js"
-                    ).read_bytes(),
-                )
+                for source, target in sync_shared.CHECKOUT_WALLET_FILES:
+                    self.assertEqual(
+                        (checkout / name / target).read_bytes(),
+                        (
+                            sync_shared.CHECKOUT_SHARED_DIR / "wallet" / source
+                        ).read_bytes(),
+                    )
+        self.assertEqual(
+            {target for _, target in sync_shared.CHECKOUT_WALLET_FILES},
+            {
+                "environment/wallet/init.py",
+                "environment/wallet/Dockerfile",
+                "environment/link/link_setup.js",
+                "environment/link/Dockerfile",
+            },
+        )
+        # Every rail lists the same card, one test Mastercard that Stripe and
+        # the Braintree sandbox both accept, from the same public registry.
+        wallet = (sync_shared.CHECKOUT_SHARED_DIR / "wallet/init.py").read_text()
+        self.assertEqual(
+            re.findall(r'"number": "(\d{2,})"', wallet), ["5555555555554444"]
+        )
+        for name in ("Dockerfile", "link.Dockerfile"):
+            dockerfile = (sync_shared.CHECKOUT_SHARED_DIR / "wallet" / name).read_text()
+            self.assertIn("FROM public.ecr.aws/docker/library/", dockerfile)
+
+    def test_checkout_cart_text_names_each_method(self) -> None:
+        cart = sync_shared.TASKS_CONFIG["checkout"]["cart"]
+        self.assertEqual(set(cart), set(sync_shared.CHECKOUT_CART_METHODS))
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory)
+            for slug in cart:
+                shutil.copytree(sync_shared.CHECKOUT_TASKS_DIR / slug, checkout / slug)
+            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+                sync_shared.sync_checkout_cart_variants()
+            for slug, prefix in cart.items():
+                method = sync_shared.CHECKOUT_CART_METHODS[slug]
+                for condition in ("discover", "directed"):
+                    task = checkout / f"{prefix}-{condition}"
+                    with self.subTest(task=task.name):
+                        readme = (task / "README.md").read_text()
+                        self.assertIn(f"\n# {method['method']} cart checkout\n", readme)
+                        self.assertIn(f"accepts only {method['surface']}.", readme)
+                        self.assertNotRegex(readme, r"[{}]")
+                        self.assertEqual(
+                            "Shopify's hosted checkout" in readme
+                            and "Express trap" in readme,
+                            slug == "shopify-card-discover",
+                        )
+                        config = tomllib.loads((task / "task.toml").read_text())
+                        explanation = config["metadata"]["verification_explanation"]
+                        self.assertIn("$33 total", explanation)
+                        self.assertIn("cart", config["task"]["keywords"])
+                        self.assertIn("cart", config["metadata"]["tags"])
+                        # x402 settles 1 USDC whatever the cart total.
+                        x402 = slug == "x402-usdc-discover"
+                        self.assertEqual("1 USDC" in readme, x402)
+                        self.assertEqual("1 USDC" in explanation, x402)
+                        self.assertEqual(
+                            "requires one payment for exactly" in readme, not x402
+                        )
 
     def test_checkout_grading_copies_only_to_checkout_tasks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

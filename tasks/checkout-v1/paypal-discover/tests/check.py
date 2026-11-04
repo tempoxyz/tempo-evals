@@ -16,6 +16,14 @@ EXPECTED_ORDER = json.loads(Path(__file__).with_name("order.json").read_text())
 
 
 def paid_order_id(snapshot):
+    # Prefer the order whose payment payment_check verified; otherwise report
+    # the first paid-looking row, for diagnostics of an unverified payment.
+    verified = getattr(payment_check, "paid_order_id", None)
+    order_id = verified(snapshot) if callable(verified) else None
+    if order_id:
+        return order_id
+    if not isinstance(snapshot, dict):
+        return None
     for key, predicate in (
         ("sessions", lambda row: row.get("paymentStatus") == "paid"),
         ("intents", lambda row: row.get("status") == "succeeded"),
@@ -114,11 +122,15 @@ def shipping_details(snapshot):
 
 def check(snapshot):
     passed, reason, method = payment_check.check(snapshot)
-    # A paid order with the wrong items, shipping option or total fails as
-    # order_mismatch, even when its payment matches that order.
+    # A failed payment keeps its own reason; order and address fields are
+    # still reported in details.
+    if not passed:
+        return passed, reason, method
+    # A verified payment for an order with the wrong items, shipping option or
+    # total fails as order_mismatch, even when the payment matches that order.
     if paid_order(snapshot) and not order_details(snapshot)["order_match"]:
         return False, "order_mismatch", None
-    if passed and not shipping_details(snapshot)["shipping_address_match"]:
+    if not shipping_details(snapshot)["shipping_address_match"]:
         return False, "shipping_address_mismatch", None
     return passed, reason, method
 
@@ -141,9 +153,7 @@ def main():
     )
     if reason in {"order_mismatch", "shipping_address_mismatch"}:
         details["checkout_stage"] = reason
-    score = {"reward": int(passed)}
-    (LOG_DIR / "reward.json").write_text(json.dumps(score) + "\n")
-    (LOG_DIR / "scores.json").write_text(json.dumps(score) + "\n")
+    (LOG_DIR / "reward.json").write_text(json.dumps({"reward": int(passed)}) + "\n")
     (LOG_DIR / "details.json").write_text(json.dumps(details) + "\n")
 
 

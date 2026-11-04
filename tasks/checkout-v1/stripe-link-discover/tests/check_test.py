@@ -111,12 +111,14 @@ class CheckoutVerifierTests(unittest.TestCase):
             self.assertEqual(
                 json.loads((root / "reward.json").read_text()), {"reward": 1}
             )
+            self.assertFalse((root / "scores.json").exists())
             self.assertEqual(
                 json.loads((root / "details.json").read_text()),
                 {
                     "reason": "verified",
                     "extra_checkout_attempts": 0,
                     "payment_method": "link",
+                    "paid_order_id": "order-1",
                     "observed_method": "link",
                     "observed_methods": ["link"],
                     "checkout_stage": "verified",
