@@ -1,5 +1,6 @@
-FROM public.ecr.aws/docker/library/node@sha256:77d0c7953e80648137a237496c8edbcb3a14bedc5c5298b93a6d0dfa6c3e1271
-RUN npm install --global tsx@4.23.1 --no-audit --no-fund
+FROM public.ecr.aws/docker/library/node@sha256:8c761eca2bf7eec965f946cf47b8090143cb41f45f2f8699af0cc0298d2d2d19
 WORKDIR /srv
-COPY package.json server.js snapshot.ts shipping.js ./
+COPY package.json npm-shrinkwrap.json ./
+RUN npm ci --ignore-scripts --no-audit --no-fund && ln -s /srv/node_modules/.bin/tsx /usr/local/bin/tsx
+COPY server.js snapshot.ts shipping.js ./
 CMD ["node", "server.js"]

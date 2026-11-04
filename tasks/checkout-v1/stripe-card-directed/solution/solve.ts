@@ -51,7 +51,7 @@ async function main(): Promise<void> {
   for (let digit = 1; digit <= 6; digit++) {
     await page.getByRole('textbox', { name: 'Security code character ' + digit }).fill(${JSON.stringify(wallet.link.sandboxPasscode)}[digit - 1]);
   }
-  await page.getByText(/4242/).last().waitFor({ state: 'visible', timeout: 30000 });
+  await page.getByText(${JSON.stringify(card.number.slice(-4))}).last().waitFor({ state: 'visible', timeout: 30000 });
   const linkCvc = page.getByRole('textbox', { name: 'CVC' });
   if (await linkCvc.isVisible()) await linkCvc.fill(${JSON.stringify(card.cvc)});
   await page.getByRole('button', { name: 'Pay', exact: true }).click();` : `

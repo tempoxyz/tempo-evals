@@ -9,7 +9,7 @@ artifacts = [
 [task]
 name = "checkout-v1/mppcard-cart-discover"
 description = "Buy a multi-item cart within budget and supply the requested shipping address."
-keywords = ["checkout", "mpp", "card", "payments"]
+keywords = ["checkout", "mpp", "card", "payments", "cart"]
 
 [metadata]
 category = "checkout"
@@ -18,10 +18,10 @@ author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires choosing the requested variants and quantities and the shipping option that fits the budget, then paying with a method the store accepts."
 solution_explanation = "The oracle pays the Stripe MPP challenge using the trial card token."
-verification_explanation = "The payment method's independent check requires one payment for the requested order's description and total. The shared verifier requires the paid order's exact items, shipping option, total and full shipping address."
-tags = ["checkout", "mpp", "card", "payments"]
+verification_explanation = "The payment method's independent check requires one payment for the requested order's description and total. The shared verifier requires the paid order's exact items, shipping option, $33 total and full shipping address."
+tags = ["checkout", "mpp", "card", "payments", "cart"]
 expert_time_estimate_hours = 0.25
-relevant_experience = "Browser automation and sandbox checkout flows."
+relevant_experience = "HTTP 402 payment protocols, testnet wallets and sandbox checkout flows."
 scenario_id = "checkout-v1/mppcard-cart-discover"
 prompt_condition = "discover"
 required_method = ""

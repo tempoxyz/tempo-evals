@@ -9,7 +9,7 @@ artifacts = [
 [task]
 name = "checkout-v1/x402-cart-directed"
 description = "Buy a multi-item cart within budget and supply the requested shipping address."
-keywords = ["checkout", "x402", "base-sepolia", "payments"]
+keywords = ["checkout", "x402", "base-sepolia", "payments", "cart"]
 
 [metadata]
 category = "checkout"
@@ -18,10 +18,10 @@ author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
 difficulty_explanation = "Requires choosing the requested variants and quantities and the shipping option that fits the budget, then paying with the directed method."
 solution_explanation = "The oracle pays the x402 challenge using the trial Base Sepolia wallet."
-verification_explanation = "The payment method's independent check requires one payment for the requested order's description and total. The shared verifier requires the paid order's exact items, shipping option, total and full shipping address."
-tags = ["checkout", "x402", "base-sepolia", "payments"]
+verification_explanation = "The x402 check requires one 1 USDC settlement for the requested order's description. The shared verifier requires the paid order's exact items, shipping option, $33 total and full shipping address."
+tags = ["checkout", "x402", "base-sepolia", "payments", "cart"]
 expert_time_estimate_hours = 0.25
-relevant_experience = "Browser automation and sandbox checkout flows."
+relevant_experience = "HTTP 402 payment protocols, testnet wallets and sandbox checkout flows."
 scenario_id = "checkout-v1/x402-cart-discover"
 prompt_condition = "directed"
 required_method = "x402"

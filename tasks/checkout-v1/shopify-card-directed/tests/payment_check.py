@@ -111,6 +111,17 @@ def check(snapshot):
     return True, "verified", "card"
 
 
+def paid_order_id(snapshot):
+    """The order ID of the payment check() verified, or None."""
+    if not check(snapshot)[0]:
+        return None
+    return next(
+        order["orderId"]
+        for order in snapshot["orders"]
+        if isinstance(order, dict) and order.get("financialStatus") == "PAID"
+    )
+
+
 def main():
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     try:
@@ -123,6 +134,7 @@ def main():
         **payment_observations(snapshot),
         "reason": reason,
         "payment_method": method,
+        "paid_order_id": paid_order_id(snapshot),
         "payment_provider_type": "shopify_test_gateway"
         if isinstance(snapshot, dict)
         else None,
@@ -147,8 +159,7 @@ def main():
         else None,
     }
     score = {"reward": int(passed)}
-    for name in ("reward", "scores"):
-        (LOG_DIR / f"{name}.json").write_text(json.dumps(score) + "\n")
+    (LOG_DIR / "reward.json").write_text(json.dumps(score) + "\n")
     (LOG_DIR / "details.json").write_text(json.dumps(details) + "\n")
 
 

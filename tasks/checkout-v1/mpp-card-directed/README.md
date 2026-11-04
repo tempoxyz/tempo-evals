@@ -8,7 +8,7 @@ Buy one Tempo Notebook for $12 from a merchant exposing only a Stripe MPP paid e
 
 ## Verification
 
-The separate verifier matches one notebook delivery and its MPP receipt to an independently retrieved Stripe sandbox card PaymentIntent and captured, unrefunded $12 charge for this trial and order. Unpaid challenges, duplicate purchases, and payments without a delivered order fail. The shared checkout grader measures turns, credentialed retries, and time.
+The separate verifier matches one notebook delivery and its MPP receipt to an independently retrieved Stripe sandbox card PaymentIntent and captured, unrefunded $12 charge for this trial and order. Unpaid challenges, duplicate purchases, and payments without a delivered order fail.
 
 ## Shipping requirement
 
