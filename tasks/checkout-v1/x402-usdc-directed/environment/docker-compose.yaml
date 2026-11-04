@@ -8,9 +8,12 @@ services:
       browser:
         condition: service_healthy
       link:
-        condition: service_started
+        condition: service_completed_successfully
+      browser-ready:
+        condition: service_completed_successfully
     volumes:
       - checkout-wallet:/opt/agent/wallet:ro
+      - checkout-browser-output:/tmp/.playwright-mcp:ro
   wallet:
     build:
       context: ./wallet
@@ -58,15 +61,31 @@ services:
       - checkout-wallet:/wallet
     restart: "no"
 
+  # Pinned Playwright MCP extended by shared/checkout/browser (synced to ./browser).
   browser:
-    image: mcr.microsoft.com/playwright/mcp@sha256:690763cbb437ee7233f538a953bb5390bf03791eb5c965b471e59d17a6132fcb
-    entrypoint: node
-    command: ["/app/cli.js", "--headless", "--browser", "chromium", "--no-sandbox", "--port", "8931", "--host", "0.0.0.0", "--allowed-hosts", "*", "--isolated"]
+    build:
+      context: ./browser
+    entrypoint: /opt/checkout/node_modules/.bin/tsx
+    command: ["/app/cli.js", "--headless", "--browser", "chromium", "--no-sandbox", "--port", "8931", "--host", "0.0.0.0", "--allowed-hosts", "*", "--isolated", "--no-webmcp", "--output-dir", "/tmp/.playwright-mcp", "--file-paths", "absolute", "--config", "/opt/checkout/browser.json", "--init-page", "/opt/checkout/merchant-route.ts"]
+    volumes:
+      - checkout-browser-output:/tmp/.playwright-mcp
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:8931/mcp').then(() => process.exit(0)).catch(() => process.exit(1))"]
       interval: 2s
       timeout: 5s
       retries: 30
 
+  # Opens the merchant through the browser after Link enrollment, before main starts.
+  browser-ready:
+    build:
+      context: ./browser
+    entrypoint: /opt/checkout/node_modules/.bin/tsx
+    command: ["/opt/checkout/ready.ts"]
+    depends_on:
+      link:
+        condition: service_completed_successfully
+    restart: "no"
+
 volumes:
   checkout-wallet:
+  checkout-browser-output:

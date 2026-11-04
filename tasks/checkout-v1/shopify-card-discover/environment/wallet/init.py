@@ -1,3 +1,4 @@
+# SYNCED FROM shared/checkout/wallet/init.py BY npm run sync. DO NOT EDIT COPIES.
 """Create one trial-local Tempo payer and sandbox payment inventory."""
 
 import json
@@ -88,12 +89,19 @@ wallet = {
         "address": account.address,
         "privateKey": "0x" + account.key.hex().removeprefix("0x"),
     },
+    # A test Mastercard both Stripe (test mode) and the Braintree sandbox
+    # accept, so every task lists the same card and none reveals its merchant.
     "card": {
-        "number": "4242424242424242",
+        "number": "5555555555554444",
         "expMonth": "12",
         "expYear": str(year),
         "cvc": "123",
     },
+    "paypal": {
+        "email": os.environ.get("PAYPAL_SANDBOX_BUYER_EMAIL", ""),
+        "password": os.environ.get("PAYPAL_SANDBOX_BUYER_PASSWORD", ""),
+    },
+    # Listed in every task so the wallet does not reveal the Shopify merchant.
     "storefront": {
         "password": os.environ["SHOPIFY_STOREFRONT_PASSWORD"],
         "testCard": {
@@ -103,10 +111,6 @@ wallet = {
             "expYear": str(year),
             "cvc": "123",
         },
-    },
-    "paypal": {
-        "email": os.environ.get("PAYPAL_SANDBOX_BUYER_EMAIL", ""),
-        "password": os.environ.get("PAYPAL_SANDBOX_BUYER_PASSWORD", ""),
     },
     "link": {
         "email": LINK_EMAIL,

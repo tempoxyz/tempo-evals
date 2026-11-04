@@ -1,0 +1,28 @@
+# Compose overlay for the Browserbase checkout browser profile. The runner passes it
+# to Harbor as extra_docker_compose; relative paths resolve against the task's
+# environment directory. The committed task compose is the local profile.
+services:
+  browser:
+    environment:
+      # Playwright MCP's env form of --cdp-endpoint; the command stays unchanged.
+      PLAYWRIGHT_MCP_CDP_ENDPOINT: ws://browser-session:9222
+    depends_on:
+      browser-session:
+        condition: service_healthy
+
+  # Trusted sidecar: provider credentials and the authenticated CDP URL stay here.
+  browser-session:
+    build:
+      context: ./browser
+    entrypoint: /opt/checkout/node_modules/.bin/tsx
+    command: ["/opt/checkout/session.ts"]
+    environment:
+      CHECKOUT_BROWSER_PROFILE: browserbase
+      BROWSERBASE_API_KEY: ${BROWSERBASE_API_KEY:?Browserbase API key is required}
+      BROWSERBASE_PROJECT_ID: ${BROWSERBASE_PROJECT_ID:?Browserbase project ID is required}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:9222/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+    stop_grace_period: 30s

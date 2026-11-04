@@ -48,6 +48,19 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     return True, "verified", "paypal"
 
 
+def paid_order_id(snapshot: object) -> str | None:
+    """The order ID of the payment check() verified, or None."""
+    if not check(snapshot)[0]:
+        return None
+    return next(
+        o["orderId"]
+        for o in snapshot["orders"]
+        if isinstance(o, dict)
+        and isinstance(o.get("capture"), dict)
+        and o["capture"].get("status") == "COMPLETED"
+    )
+
+
 def main() -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     try:
@@ -68,6 +81,7 @@ def main() -> None:
             else None
         ),
         "payment_method": method,
+        "paid_order_id": paid_order_id(snapshot),
         "checkout_stage": "verified"
         if passed
         else "payment_observed_unverified"
@@ -80,7 +94,6 @@ def main() -> None:
         "payment_provider_type": "paypal_sandbox" if orders else None,
     }
     (LOG_DIR / "reward.json").write_text(json.dumps(score) + "\n")
-    (LOG_DIR / "scores.json").write_text(json.dumps(score) + "\n")
     (LOG_DIR / "details.json").write_text(json.dumps(details) + "\n")
 
 

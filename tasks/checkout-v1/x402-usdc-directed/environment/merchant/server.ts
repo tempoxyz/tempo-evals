@@ -28,8 +28,11 @@ const mppx = Mppx.create({
 });
 // Charge on the order's own payment URL, so the x402 challenge's resource is the
 // URL the agent requested. The scope binds the payment to that shipping order.
+// The challenge says plainly that the order settles for 1 USDC, whatever its
+// store total, so the charge does not look like a mismatch.
+const settlementNote = 'testnet checkout: this order settles for 1 USDC on Base Sepolia';
 const charge = (order: { id: string; total: number; description: string }) =>
-  mppx.evm.charge({ amount: String(chargeCents / 100), description: order.description, scope: order.id });
+  mppx.evm.charge({ amount: String(chargeCents / 100), description: `${order.description}; ${settlementNote}`, scope: order.id });
 const dir = '/var/log/checkout';
 const log = `${dir}/deliveries.jsonl`;
 const attemptsLog = `${dir}/attempts.jsonl`;

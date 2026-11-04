@@ -80,15 +80,14 @@ checkout:
       task: ousd-form-directed
       method: tempo_transfer
       instruction: Use OUSD to pay.
-  # Cart store: the same payment adapters behind a multi-item catalog with
-  # variants, quantities and a budget-bound shipping choice. Sync generates
-  # directed cart tasks from these discover sources and shared/checkout/cart/.
   # Order totals in USD cents for merchants that do not charge $12; sync writes
   # them into the source task and its directed peer's expected order.
   order_totals:
     x402-usdc-discover: 100
-  # Cart store: source task -> cart task prefix. Sync generates
-  # <prefix>-discover and <prefix>-directed for each source.
+  # Cart store: the same payment adapters behind a multi-item catalog with
+  # variants, quantities and a budget-bound shipping choice. Maps each source
+  # task to a cart task prefix; sync generates <prefix>-discover and
+  # <prefix>-directed from the source and shared/checkout/cart/.
   cart:
     stripe-card-discover: stripecard-cart
     stripe-link-discover: link-cart

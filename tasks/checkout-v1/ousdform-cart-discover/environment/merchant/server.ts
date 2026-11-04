@@ -32,6 +32,22 @@ function depositFor(orderId: string) {
   }
   return address as `0x${string}`;
 }
+// The RPC can lag a transfer the buyer just sent, so a confirm polls the
+// deposit for up to 10 s (once a second) before reporting it unpaid.
+const confirmWaitMs = 10_000;
+async function depositBalance(address: `0x${string}`, due: bigint) {
+  const deadline = Date.now() + confirmWaitMs;
+  for (;;) {
+    let balance: bigint | undefined;
+    try {
+      balance = await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [address] });
+    } catch (error) {
+      if (Date.now() >= deadline) throw error;
+    }
+    if (balance !== undefined && (balance >= due || Date.now() >= deadline)) return balance;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+}
 const escape = (value: unknown) => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
 const html = (response: http.ServerResponse, status: number, body: string) =>
   response.writeHead(status, { 'content-type': 'text/html; charset=utf-8' }).end('<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Checkout</title><style>body{font:16px system-ui;max-width:520px;margin:32px auto}code{word-break:break-all}button{padding:12px}</style></head><body><main>' + body + '</main></body></html>');
@@ -66,8 +82,8 @@ http.createServer(async (request, response) => {
     try {
     if (delivered.has(order.id)) return shipping.receipt(response, order.id);
     appendFileSync(attemptsLog, JSON.stringify({ orderId: order.id }) + '\n');
-    const balance = await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [address] });
     const due = BigInt(order.total) * 10n ** BigInt(decimals) / 100n;
+    const balance = await depositBalance(address, due);
     if (balance < due) {
       return html(response, 409, page(order, address, '<p role="alert">Payment not received yet: ' + formatUnits(balance, decimals) + ' of ' + formatUnits(due, decimals) + ' OUSD has arrived.</p>'));
     }

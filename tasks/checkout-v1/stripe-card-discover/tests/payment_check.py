@@ -53,6 +53,17 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     return True, "verified", "card"
 
 
+def paid_order_id(snapshot: object) -> str | None:
+    """The order ID of the payment check() verified, or None."""
+    if not check(snapshot)[0]:
+        return None
+    return next(
+        s["orderId"]
+        for s in snapshot["sessions"]
+        if isinstance(s, dict) and s.get("paymentStatus") == "paid"
+    )
+
+
 def main() -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     try:
@@ -81,6 +92,7 @@ def main() -> None:
         "reason": reason,
         "extra_checkout_attempts": max(0, len(sessions) - 1),
         "payment_method": method,
+        "paid_order_id": paid_order_id(snapshot),
         "checkout_stage": stage,
         "payment_provider_type": (
             "stripe_sandbox"
@@ -93,7 +105,6 @@ def main() -> None:
         ),
     }
     (LOG_DIR / "reward.json").write_text(json.dumps(score) + "\n")
-    (LOG_DIR / "scores.json").write_text(json.dumps(score) + "\n")
     (LOG_DIR / "details.json").write_text(json.dumps(details) + "\n")
 
 

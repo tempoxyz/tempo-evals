@@ -101,6 +101,8 @@ class CheckoutShippingTest(unittest.TestCase):
                         paid = {collection: [paid]}
                     order_id = verifier.paid_order_id(paid)
                     self.assertTrue(order_id)
+                    # The shared check grades the order payment_check verified.
+                    self.assertEqual(payment_check.paid_order_id(paid), order_id)
                     paid["shippingOrders"] = [
                         {
                             "id": order_id,
@@ -116,6 +118,38 @@ class CheckoutShippingTest(unittest.TestCase):
                     self.assertEqual(
                         verifier.check(mispriced), (False, "order_mismatch", None)
                     )
+                    # A failed payment keeps its own reason, even when a
+                    # paid-looking row's order is also wrong.
+                    with patch.object(
+                        payment_check,
+                        "check",
+                        return_value=(False, "payment_or_order_mismatch", None),
+                    ):
+                        self.assertIsNone(payment_check.paid_order_id(mispriced))
+                        self.assertEqual(verifier.paid_order_id(mispriced), order_id)
+                        self.assertEqual(
+                            verifier.check(mispriced),
+                            (False, "payment_or_order_mismatch", None),
+                        )
+                        self.assertFalse(
+                            verifier.order_details(mispriced)["order_match"]
+                        )
+                    # The verified order wins over any other paid-looking row.
+                    other = copy.deepcopy(paid)
+                    other["shippingOrders"].append(
+                        {
+                            **copy.deepcopy(other["shippingOrders"][0]),
+                            "id": "other-order",
+                            "total": 1,
+                        }
+                    )
+                    self.assertTrue(verifier.check(other)[0])
+                    with patch.object(
+                        payment_check, "paid_order_id", return_value="other-order"
+                    ):
+                        self.assertEqual(
+                            verifier.check(other), (False, "order_mismatch", None)
+                        )
                     for field in verifier.EXPECTED:
                         wrong = copy.deepcopy(paid)
                         wrong["shippingOrders"][0]["shipping"][field] = "wrong"
@@ -177,6 +211,9 @@ class CheckoutShippingTest(unittest.TestCase):
                         )
                         details = json.loads((directory / "details.json").read_text())
                         self.assertEqual(details["reason"], "shipping_address_mismatch")
+                        self.assertEqual(details["paid_order_id"], order_id)
+                        # Harbor reads reward.json; nothing reads scores.json.
+                        self.assertFalse((directory / "scores.json").exists())
                 finally:
                     sys.path[:] = original_path
 
@@ -334,8 +371,12 @@ class CheckoutShippingTest(unittest.TestCase):
                             ["total", "lines"],
                         ),
                     ):
+                        # order_mismatch only once the payment verified (x402
+                        # always charges 1 USDC); otherwise the payment reason.
+                        paid_ok, reason, _ = payment_check.check(wrong)
                         self.assertEqual(
-                            verifier.check(wrong), (False, "order_mismatch", None)
+                            verifier.check(wrong),
+                            (False, "order_mismatch" if paid_ok else reason, None),
                         )
                         self.assertEqual(
                             verifier.order_details(wrong)["order_mismatched_fields"],

@@ -57,6 +57,11 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     return True, "verified", "tempo_transfer"
 
 
+def paid_order_id(snapshot: object) -> str | None:
+    """The order ID of the payment check() verified, or None."""
+    return snapshot["deliveries"][0]["orderId"] if check(snapshot)[0] else None
+
+
 def main() -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     try:
@@ -77,6 +82,7 @@ def main() -> None:
             else None
         ),
         "payment_method": method,
+        "paid_order_id": paid_order_id(snapshot),
         "checkout_stage": "verified"
         if passed
         else "payment_observed_unverified"
@@ -85,7 +91,6 @@ def main() -> None:
         "payment_provider_type": "tempo_testnet" if method else None,
     }
     (LOG_DIR / "reward.json").write_text(json.dumps(score) + "\n")
-    (LOG_DIR / "scores.json").write_text(json.dumps(score) + "\n")
     (LOG_DIR / "details.json").write_text(json.dumps(details) + "\n")
 
 

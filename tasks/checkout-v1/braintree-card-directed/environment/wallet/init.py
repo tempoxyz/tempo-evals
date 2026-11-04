@@ -1,3 +1,4 @@
+# SYNCED FROM shared/checkout/wallet/init.py BY npm run sync. DO NOT EDIT COPIES.
 """Create one trial-local Tempo payer and sandbox payment inventory."""
 
 import json
@@ -88,6 +89,8 @@ wallet = {
         "address": account.address,
         "privateKey": "0x" + account.key.hex().removeprefix("0x"),
     },
+    # A test Mastercard both Stripe (test mode) and the Braintree sandbox
+    # accept, so every task lists the same card and none reveals its merchant.
     "card": {
         "number": "5555555555554444",
         "expMonth": "12",

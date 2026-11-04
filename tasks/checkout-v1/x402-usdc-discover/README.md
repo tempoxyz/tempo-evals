@@ -3,7 +3,7 @@
 
 ## Overview
 
-Buy one Tempo Notebook for 1 USDC from a controlled merchant exposing only an x402 paid endpoint on Base Sepolia. The endpoint returns a 402 challenge that the agent's Base Sepolia testnet wallet can satisfy. The agent receives the same wallet schema and purchase request as every checkout task.
+Buy one Tempo Notebook for 1 USDC from a controlled merchant exposing only an x402 paid endpoint on Base Sepolia. The endpoint returns a 402 challenge that the agent's Base Sepolia testnet wallet can satisfy. The agent receives the same wallet schema and purchase request as every notebook task.
 
 ## Verification
 

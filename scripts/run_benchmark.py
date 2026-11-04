@@ -47,6 +47,16 @@ TEMPO_PROFILES: list[dict[str, Any]] = TASKS_CONFIG["profiles"]
 CHECKOUT_PROFILES = {
     profile["id"]: profile for profile in TASKS_CONFIG["checkout"]["profiles"]
 }
+# Committed checkout tasks are the local profile; cloud profiles add an overlay.
+CHECKOUT_PROFILE_OVERLAYS = Path("shared/checkout/browser/profiles")
+
+
+def checkout_compose_overlay(profile: str) -> str | None:
+    if profile not in CHECKOUT_PROFILES:
+        raise ValueError(f"Unknown checkout browser profile: {profile}")
+    if profile == "local":
+        return None
+    return str((CHECKOUT_PROFILE_OVERLAYS / f"{profile}.yaml").resolve())
 
 
 def tempo_profile(profile_id: str) -> dict[str, Any]:
@@ -1074,6 +1084,9 @@ def apply_profile(config: dict[str, Any], profile_id: str) -> dict[str, Any]:
     if profile_id in CHECKOUT_PROFILES:
         for agent in config.get("agents", []):
             agent.setdefault("env", {})["CHECKOUT_BROWSER_PROFILE"] = profile_id
+        if overlay := checkout_compose_overlay(profile_id):
+            # Harbor applies it to the agent environment only, not the verifier.
+            config.setdefault("environment", {})["extra_docker_compose"] = [overlay]
         return config
     if profile_id == DOCS_PROFILE["id"]:
         return config
@@ -1324,82 +1337,20 @@ def override_staged_images(staging_root: Path, images: dict[str, str]) -> None:
             if expected not in content:
                 raise RuntimeError(f"Unexpected {image} image in {dockerfile}")
             dockerfile.write_text(
-                content.replace(expected, f"FROM {images[image]}", count=1)
+                # Positional count: str.replace(count=) needs Python 3.13.
+                content.replace(expected, f"FROM {images[image]}", 1)
             )
 
 
 def stage_browser_profile(task_dir: Path, profile: str) -> None:
-    if profile not in CHECKOUT_PROFILES:
-        raise ValueError(f"Unknown checkout browser profile: {profile}")
-    environment = task_dir / "environment"
-    shutil.copytree(
-        "shared/checkout/browser",
-        environment / "browser",
-        ignore=shutil.ignore_patterns("node_modules", "package-lock.json"),
-    )
-    compose_file = environment / "docker-compose.yaml"
-    compose = yaml.safe_load(compose_file.read_text())
-    browser = compose["services"]["browser"]
-    # Extend the exact task-pinned MCP image; tool schemas stay identical.
-    image = browser.pop("image")
-    browser["build"] = {"context": "./browser", "args": {"MCP_IMAGE": image}}
-    browser["entrypoint"] = "/opt/checkout/node_modules/.bin/tsx"
-    output_dir = "/tmp/.playwright-mcp"
-    output_volume = f"checkout-browser-output:{output_dir}"
-    compose["volumes"]["checkout-browser-output"] = None
-    browser.setdefault("volumes", []).append(output_volume)
-    compose["services"]["main"]["volumes"].append(f"{output_volume}:ro")
-    browser["command"] += [
-        "--no-webmcp",
-        "--output-dir",
-        output_dir,
-        "--file-paths",
-        "absolute",
-        "--config",
-        "/opt/checkout/browser.json",
-        "--init-page",
-        "/opt/checkout/merchant-route.ts",
-    ]
-    compose["services"]["browser-ready"] = {
-        "build": browser["build"],
-        "entrypoint": "/opt/checkout/node_modules/.bin/tsx",
-        "command": ["/opt/checkout/ready.ts"],
-        "depends_on": {"link": {"condition": "service_completed_successfully"}},
-        "restart": "no",
-    }
-    compose["services"]["main"]["depends_on"]["browser-ready"] = {
-        "condition": "service_completed_successfully"
-    }
-    if profile != "local":
-        browser["command"] += ["--cdp-endpoint", "ws://browser-session:9222"]
-        browser["depends_on"] = {"browser-session": {"condition": "service_healthy"}}
-        compose["services"]["browser-session"] = {
-            "build": browser["build"],
-            "entrypoint": "/opt/checkout/node_modules/.bin/tsx",
-            "command": ["/opt/checkout/session.ts"],
-            "environment": {
-                "CHECKOUT_BROWSER_PROFILE": profile,
-                **{
-                    key: "${" + key + "}"
-                    for key in CHECKOUT_PROFILES[profile]["credentials"]
-                },
-            },
-            "healthcheck": {
-                "test": [
-                    "CMD",
-                    "node",
-                    "-e",
-                    "fetch('http://localhost:9222/health')"
-                    ".then(r => process.exit(r.ok ? 0 : 1))"
-                    ".catch(() => process.exit(1))",
-                ],
-                "interval": "2s",
-                "timeout": "5s",
-                "retries": 60,
-            },
-            "stop_grace_period": "30s",
-        }
-    compose_file.write_text(yaml.safe_dump(compose, sort_keys=False))
+    """Record a cloud profile in a staged task; local tasks run as committed.
+
+    The browser services come from the committed compose plus the profile's
+    overlay (see checkout_compose_overlay). Harbor interpolates compose files
+    only with the task's environment env, so the provider keys are added here.
+    """
+    if checkout_compose_overlay(profile) is None:
+        return
     task_file = task_dir / "task.toml"
     task = tomlkit.parse(task_file.read_text())
     task["metadata"]["browser_profile"] = profile
@@ -1765,6 +1716,8 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
             args.extend(
                 ["--agent-env", f"CHECKOUT_BROWSER_PROFILE={options['profile']}"]
             )
+            if overlay := checkout_compose_overlay(options["profile"]):
+                args.extend(["--extra-docker-compose", overlay])
         model = options.get("model") or variant.get("default_model")
         if model:
             args.extend(["--model", model])

@@ -49,6 +49,17 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     return True, "verified", "card"
 
 
+def paid_order_id(snapshot: object) -> str | None:
+    """The order ID of the payment check() verified, or None."""
+    if not check(snapshot)[0]:
+        return None
+    return next(
+        t["orderId"]
+        for t in snapshot["transactions"]
+        if isinstance(t, dict) and t.get("status") in CAPTURED
+    )
+
+
 def main() -> None:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     try:
@@ -60,6 +71,7 @@ def main() -> None:
         **payment_observations(snapshot),
         "reason": reason,
         "payment_method": method,
+        "paid_order_id": paid_order_id(snapshot),
         "payment_provider_type": "braintree_sandbox"
         if isinstance(snapshot, dict)
         else None,
@@ -82,8 +94,7 @@ def main() -> None:
         else None,
     }
     score = {"reward": int(passed)}
-    for name in ("reward", "scores"):
-        (LOG_DIR / f"{name}.json").write_text(json.dumps(score) + "\n")
+    (LOG_DIR / "reward.json").write_text(json.dumps(score) + "\n")
     (LOG_DIR / "details.json").write_text(json.dumps(details) + "\n")
 
 

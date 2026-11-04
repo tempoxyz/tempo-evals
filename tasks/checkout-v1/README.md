@@ -20,8 +20,8 @@ requires shipping. Select them only with `--task-suite checkout`; the default an
 | x402 USDC (`x402`) | `x402-usdc-discover` | `x402-usdc-directed` | `x402-cart-discover` | `x402-cart-directed` | Use x402 to pay. |
 | OUSD form (`tempo_transfer`) | `ousd-form-discover` | `ousd-form-directed` | `ousdform-cart-discover` | `ousdform-cart-directed` | Use OUSD to pay. |
 
-Every task runs on three browser profiles (`local`, `browserbase`, `kernel`),
-so one attempt per model is 108 trials.
+Every task can run on three browser profiles (`local`, `browserbase`, `kernel`);
+one attempt per model is 36 trials per profile, or 108 with `--profile all`.
 
 ## What it measures
 
@@ -56,10 +56,10 @@ Tempo account or with the prepared card token, an x402 challenge paid from the
 Base Sepolia account, and a direct Tempo stablecoin transfer. The examples cover
 every scripted rail, so they do not say which one a store accepts; card, Link
 and PayPal remain browser forms. Bundle, wallet fields and prompt match across rails, so
-in a discover task only the merchant tells the agent which method it accepts,
-with one exception: Braintree wallets carry a Mastercard test number
-(`5555555555554444`) where every other wallet has `4242424242424242`. Agents
-may install other software. No authenticated browser wallet is provided.
+in a discover task only the merchant tells the agent which method it accepts.
+Every wallet carries the same Mastercard test number (`5555555555554444`), which
+Stripe test mode and the Braintree sandbox both accept. Agents may install other
+software. No authenticated browser wallet is provided.
 
 **Setup.** Every trial runs the same wallet, Link enrollment and browser
 services before the agent starts:
@@ -67,10 +67,9 @@ services before the agent starts:
 - The wallet service creates a fresh Tempo testnet payer and confirms its faucet
   funding. The same key controls a `baseSepolia` account, listed in every wallet
   and funded only by x402 tasks.
-- Every wallet lists a sandbox card, Link, a PayPal sandbox buyer and Shopify
-  storefront access (`storefront.password`, `storefront.testCard`). Braintree
-  tasks swap in a Braintree-compatible Mastercard test card, which also supports
-  Link enrollment; that card number is the only wallet field that differs.
+- Every wallet lists the same sandbox card, Link, a PayPal sandbox buyer and
+  Shopify storefront access (`storefront.password`, `storefront.testCard`). The
+  wallet and Link services run the same files and images in every task.
 - Link enrollment (`shared/checkout/wallet/link_setup.js`) creates a unique
   identity with a synthetic sandbox card and a unique, one-use Stripe sandbox
   shared payment token (SPT) under `card.sharedPaymentToken`, expiring in two
@@ -80,8 +79,13 @@ services before the agent starts:
   without interactive Link CLI authorization, so it evaluates paying with a
   prepared credential, not obtaining one or purchase approval. The agent never
   receives the Stripe secret key.
-- A shared Compose readiness step then opens the merchant through the selected
-  browser; a broken browser connection fails setup before the agent starts.
+- A readiness service (`browser-ready`) then opens the merchant through the
+  selected browser after Link enrollment completes; a broken browser connection
+  or failed enrollment fails setup before the agent starts.
+
+Sidecar images are reproducible: the wallet, Link, merchant and browser bases are
+pinned by digest, and merchant and browser dependencies install from
+`npm-shrinkwrap.json` with `npm ci`.
 
 Checkout enables Codex's live web search; Claude Code keeps its native research
 tools. Both can fetch documentation and install dependencies through the
@@ -149,7 +153,8 @@ charges without a delivery.
 **Braintree.** Uses an explicitly sandbox gateway; merchant keys stay in the
 sidecar. The verifier searches sandbox transactions by a unique trial reference,
 even when a checkout response was lost, and requires exactly one unrefunded card
-sale for USD 12 that is submitted for settlement, settling or settled;
+sale for the order total (USD 12, or USD 33 in the cart) that is submitted for
+settlement, settling or settled;
 authorization alone fails. The reference must match the shipping order. Trials
 have independent orders and wallet state, so shared merchant credentials do not
 serialize concurrent runs. Retries count sale submissions,
@@ -201,14 +206,15 @@ OUSD merchant with the same shipping form and `POST /shipping`. Instead of a 402
 challenge, the order's payment page (`/pay`) is an HTML checkout showing the
 total, the OUSD token, Tempo testnet and a fresh deposit address for that order.
 The buyer sends the transfer from their wallet and presses Confirm payment
-(`POST /pay/confirm`); the store checks the deposit balance onchain and records
-the order once it holds the total. A transfer that is never confirmed is money
-spent without an order. The verifier reads every issued deposit address and
-requires exactly the total at the paid order's address and nothing anywhere
-else. Retries count Confirm payment requests beyond the first; overlapping confirms
-for one order are handled one at a time, so an order is recorded once. It
-measures the same wallet and token as MPP OUSD, paid through a form instead of a
-protocol.
+(`POST /pay/confirm`); the store checks the deposit balance onchain, waiting up
+to 10 seconds for a sent transfer to arrive, and records the order once it holds
+the total; otherwise it answers 409 and the buyer can confirm again. A transfer
+that is never confirmed is money spent without an order. The verifier reads
+every issued deposit address and requires exactly the total at the paid order's
+address and nothing anywhere else. Retries count Confirm payment requests beyond
+the first; overlapping confirms for one order are handled one at a time, so an
+order is recorded once. It measures the same wallet and token as MPP OUSD, paid
+through a form instead of a protocol.
 
 **x402.** Copies the MPP OUSD merchant and changes only the advertised payment:
 the same shipping form, `POST /shipping` and per-order `/buy` URL charge through
@@ -217,8 +223,9 @@ mppx's `evm.charge` with an x402 challenge for Base Sepolia USDC
 its order by the route scope and settled through the public facilitator
 (`X402_FACILITATOR_URL`, default `https://x402.org/facilitator`). Every x402
 order settles for exactly 1 USDC: the notebook store shows $1.00, while the cart
-shows its usual $33 and its 402 challenge asks for 1 USDC. Prompts keep the
-common spending limits. Compare x402 spend in USDC, not against other merchants.
+shows its usual $33 and its 402 challenge asks for 1 USDC, with a description
+saying the order settles for 1 USDC. Prompts keep the common spending limits.
+Compare x402 spend in USDC, not against other merchants.
 
 Before reporting healthy, the merchant sends 1 USDC from the funding wallet
 (`X402_FUNDING_PRIVATE_KEY`, kept in the sidecar) to the trial buyer through the
@@ -336,9 +343,10 @@ stays blank rather than becoming zero or a perfect score.
 
 Results are not comparable across these unpublished v1 changes: required
 shipping (earlier runs were payment-only), the current quality formula (recompute
-from saved trajectories), and the shared tool bundle (earlier runs exported
-`mpp_client_profile=cold`). Runs without profile metadata keep the `browser-mcp`
-label.
+from saved trajectories), the shared tool bundle (earlier runs exported
+`mpp_client_profile=cold`), and the conditional contact-email prompt line with
+payment-attempt retry counting and trial-attribute Shopify matching (every task
+digest changed). Runs without profile metadata keep the `browser-mcp` label.
 
 ## Running
 
@@ -373,21 +381,23 @@ npm run bench:daytona:oracle -- --task-suite checkout --profile all \
 Use the same flags with `bench:daytona:agent:dev` for one model attempt per task
 (`--model` picks it), adding `--agent-concurrency` at or below the trial
 concurrency. Run the six-model baseline (three models per provider, with Claude
-Code and Codex versions pinned through native Harbor agent kwargs):
+Code and Codex versions pinned through native Harbor agent kwargs) on the local
+browser profile:
 
 ```sh
-npm run bench:production -- --task-suite checkout --profile all \
-  --models-config config/models.checkout.yaml --n-attempts 1 \
+npm run bench:production -- --task-suite checkout --profile local \
+  --models-config config/models.checkout.yaml --n-attempts 5 \
   --concurrency 2 --agent-concurrency 2 --env-file /path/to/.env.local-checkout \
   --agent-image "$(npm run --silent agent-image:ref)" \
   --verifier-image "$(npm run --silent verifier-image:ref)"
 ```
 
-The full matrix is 36 tasks × 3 profiles × 6 models = 648 trials per attempt;
-`pass_5` needs `--n-attempts 5` (3,240 trials). Use
-`--n-attempts 1 --max-retries 0` to keep one native attempt per cell: Harbor deletes earlier
-exception-attempt directories when it retries, so rerun infrastructure failures
-separately to keep their evidence apart from agent failures.
+The matrix is 36 tasks × 6 models = 216 trials per attempt and profile; `pass_5`
+needs `--n-attempts 5` (1,080 trials on one profile, 3,240 with `--profile all`).
+Checkout runs default to `--max-retries 0`, keeping one native attempt per cell:
+Harbor deletes earlier exception-attempt directories when it retries, so rerun
+infrastructure failures separately to keep their evidence apart from agent
+failures.
 
 Narrow a run with `--task-filter`: `'*-discover'`, `'*-directed'`, `'*-cart-*'`,
 or one pair such as `'stripe-card-*'`; no prompt-mode flag is needed. Concurrency
@@ -400,21 +410,27 @@ the runner does not otherwise cap concurrency.
 `--profile local` (also the default, including the `docs` default),
 `browserbase` or `kernel` vary browser infrastructure while keeping the browser
 tool identical; `--profile all` launches three ordinary Harbor jobs with all 36
-tasks each, and model trials keep the shared pair ID. Profiles are staged at
-run time by the existing task-copy pipeline, with no extra task directories or
-runner, and other suites' profiles are unaffected.
+tasks each, and model trials keep the shared pair ID. The committed tasks are the
+local profile: their Compose files build the browser from `environment/browser/`
+and run as published. A cloud profile adds one checked-in Compose overlay
+(`shared/checkout/browser/profiles/<profile>.yaml`) through Harbor's
+`extra_docker_compose` and adds its provider keys to the staged task
+environment; task files and other suites' profiles are unchanged.
 
-- Every profile extends the same task-pinned Playwright MCP image at
-  `http://browser:8931/mcp`, with the same tools, US English locale, UTC
-  timezone and 1280x720 viewport. Page-published WebMCP tools are disabled.
+- Every profile runs the same browser build, on the digest-pinned Playwright MCP
+  image, at `http://browser:8931/mcp`, with the same tools, US English locale,
+  UTC timezone and 1280x720 viewport. Page-published WebMCP tools are disabled.
   Browser output files are shared read-only with the agent at the absolute
   paths MCP returns. Prompts, wallets, merchants, oracles, verifiers and rewards
   are identical; agents are not restricted to the browser.
-- `shared/checkout/browser/` holds the common page hook and cloud session
-  sidecar. The hook routes `http://merchant:3000` requests, including POST
-  bodies, cookies and redirects, through the local MCP process, so a cloud
-  browser reaches its trial's private merchant without a public URL; hosted
-  Stripe and PayPal traffic runs in the selected browser.
+- `shared/checkout/browser/` holds the browser build (the pinned Playwright MCP
+  image plus the common page hook, readiness check and cloud session sidecar);
+  `npm run sync` copies it into every task's `environment/browser/`, because
+  Harbor uploads only the environment directory. The hook routes
+  `http://merchant:3000` requests, including POST bodies, cookies and redirects,
+  through the local MCP process, so a cloud browser reaches its trial's private
+  merchant without a public URL; hosted Stripe and PayPal traffic runs in the
+  selected browser.
 - Each cloud trial creates its own provider session. API keys and the
   authenticated upstream CDP URL stay in a trusted sidecar that relays only that
   trial's CDP connection. Sessions are released when Compose stops, with a
@@ -423,28 +439,33 @@ runner, and other suites' profiles are unaffected.
   headless, non-stealth browsers. Chromium versions and network latency can
   still differ: the matrix compares infrastructure through a common tool, not
   identical browser binaries.
-- Staged metadata records `browser_profile`, and the native agent config keeps
-  `CHECKOUT_BROWSER_PROFILE` so it survives removal of the staged files. Setup
+- The native agent config records `CHECKOUT_BROWSER_PROFILE` for every profile,
+  and staged cloud tasks also record `browser_profile`; exports use the agent
+  setting first, and runs without either keep the `browser-mcp` label. Setup
   time stays separate from agent execution time.
 
 ## Authoring
 
-The nine notebook discover tasks own their merchant, wallet service
-(`environment/wallet/`), oracle and payment check (`tests/payment_check.py`);
-edit those there. Shared files are canonical in `shared/checkout/`, and
-`npm run sync` overwrites their copies in every task: Link setup
-(`wallet/link_setup.js`), the shipping store, fixtures and `tests/check.py`
+The nine notebook discover tasks own their merchant, oracle and payment check
+(`tests/payment_check.py`); edit those there. Shared files are canonical in
+`shared/checkout/`, and `npm run sync` overwrites their copies in every task: the
+wallet and Link services (`wallet/`, into `environment/wallet/` and
+`environment/link/`), the browser build (`browser/`, into
+`environment/browser/`), the shipping store, fixtures and `tests/check.py`
 (`shipping/`), the grader, observation and quality criteria (`tests/`), and the
 tool bundle (`agent/`, into `environment/agent/` with its install appended to the
 generated agent Dockerfile). Sync then generates the rest from
 `config/tasks.yaml`:
 `checkout.directed` names each directed peer, its method and instruction;
 `checkout.cart` maps each source to a cart prefix, from which it builds
-`<prefix>-discover` and `<prefix>-directed` with `shared/checkout/cart/`;
-`checkout.order_totals` overrides a source's order total. Within a pair only the
-task name, provenance marker, prompt-condition metadata and payment instruction
-differ. Generated copies are marked as generated in GitHub diffs. Task-specific
-correctness checks stay in each task.
+`<prefix>-discover` and `<prefix>-directed` with `shared/checkout/cart/` (its
+README is a template; per-method wording is `CHECKOUT_CART_METHODS` in
+`scripts/sync_shared.py`); `checkout.order_totals` overrides a source's order
+total. Within a pair only the task name, provenance marker, prompt-condition
+metadata and payment instruction differ; generated copies also omit the source's
+verifier unit tests (`tests/check_test.py`). Generated tasks and the synced
+wallet, Link and browser copies are marked as generated in GitHub diffs.
+Task-specific correctness checks stay in each task.
 
 Scaffold a new merchant (placeholders, not runnable until completed):
 

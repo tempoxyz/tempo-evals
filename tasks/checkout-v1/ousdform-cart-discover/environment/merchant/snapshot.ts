@@ -13,8 +13,8 @@ const deposits = await Promise.all(read(dir + '/deposits.jsonl').map(async row =
   orderId: row.orderId, address: row.address,
   balance: (await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [row.address] })).toString(),
 })));
-// A payment attempt is a Confirm payment request; confirming before the
-// transfer arrives is a retry.
+// A payment attempt is a Confirm payment request; confirming before sending the
+// transfer is a retry. The store waits up to 10 s for a sent transfer to show.
 const confirms = read(dir + '/attempts.jsonl').length;
 writeFileSync(dir + '/snapshot.json', JSON.stringify({
   shippingOrders: shippingOrders(), ousd, decimals, deposits,

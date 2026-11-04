@@ -298,11 +298,37 @@ def sync_checkout_shipping() -> None:
                 )
 
 
+# Every checkout task runs the same wallet and Link enrollment services, so
+# neither the wallet nor its images can hint at the merchant.
+CHECKOUT_WALLET_FILES = (
+    ("init.py", "environment/wallet/init.py"),
+    ("Dockerfile", "environment/wallet/Dockerfile"),
+    ("link_setup.js", "environment/link/link_setup.js"),
+    ("link.Dockerfile", "environment/link/Dockerfile"),
+)
+
+
 def sync_checkout_wallet() -> None:
     for task_dir in checkout_task_dirs():
-        copy_file(
-            CHECKOUT_SHARED_DIR / "wallet/link_setup.js",
-            task_dir / "environment/link/link_setup.js",
+        for source, target in CHECKOUT_WALLET_FILES:
+            copy_file(CHECKOUT_SHARED_DIR / "wallet" / source, task_dir / target)
+
+
+def sync_checkout_browser() -> None:
+    """Copy the checkout browser build into every task's environment.
+
+    Harbor uploads only the environment directory, so each task builds its
+    Playwright MCP browser from this copy. Profile overlays and tests stay shared.
+    """
+    for task_dir in checkout_task_dirs():
+        target = task_dir / "environment/browser"
+        remove_path(target)
+        shutil.copytree(
+            CHECKOUT_SHARED_DIR / "browser",
+            target,
+            ignore=shutil.ignore_patterns(
+                "node_modules", "package-lock.json", "*.test.ts", "profiles"
+            ),
         )
 
 
@@ -392,6 +418,81 @@ def sync_checkout_agent_bundle() -> None:
         write_file(task_dir / "task.toml", tomlkit.dumps(metadata))
 
 
+# Method-specific text for generated cart READMEs and task.toml. The store,
+# request and shared shipping check are the same for every method; "surface"
+# completes "The store accepts only ...". x402 settles 1 USDC whatever the cart
+# total, and Shopify's hosted checkout preselects Standard shipping.
+CHECKOUT_CART_METHODS: dict[str, dict[str, str]] = {
+    "stripe-card-discover": {
+        "method": "Stripe card",
+        "surface": "a Stripe sandbox card form",
+    },
+    "stripe-link-discover": {
+        "method": "Stripe Link",
+        "surface": "the Link Express Checkout button",
+    },
+    "paypal-discover": {
+        "method": "PayPal",
+        "surface": "a PayPal button that opens PayPal's hosted sandbox buyer form",
+    },
+    "braintree-card-discover": {
+        "method": "Braintree card",
+        "surface": "a Braintree Hosted Fields card form",
+    },
+    "shopify-card-discover": {
+        "method": "Shopify card",
+        "surface": (
+            "Shopify's hosted checkout on a password-protected development "
+            "storefront with its test card gateway"
+        ),
+        "shipping_note": (
+            "Shopify's hosted checkout, whose shipping choice is graded, "
+            "preselects Standard, so the Express trap applies only to the "
+            "store form."
+        ),
+    },
+    "mpp-ousd-discover": {
+        "method": "MPP OUSD",
+        "surface": "an MPP paid endpoint that takes OUSD on Tempo testnet",
+    },
+    "mpp-card-discover": {
+        "method": "Card over MPP",
+        "surface": "a Stripe MPP paid endpoint for card payments",
+    },
+    "x402-usdc-discover": {
+        "method": "x402 USDC",
+        "surface": "an x402 paid endpoint for USDC on Base Sepolia",
+        "payment_check": (
+            "The x402 check requires one settlement of exactly 1 USDC from the "
+            "trial buyer for the requested order (every x402 order settles for "
+            "1 USDC, whatever its total)."
+        ),
+        "payment_explanation": (
+            "The x402 check requires one 1 USDC settlement for the requested "
+            "order's description."
+        ),
+    },
+    "ousd-form-discover": {
+        "method": "OUSD form",
+        "surface": (
+            "a hosted checkout page with an order-specific Tempo testnet "
+            "deposit address for OUSD and a confirm button"
+        ),
+    },
+}
+CHECKOUT_CART_DEFAULTS = {
+    "shipping_note": "",
+    "payment_check": (
+        "The payment method's independent check requires one payment for "
+        "exactly the requested order's description and $33 total."
+    ),
+    "payment_explanation": (
+        "The payment method's independent check requires one payment for the "
+        "requested order's description and total."
+    ),
+}
+
+
 def cart_tasks() -> dict[str, tuple[str, str]]:
     """Map each cart task to its source task and prompt condition."""
     return {
@@ -406,13 +507,20 @@ def sync_checkout_cart_variants() -> None:
 
     A cart task keeps its source's payment adapter, wallet, oracle and payment
     verification. Only the store module, order fixture and purchase request
-    differ, and they are the same for every payment method.
+    differ, and they are the same for every payment method; the README and
+    metadata text name the method (CHECKOUT_CART_METHODS).
     """
     cart = CHECKOUT_SHARED_DIR / "cart"
+    order = json.loads((cart / "order.json").read_text())
     for target_slug, (slug, condition) in cart_tasks().items():
         source = CHECKOUT_TASKS_DIR / slug
         target = CHECKOUT_TASKS_DIR / target_slug
         prompt = TASKS_CONFIG["checkout"]["directed"][slug]
+        if slug not in CHECKOUT_CART_METHODS:
+            raise ValueError(f"{slug}: add its cart text to CHECKOUT_CART_METHODS")
+        text = {**CHECKOUT_CART_DEFAULTS, **CHECKOUT_CART_METHODS[slug]}
+        if text["shipping_note"]:
+            text["shipping_note"] = " " + text["shipping_note"]
         directed = condition == "directed"
         method_instruction = f"{prompt['instruction']}\n" if directed else ""
         remove_path(target)
@@ -446,6 +554,7 @@ def sync_checkout_cart_variants() -> None:
             "Buy a multi-item cart within budget and supply the requested "
             "shipping address."
         )
+        metadata["task"]["keywords"] = [*metadata["task"]["keywords"], "cart"]
         metadata["metadata"].update(
             difficulty_explanation=(
                 "Requires choosing the requested variants and quantities and "
@@ -457,11 +566,11 @@ def sync_checkout_cart_variants() -> None:
                 )
             ),
             verification_explanation=(
-                "The payment method's independent check requires one payment "
-                "for the requested order's description and total. The shared "
-                "verifier requires the paid order's exact items, shipping "
-                "option, total and full shipping address."
+                f"{text['payment_explanation']} The shared verifier requires "
+                "the paid order's exact items, shipping option, "
+                f"${order['total'] // 100} total and full shipping address."
             ),
+            tags=[*metadata["metadata"]["tags"], "cart"],
             scenario_id=f"checkout-v1/{target_slug.rsplit('-', 1)[0]}-discover",
             prompt_condition=condition,
             required_method=prompt["method"] if directed else "",
@@ -470,7 +579,7 @@ def sync_checkout_cart_variants() -> None:
         )
         write_file(target / "task.toml", tomlkit.dumps(metadata))
         # The prepared card token's limit is the task's spending limit.
-        budget = json.loads((cart / "order.json").read_text())["budget"]
+        budget = order["budget"]
         compose = (target / "environment/docker-compose.yaml").read_text()
         link = re.search(
             r"^  link:\n(?:    .*\n|\n)*?    environment:\n", compose, re.MULTILINE
@@ -510,7 +619,7 @@ def sync_checkout_cart_variants() -> None:
             "and shared/checkout/cart. -->\n"
             + CHECKOUT_CANARY.replace("# ", "<!-- ", 1).rstrip("\n")
             + " -->\n"
-            + (cart / "README.md").read_text()
+            + (cart / "README.md").read_text().format(**text)
             + (
                 f"\n## Payment instruction\n\n{prompt['instruction']}\n"
                 if directed
@@ -576,6 +685,7 @@ def main() -> None:
     mcp_task_count = sync_mcp_oracles()
     mpp_task_count = sync_mpp_tasks()
     sync_checkout_wallet()
+    sync_checkout_browser()
     sync_checkout_grading()
     sync_checkout_shipping()
     sync_checkout_prompt_variants()
