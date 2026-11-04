@@ -2,7 +2,7 @@ import { createShipping } from './shipping.js';
 const shipping = createShipping('/buy');
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, appendFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, appendFileSync, writeFileSync, readFileSync } from 'node:fs';
 import { createClient, http as rpcHttp } from 'viem';
 import { Chain } from 'viem/tempo';
 import { Mppx, NodeListener, Request as ServerRequest, tempo } from 'mppx/server';
@@ -36,6 +36,22 @@ http.createServer((request, response) => {
   }));
 }).listen(3001, '127.0.0.1');
 
+// A paid order's payment URL returns its stored order and receipt, as a real
+// store's order page does, instead of a fresh challenge that would charge again.
+function paidOrder(orderId: string): Record<string, string> | undefined {
+  try {
+    return readFileSync(log, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).find(row => row.orderId === orderId);
+  } catch {
+    return undefined;
+  }
+}
+function sendPaidOrder(response: http.ServerResponse, { receipt, paymentResponse, ...order }: Record<string, string>) {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (receipt) headers['payment-receipt'] = receipt;
+  if (paymentResponse) headers['payment-response'] = paymentResponse;
+  response.writeHead(200, headers).end(JSON.stringify(order));
+}
+
 http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
   const path = new URL(request.url || '/', 'http://merchant:3000').pathname;
@@ -52,6 +68,8 @@ http.createServer(async (request, response) => {
     try {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
+      const prior = paidOrder(shippingOrder.id);
+      if (prior) return sendPaidOrder(response, prior);
       const incoming = ServerRequest.fromNodeListener(request, response);
       const paid = await proxy(shippingOrder).fetch(new Request(`http://merchant:3000/notebook/deliver?order_id=${shippingOrder.id}`, incoming));
       if (paid.ok) {

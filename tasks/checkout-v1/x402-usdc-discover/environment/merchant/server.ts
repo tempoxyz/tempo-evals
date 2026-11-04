@@ -49,6 +49,22 @@ if (!existsSync(`${dir}/funding.json`)) {
 writeFileSync(`${dir}/merchant.json`, JSON.stringify({ recipient, usdc, buyer }));
 const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $'+(total / 100).toFixed(2)+'</p><a href="/buy">Buy notebook</a></main></body></html>';
 
+// A paid order's payment URL returns its stored order and receipt, as a real
+// store's order page does, instead of a fresh challenge that would charge again.
+function paidOrder(orderId: string): Record<string, string> | undefined {
+  try {
+    return readFileSync(log, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).find(row => row.orderId === orderId);
+  } catch {
+    return undefined;
+  }
+}
+function sendPaidOrder(response: http.ServerResponse, { receipt, paymentResponse, ...order }: Record<string, string>) {
+  const headers: Record<string, string> = { 'content-type': 'application/json' };
+  if (receipt) headers['payment-receipt'] = receipt;
+  if (paymentResponse) headers['payment-response'] = paymentResponse;
+  response.writeHead(200, headers).end(JSON.stringify(order));
+}
+
 http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
   const path = new URL(request.url || '/', 'http://merchant:3000').pathname;
@@ -65,6 +81,8 @@ http.createServer(async (request, response) => {
     try {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
+      const prior = paidOrder(shippingOrder.id);
+      if (prior) return sendPaidOrder(response, prior);
       const result = await charge(shippingOrder)(ServerRequest.fromNodeListener(request, response));
       if (result.status === 402) {
         // Advertise only x402: drop the native MPP challenge and its MPP-specific
