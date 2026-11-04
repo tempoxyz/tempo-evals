@@ -47,7 +47,6 @@ if (!existsSync(`${dir}/funding.json`)) {
   writeFileSync(`${dir}/funding.json`, JSON.stringify({ buyer, amount: amount.toString(), transaction }));
 }
 writeFileSync(`${dir}/merchant.json`, JSON.stringify({ recipient, usdc, buyer }));
-const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $'+(total / 100).toFixed(2)+'</p><a href="/buy">Buy notebook</a></main></body></html>';
 
 // A paid order's payment URL returns its stored order and receipt, as a real
 // store's order page does, instead of a fresh challenge that would charge again.
@@ -56,6 +55,22 @@ function paidOrder(orderId: string): Record<string, string> | undefined {
     return readFileSync(log, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).find(row => row.orderId === orderId);
   } catch {
     return undefined;
+  }
+}
+// Requests for one order are handled one at a time, so an overlapping retry
+// waits for the charge in flight and then gets its receipt instead of paying again.
+const orderLocks = new Map<string, Promise<void>>();
+async function withOrderLock<T>(orderId: string, run: () => Promise<T>): Promise<T> {
+  const previous = orderLocks.get(orderId) ?? Promise.resolve();
+  let release!: () => void;
+  const current = previous.then(() => new Promise<void>(resolve => { release = resolve; }));
+  orderLocks.set(orderId, current);
+  await previous;
+  try {
+    return await run();
+  } finally {
+    release();
+    if (orderLocks.get(orderId) === current) orderLocks.delete(orderId);
   }
 }
 function sendPaidOrder(response: http.ServerResponse, { receipt, paymentResponse, ...order }: Record<string, string>) {
@@ -69,7 +84,6 @@ http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
   const path = new URL(request.url || '/', 'http://merchant:3000').pathname;
   if (path === '/health') return response.writeHead(200).end('ok');
-  if (path === '/' && request.method === 'GET') return response.writeHead(200, { 'content-type': 'text/html' }).end(page);
   if (path === '/buy' && request.method === 'GET') {
     if (request.headers['payment-signature'] || request.headers['x-payment'] || /^Payment\s/i.test(request.headers.authorization || '')) {
       try {
@@ -81,23 +95,25 @@ http.createServer(async (request, response) => {
     try {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
-      const prior = paidOrder(shippingOrder.id);
-      if (prior) return sendPaidOrder(response, prior);
-      const result = await charge(shippingOrder)(ServerRequest.fromNodeListener(request, response));
-      if (result.status === 402) {
-        // Advertise only x402: drop the native MPP challenge and its MPP-specific
-        // problem body, and return the x402 payment requirements instead.
-        const headers = new Headers(result.challenge.headers);
-        headers.delete('www-authenticate');
-        headers.set('content-type', 'application/json');
-        const required = headers.get('payment-required');
-        const body = required ? Buffer.from(required, 'base64').toString('utf8') : '{}';
-        return NodeListener.sendResponse(response, new Response(body, { status: 402, headers }));
-      }
-      const order = { orderId: shippingOrder.id, item: shippingOrder.description, quantity: 1, amount: (chargeCents / 100).toFixed(2), currency: 'USD' };
-      const paid = result.withReceipt(Response.json(order));
-      appendFileSync(log, JSON.stringify({ ...order, receipt: paid.headers.get('payment-receipt'), paymentResponse: paid.headers.get('payment-response') }) + '\n');
-      return NodeListener.sendResponse(response, paid);
+      return await withOrderLock(shippingOrder.id, async () => {
+        const prior = paidOrder(shippingOrder.id);
+        if (prior) return sendPaidOrder(response, prior);
+        const result = await charge(shippingOrder)(ServerRequest.fromNodeListener(request, response));
+        if (result.status === 402) {
+          // Advertise only x402: drop the native MPP challenge and its MPP-specific
+          // problem body, and return the x402 payment requirements instead.
+          const headers = new Headers(result.challenge.headers);
+          headers.delete('www-authenticate');
+          headers.set('content-type', 'application/json');
+          const required = headers.get('payment-required');
+          const body = required ? Buffer.from(required, 'base64').toString('utf8') : '{}';
+          return NodeListener.sendResponse(response, new Response(body, { status: 402, headers }));
+        }
+        const order = { orderId: shippingOrder.id, item: shippingOrder.description, quantity: 1, amount: (chargeCents / 100).toFixed(2), currency: 'USD' };
+        const paid = result.withReceipt(Response.json(order));
+        appendFileSync(log, JSON.stringify({ ...order, receipt: paid.headers.get('payment-receipt'), paymentResponse: paid.headers.get('payment-response') }) + '\n');
+        return NodeListener.sendResponse(response, paid);
+      });
     } catch (error) {
       console.error(error);
       response.writeHead(502).end('Checkout temporarily unavailable');

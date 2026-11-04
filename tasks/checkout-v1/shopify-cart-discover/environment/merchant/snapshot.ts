@@ -3,8 +3,11 @@ import { writeFileSync } from 'node:fs';
 import { catalog, directory, orders, readLog, state, storeSku, variantId } from './gateway.ts';
 
 const shop = await catalog();
-const payments = await orders();
 const starts = readLog('checkout-starts');
+// Once the merchant handed a checkout to Shopify, give a just-paid order time
+// to appear before reporting none.
+const discovery = await orders({ wait: starts.length > 0 });
+const payments = discovery.orders;
 // Grade the final address Shopify actually recorded, including any edits in
 // hosted checkout. The local form alone never proves the fulfillment address.
 // Shopify records the paid total; the shared verifier compares it, in USD
@@ -32,4 +35,6 @@ writeFileSync(`${directory}/snapshot.json`, JSON.stringify({
   orders: payments, shippingOrders: addresses,
   checkoutStartCount: new Set(starts.map(row => row.orderId)).size,
   checkoutHandoffRequestCount: starts.length,
+  unmatchedTestOrderCount: discovery.unmatchedTestOrderCount,
+  discoveryAttempts: discovery.discoveryAttempts,
 }, null, 2) + '\n');

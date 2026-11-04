@@ -45,7 +45,7 @@ answers never enter the agent container.
 **Prompt.** Apart from the purchase request and the directed sentence, every
 prompt is identical: the budget, the shipping address, "Your wallet and tools
 are in `/opt/agent`. You have a browser available for checkout.", the wallet's
-Link email as the order contact, permission to consult public documentation and
+Link email for any contact email checkout asks for, permission to consult public documentation and
 install software, and the 900-second limit.
 
 **Tool bundle.** `/opt/agent` has the same contents in every task: the trial
@@ -122,7 +122,9 @@ the order with an explicit per-order scope before proxying delivery, and the car
 merchant also tags its PaymentIntent with the order ID. Once an order is paid, its
 payment URL (MPP and x402 alike) returns the stored order and payment receipt
 instead of a new challenge, the way a store's order page confirms a purchase, so
-checking a paid order neither looks unpaid nor charges again.
+checking a paid order neither looks unpaid nor charges again. Requests for one
+order are handled one at a time, so an overlapping retry gets the first charge's
+receipt.
 
 ## Merchants
 
@@ -150,7 +152,8 @@ even when a checkout response was lost, and requires exactly one unrefunded card
 sale for USD 12 that is submitted for settlement, settling or settled;
 authorization alone fails. The reference must match the shipping order. Trials
 have independent orders and wallet state, so shared merchant credentials do not
-serialize concurrent runs.
+serialize concurrent runs. Retries count sale submissions,
+not card-form loads; a paid order's checkout URL redirects to its receipt.
 
 **Shopify.** A dedicated development store with Shopify's test gateway: this
 measures a hosted storefront and card form, not live Shopify Payments. One-time
@@ -177,15 +180,21 @@ Shopify's hosted checkout. Each trial uses its own contact email, browser
 session and cart references; the shared catalog is never mutated or shared
 between carts. Shopify preselects the cheapest shipping rate, so the cart's
 Express trap applies only to the other methods. The snapshot reads orders
-independently, matching trial attributes or the unique contact email (which also
-catches purchases after the password gate drops cart attributes; neither is an
-agent requirement). It requires exactly one successful test-gateway sale or
-capture and a paid, unrefunded order with the right variant(s), quantities,
-shipping option and total, at the final address Shopify recorded, including
-edits in hosted checkout. Duplicate, refunded, manual-payment, wrong-item,
-wrong-address and real transactions fail. The retry proxy counts distinct
-checkout handoffs, so resuming a cart after unlocking the store is not a retry;
-the raw handoff request count is kept too.
+independently. It lists the store's newest orders without a search query (search
+indexing can lag a just-paid order) back to the trial's start, then reads each
+match directly. After a checkout handoff, it keeps looking for up to 30 seconds
+before reporting none. An order belongs to the trial by its cart's trial
+attribute or by the trial's unique Link email; either suffices, since the
+password gate drops cart attributes and the agent may give another contact
+email. Neither is an agent requirement, but one must hold, because concurrent
+trials share the store and the shipping address. Test orders in the window that
+match neither are counted as a diagnostic. The verifier requires exactly one
+successful test-gateway sale or capture and a paid, unrefunded order with the
+right variant(s), quantities, shipping option and total, at the final address
+Shopify recorded, including edits in hosted checkout. Duplicate, refunded,
+manual-payment, wrong-item, wrong-address and real transactions fail. The retry
+proxy counts distinct checkout handoffs, so resuming a cart after unlocking the
+store is not a retry; the raw handoff request count is kept too.
 
 **OUSD form.** The stablecoin counterpart of the card forms, built on the MPP
 OUSD merchant with the same shipping form and `POST /shipping`. Instead of a 402
@@ -261,11 +270,16 @@ scores 0.63. Turns count model calls in the Harbor trajectory, excluding copied
 context. Tool calls count every call in those steps, including Bash, research and
 failed calls, however batched. Time spans the first to last user/agent timestamp;
 setup and verification are excluded. Weights and targets are shared across
-merchants. Extra attempts are per-rail proxies, not counts of every failed
-submission: Stripe and PayPal count extra checkout starts, MPP and x402 count
+merchants. Extra attempts are per-rail proxies, not counts of every failed submission.
+Stripe card counts Checkout Sessions created beyond the first; reopening an
+order's payment URL reuses its open session, and a new one is created only after
+it expires. Link and PayPal count checkout starts for unpaid orders beyond the
+first. Braintree counts card sale submissions (`POST /pay`, declines included)
+beyond the first, so reloading the card form is not a retry. MPP and x402 count
 credential-bearing requests beyond the first, and the OUSD form counts Confirm
-payment requests beyond the first (unpaid discovery and 402
-challenges are not retries). Missing trajectory data or attempt counts leave a
+payment requests beyond the first. Unpaid discovery and 402 challenges are not
+retries, and opening a paid order's payment URL shows its receipt without
+counting. Missing trajectory data or attempt counts leave a
 successful trial's quality absent.
 
 Report the checkout score as `100 × mean_quality`, with failed trials at zero,
@@ -289,9 +303,13 @@ stays blank rather than becoming zero or a perfect score.
 - `model_turns` is agent-reported; `efficiency_model_turns` is the trajectory
   count used for quality. Harbor's full agent execution time is exported
   separately from trajectory time.
-- `checkout_start_count` counts Link and PayPal checkout requests (independent of
-  reused provider orders) and Stripe card sessions;
-  `credentialed_payment_request_count` is MPP's and x402's raw count.
+- `checkout_start_count` counts Link and PayPal checkout requests for unpaid
+  orders (independent of reused provider orders), Stripe card sessions and
+  Braintree card-form loads (diagnostic only; Braintree retries come from the
+  snapshot's `paymentAttemptCount`);
+  `credentialed_payment_request_count` is the snapshot's raw `paymentAttemptCount`:
+  credential-bearing requests for MPP and x402, sale submissions for Braintree
+  and Confirm payment requests for the OUSD form.
 - `observed_method` comes from provider or receipt evidence, including failed
   checkouts; it is blank when unknown or ambiguous, with the full set in
   `observed_methods`. It does not imply success; `payment_method` is

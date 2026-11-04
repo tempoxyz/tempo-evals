@@ -27,4 +27,4 @@ for (const transaction of found.values()) {
     paymentMethodType: transaction.paymentInstrumentType, refundIds: transaction.refundIds ?? [],
   });
 }
-writeFileSync(`${directory}/snapshot.json`, JSON.stringify({ provider: 'braintree_sandbox', trialId, shippingOrders: shippingOrders(), transactions, checkoutStartCount: readLog('checkout-starts').length }, null, 2) + '\n');
+writeFileSync(`${directory}/snapshot.json`, JSON.stringify({ provider: 'braintree_sandbox', trialId, shippingOrders: shippingOrders(), transactions, checkoutStartCount: readLog('checkout-starts').length, paymentAttemptCount: readLog('payment-attempts').length }, null, 2) + '\n');

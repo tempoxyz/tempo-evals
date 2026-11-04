@@ -25,6 +25,22 @@ def money(value, expected):
         return False
 
 
+def belongs(order, snapshot):
+    """Match the trial's cart attribute or its unique Link email.
+
+    Either suffices: the storefront password gate drops cart attributes, and
+    an attributed order may carry another contact email. One is still required
+    because concurrent trials share the store and the shipping address.
+    """
+    email, trial_email = order.get("email"), snapshot.get("email")
+    return order.get("trialReference") == snapshot.get("trialId") or (
+        isinstance(email, str)
+        and isinstance(trial_email, str)
+        and bool(trial_email)
+        and email.casefold() == trial_email.casefold()
+    )
+
+
 def check(snapshot):
     if not isinstance(snapshot, dict) or not isinstance(snapshot.get("orders"), list):
         return False, "missing_merchant_snapshot", None
@@ -53,7 +69,7 @@ def check(snapshot):
         or order.get("trialReference") not in (None, snapshot["trialId"])
         or not order.get("id")
         or order.get("orderId") != order["id"]
-        or order.get("email") != snapshot.get("email")
+        or not belongs(order, snapshot)
         or order.get("test") is not True
         or charge.get("test") is not True
         or not charge.get("id")
@@ -123,6 +139,11 @@ def main():
         ),
         "extra_checkout_attempts": max(0, count - 1)
         if type(count) is int and count >= 0
+        else None,
+        # Diagnostic only: test orders in the trial's window that the snapshot
+        # could not attribute to this trial.
+        "unmatched_test_order_count": snapshot.get("unmatchedTestOrderCount")
+        if isinstance(snapshot, dict)
         else None,
     }
     score = {"reward": int(passed)}

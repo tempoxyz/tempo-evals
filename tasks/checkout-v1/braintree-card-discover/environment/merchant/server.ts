@@ -30,6 +30,8 @@ http.createServer(async (request, response) => {
     const order = shipping.get(request);
     if (!order) return json(response, 400, { error: 'Submit a shipping address first' });
     if (url.pathname === '/checkout' && request.method === 'GET') {
+      // A paid order's payment URL confirms the purchase instead of offering another charge.
+      if (readLog('transactions').some(row => row.orderId === order.id)) return response.writeHead(303, { location: `/complete?order_id=${order.id}` }).end();
       appendFileSync(`${directory}/checkout-starts.jsonl`, JSON.stringify({ orderId: order.id }) + '\n');
       const { clientToken } = await gateway.clientToken.generate({});
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(`<!doctype html><html lang="en"><meta charset="utf-8"><title>Pay for notebook</title>
@@ -57,6 +59,8 @@ braintree.client.create({authorization:${JSON.stringify(clientToken)}}).then(cli
       // Sandbox static fake-* nonces bypass card entry; require a browser-tokenized card.
       if (typeof nonce !== 'string' || !nonce || nonce.startsWith('fake-')) return json(response, 400, { error: 'Provide a tokenized card' });
       busy.add(order.id);
+      // Retries count sale submissions, declines included, not page loads.
+      appendFileSync(`${directory}/payment-attempts.jsonl`, JSON.stringify({ orderId: order.id }) + '\n');
       try {
         const result = await gateway.transaction.sale({ amount: (order.total / 100).toFixed(2), orderId: `${trialId}:${order.id}`, paymentMethodNonce: nonce, options: { submitForSettlement: true } });
         if (!result.success || !result.transaction || !captured(result.transaction.status)) return json(response, 402, { error: 'Card payment was not accepted' });

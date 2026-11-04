@@ -59,8 +59,9 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { Mppx, evm } from 'mppx/client';
 
 const account = privateKeyToAccount(wallet.baseSepolia.privateKey);
+const maxAmount = '…'; // the most you will pay, from the order's total
 const mppx = Mppx.create({
-  methods: [evm.charge({ account, currencies: [evm.assets.baseSepolia.USDC], maxAmount: '12', networks: [84532] })],
+  methods: [evm.charge({ account, currencies: [evm.assets.baseSepolia.USDC], maxAmount, networks: [84532] })],
   polyfill: false,
 });
 const challenge = await mppx.rawFetch(paymentUrl, { headers: { accept: 'application/json' } });
@@ -79,7 +80,8 @@ import { Actions, Chain } from 'viem/tempo';
 const account = privateKeyToAccount(wallet.tempo.privateKey);
 const client = createClient({ account, chain: Chain.testnet, transport: http(wallet.tempo.rpcUrl) })
   .extend(publicActions).extend(walletActions);
-const { receipt } = await Actions.token.transferSync(client, { token, to, amount: parseUnits('12', 6) });
+// token, to and amount: the token, deposit address and total the store's payment page shows.
+const { receipt } = await Actions.token.transferSync(client, { token, to, amount: parseUnits(amount, 6) });
 ```
 
 Each example spends real testnet funds: run a payment once, and check the

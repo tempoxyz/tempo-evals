@@ -929,7 +929,9 @@ def run_production_variant(
     config = stage_daytona_config(
         rendered, run_id, docs_bundle, mpp_docs_bundle, options
     )
-    max_retries = options.get("max_retries") or "4"
+    max_retries = options.get("max_retries") or (
+        "0" if options.get("task_suite") == "checkout" else "4"
+    )
     args = ["run", "harbor", "run", "-c", config]
     if options.get("env_file"):
         args.extend(["--env-file", options["env_file"]])
@@ -1779,7 +1781,11 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         args.extend(["--n-concurrent-agents", options["agent_concurrency"]])
     args.extend(harbor_flags(options))
     max_retries = options.get("max_retries") or (
-        "2" if variant.get("needs_daytona_auth") else None
+        "0"
+        if options.get("task_suite") == "checkout"
+        else "2"
+        if variant.get("needs_daytona_auth")
+        else None
     )
     if max_retries:
         args.extend(["--max-retries", max_retries])

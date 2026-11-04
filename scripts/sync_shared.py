@@ -344,6 +344,8 @@ def sync_checkout_prompt_variants() -> None:
                 "*.pem",
                 "*.key",
                 ".DS_Store",
+                # Source unit tests are not part of grading.
+                "*_test.py",
             ),
         )
         metadata["task"]["name"] = f"checkout-v1/{directed_slug}"

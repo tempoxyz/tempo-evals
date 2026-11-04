@@ -47,26 +47,17 @@ function json(response, status, data) {
   response.writeHead(status, { 'content-type': 'application/json' }).end(JSON.stringify(data));
 }
 
-const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Notebook Store · Checkout</title>
-<style>body{font:16px system-ui,sans-serif;background:#f5f6f8;color:#17212b;margin:0}main{max-width:480px;margin:8vh auto;background:white;padding:32px;border-radius:12px;box-shadow:0 4px 24px #17212b15}h1{margin-top:0}section{display:flex;justify-content:space-between;padding:20px 0;border-top:1px solid #ddd;border-bottom:1px solid #ddd}button{width:100%;margin-top:24px;padding:14px;border:0;border-radius:24px;background:#ffc439;color:#17212b;font-size:16px;font-weight:700;cursor:pointer}small{display:block;margin-top:14px;color:#5d6873;text-align:center}</style></head>
-<body><main><h1>Checkout</h1><p>Review your order</p><section><span>Tempo Notebook <small>Quantity: 1</small></span><strong>$12.00</strong></section>
-<form method="post" action="/checkout"><button type="submit">Pay with PayPal</button></form><small>You will approve this payment on PayPal.</small></main></body></html>`;
-
 http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
   const url = new URL(request.url || '/', 'http://merchant:3000');
   const path = url.pathname;
   if (path === '/health') return response.writeHead(200).end('ok');
-  if (path === '/' && request.method === 'GET') {
-    return response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(page);
-  }
   if (path === '/checkout' && ['GET', 'POST'].includes(request.method)) {
     try {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
       const orderId = shippingOrder.id;
       const price = (shippingOrder.total / 100).toFixed(2);
-      appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
       let operation = pending.get(orderId);
       if (!operation) {
         operation = (async () => {
@@ -104,6 +95,8 @@ http.createServer(async (request, response) => {
       }
       const order = await operation;
       if (order.status === 'COMPLETED') return shipping.paypalReceipt(request, response, paypal);
+      // Count checkout starts only for an unpaid order; viewing a receipt is not a retry.
+      appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
       return response.writeHead(303, { location: order.approvalUrl }).end();
     } catch (error) {
       console.error(error);
