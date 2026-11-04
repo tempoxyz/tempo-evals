@@ -1,26 +1,38 @@
 import { createShipping } from './shipping.js';
 const shipping = createShipping('/checkout');
 import http from 'node:http';
-import { mkdirSync, appendFileSync } from 'node:fs';
+import { mkdirSync, appendFileSync, readFileSync } from 'node:fs';
 
 const key = process.env.STRIPE_TEST_SECRET_KEY;
 if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
 const base = process.env.PUBLIC_BASE_URL || 'http://merchant:3000';
 const log = '/var/log/checkout/sessions.jsonl';
 mkdirSync('/var/log/checkout', { recursive: true });
+let records = [];
+try { records = readFileSync(log, 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)); }
+catch (error) { if (error.code !== 'ENOENT') throw error; }
+// The latest Checkout Session per order; reopening the payment URL reuses it.
+const sessions = new Map(records.map(record => [record.orderId, record.sessionId]));
+const pending = new Map();
 
-const page = `<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head>
-<body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p>
-<form method="post" action="/checkout"><button>Buy notebook</button></form></main></body></html>`;
+async function stripe(path, body) {
+  const response = await fetch(`https://api.stripe.com/v1${path}`, {
+    method: body ? 'POST' : 'GET',
+    headers: { authorization: `Bearer ${key}`, 'content-type': 'application/x-www-form-urlencoded' },
+    body,
+    signal: AbortSignal.timeout(30000),
+  });
+  const session = await response.json();
+  if (!response.ok || session.livemode !== false || !session.id?.startsWith('cs_test_')) {
+    throw new Error(`Stripe session request failed: ${response.status}`);
+  }
+  return session;
+}
 
 http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
   if (request.url === '/health') {
     response.writeHead(200).end('ok');
-    return;
-  }
-  if (request.url === '/' && request.method === 'GET') {
-    response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(page);
     return;
   }
   if (new URL(request.url, 'http://merchant:3000').pathname === '/checkout' && ['GET', 'POST'].includes(request.method)) {
@@ -41,17 +53,26 @@ http.createServer(async (request, response) => {
       cancel_url: `${base}/`,
     });
     try {
-      const stripe = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-        method: 'POST',
-        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/x-www-form-urlencoded' },
-        body: form,
-        signal: AbortSignal.timeout(30000),
-      });
-      const session = await stripe.json();
-      if (!stripe.ok || !session.id?.startsWith('cs_test_') || !session.url) {
-        throw new Error(`Stripe session creation failed: ${stripe.status}`);
+      let operation = pending.get(orderId);
+      if (!operation) {
+        operation = (async () => {
+          const existing = sessions.get(orderId);
+          if (existing) {
+            const session = await stripe(`/checkout/sessions/${existing}`);
+            // A paid order keeps its receipt and an open session stays payable;
+            // only an expired session is replaced.
+            if (session.payment_status === 'paid' || (session.status === 'open' && session.url)) return session;
+          }
+          const session = await stripe('/checkout/sessions', form);
+          if (!session.url) throw new Error('Stripe session creation returned no URL');
+          appendFileSync(log, JSON.stringify({ orderId, sessionId: session.id }) + '\n');
+          sessions.set(orderId, session.id);
+          return session;
+        })().finally(() => pending.delete(orderId));
+        pending.set(orderId, operation);
       }
-      appendFileSync(log, JSON.stringify({ orderId, sessionId: session.id }) + '\n');
+      const session = await operation;
+      if (session.payment_status === 'paid') return shipping.receipt(response, orderId);
       response.writeHead(303, { location: session.url }).end();
     } catch (error) {
       console.error(error);

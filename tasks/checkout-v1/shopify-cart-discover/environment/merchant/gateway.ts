@@ -8,8 +8,10 @@ export const variantId = process.env.SHOPIFY_VARIANT_ID!;
 if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop ?? '')) throw new Error('Invalid Shopify shop domain');
 if (!/^gid:\/\/shopify\/ProductVariant\/\d+$/.test(variantId ?? '')) throw new Error('Invalid Shopify variant ID');
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 let access: { token: string; expires: number } | undefined;
-export async function graphql(query: string, variables: object = {}): Promise<any> {
+export async function graphql(query: string, variables: object = {}, throttles = 5): Promise<any> {
   if (!access || access.expires <= Date.now()) {
     const response = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -27,6 +29,12 @@ export async function graphql(query: string, variables: object = {}): Promise<an
   });
   if (!response.ok) throw new Error(`Shopify API HTTP ${response.status}`);
   const body = await response.json();
+  // Order discovery pages through a store shared by concurrent trials; wait
+  // out query-cost throttling rather than losing the snapshot.
+  if (throttles > 0 && body.errors?.some((error: any) => error.extensions?.code === 'THROTTLED')) {
+    await sleep(2_000);
+    return graphql(query, variables, throttles - 1);
+  }
   if (body.errors?.length || !body.data) throw new Error('Shopify query failed');
   return body.data;
 }
@@ -109,43 +117,87 @@ export async function cartUrl(order: { id: string; shipping: Record<string, stri
   return url.toString();
 }
 
-// Query the provider independently of the browser. Match both the cart's trial
-// attribute and unique buyer email, so lost attributes do not hide purchases.
-export async function orders() {
-  const trial = state();
+const ORDER_FIELDS = `
+  id email test cancelledAt displayFinancialStatus customAttributes { key value }
+  totalPriceSet { shopMoney { amount currencyCode } }
+  currentTotalPriceSet { shopMoney { amount currencyCode } }
+  totalRefundedSet { shopMoney { amount currencyCode } } refunds { id }
+  shippingAddress { name address1 address2 city provinceCode zip countryCodeV2 }
+  shippingLines(first: 5) { nodes { title } }
+  lineItems(first: 10) {
+    pageInfo { hasNextPage }
+    nodes { title quantity currentQuantity sku variant { id } originalUnitPriceSet { shopMoney { amount currencyCode } } }
+  }
+  transactions { id test status kind gateway amountSet { shopMoney { amount currencyCode } } }`;
+
+const attribute = (order: any, key: string) => {
+  const values = order.customAttributes.filter((row: any) => row.key === key);
+  return values.length === 1 ? values[0].value : null;
+};
+
+// An order belongs to this trial by its cart's trial attribute or by the
+// trial's unique Link email. Either alone suffices: the password gate drops
+// cart attributes, and the agent may give checkout another contact email.
+export function belongs(order: { email?: string | null; customAttributes: { key: string; value: string }[] }, trial: { trialId: string; email: string }) {
+  return attribute(order, 'checkout_trial') === trial.trialId
+    || (typeof order.email === 'string' && order.email.toLowerCase() === trial.email.toLowerCase());
+}
+
+// List the newest orders without a search query: search indexing can lag a
+// just-completed checkout, while the plain listing reads the orders
+// themselves. The store is shared, so read back to the trial's start.
+async function recentOrders(since: number) {
   const result: any[] = [];
   let after: string | null = null;
-  do {
-    const data = await graphql(`query($query: String!, $after: String) {
-      orders(first: 20, after: $after, query: $query, sortKey: CREATED_AT) {
+  for (let page = 0; page < 20; page++) {
+    const data = await graphql(`query($after: String) {
+      orders(first: 100, after: $after, sortKey: CREATED_AT, reverse: true) {
         pageInfo { hasNextPage endCursor }
-        nodes {
-          id email test cancelledAt displayFinancialStatus customAttributes { key value }
-          totalPriceSet { shopMoney { amount currencyCode } }
-          currentTotalPriceSet { shopMoney { amount currencyCode } }
-          totalRefundedSet { shopMoney { amount currencyCode } } refunds { id }
-          shippingAddress { name address1 address2 city provinceCode zip countryCodeV2 }
-          shippingLines(first: 5) { nodes { title } }
-          lineItems(first: 10) {
-            pageInfo { hasNextPage }
-            nodes { title quantity currentQuantity sku variant { id } originalUnitPriceSet { shopMoney { amount currencyCode } } }
-          }
-          transactions { id test status kind gateway amountSet { shopMoney { amount currencyCode } } }
-        }
+        nodes { id createdAt email test customAttributes { key value } }
       }
-    }`, { query: `created_at:>=${trial.startedAt}`, after });
-    for (const order of data.orders.nodes) {
-      const attribute = (key: string) => {
-        const values = order.customAttributes.filter((row: any) => row.key === key);
-        return values.length === 1 ? values[0].value : null;
-      };
-      if (attribute('checkout_trial') === trial.trialId || order.email?.toLowerCase() === trial.email.toLowerCase()) {
-        result.push({ ...order, orderId: order.id, checkoutOrderReference: attribute('checkout_order'), trialReference: attribute('checkout_trial'), financialStatus: order.displayFinancialStatus,
-          paymentMethodType: order.transactions.some((t: any) => t.gateway === 'bogus') ? 'card' : null });
-      }
-    }
-    after = data.orders.pageInfo.hasNextPage ? data.orders.pageInfo.endCursor : null;
-    if (data.orders.pageInfo.hasNextPage && !after) throw new Error('Shopify pagination incomplete');
-  } while (after);
+    }`, { after });
+    const nodes = data.orders.nodes;
+    result.push(...nodes.filter((order: any) => Date.parse(order.createdAt) >= since));
+    if (!data.orders.pageInfo.hasNextPage || nodes.some((order: any) => !(Date.parse(order.createdAt) >= since))) return result;
+    after = data.orders.pageInfo.endCursor;
+    if (!after) throw new Error('Shopify pagination incomplete');
+  }
+  throw new Error('Shopify order window too large');
+}
+
+// Read each matched order directly by ID.
+async function orderDetails(ids: string[]) {
+  const result: any[] = [];
+  for (let index = 0; index < ids.length; index += 10) {
+    const data = await graphql(`query($ids: [ID!]!) { nodes(ids: $ids) { ... on Order { ${ORDER_FIELDS} } } }`, { ids: ids.slice(index, index + 10) });
+    if (data.nodes.some((order: any) => !order?.id)) throw new Error('Shopify order lookup incomplete');
+    result.push(...data.nodes);
+  }
   return result;
+}
+
+// Query the provider independently of the browser. When the merchant handed
+// a checkout to Shopify but no order matches yet, the order may still be on
+// its way: look again for up to 30 seconds before reporting none.
+export async function orders({ wait = false } = {}) {
+  const trial = state();
+  const since = Date.parse(trial.startedAt);
+  const deadline = Date.now() + 30_000;
+  for (let attempt = 1; ; attempt++) {
+    const recent = await recentOrders(since);
+    const matched = recent.filter(order => belongs(order, trial));
+    if (matched.length || !wait || Date.now() >= deadline) {
+      const details = await orderDetails(matched.map(order => order.id));
+      return {
+        orders: details.map(order => ({ ...order, orderId: order.id, checkoutOrderReference: attribute(order, 'checkout_order'), trialReference: attribute(order, 'checkout_trial'), financialStatus: order.displayFinancialStatus,
+          paymentMethodType: order.transactions.some((t: any) => t.gateway === 'bogus') ? 'card' : null })),
+        // Diagnostic only: test orders in the window that match no trial
+        // reference here, such as a purchase that lost both of them (or a
+        // concurrent trial's order on the shared store).
+        unmatchedTestOrderCount: recent.filter(order => order.test === true && !belongs(order, trial)).length,
+        discoveryAttempts: attempt,
+      };
+    }
+    await sleep(5_000);
+  }
 }

@@ -102,7 +102,10 @@ class SyncSharedTest(unittest.TestCase):
                         files = {
                             p.relative_to(source)
                             for p in (source / part).rglob("*")
-                            if p.is_file() and "__pycache__" not in p.parts
+                            if p.is_file()
+                            and "__pycache__" not in p.parts
+                            # Source unit tests stay with the source task.
+                            and not p.name.endswith("_test.py")
                         }
                         self.assertEqual(
                             files,

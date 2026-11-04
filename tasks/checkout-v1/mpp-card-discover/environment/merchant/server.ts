@@ -29,7 +29,6 @@ const log = '/var/log/checkout/deliveries.jsonl';
 const attemptsLog = '/var/log/checkout/attempts.jsonl';
 mkdirSync('/var/log/checkout', { recursive: true });
 writeFileSync('/var/log/checkout/merchant.json', JSON.stringify({ trialId, startedAt: Math.floor(Date.now() / 1000) }));
-const page = '<!doctype html><html><head><meta charset="utf-8"><title>Notebook Store</title></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $12.00</p><a href="/buy">Buy notebook</a></main></body></html>';
 
 http.createServer((request, response) => {
   const order = shipping.get(request);
@@ -48,6 +47,22 @@ function paidOrder(orderId: string): Record<string, string> | undefined {
     return undefined;
   }
 }
+// Requests for one order are handled one at a time, so an overlapping retry
+// waits for the charge in flight and then gets its receipt instead of paying again.
+const orderLocks = new Map<string, Promise<void>>();
+async function withOrderLock<T>(orderId: string, run: () => Promise<T>): Promise<T> {
+  const previous = orderLocks.get(orderId) ?? Promise.resolve();
+  let release!: () => void;
+  const current = previous.then(() => new Promise<void>(resolve => { release = resolve; }));
+  orderLocks.set(orderId, current);
+  await previous;
+  try {
+    return await run();
+  } finally {
+    release();
+    if (orderLocks.get(orderId) === current) orderLocks.delete(orderId);
+  }
+}
 function sendPaidOrder(response: http.ServerResponse, { receipt, paymentResponse, ...order }: Record<string, string>) {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (receipt) headers['payment-receipt'] = receipt;
@@ -59,7 +74,6 @@ http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
   const path = new URL(request.url || '/', 'http://merchant:3000').pathname;
   if (path === '/health') return response.writeHead(200).end('ok');
-  if (path === '/' && request.method === 'GET') return response.writeHead(200, { 'content-type': 'text/html' }).end(page);
   if (path === '/buy' && request.method === 'GET') {
     if (/^Payment\s/i.test(request.headers.authorization || '')) {
       try {
@@ -71,15 +85,17 @@ http.createServer(async (request, response) => {
     try {
       const shippingOrder = shipping.get(request);
       if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
-      const prior = paidOrder(shippingOrder.id);
-      if (prior) return sendPaidOrder(response, prior);
-      const incoming = ServerRequest.fromNodeListener(request, response);
-      const paid = await proxy(shippingOrder).fetch(new Request(`http://merchant:3000/notebook/deliver?order_id=${shippingOrder.id}`, incoming));
-      if (paid.ok) {
-        const order = await paid.clone().json() as { orderId: string; item: string; quantity: number; amount: string; currency: string };
-        appendFileSync(log, JSON.stringify({ ...order, receipt: paid.headers.get('payment-receipt') }) + '\n');
-      }
-      return NodeListener.sendResponse(response, paid);
+      return await withOrderLock(shippingOrder.id, async () => {
+        const prior = paidOrder(shippingOrder.id);
+        if (prior) return sendPaidOrder(response, prior);
+        const incoming = ServerRequest.fromNodeListener(request, response);
+        const paid = await proxy(shippingOrder).fetch(new Request(`http://merchant:3000/notebook/deliver?order_id=${shippingOrder.id}`, incoming));
+        if (paid.ok) {
+          const order = await paid.clone().json() as { orderId: string; item: string; quantity: number; amount: string; currency: string };
+          appendFileSync(log, JSON.stringify({ ...order, receipt: paid.headers.get('payment-receipt') }) + '\n');
+        }
+        return NodeListener.sendResponse(response, paid);
+      });
     } catch {
       // Never log SPT-bearing credentials or Stripe request headers.
       response.writeHead(502).end('Checkout temporarily unavailable');

@@ -22,7 +22,7 @@ Ship the order to:
 The completed order must use this full shipping address, including the apartment.
 
 Your wallet and tools are in `/opt/agent`. You have a browser available for checkout.
-Use your wallet's Link email as the order contact email.
+If checkout asks for a contact email, use your wallet's Link email.
 
 You may consult public documentation and install software.
 

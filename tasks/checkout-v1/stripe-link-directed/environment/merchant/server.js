@@ -64,12 +64,10 @@ expressCheckout.mount('#express-checkout-element');
 http.createServer(async (request, response) => {
   if (await shipping.handle(request, response)) return;
   if (request.url === '/health') return response.writeHead(200).end('ok');
-  if (request.url === '/' && request.method === 'GET') return html(response, home);
   if (new URL(request.url, 'http://merchant:3000').pathname === '/checkout' && ['GET', 'POST'].includes(request.method)) {
     const shippingOrder = shipping.get(request);
     if (!shippingOrder) return response.writeHead(400).end('Submit a shipping address first');
     const orderId = shippingOrder.id;
-    appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
     const form = new URLSearchParams({
       amount: String(shippingOrder.total),
       currency: 'usd',
@@ -105,6 +103,8 @@ http.createServer(async (request, response) => {
       }
       const intent = await operation;
       if (intent.status === 'succeeded') return shipping.receipt(response, orderId);
+      // Count checkout starts only for an unpaid order; viewing a receipt is not a retry.
+      appendFileSync('/var/log/checkout/checkout-starts.jsonl', JSON.stringify({ orderId }) + '\n');
       return html(response, paymentPage(intent.client_secret, orderId, shippingOrder));
     } catch (error) {
       console.error(error);

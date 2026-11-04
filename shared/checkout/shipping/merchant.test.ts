@@ -141,7 +141,7 @@ test('PayPal inspection and repeated returns keep one captured order', async t =
     assert.match((await get('/checkout?order_id=' + second.orderId)).headers.get('location')!, /token=PAYPAL2$/);
     assert.equal(orders.size, 2);
     assert.equal(readFileSync(join(directory, 'orders.jsonl'), 'utf8').trim().split('\n').length, 2);
-    assert.equal(readFileSync(join(directory, 'checkout-starts.jsonl'), 'utf8').trim().split('\n').length, 7);
+    assert.equal(readFileSync(join(directory, 'checkout-starts.jsonl'), 'utf8').trim().split('\n').length, 6);
   } finally {
     if (server) await new Promise<void>(resolve => server!.close(() => resolve()));
     for (const [index, name] of keys.entries()) {
@@ -229,7 +229,7 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
     assert.equal((await originalFetch(retryUrl)).status, 502);
     assert.match(await (await originalFetch(retryUrl)).text(), /pi_fixture3_secret_fixture/);
     assert.equal(failedKeys.size, 1);
-    assert.equal(readFileSync(join(directory, 'checkout-starts.jsonl'), 'utf8').trim().split('\n').length, 7);
+    assert.equal(readFileSync(join(directory, 'checkout-starts.jsonl'), 'utf8').trim().split('\n').length, 5);
     assert.equal((await originalFetch(base + '/complete?order_id=unknown')).status, 404);
   } finally {
     if (server) await new Promise<void>(resolve => server!.close(() => resolve()));

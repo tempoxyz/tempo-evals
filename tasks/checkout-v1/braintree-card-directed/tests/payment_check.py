@@ -74,10 +74,11 @@ def main() -> None:
             if snapshot.get("checkoutStartCount", 0) > 0
             else "checkout_not_started"
         ),
-        "extra_checkout_attempts": max(0, snapshot["checkoutStartCount"] - 1)
+        # Sale submissions (POST /pay), declines included; page loads are not retries.
+        "extra_checkout_attempts": max(0, snapshot["paymentAttemptCount"] - 1)
         if isinstance(snapshot, dict)
-        and type(snapshot.get("checkoutStartCount")) is int
-        and snapshot["checkoutStartCount"] >= 0
+        and type(snapshot.get("paymentAttemptCount")) is int
+        and snapshot["paymentAttemptCount"] >= 0
         else None,
     }
     score = {"reward": int(passed)}
