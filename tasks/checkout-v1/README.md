@@ -119,7 +119,10 @@ references its ID. Form adapters collect shipping before provider checkout, and
 PSP billing or PayPal saved addresses never replace it. Both MPP merchants share
 one server and differ only in the advertised method; each binds its challenge to
 the order with an explicit per-order scope before proxying delivery, and the card
-merchant also tags its PaymentIntent with the order ID.
+merchant also tags its PaymentIntent with the order ID. Once an order is paid, its
+payment URL (MPP and x402 alike) returns the stored order and payment receipt
+instead of a new challenge, the way a store's order page confirms a purchase, so
+checking a paid order neither looks unpaid nor charges again.
 
 ## Merchants
 
