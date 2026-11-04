@@ -307,7 +307,9 @@ stays blank rather than becoming zero or a perfect score.
   orders (independent of reused provider orders), Stripe card sessions and
   Braintree card-form loads (diagnostic only; Braintree retries come from the
   snapshot's `paymentAttemptCount`);
-  `credentialed_payment_request_count` is MPP's and x402's raw count.
+  `credentialed_payment_request_count` is the snapshot's raw `paymentAttemptCount`:
+  credential-bearing requests for MPP and x402, sale submissions for Braintree
+  and Confirm payment requests for the OUSD form.
 - `observed_method` comes from provider or receipt evidence, including failed
   checkouts; it is blank when unknown or ambiguous, with the full set in
   `observed_methods`. It does not imply success; `payment_method` is
