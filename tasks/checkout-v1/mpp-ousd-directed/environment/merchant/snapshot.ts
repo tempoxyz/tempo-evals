@@ -24,6 +24,15 @@ const abi = [
   { type: 'function', name: 'balanceOf', stateMutability: 'view', inputs: [{ name: 'account', type: 'address' }], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'decimals', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] },
 ] as const;
+// The merchant answers once a charge is broadcast, so wait for each receipt's
+// transaction to be included before reading the recipient's balance.
+for (const record of records) {
+  const reference = record.receipt ? Receipt.deserialize(record.receipt).reference : null;
+  if (typeof reference !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(reference)) continue;
+  await client.waitForTransactionReceipt({ hash: reference as `0x${string}`, timeout: 30_000 }).catch(error => {
+    console.error(`Payment ${reference} was not included`, error);
+  });
+}
 const balance = await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [recipient] });
 const decimals = await client.readContract({ address: ousd, abi, functionName: 'decimals' });
 const deliveries = records.map(record => {
