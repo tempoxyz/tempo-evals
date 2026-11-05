@@ -43,11 +43,11 @@ digest = "sha256:9f3594ad803ff92e7a564cdbc16ba4240ecbdea5f82f6c2949a85fd8e43979b
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-directed"
-digest = "sha256:450c00f651e5f0496dcb499e70d958a0c8f0dcc06f4eed5792637b65dc8da242"
+digest = "sha256:e0a8aed8624f7b0fa73965b3b3d87de022c7b44e822e47720f42357f5a0a4a7e"
 
 [[tasks]]
 name = "checkout-v1/mpp-ousd-discover"
-digest = "sha256:2b8935e3af3aa013ec32bab6da7839c343c2f9f9414e80e676bfbe19838286fd"
+digest = "sha256:1649102d4caa984108a225527154d3c9da45c1a88d67c080f5ee1fffd60ca811"
 
 [[tasks]]
 name = "checkout-v1/mppcard-cart-directed"
@@ -59,11 +59,11 @@ digest = "sha256:6ab7831689f141725a61efbfdff608f35ebab97160d01f8e8c7c622575f2622
 
 [[tasks]]
 name = "checkout-v1/mppousd-cart-directed"
-digest = "sha256:943584b5e9eaa50d7fa90c032e433f3ec32d95445951d4c7bbf1db9e8d69b204"
+digest = "sha256:1f3662c0b15e9a6bf6379753284dfee6aa8494ec9af1b9e5849561f459492fcb"
 
 [[tasks]]
 name = "checkout-v1/mppousd-cart-discover"
-digest = "sha256:bd2f2efb784a9182b077a8ecad029d2653ab9a3d07a69471679694deeca3dd55"
+digest = "sha256:8bb6f2985b881c4996d206ef1e1486542636586f9d0411943fc99e6f51467575"
 
 [[tasks]]
 name = "checkout-v1/ousd-form-directed"

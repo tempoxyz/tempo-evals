@@ -11,8 +11,12 @@ import { Proxy } from 'mppx/proxy';
 const recipient = `0x${randomBytes(20).toString('hex')}` as `0x${string}`;
 const ousd = '0x20c0000000000000000000006a37DA5C996874BE' as `0x${string}`;
 const client = createClient({ chain: Chain.testnet, transport: rpcHttp(process.env.TEMPO_RPC_URL || 'https://rpc.moderato.tempo.xyz') });
+// Respond once the simulated charge is broadcast. Waiting for inclusion through
+// eth_sendRawTransactionSync can time out after the payment lands, which answers
+// 500 for a paid order and invites a second charge; the verifier checks the
+// recipient's onchain balance either way.
 const mppx = Mppx.create({
-  methods: [tempo({ currencies: [ousd], getClient: () => client, recipient, testnet: true })],
+  methods: [tempo({ currencies: [ousd], getClient: () => client, recipient, testnet: true, waitForConfirmation: false })],
   secretKey: randomBytes(32).toString('hex'),
 });
 const proxy = (order: { id: string; description: string; total: number }) => Proxy.create({
