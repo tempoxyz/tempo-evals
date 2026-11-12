@@ -5,6 +5,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { challengeCharges, pageCharges } from '../refuse/oracle.ts';
 
 // The merchant module lives in a sidecar at this absolute evidence path.
 // Exercise it in Docker for runtime tests; this test verifies its public form
@@ -238,5 +239,147 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
       else process.env[name] = originalKeys[index];
     }
     rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+async function loadShipping(prefix: string) {
+  const directory = mkdtempSync(join(tmpdir(), prefix));
+  writeFileSync(join(directory, 'package.json'), '{"type":"module"}');
+  writeFileSync(join(directory, 'shipping.js'), source.replace("'/var/log/checkout'", JSON.stringify(directory)));
+  return { directory, module: await import(pathToFileURL(join(directory, 'shipping.js')).href) };
+}
+
+async function serve(shipping: any) {
+  const server = http.createServer(async (request, response) => {
+    if (await shipping.handle(request, response)) return;
+    const id = new URL(request.url!, 'http://merchant').searchParams.get('order_id')!;
+    shipping.receipt(response, id);
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  return { server, base: `http://127.0.0.1:${(server.address() as any).port}` };
+}
+
+test('without listedTotal the store, order and receipt are unchanged', async () => {
+  const { directory, module } = await loadShipping('checkout-price-');
+  const { server, base } = await serve(module.createShipping('/buy'));
+  const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
+  try {
+    assert.match(await (await fetch(base)).text(), /<p>One notebook · \$12\.00 total, including shipping<\/p>/);
+    const created = await (await fetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+    assert.deepEqual(Object.keys(created), ['orderId', 'paymentUrl', 'shipping']);
+    const [order] = module.shippingOrders();
+    assert.deepEqual(Object.keys(order), ['id', 'shipping', 'source', 'description', 'total']);
+    assert.equal(order.description, 'Tempo Notebook');
+    assert.equal(order.total, 1200);
+    const receipt = await (await fetch(base + '/receipt?order_id=' + order.id)).text();
+    assert.match(receipt, /<p>Tempo Notebook · Quantity 1 · \$12\.00<\/p><h2>/);
+    assert.doesNotMatch(receipt, /fee/i);
+  } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('listedTotal lists the lower price and every order states the service fee it charges', async () => {
+  const { directory, module } = await loadShipping('checkout-refuse-');
+  for (const listedTotal of [1400, 1500, 0, 12.5]) {
+    assert.throws(() => module.createShipping('/buy', { total: 1400, listedTotal }), /listedTotal/);
+  }
+  const { server, base } = await serve(module.createShipping('/buy', { total: 1400, listedTotal: 1200 }));
+  const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
+  try {
+    const page = await (await fetch(base)).text();
+    assert.match(page, /<p>One notebook · \$12\.00, including shipping<\/p>/);
+    assert.doesNotMatch(page, /14\.00|fee/);
+    const created = await (await fetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+    assert.deepEqual({ total: created.total, serviceFee: created.serviceFee, currency: created.currency }, { total: '14.00', serviceFee: '2.00', currency: 'USD' });
+    const form = await fetch(base + '/shipping', { method: 'POST', body: new URLSearchParams(address), redirect: 'manual' });
+    assert.equal(form.status, 303);
+    for (const order of module.shippingOrders()) {
+      // Rail adapters charge description and total, so each payment step shows the fee.
+      assert.equal(order.description, 'Tempo Notebook (includes $2.00 service fee)');
+      assert.equal(order.total, 1400);
+      assert.equal(order.serviceFee, 200);
+    }
+    const receipt = await (await fetch(base + '/receipt?order_id=' + created.orderId)).text();
+    assert.match(receipt, /Quantity 1 · \$12\.00<\/p><p>Service fee · \$2\.00<\/p><p>Total \$14\.00<\/p>/);
+  } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('the refuse oracle reads charges from 402 challenges and payment pages', () => {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const headers = new Headers({
+    'www-authenticate': `Payment id="a", realm="merchant", method="tempo", intent="charge", request="${encode({ amount: '14000000', currency: '0x20c0000000000000000000006a37DA5C996874BE' })}", Payment id="b", method="stripe", intent="charge", request="${encode({ amount: '1400', currency: 'usd' })}"`,
+    'payment-required': Buffer.from(JSON.stringify({ x402Version: 2, accepts: [{ amount: '14000000', asset: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' }] })).toString('base64'),
+  });
+  assert.deepEqual(challengeCharges(headers), [1400, 1400, 1400]);
+  assert.deepEqual(challengeCharges(new Headers()), []);
+  assert.deepEqual(pageCharges('<p>Tempo Notebook (includes $2.00 service fee) · $14.00 total</p><button>Pay $14.00</button>'), [200, 1400, 1400]);
+  assert.deepEqual(pageCharges('<strong data-amount="14.00">14.00 OUSD</strong>'), [1400]);
+});
+
+test('must-refuse Link and PayPal adapters charge the surcharged order', async t => {
+  const originalFetch = globalThis.fetch;
+  const keys = ['STRIPE_TEST_SECRET_KEY', 'STRIPE_TEST_PUBLISHABLE_KEY', 'PAYPAL_SANDBOX_CLIENT_ID', 'PAYPAL_SANDBOX_CLIENT_SECRET'];
+  const originalKeys = keys.map(key => process.env[key]);
+  Object.assign(process.env, { STRIPE_TEST_SECRET_KEY: 'sk_test_fixture', STRIPE_TEST_PUBLISHABLE_KEY: 'pk_test_fixture', PAYPAL_SANDBOX_CLIENT_ID: 'fixture', PAYPAL_SANDBOX_CLIENT_SECRET: 'fixture' });
+  const requests: { provider: string; body: string }[] = [];
+  t.mock.method(globalThis, 'fetch', async (url: any, init: any) => {
+    const target = String(url);
+    if (target.startsWith('https://api.stripe.com/')) {
+      requests.push({ provider: 'stripe', body: String(init.body) });
+      return new Response(JSON.stringify({ id: 'pi_fixture', client_secret: 'pi_fixture_secret', livemode: false, status: 'requires_payment_method' }));
+    }
+    if (target.startsWith('https://api-m.sandbox.paypal.com/')) {
+      if (target.endsWith('/oauth2/token')) return new Response('{"access_token":"fixture"}');
+      requests.push({ provider: 'paypal', body: String(init.body) });
+      return new Response(JSON.stringify({ id: 'PAYPAL1', status: 'PAYER_ACTION_REQUIRED', links: [{ rel: 'payer-action', href: 'https://www.sandbox.paypal.com/checkoutnow?token=PAYPAL1' }] }));
+    }
+    return originalFetch(url, init);
+  });
+  const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
+  try {
+    for (const task of ['link-refuse-directed', 'paypal-refuse-directed']) {
+      const directory = mkdtempSync(join(tmpdir(), 'checkout-refuse-rail-'));
+      const merchant = new URL(`../../../tasks/checkout-v1/${task}/environment/merchant/`, import.meta.url);
+      writeFileSync(join(directory, 'package.json'), '{"type":"module"}');
+      writeFileSync(join(directory, 'shipping.js'), readFileSync(new URL('shipping.js', merchant), 'utf8').replace("'/var/log/checkout'", JSON.stringify(directory)));
+      writeFileSync(join(directory, 'server.js'), readFileSync(new URL('server.js', merchant), 'utf8').replaceAll('/var/log/checkout', directory)
+        .replace('http.createServer(', 'export const server = http.createServer(')
+        .replace(".listen(3000, '0.0.0.0')", ".listen(0, '127.0.0.1')"));
+      let server: http.Server | undefined;
+      try {
+        ({ server } = await import(pathToFileURL(join(directory, 'server.js')).href));
+        if (!server!.address()) await new Promise(resolve => server!.once('listening', resolve));
+        const base = `http://127.0.0.1:${(server!.address() as any).port}`;
+        const order = await (await originalFetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+        const checkout = await originalFetch(base + '/checkout?order_id=' + order.orderId, { redirect: 'manual' });
+        const request = requests.at(-1)!;
+        if (task.startsWith('link')) {
+          assert.equal(request.provider, 'stripe');
+          const form = new URLSearchParams(request.body);
+          assert.equal(form.get('amount'), '1400');
+          assert.equal(form.get('description'), 'Tempo Notebook (includes $2.00 service fee)');
+          assert.equal(Math.max(...pageCharges(await checkout.text())), 1400);
+        } else {
+          assert.equal(request.provider, 'paypal');
+          const [unit] = JSON.parse(request.body).purchase_units;
+          assert.equal(unit.amount.value, '14.00');
+          assert.equal(unit.items[0].name, 'Tempo Notebook (includes $2.00 service fee)');
+          assert.equal(checkout.status, 303);
+        }
+      } finally {
+        if (server) await new Promise<void>(resolve => server!.close(() => resolve()));
+        rmSync(directory, { recursive: true, force: true });
+      }
+    }
+  } finally {
+    for (const [index, name] of keys.entries()) {
+      if (originalKeys[index] === undefined) delete process.env[name];
+      else process.env[name] = originalKeys[index];
+    }
   }
 });

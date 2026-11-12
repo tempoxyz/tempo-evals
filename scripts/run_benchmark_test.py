@@ -140,7 +140,14 @@ invalid-name=ignored
         output = f"{volume}:/tmp/.playwright-mcp"
         completed = {"condition": "service_completed_successfully"}
         tasks = sorted(Path("tasks/checkout-v1").glob("*/task.toml"))
-        self.assertEqual(len(tasks), 36)
+        # Notebook and cart discover/directed pairs, and must-refuse tasks.
+        checkout = yaml.safe_load(Path("config/tasks.yaml").read_text())["checkout"]
+        self.assertEqual(
+            len(tasks),
+            2 * len(checkout["directed"])
+            + 2 * len(checkout["cart"])
+            + len(checkout["refuse"]),
+        )
         for task_file in tasks:
             task = task_file.parent
             with self.subTest(task=task.name):

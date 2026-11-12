@@ -443,23 +443,31 @@ class CheckoutShippingTest(unittest.TestCase):
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs()
         carts = set(sync_shared.cart_tasks())
-        expected |= carts
+        refusals = set(sync_shared.refuse_tasks())
+        expected |= carts | refusals
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:
             with self.subTest(task=task.name):
                 self.assertNotIn("shipping", task.name)
                 store = SHARED.parent / ("cart" if task.name in carts else "shipping")
+                # Must-refuse tasks keep the notebook store with their own
+                # order fixture and pass condition.
+                verifier = SHARED.parent / (
+                    "refuse" if task.name in refusals else "shipping"
+                )
                 for directory, source, target in (
                     (store, "merchant.js", "environment/merchant/shipping.js"),
                     (store, "oracle.ts", "solution/shipping.ts"),
                     (SHARED, "address.json", "solution/shipping.json"),
                     (SHARED, "address.json", "tests/shipping.json"),
-                    (SHARED, "check.py", "tests/check.py"),
+                    (verifier, "check.py", "tests/check.py"),
                 ):
                     self.assertEqual(
                         (task / target).read_bytes(),
                         (directory / source).read_bytes(),
                     )
+                if task.name in refusals:
+                    store = verifier
                 order = json.loads((store / "order.json").read_text())
                 total = sync_shared.CHECKOUT_ORDER_TOTALS.get(task.name)
                 if total is not None:
