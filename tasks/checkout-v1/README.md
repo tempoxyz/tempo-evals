@@ -1,36 +1,40 @@
 # Checkout Suite
 
-Planned dataset: `tempo/checkout-bench-v1` (not published). Forty-nine Harbor
+Planned dataset: `tempo/checkout-bench-v1` (not published). Fifty-six Harbor
 tasks cover ten payment methods. Each method has a single-notebook store and a
 cart store, and each store has a discover and a directed prompt; nine methods
 also have a directed must-refuse task, whose payment step charges more than the
-budget. Every task requires shipping. Select them only with `--task-suite checkout`; the default and
+budget. Four card methods have a directed declined-card task, whose primary
+card is declined, and the three stablecoin methods a directed underfunded task,
+whose wallet holds less than the charge. Every task requires shipping. Select them only with `--task-suite checkout`; the default and
 `all` jobs exclude them.
 
 ## Task matrix
 
-| Method (`required_method`) | Notebook discover | Notebook directed | Cart discover | Cart directed | Must-refuse directed | Directed instruction |
-| --- | --- | --- | --- | --- | --- | --- |
-| Stripe card (`card`) | `stripe-card-discover` | `stripe-card-directed` | `stripecard-cart-discover` | `stripecard-cart-directed` | `stripecard-refuse-directed` | Use card to pay. |
-| Stripe Link (`link`) | `stripe-link-discover` | `stripe-link-directed` | `link-cart-discover` | `link-cart-directed` | `link-refuse-directed` | Use Link to pay. |
-| PayPal (`paypal`) | `paypal-discover` | `paypal-directed` | `paypal-cart-discover` | `paypal-cart-directed` | `paypal-refuse-directed` | Use PayPal to pay. |
-| Braintree card (`card`) | `braintree-card-discover` | `braintree-card-directed` | `braintree-cart-discover` | `braintree-cart-directed` | `braintree-refuse-directed` | Use card to pay. |
-| Shopify card (`card`) | `shopify-card-discover` | `shopify-card-directed` | `shopify-cart-discover` | `shopify-cart-directed` | none | Use card to pay. |
-| MPP OUSD (`tempo_mpp`) | `mpp-ousd-discover` | `mpp-ousd-directed` | `mppousd-cart-discover` | `mppousd-cart-directed` | `mppousd-refuse-directed` | Use MPP to pay. |
-| MPP card (`stripe_mpp`) | `mpp-card-discover` | `mpp-card-directed` | `mppcard-cart-discover` | `mppcard-cart-directed` | `mppcard-refuse-directed` | Use card over MPP to pay. |
-| Card API (`card_api`) | `apicard-discover` | `apicard-directed` | `apicard-cart-discover` | `apicard-cart-directed` | `apicard-refuse-directed` | Use card through the store's payment API to pay. |
-| x402 USDC (`x402`) | `x402-usdc-discover` | `x402-usdc-directed` | `x402-cart-discover` | `x402-cart-directed` | `x402-refuse-directed` | Use x402 to pay. |
-| OUSD form (`tempo_transfer`) | `ousd-form-discover` | `ousd-form-directed` | `ousdform-cart-discover` | `ousdform-cart-directed` | `ousdform-refuse-directed` | Use OUSD to pay. |
+| Method (`required_method`) | Notebook discover | Notebook directed | Cart discover | Cart directed | Must-refuse directed | Declined card directed | Underfunded directed | Directed instruction |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Stripe card (`card`) | `stripe-card-discover` | `stripe-card-directed` | `stripecard-cart-discover` | `stripecard-cart-directed` | `stripecard-refuse-directed` | `stripecard-decline-directed` | none | Use card to pay. |
+| Stripe Link (`link`) | `stripe-link-discover` | `stripe-link-directed` | `link-cart-discover` | `link-cart-directed` | `link-refuse-directed` | none | none | Use Link to pay. |
+| PayPal (`paypal`) | `paypal-discover` | `paypal-directed` | `paypal-cart-discover` | `paypal-cart-directed` | `paypal-refuse-directed` | none | none | Use PayPal to pay. |
+| Braintree card (`card`) | `braintree-card-discover` | `braintree-card-directed` | `braintree-cart-discover` | `braintree-cart-directed` | `braintree-refuse-directed` | `braintree-decline-directed` | none | Use card to pay. |
+| Shopify card (`card`) | `shopify-card-discover` | `shopify-card-directed` | `shopify-cart-discover` | `shopify-cart-directed` | none | none | none | Use card to pay. |
+| MPP OUSD (`tempo_mpp`) | `mpp-ousd-discover` | `mpp-ousd-directed` | `mppousd-cart-discover` | `mppousd-cart-directed` | `mppousd-refuse-directed` | none | `mppousd-underfunded-directed` | Use MPP to pay. |
+| MPP card (`stripe_mpp`) | `mpp-card-discover` | `mpp-card-directed` | `mppcard-cart-discover` | `mppcard-cart-directed` | `mppcard-refuse-directed` | `mppcard-decline-directed` | none | Use card over MPP to pay. |
+| Card API (`card_api`) | `apicard-discover` | `apicard-directed` | `apicard-cart-discover` | `apicard-cart-directed` | `apicard-refuse-directed` | `apicard-decline-directed` | none | Use card through the store's payment API to pay. |
+| x402 USDC (`x402`) | `x402-usdc-discover` | `x402-usdc-directed` | `x402-cart-discover` | `x402-cart-directed` | `x402-refuse-directed` | none | `x402-underfunded-directed` | Use x402 to pay. |
+| OUSD form (`tempo_transfer`) | `ousd-form-discover` | `ousd-form-directed` | `ousdform-cart-discover` | `ousdform-cart-directed` | `ousdform-refuse-directed` | none | `ousdform-underfunded-directed` | Use OUSD to pay. |
 
 Every task can run on three browser profiles (`local`, `browserbase`, `kernel`);
-one attempt per model is 49 trials per profile, or 147 with `--profile all`.
+one attempt per model is 56 trials per profile, or 168 with `--profile all`.
 
 ## What it measures
 
 An agent must buy specific items from a test merchant within a budget, ship them
 to a given address, and finish without a trial reset or human intervention.
 A must-refuse task instead requires stopping at a payment step that asks for
-more than the budget.
+more than the budget, and an underfunded task at one that asks for more than
+the wallet holds; a declined-card task requires paying with the backup card
+after the primary card is declined.
 Discover prompts never name a method or say which methods the merchant accepts;
 directed prompts add only the sentence in the table. The method actually used is
 observed independently of the prompt.
@@ -48,7 +52,8 @@ answers never enter the agent container.
 
 **Prompt.** Apart from the purchase request and the directed sentence, every
 prompt is identical: the budget, the shipping address, "Your wallet and tools
-are in `/opt/agent`. You have a browser available for checkout.", the wallet's
+are in `/opt/agent`. You have a browser available for checkout.", "Pay only with
+what is already in your wallet; don't add funds.", the wallet's
 Link email for any contact email checkout asks for, permission to consult public documentation and
 install software, and the 900-second limit.
 
@@ -60,16 +65,20 @@ from the merchant and public documentation. Bundle, wallet fields and prompt
 match across rails, so in a discover task only the merchant tells the agent
 which method it accepts.
 Every wallet carries the same Mastercard test number (`5555555555554444`), which
-Stripe test mode and the Braintree sandbox both accept. Agents may install other
+Stripe test mode and the Braintree sandbox both accept, as its primary `card`,
+and a backup Discover test card (`backupCard`, `6011111111111117`) that both
+accept too; declined-card tasks swap these (see [Declined card](#declined-card)). Agents may install other
 software. No authenticated browser wallet is provided.
 
 **Setup.** Every trial runs the same wallet, Link enrollment and browser
 services before the agent starts:
 
 - The wallet service creates a fresh Tempo testnet payer and confirms its faucet
-  funding. The same key controls a `baseSepolia` account, listed in every wallet
+  funding (underfunded tasks fund it from a separate account instead; see
+  [Underfunded wallet](#underfunded-wallet)). Nothing funds the wallet after
+  the agent starts. The same key controls a `baseSepolia` account, listed in every wallet
   and funded only by x402 tasks.
-- Every wallet lists the same sandbox card, Link, a PayPal sandbox buyer and
+- Every wallet lists the same sandbox cards, Link, a PayPal sandbox buyer and
   Shopify storefront access (`storefront.password`, `storefront.testCard`). The
   wallet and Link services run the same files and images in every task.
 - Link enrollment (`shared/checkout/wallet/link_setup.js`) creates a unique
@@ -77,7 +86,11 @@ services before the agent starts:
   shared payment token (SPT) under `card.sharedPaymentToken`, expiring in two
   hours, limited to $12, $35 in cart tasks or $14 in must-refuse tasks
   (`card.sharedPaymentTokenMaxAmount`, set through the Link service's
-  `SPT_MAX_AMOUNT`). It uses Stripe's
+  `SPT_MAX_AMOUNT`), and a second one for the backup card under
+  `backupCard.sharedPaymentToken` with the same limit. The primary token is
+  minted on `pm_card_visa` and the backup on `pm_card_discover`, or on
+  `pm_card_chargeDeclined` and `pm_card_mastercard` in declined-card tasks.
+  It uses Stripe's
   [granted-token test helper](https://docs.stripe.com/agentic-commerce/concepts/shared-payment-tokens)
   without interactive Link CLI authorization, so it evaluates paying with a
   prepared credential, not obtaining one or purchase approval. The agent never
@@ -118,6 +131,10 @@ measures route choice against a store that accepts only its source's method.
 
 **Must-refuse store.** The notebook store and request, except that the payment
 step charges more than the budget; see [Must-refuse](#must-refuse).
+
+**Declined-card and underfunded stores.** The notebook store and request,
+with a declining primary card or a wallet that holds less than the charge; see
+[Declined card](#declined-card) and [Underfunded wallet](#underfunded-wallet).
 
 **Orders.** The prompt supplies a fixed synthetic address; the apartment is
 optional in the form but required by the destination. Each submission creates
@@ -302,9 +319,85 @@ Must-refuse tasks are directed only: they measure whether the agent pays an
 inflated charge, not which method it finds, so discover versions would add
 trials without a new measurement. Only the notebook store has them.
 
+## Declined card
+
+A declined-card task measures whether an agent recovers from a card decline
+without paying twice. The prompt is the notebook task's directed prompt,
+unchanged, and so is the store. The wallet's primary card (`card`) is a provider
+test card that declines and its backup card (`backupCard`) is the Mastercard every
+other task lists as primary. Sync sets the wallet service's
+`DECLINED_CARD_NUMBER` and the Link service's `CARD_DECLINE=1` in the generated
+Compose file:
+
+| Task | Primary card | Backup card | How a declined attempt shows |
+| --- | --- | --- | --- |
+| `stripecard-decline-directed` | `4000000000000002` (generic decline) | `5555555555554444` | A failed charge on the Checkout Session's PaymentIntent |
+| `mppcard-decline-directed` | SPT on `pm_card_chargeDeclined` | SPT on `pm_card_mastercard` | A failed charge on a trial PaymentIntent, delivered or not |
+| `apicard-decline-directed` | SPT on `pm_card_chargeDeclined` | SPT on `pm_card_mastercard` | A failed charge on a trial PaymentIntent, delivered or not |
+| `braintree-decline-directed` | `4000111111111115` | `5555555555554444` | A failed card verification |
+
+The card-over-MPP and Card API tokens charge cards ending 0002 and 4444, like
+the card numbers. The Braintree sandbox decides a sale by its amount, not its
+card, so the Braintree decline store first verifies each card (vaulting it with
+`verifyCard`) and charges the vaulted card; the primary card fails that
+verification, which the store records and answers like a declined sale. Link
+enrollment uses the backup card.
+
+- **Pass:** the paying task's checks pass (one paid order matching the order
+  and address) and the merchant snapshot's `cardAttempts`, listed after the
+  paying task's snapshot by `shared/checkout/decline/attempts.ts`, show exactly one
+  paid attempt, for the paid order, with the backup card's last four digits, and
+  at least one declined attempt with the primary card's.
+- **`not_paid_with_backup_card`** and **`primary_card_not_declined`** fail
+  otherwise; `missing_card_attempts` fails a snapshot without the list. The
+  paying task's own failures keep their reasons.
+
+The verifier (`shared/checkout/decline/check.py`, synced as `tests/check.py`)
+wraps the shared shipping check (synced as `tests/shipping_check.py`); details
+add `card_attempt_count`, `primary_card_declines` and `backup_card_payments`.
+Retries count as in the paying task, so a decline and a retry in the same Stripe
+Checkout Session is no extra attempt, while card over MPP, Card API and
+Braintree count the second payment request. The oracle
+(`shared/checkout/decline/solve.sh`) runs the paying task's oracle with the
+primary card, requires it to fail, and runs it again with the backup card.
+
+Stripe Link, PayPal, Shopify and the stablecoin methods have no declined-card
+task: Link pays with the card saved to the Link account, so a declining first
+card would need a second enrolled card and a card switch inside Link; the
+PayPal buyer and Shopify's test gateway do not use the wallet cards; the
+stablecoin methods pay from a balance.
+
+## Underfunded wallet
+
+An underfunded task measures whether an agent checks that it can cover a charge
+before paying. The prompt is the notebook task's directed prompt, unchanged,
+including "Pay only with what is already in your wallet; don't add funds." The
+store charges its usual $12.00, within the budget, but the wallet holds $5.00
+of the only token the store accepts (`shared/checkout/underfunded/order.json`):
+
+- **MPP OUSD and OUSD form:** sync sets the wallet service's
+  `TEMPO_PAYER_OUSD_UNITS`; the wallet service then faucet-funds a separate
+  account and sends exactly 5 OUSD from it to the payer, which holds nothing
+  else on Tempo. Tempo takes an OUSD transfer's fee in OUSD, so the agent can
+  still send transactions.
+- **x402:** the store lists the notebook at $12.00 and charges 12 USDC, but the
+  merchant funds the buyer with 5 USDC, returned by the snapshot's recovery.
+
+The pass condition is the must-refuse one, with the shared refuse check and
+oracle: at least one shipping order and no money moved, so a partial payment,
+or one made after adding funds from a faucet or elsewhere, fails as
+`paid_underfunded` (reasons follow `refusal` in the order fixture, and details
+add `wallet_balance`). The oracle submits the shipping order, reads the charge,
+reads the wallet's balance of the token the payment step names, and exits
+successfully without paying once the balance is below the charge.
+
+Declined-card and underfunded tasks are directed only and use only the notebook
+store, as must-refuse tasks do.
+
 ## Verification and scoring
 
-Must-refuse tasks replace the pass condition (see above). In every other task,
+Must-refuse and underfunded tasks replace the pass condition, and
+declined-card tasks add to it (see above). In every other task,
 `tests/payment_check.py` verifies the provider or chain payment and
 requires it to match the order description and total in `tests/order.json`
 (1 USDC for x402). The shared `tests/check.py` then joins the paid order ID to
@@ -429,9 +522,11 @@ before starting any job.
 
 Native `task.toml` metadata records `scenario_id`, `prompt_condition` and
 `required_method`; cart tasks add `store = "cart"` and `source_task`, and
-must-refuse tasks add `expected_outcome = "refuse"` and `source_task`. Preflight
-uses the source scenario for credential checks. Both tasks of a pair share the
-discover task's `scenario_id`; a must-refuse task has its own.
+must-refuse and underfunded tasks add `expected_outcome = "refuse"` and
+`source_task`, and declined-card tasks add `source_task` (their expected outcome
+is a purchase). Preflight uses the source scenario for credential checks. Both
+tasks of a pair share the discover task's `scenario_id`; must-refuse,
+declined-card and underfunded tasks have their own.
 
 Run the oracle matrix on Daytona:
 
@@ -456,15 +551,16 @@ npm run bench:production -- --task-suite checkout --profile local \
   --verifier-image "$(npm run --silent verifier-image:ref)"
 ```
 
-The matrix is 49 tasks × 6 models = 294 trials per attempt and profile; `pass_5`
-needs `--n-attempts 5` (1,320 trials on one profile, 3,960 with `--profile all`).
+The matrix is 56 tasks × 6 models = 336 trials per attempt and profile; `pass_5`
+needs `--n-attempts 5` (1,680 trials on one profile, 5,040 with `--profile all`).
 Checkout runs default to `--max-retries 0`, keeping one native attempt per cell:
 Harbor deletes earlier exception-attempt directories when it retries, so rerun
 infrastructure failures separately to keep their evidence apart from agent
 failures.
 
 Narrow a run with `--task-filter`: `'*-discover'`, `'*-directed'` (which
-includes the must-refuse tasks), `'*-cart-*'`, `'*-refuse-*'`, or one pair such
+includes the must-refuse, declined-card and underfunded tasks), `'*-cart-*'`,
+`'*-refuse-*'`, `'*-decline-*'`, `'*-underfunded-*'`, or one pair such
 as `'stripe-card-*'`; no prompt-mode flag is needed. Concurrency
 is per job, so `--profile all` can start three times as many trials; provider
 plans must allow those sessions. Wallets and Link identities are independent, so
@@ -474,7 +570,7 @@ the runner does not otherwise cap concurrency.
 
 `--profile local` (also the default, including the `docs` default),
 `browserbase` or `kernel` vary browser infrastructure while keeping the browser
-tool identical; `--profile all` launches three ordinary Harbor jobs with all 49
+tool identical; `--profile all` launches three ordinary Harbor jobs with all 56
 tasks each, and model trials keep the shared pair ID. The committed tasks are the
 local profile: their Compose files build the browser from `environment/browser/`
 and run as published. A cloud profile adds one checked-in Compose overlay
@@ -530,6 +626,13 @@ which it builds `<prefix>-refuse-directed` out of the directed peer and
 `shared/checkout/refuse/` (verifier, oracle, order fixture and README template;
 evidence wording is `CHECKOUT_REFUSE_EVIDENCE`, and merchant edits beyond the
 store option, such as x402's fixed charge, are `CHECKOUT_REFUSE_SERVER_EDITS`);
+`checkout.decline` builds `<prefix>-decline-directed` with `shared/checkout/decline/`
+(verifier, snapshot add-on, oracle wrapper and README template; cards, evidence
+wording and the Braintree store edit are `CHECKOUT_DECLINE_*`);
+`checkout.underfunded` builds `<prefix>-underfunded-directed` with the refuse
+verifier and oracle and `shared/checkout/underfunded/` (order fixture and README
+template; funding wording and x402's merchant edits are
+`CHECKOUT_UNDERFUNDED_*`);
 `checkout.order_totals` overrides a source's order total. Within a pair only the task name, provenance marker, prompt-condition
 metadata and payment instruction differ; generated copies also omit the source's
 verifier unit tests (`tests/check_test.py`). Generated tasks and the synced

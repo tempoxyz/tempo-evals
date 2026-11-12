@@ -119,6 +119,29 @@ checkout:
     x402-usdc-discover: x402
     ousd-form-discover: ousdform
     apicard-discover: apicard
+  # Declined-card store: the notebook store and request, but the wallet's
+  # primary card is a provider test card that declines and its backup card
+  # works (sync sets the wallet's DECLINED_CARD_NUMBER and the Link service's
+  # CARD_DECLINE). Passing means one purchase, paid with the backup card after
+  # a declined attempt with the primary card. Maps each source task to a task
+  # prefix; sync generates <prefix>-decline-directed from its directed peer and
+  # shared/checkout/decline/. Only card rails whose snapshot can show each
+  # attempt's card are included; Link pays with the card saved in Link.
+  decline:
+    stripe-card-discover: stripecard
+    braintree-card-discover: braintree
+    mpp-card-discover: mppcard
+    apicard-discover: apicard
+  # Underfunded store: the notebook store charges its usual total, within the
+  # budget, but the wallet holds less than that of the only token the store
+  # accepts (shared/checkout/underfunded/order.json). Passing means reaching
+  # the payment step without paying, as in must-refuse tasks. Maps each
+  # stablecoin source task to a task prefix; sync generates
+  # <prefix>-underfunded-directed from its directed peer.
+  underfunded:
+    mpp-ousd-discover: mppousd
+    ousd-form-discover: ousdform
+    x402-usdc-discover: x402
 
 mpp:
   # Files copied from shared/mpp into every MPP task by sync.

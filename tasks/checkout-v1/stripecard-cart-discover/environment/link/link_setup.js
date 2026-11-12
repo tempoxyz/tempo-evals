@@ -5,6 +5,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const key = process.env.STRIPE_TEST_SECRET_KEY;
 if (!key?.startsWith('sk_test_')) throw new Error('A Stripe sandbox secret key is required');
 const wallet = JSON.parse(readFileSync('/wallet/wallet.json', 'utf8'));
+// Decline tasks (CARD_DECLINE=1) give the primary card a token whose charges
+// decline and enroll Link with the backup card, the one that works.
+const decline = process.env.CARD_DECLINE === '1';
 const base = 'http://merchant:3000';
 let browserSession;
 let nextId = 1;
@@ -59,7 +62,7 @@ async function main() {
   if (!tools.tools.some(tool => tool.name === 'browser_run_code_unsafe')) {
     throw new Error('Pinned browser lacks browser_run_code_unsafe');
   }
-  const card = wallet.card;
+  const card = decline ? wallet.backupCard : wallet.card;
   const triedPhones = new Set();
   for (let attempt = 0; attempt < 3; attempt++) {
     let phone = wallet.link.phone;
@@ -126,31 +129,38 @@ async function main() {
 
     const closed = await browserRpc('tools/call', { name: 'browser_close', arguments: {} });
     if (closed.isError) throw new Error('Link setup browser did not close');
-    // Prepare the same one-use card credential for every checkout task. The
-    // test helper grants this account an SPT without exposing its API key.
+    // Prepare the same one-use card credentials for every checkout task, one
+    // per card. The test helper grants this account an SPT without exposing
+    // its API key.
     const expiresAt = Math.floor(Date.now() / 1000) + 7200;
     // The token's limit is the task's spending limit in cents (cart tasks set it).
     const maxAmount = Number(process.env.SPT_MAX_AMOUNT || '1200');
     if (!Number.isInteger(maxAmount) || maxAmount <= 0) throw new Error('Invalid SPT_MAX_AMOUNT');
-    const token = await stripe('/test_helpers/shared_payment/granted_tokens', {
-      method: 'POST',
-      headers: { 'Stripe-Version': '2026-07-29.preview' },
-      body: new URLSearchParams({
-        payment_method: 'pm_card_visa',
-        'usage_limits[currency]': 'usd',
-        'usage_limits[max_amount]': String(maxAmount),
-        'usage_limits[expires_at]': String(expiresAt),
-      }),
-    });
-    if (!token.id?.startsWith('spt_') || token.livemode !== false
-      || token.payment_method_details?.type !== 'card'
-      || token.usage_limits?.max_amount !== maxAmount || token.usage_limits?.currency !== 'usd') {
-      throw new Error('Stripe did not prepare a sandbox card token');
+    const tokens = [
+      [wallet.card, decline ? 'pm_card_chargeDeclined' : 'pm_card_visa'],
+      [wallet.backupCard, decline ? 'pm_card_mastercard' : 'pm_card_discover'],
+    ];
+    for (const [walletCard, paymentMethod] of tokens) {
+      const token = await stripe('/test_helpers/shared_payment/granted_tokens', {
+        method: 'POST',
+        headers: { 'Stripe-Version': '2026-07-29.preview' },
+        body: new URLSearchParams({
+          payment_method: paymentMethod,
+          'usage_limits[currency]': 'usd',
+          'usage_limits[max_amount]': String(maxAmount),
+          'usage_limits[expires_at]': String(expiresAt),
+        }),
+      });
+      if (!token.id?.startsWith('spt_') || token.livemode !== false
+        || token.payment_method_details?.type !== 'card'
+        || token.usage_limits?.max_amount !== maxAmount || token.usage_limits?.currency !== 'usd') {
+        throw new Error('Stripe did not prepare a sandbox card token');
+      }
+      walletCard.sharedPaymentToken = token.id;
+      walletCard.sharedPaymentTokenExpiresAt = expiresAt;
+      walletCard.sharedPaymentTokenMaxAmount = maxAmount;
+      walletCard.sharedPaymentTokenCurrency = 'usd';
     }
-    wallet.card.sharedPaymentToken = token.id;
-    wallet.card.sharedPaymentTokenExpiresAt = expiresAt;
-    wallet.card.sharedPaymentTokenMaxAmount = maxAmount;
-    wallet.card.sharedPaymentTokenCurrency = 'usd';
     wallet.link.phone = phone;
     writeFileSync('/wallet/wallet.json', JSON.stringify(wallet, null, 2) + '\n');
     writeFileSync('/wallet/link-ready', '');

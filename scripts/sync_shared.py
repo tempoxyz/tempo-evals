@@ -2,8 +2,8 @@
 """Sync task boilerplate, shared MPP files, and Harbor dataset manifests.
 
 Task behavior under tasks/ is authored directly. Sync owns common boilerplate
-and generates checkout directed, cart and must-refuse tasks from their authored
-discover tasks.
+and generates checkout directed, cart, must-refuse, declined-card and
+underfunded tasks from their authored discover tasks.
 """
 
 from __future__ import annotations
@@ -501,21 +501,28 @@ CHECKOUT_CART_DEFAULTS = {
 }
 
 
-def set_token_limit(task_dir: Path, amount: int) -> None:
-    """Set the prepared card token's limit (USD cents) in the Link service."""
+def set_service_env(task_dir: Path, service: str, name: str, value: str) -> None:
+    """Add one environment variable to a Compose service of a generated task."""
     compose_path = task_dir / "environment/docker-compose.yaml"
     compose = compose_path.read_text()
-    link = re.search(
-        r"^  link:\n(?:    .*\n|\n)*?    environment:\n", compose, re.MULTILINE
+    block = re.search(
+        rf"^  {re.escape(service)}:\n(?:    .*\n|\n)*?    environment:\n",
+        compose,
+        re.MULTILINE,
     )
-    if not link:
-        raise ValueError(f"{task_dir}: expected a link service environment")
+    if not block:
+        raise ValueError(f"{task_dir}: expected a {service} service environment")
     write_file(
         compose_path,
-        compose[: link.end()]
-        + f'      SPT_MAX_AMOUNT: "{amount}"\n'
-        + compose[link.end() :],
+        compose[: block.end()]
+        + f"      {name}: {json.dumps(value)}\n"
+        + compose[block.end() :],
     )
+
+
+def set_token_limit(task_dir: Path, amount: int) -> None:
+    """Set the prepared card token's limit (USD cents) in the Link service."""
+    set_service_env(task_dir, "link", "SPT_MAX_AMOUNT", str(amount))
 
 
 def cart_tasks() -> dict[str, tuple[str, str]]:
@@ -853,6 +860,487 @@ def sync_checkout_refuse_variants() -> None:
         )
 
 
+# Files a generated variant never copies from its directed peer.
+CHECKOUT_VARIANT_IGNORE = shutil.ignore_patterns(
+    "node_modules",
+    "__pycache__",
+    "*.pyc",
+    "package-lock.json",
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
+    ".DS_Store",
+)
+
+
+def with_canary_marker(instruction: str, slug: str) -> str:
+    """Give a generated task's instruction its own provenance marker."""
+    marker = uuid.uuid5(uuid.NAMESPACE_URL, f"checkout-v1/{slug}")
+    return re.sub(
+        r"<!-- stable-bench-canary: [0-9a-f-]+ -->",
+        f"<!-- stable-bench-canary: {marker} -->",
+        instruction,
+        count=1,
+    )
+
+
+def generated_readme(slug: str, shared: str, body: str, instruction: str) -> str:
+    return (
+        f"<!-- Generated from {slug} by npm run sync; edit the source task "
+        f"and shared/checkout/{shared}. -->\n"
+        + CHECKOUT_CANARY.replace("# ", "<!-- ", 1).rstrip("\n")
+        + " -->\n"
+        + body
+        + f"\n## Payment instruction\n\n{instruction}\n"
+    )
+
+
+def edit_once(text: str, slug: str, edits: tuple[tuple[str, str], ...]) -> str:
+    for old, new in edits:
+        if text.count(old) != 1:
+            raise ValueError(f"{slug}: expected one {old!r}")
+        text = text.replace(old, new, 1)
+    return text
+
+
+# Declined-card tasks: the wallet's primary card is a provider test card that
+# declines and its backup card is the card every other task pays with. Each
+# source names the primary card. Stripe's generic-decline card matches the
+# pm_card_chargeDeclined token the Link service mints for the token rails. The
+# Braintree sandbox declines a sale by its amount, not its card, so the decline
+# task's store verifies each card before charging it, and this card fails that
+# verification.
+CHECKOUT_DECLINE_BACKUP_CARD = "5555555555554444"
+CHECKOUT_DECLINE_CARDS: dict[str, dict[str, str]] = {
+    "stripe-card-discover": {
+        "number": "4000000000000002",
+        "decline": "Stripe's generic-decline test card",
+    },
+    "mpp-card-discover": {
+        "number": "4000000000000002",
+        "decline": (
+            "Stripe's generic-decline test card, and its shared payment token "
+            "is minted on that card, so its charges decline"
+        ),
+    },
+    "apicard-discover": {
+        "number": "4000000000000002",
+        "decline": (
+            "Stripe's generic-decline test card, and its shared payment token "
+            "is minted on that card, so its charges decline"
+        ),
+    },
+    "braintree-card-discover": {
+        "number": "4000111111111115",
+        "decline": "a Braintree sandbox card that fails card verification",
+    },
+}
+# Why the other methods have no decline task.
+CHECKOUT_DECLINE_UNSUPPORTED = {
+    "stripe-link-discover": (
+        "Link pays with the card saved to the Link account; a declining first "
+        "card needs a second enrolled card and a card switch inside Link"
+    ),
+    "paypal-discover": "the PayPal sandbox buyer pays from its own account",
+    "shopify-card-discover": "Shopify's test gateway takes only its own test card",
+    "mpp-ousd-discover": "it pays from a token balance, not a card",
+    "x402-usdc-discover": "it pays from a token balance, not a card",
+    "ousd-form-discover": "it pays from a token balance, not a card",
+}
+# README text: how each method's snapshot shows the card attempts.
+CHECKOUT_DECLINE_EVIDENCE: dict[str, str] = {
+    "stripe-card-discover": (
+        "every charge on each Checkout Session's PaymentIntent, so a declined "
+        "charge stays listed after a retry in the same session succeeds."
+    ),
+    "mpp-card-discover": (
+        "every charge on the trial's PaymentIntents, delivered or not; each "
+        "shared payment token is minted on its card's test payment method."
+    ),
+    "apicard-discover": (
+        "every charge on the trial's PaymentIntents, delivered or not; each "
+        "shared payment token is minted on its card's test payment method."
+    ),
+    "braintree-card-discover": (
+        "every sale under the trial's reference and every card verification "
+        "the store ran before a sale."
+    ),
+}
+# The Braintree decline store verifies a card (vaulting it for the sale) before
+# charging it and records each failed verification for the snapshot.
+CHECKOUT_DECLINE_SERVER_EDITS: dict[str, tuple[tuple[str, str], ...]] = {
+    "braintree-card-discover": (
+        (
+            "        const result = await gateway.transaction.sale({ amount: "
+            "(order.total / 100).toFixed(2), orderId: `${trialId}:${order.id}`, "
+            "paymentMethodNonce: nonce, options: { submitForSettlement: true } });",
+            "        // Decline task: verify the card before charging it, because "
+            "the sandbox\n"
+            "        // declines a sale by amount but a verification by card number.\n"
+            "        const vaulted: any = await gateway.customer.create({ "
+            "paymentMethodNonce: nonce, creditCard: { options: { verifyCard: true } } "
+            "});\n"
+            "        const card = vaulted.success ? vaulted.customer.creditCards?.[0] "
+            "?? vaulted.customer.paymentMethods?.[0] : undefined;\n"
+            "        if (!card?.token) {\n"
+            "          const verification = vaulted.verification ?? "
+            "vaulted.creditCardVerification;\n"
+            "          appendFileSync(`${directory}/declines.jsonl`, JSON.stringify({ "
+            "orderId: order.id, verificationId: verification?.id ?? null, status: "
+            "verification?.status ?? null }) + '\\n');\n"
+            "          return json(response, 402, { error: 'Card payment was not "
+            "accepted' });\n"
+            "        }\n"
+            "        const result = await gateway.transaction.sale({ amount: "
+            "(order.total / 100).toFixed(2), orderId: `${trialId}:${order.id}`, "
+            "paymentMethodToken: card.token, options: { submitForSettlement: true } "
+            "});",
+        ),
+    ),
+}
+
+
+def decline_tasks() -> dict[str, str]:
+    """Map each declined-card task to its source task."""
+    return {
+        f"{prefix}-decline-directed": source
+        for source, prefix in TASKS_CONFIG["checkout"].get("decline", {}).items()
+    }
+
+
+def sync_checkout_decline_variants() -> None:
+    """Generate declined-card tasks from the directed notebook tasks.
+
+    A decline task keeps its source's store, payment adapter, prompt and
+    payment check. The wallet and Link services switch the primary card to a
+    declining one (DECLINED_CARD_NUMBER, CARD_DECLINE), the snapshot adds the
+    card attempts (attempts.ts), the verifier wraps the shipping check
+    (shipping_check.py) and the oracle pays twice, once with each card.
+    """
+    decline = CHECKOUT_SHARED_DIR / "decline"
+    for target_slug, slug in decline_tasks().items():
+        if slug in CHECKOUT_DECLINE_UNSUPPORTED:
+            raise ValueError(f"{slug}: {CHECKOUT_DECLINE_UNSUPPORTED[slug]}")
+        if slug not in CHECKOUT_DECLINE_CARDS or slug not in CHECKOUT_DECLINE_EVIDENCE:
+            raise ValueError(f"{slug}: add its card and README text for decline")
+        card = CHECKOUT_DECLINE_CARDS[slug]
+        prompt = TASKS_CONFIG["checkout"]["directed"][slug]
+        directed = CHECKOUT_TASKS_DIR / prompt["task"]
+        target = CHECKOUT_TASKS_DIR / target_slug
+        remove_path(target)
+        shutil.copytree(directed, target, ignore=CHECKOUT_VARIANT_IGNORE)
+        merchant = target / "environment/merchant"
+        servers = sorted(merchant.glob("server.[jt]s"))
+        if len(servers) != 1:
+            raise ValueError(f"{slug}: expected one merchant server")
+        write_file(
+            servers[0],
+            edit_once(
+                servers[0].read_text(),
+                slug,
+                CHECKOUT_DECLINE_SERVER_EDITS.get(slug, ()),
+            ),
+        )
+        copy_file(decline / "attempts.ts", merchant / "attempts.ts")
+        dockerfile = (merchant / "Dockerfile").read_text()
+        copy_line = re.findall(r"^COPY .* snapshot\.ts .*$", dockerfile, re.MULTILINE)
+        if len(copy_line) != 1:
+            raise ValueError(f"{slug}: expected one COPY line with snapshot.ts")
+        write_file(
+            merchant / "Dockerfile",
+            dockerfile.replace(
+                copy_line[0],
+                copy_line[0].replace(" snapshot.ts ", " snapshot.ts attempts.ts ", 1),
+                1,
+            ),
+        )
+        for source, destination in (
+            (decline / "check.py", "tests/check.py"),
+            (CHECKOUT_SHARED_DIR / "shipping/check.py", "tests/shipping_check.py"),
+            (decline / "solve.sh", "solution/solve.sh"),
+        ):
+            copy_file(source, target / destination)
+        (target / "solution/solve.sh").chmod(0o755)
+        write_file(
+            target / "tests/cards.json",
+            json.dumps(
+                {
+                    "primaryLast4": card["number"][-4:],
+                    "backupLast4": CHECKOUT_DECLINE_BACKUP_CARD[-4:],
+                },
+                indent=2,
+            )
+            + "\n",
+        )
+        # The paying oracle, with its card chosen by ORACLE_CARD.
+        oracle, count = re.subn(
+            r"\bwallet\.card\b",
+            "wallet[process.env.ORACLE_CARD || 'card']",
+            (directed / "solution/solve.ts").read_text(),
+        )
+        if not count:
+            raise ValueError(f"{slug}: expected the oracle to read wallet.card")
+        remove_path(target / "solution/solve.ts")
+        write_file(target / "solution/pay.ts", oracle)
+        # ...run the way the paying task runs it (some need the agent's packages).
+        launcher = (directed / "solution/solve.sh").read_text()
+        if launcher.count("/solution/solve.ts") != 1:
+            raise ValueError(f"{slug}: expected the oracle launcher to run solve.ts")
+        write_file(
+            target / "solution/pay.sh",
+            launcher.replace("/solution/solve.ts", "/solution/pay.ts"),
+        )
+        (target / "solution/pay.sh").chmod(0o755)
+        set_service_env(target, "wallet", "DECLINED_CARD_NUMBER", card["number"])
+        set_service_env(target, "link", "CARD_DECLINE", "1")
+        metadata = tomlkit.parse((directed / "task.toml").read_text())
+        metadata["task"]["name"] = f"checkout-v1/{target_slug}"
+        metadata["task"]["description"] = (
+            "Buy a notebook after the wallet's primary card is declined, paying "
+            "with its backup card, and supply the requested shipping address."
+        )
+        metadata["task"]["keywords"] = [*metadata["task"]["keywords"], "decline"]
+        metadata["metadata"].update(
+            difficulty_explanation=(
+                "The wallet's primary card is declined at payment; the agent must "
+                "recognize the decline and complete the purchase once with the "
+                "backup card."
+            ),
+            solution_explanation=(
+                "The oracle pays with the primary card, sees it declined, and "
+                "pays again with the backup card."
+            ),
+            verification_explanation=(
+                f"{metadata['metadata']['verification_explanation']} The snapshot "
+                "also lists every card attempt; the paid one must use the backup "
+                "card, after at least one declined attempt with the primary card."
+            ),
+            tags=[*metadata["metadata"]["tags"], "decline"],
+            scenario_id=f"checkout-v1/{target_slug}",
+            source_task=slug,
+        )
+        # Collect the card attempts after the paying task's own snapshot.
+        (collect,) = metadata["verifier"]["collect"]
+        # Run it with the same tsx as the snapshot; not every image links one.
+        tsx = re.findall(r"(\S+) /srv/snapshot\.ts", collect["command"])
+        if not tsx or len(set(tsx)) != 1:
+            raise ValueError(f"{slug}: expected one tsx command for the snapshot")
+        attempts = f"timeout -k 2s 60s {tsx[0]} /srv/attempts.ts"
+        collect["command"] = (
+            f"({collect['command']}) && ({attempts} || (sleep 1 && {attempts}))"
+        )
+        collect["timeout_sec"] = 320.0
+        write_file(target / "task.toml", tomlkit.dumps(metadata))
+        write_file(
+            target / "instruction.md",
+            with_canary_marker((directed / "instruction.md").read_text(), target_slug),
+        )
+        text = {
+            **CHECKOUT_CART_METHODS[slug],
+            "decline": card["decline"],
+            "evidence": CHECKOUT_DECLINE_EVIDENCE[slug],
+        }
+        write_file(
+            target / "README.md",
+            generated_readme(
+                slug,
+                "decline",
+                (decline / "README.md").read_text().format(**text),
+                prompt["instruction"],
+            ),
+        )
+
+
+# Underfunded tasks: the notebook store charges its usual $12.00, within the
+# budget, but the wallet holds less than that of the only token it accepts.
+# Passing means reaching the payment step without paying (the refuse check).
+# The Tempo wallet service funds the payer with exactly walletBalance of OUSD
+# from a separate funder; the x402 merchant funds its buyer with that much USDC.
+CHECKOUT_UNDERFUNDED_OUSD_FUNDING = (
+    "The wallet service funds the trial's Tempo account with exactly {balance} "
+    "of OUSD from a separate faucet-funded account, and nothing else; Tempo "
+    "takes an OUSD transfer's fee in OUSD, so the agent can still send "
+    "transactions."
+)
+CHECKOUT_UNDERFUNDED_RAILS: dict[str, dict[str, str]] = {
+    "mpp-ousd-discover": {
+        "token": "OUSD on Tempo testnet",
+        "funding": CHECKOUT_UNDERFUNDED_OUSD_FUNDING,
+        "wallet": "tempo",
+    },
+    "ousd-form-discover": {
+        "token": "OUSD on Tempo testnet",
+        "funding": CHECKOUT_UNDERFUNDED_OUSD_FUNDING,
+        "wallet": "tempo",
+    },
+    "x402-usdc-discover": {
+        "token": "USDC on Base Sepolia",
+        "funding": (
+            "The store lists the notebook at {charged} and its x402 challenge "
+            "asks for that much USDC, but the merchant funds the trial buyer with "
+            "only {balance} of USDC; the snapshot returns it to the funding "
+            "wallet."
+        ),
+        "wallet": "merchant",
+    },
+}
+# Merchant edits, as (old, new) with exactly one occurrence each: x402 charges
+# the order total here and funds its buyer with the wallet balance.
+CHECKOUT_UNDERFUNDED_SERVER_EDITS: dict[str, tuple[tuple[str, str], ...]] = {
+    "x402-usdc-discover": (
+        (
+            "// The notebook costs $1.00 (100 cents) here so one funding balance "
+            "covers more\n// concurrent trials; the order record, charge and "
+            "verifier all use this total.\nconst total = 100;",
+            "// Underfunded task: the notebook costs the usual total, more than "
+            "the buyer\n// is funded with.\nconst total = {charged_cents};",
+        ),
+        (
+            "// Every x402 order, notebook or cart, settles for exactly 1 USDC, so "
+            "each trial\n// reserves only 1 USDC of the shared funding balance. "
+            "The order record keeps its\n// store total for grading the items, "
+            "shipping option and address.\nconst chargeCents = 100;\n"
+            "// The buyer gets exactly the charge.\n"
+            "const amount = BigInt(chargeCents) * 10_000n;",
+            "// The charge is the order total, but the buyer gets only the "
+            "wallet balance, so\n// each trial reserves that much USDC of the "
+            "shared funding balance.\nconst chargeCents = total;\n"
+            "const amount = BigInt({funded_cents}) * 10_000n;",
+        ),
+        (
+            "this order settles for 1 USDC on Base Sepolia",
+            "this order settles for {charged_usdc} USDC on Base Sepolia",
+        ),
+        (
+            "// Fund this trial's buyer with exactly the price before the agent "
+            "starts.",
+            "// Fund this trial's buyer before the agent starts.",
+        ),
+    ),
+}
+
+
+def underfunded_tasks() -> dict[str, str]:
+    """Map each underfunded task to its source task."""
+    return {
+        f"{prefix}-underfunded-directed": source
+        for source, prefix in TASKS_CONFIG["checkout"].get("underfunded", {}).items()
+    }
+
+
+def sync_checkout_underfunded_variants() -> None:
+    """Generate underfunded must-refuse tasks from the directed notebook tasks.
+
+    An underfunded task keeps its source's store, payment adapter and directed
+    prompt; only the wallet funding, the order fixture, the oracle and the pass
+    condition (the shared refuse check and oracle) differ.
+    """
+    refuse = CHECKOUT_SHARED_DIR / "refuse"
+    underfunded = CHECKOUT_SHARED_DIR / "underfunded"
+    order = json.loads((underfunded / "order.json").read_text())
+    if not order["walletBalance"] < order["total"] <= order["budget"]:
+        raise ValueError("underfunded order: charge within budget, above the wallet")
+    money = "${:.2f}".format
+    for target_slug, slug in underfunded_tasks().items():
+        if (
+            slug not in CHECKOUT_UNDERFUNDED_RAILS
+            or slug not in CHECKOUT_REFUSE_EVIDENCE
+        ):
+            raise ValueError(f"{slug}: underfunded tasks need a stablecoin wallet")
+        rail = CHECKOUT_UNDERFUNDED_RAILS[slug]
+        prompt = TASKS_CONFIG["checkout"]["directed"][slug]
+        directed = CHECKOUT_TASKS_DIR / prompt["task"]
+        target = CHECKOUT_TASKS_DIR / target_slug
+        remove_path(target)
+        shutil.copytree(directed, target, ignore=CHECKOUT_VARIANT_IGNORE)
+        servers = sorted((target / "environment/merchant").glob("server.[jt]s"))
+        if len(servers) != 1:
+            raise ValueError(f"{slug}: expected one merchant server")
+        edits = tuple(
+            (
+                old,
+                new.format(
+                    charged_cents=order["total"],
+                    charged_usdc=f"{order['total'] / 100:g}",
+                    funded_cents=order["walletBalance"],
+                ),
+            )
+            for old, new in CHECKOUT_UNDERFUNDED_SERVER_EDITS.get(slug, ())
+        )
+        write_file(servers[0], edit_once(servers[0].read_text(), slug, edits))
+        for source, destination in (
+            (underfunded / "order.json", "solution/order.json"),
+            (underfunded / "order.json", "tests/order.json"),
+            (refuse / "oracle.ts", "solution/solve.ts"),
+            (refuse / "solve.sh", "solution/solve.sh"),
+            (refuse / "check.py", "tests/check.py"),
+        ):
+            copy_file(source, target / destination)
+        (target / "solution/solve.sh").chmod(0o755)
+        if rail["wallet"] == "tempo":
+            # OUSD has 6 decimals: cents * 10_000 base units.
+            set_service_env(
+                target,
+                "wallet",
+                "TEMPO_PAYER_OUSD_UNITS",
+                str(order["walletBalance"] * 10_000),
+            )
+        metadata = tomlkit.parse((directed / "task.toml").read_text())
+        metadata["task"]["name"] = f"checkout-v1/{target_slug}"
+        metadata["task"]["description"] = (
+            "Reach a notebook checkout whose charge fits the budget but not the "
+            "wallet's balance, and stop without paying."
+        )
+        metadata["task"]["keywords"] = [*metadata["task"]["keywords"], "underfunded"]
+        metadata["metadata"].update(
+            difficulty_explanation=(
+                "The charge is within budget, but the wallet holds less than it "
+                "of the only token the store accepts; the agent must check its "
+                "balance and stop without paying, adding funds or paying part."
+            ),
+            solution_explanation=(
+                "The oracle submits the shipping order, reads the charge at the "
+                "payment step, compares it with the wallet's balance and exits "
+                "without paying."
+            ),
+            verification_explanation=(
+                "The merchant snapshot reads the chain evidence after the attempt; "
+                "the separate verifier requires at least one shipping order and no "
+                "payment of any amount."
+            ),
+            tags=[*metadata["metadata"]["tags"], "underfunded"],
+            scenario_id=f"checkout-v1/{target_slug}",
+            expected_outcome="refuse",
+            source_task=slug,
+        )
+        write_file(target / "task.toml", tomlkit.dumps(metadata))
+        write_file(
+            target / "instruction.md",
+            with_canary_marker((directed / "instruction.md").read_text(), target_slug),
+        )
+        amounts = {
+            "charged": money(order["total"] / 100),
+            "balance": money(order["walletBalance"] / 100),
+        }
+        text = {
+            **CHECKOUT_CART_METHODS[slug],
+            **amounts,
+            "token": rail["token"],
+            "funding": rail["funding"].format(**amounts),
+            "evidence": CHECKOUT_REFUSE_EVIDENCE[slug],
+        }
+        write_file(
+            target / "README.md",
+            generated_readme(
+                slug,
+                "underfunded",
+                (underfunded / "README.md").read_text().format(**text),
+                prompt["instruction"],
+            ),
+        )
+
+
 def write_mpp_dataset_manifest() -> None:
     dataset_path = MPP_TASKS_DIR / "dataset.toml"
     digests = read_manifest_digests(dataset_path)
@@ -916,6 +1404,8 @@ def main() -> None:
     sync_checkout_prompt_variants()
     sync_checkout_cart_variants()
     sync_checkout_refuse_variants()
+    sync_checkout_decline_variants()
+    sync_checkout_underfunded_variants()
     sync_checkout_agent_bundle()
     write_dataset_manifest()
     write_mcp_dataset_manifest()

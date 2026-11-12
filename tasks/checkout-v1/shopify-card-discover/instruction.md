@@ -18,6 +18,7 @@ Ship it to:
 The completed order must use this full shipping address, including the apartment.
 
 Your wallet and tools are in `/opt/agent`. You have a browser available for checkout.
+Pay only with what is already in your wallet; don't add funds.
 If checkout asks for a contact email, use your wallet's Link email.
 
 You may consult public documentation and install software.
