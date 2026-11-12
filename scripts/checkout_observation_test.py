@@ -33,6 +33,11 @@ class CheckoutObservationTest(unittest.TestCase):
                 {"deliveries": [{"receiptMethod": "stripe"}]},
                 "stripe_mpp",
             ),
+            (
+                {"apiPayments": [{"paymentMethodType": "card", "status": "succeeded"}]},
+                "card_api",
+            ),
+            ({"deliveries": [{"receiptMethod": "card_api"}]}, "card_api"),
         ):
             with self.subTest(snapshot=snapshot):
                 self.assertEqual(

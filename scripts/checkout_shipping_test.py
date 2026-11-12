@@ -443,23 +443,45 @@ class CheckoutShippingTest(unittest.TestCase):
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs()
         carts = set(sync_shared.cart_tasks())
-        expected |= carts
+        refusals = set(sync_shared.refuse_tasks())
+        declines = set(sync_shared.decline_tasks())
+        underfunded = set(sync_shared.underfunded_tasks())
+        expected |= carts | refusals | declines | underfunded
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:
             with self.subTest(task=task.name):
                 self.assertNotIn("shipping", task.name)
                 store = SHARED.parent / ("cart" if task.name in carts else "shipping")
+                # Must-refuse and underfunded tasks keep the notebook store
+                # with their own order fixture and the refuse pass condition;
+                # decline tasks wrap the shipping check.
+                verifier = SHARED.parent / (
+                    "refuse"
+                    if task.name in refusals | underfunded
+                    else "decline"
+                    if task.name in declines
+                    else "shipping"
+                )
                 for directory, source, target in (
                     (store, "merchant.js", "environment/merchant/shipping.js"),
                     (store, "oracle.ts", "solution/shipping.ts"),
                     (SHARED, "address.json", "solution/shipping.json"),
                     (SHARED, "address.json", "tests/shipping.json"),
-                    (SHARED, "check.py", "tests/check.py"),
+                    (verifier, "check.py", "tests/check.py"),
                 ):
                     self.assertEqual(
                         (task / target).read_bytes(),
                         (directory / source).read_bytes(),
                     )
+                if task.name in declines:
+                    self.assertEqual(
+                        (task / "tests/shipping_check.py").read_bytes(),
+                        (SHARED / "check.py").read_bytes(),
+                    )
+                if task.name in refusals:
+                    store = verifier
+                if task.name in underfunded:
+                    store = SHARED.parent / "underfunded"
                 order = json.loads((store / "order.json").read_text())
                 total = sync_shared.CHECKOUT_ORDER_TOTALS.get(task.name)
                 if total is not None:
