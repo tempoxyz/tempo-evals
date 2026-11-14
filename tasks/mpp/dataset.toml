@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:5c8a79d0e73107cbcf53a9b462e9c20237f4c8429e105b1c31336a5c2ff75e0f"
+digest = "sha256:ad8358f4d4200f462d4d033be64708c9d1051c67da3fa6168a3d689801359596"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:f7143b2af9d4a1dc161fb62edd6d7661ee739286e305687cb5228210a3628c99"
+digest = "sha256:7fe981fe3fe9e7934909f1abe48688cfc9da44c3cac3419b1cc17e1cb527a2fa"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:085ea3d1003b6f1084d200328ae691fe779b6817aed1a240ae65b1d71569ea7a"
+digest = "sha256:7300284b60b467098c2b9d36f98afb94141a0bcd0a0ab4667340e4f12c2f6191"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:83a08a8de4b9b5c1f4cff43fc0f050f825f6c7619c16819adddfc5bca481da1d"
+digest = "sha256:6825ce83336ed1fc72bb7ed4bfd16a50cf22b39d2f58292405c2a5cd0f078658"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:22b444de4526d827dad4ecac94552cf3dabe53f28cfddd6ecf434950b392d900"
+digest = "sha256:dc17a77e3ce37e3c50a23caad47097283c1f3eae59122df3912a57b3dc002164"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:30d66bb1d207dbef50f648b9fba3c607ce955ec8646348731857f8bae747eb77"
+digest = "sha256:dba028bdc322692e9cd38d4eac44431bb1c7b041e86eb4e9de6c81744e0fd248"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:d91ece08db24d64f54aa2038bf8082d2a1511ffedcc0160ee7dab0101759fe47"
+digest = "sha256:fcab941293ee55e4a5ebdbbfb7dc652c17a61bab42aa29cc83ecfb8ed8c05713"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:56fba9160d376e726f6256a48abf1f28f7763529ca562755c1d5edd273539ac8"
+digest = "sha256:7c86fe8ec93767ce7a2ca3c875f81ab45c6f99103d652f111f5ee5e13522094d"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:bc18269d64e3478706faf0b0912314fb687dc7fa939877c1cda286602e50deb4"
+digest = "sha256:031cc1dc58e73991e72c35781409622df640b6ed6d75cb87f1489cc24f74bb93"
 
