@@ -88,7 +88,8 @@ async function main() {
       for (let attempt = 0; attempt < (optional ? 4 : 60); attempt++) {
         for (const frame of [page, ...page.frames()]) {
           const field = frame.getByRole(role, { name }).first();
-          if (await field.count()) return field;
+          // A frame Stripe removes mid-poll throws; skip it and keep looking.
+          if (await field.count().catch(() => 0)) return field;
         }
         await page.waitForTimeout(500);
       }
@@ -100,9 +101,23 @@ async function main() {
     };
     // Checkout may list payment methods as a collapsed choice: open Card so
     // its fields show. Older layouts show the card form directly.
-    if (!(await find('textbox', 'Card number', true))) {
-      const choice = await find('button', /^Card$/, true) || await find('radio', /^Card(?![A-Za-z])/);
-      await choice.click();
+    // Wait for whichever renders first: the card fields, or the Card choice.
+    const cardForm = async () => {
+      for (let attempt = 0; attempt < 60; attempt++) {
+        for (const [role, name] of [['textbox', 'Card number'], ['button', /^Card$/], ['radio', /^Card(?![A-Za-z])/]]) {
+          for (const frame of [page, ...page.frames()]) {
+            const control = frame.getByRole(role, { name }).first();
+            if (await control.count().catch(() => 0)) return [role, control];
+          }
+        }
+        await page.waitForTimeout(500);
+      }
+      throw new Error('Missing Link setup field: Card number');
+    };
+    const [formRole, formControl] = await cardForm();
+    if (formRole !== 'textbox') {
+      if (await formControl.isVisible()) await formControl.click();
+      else await formControl.evaluate((control) => control.click());
     }
     await fill('Card number', ${JSON.stringify(card.number)});
     await fill(/^Expiration/, ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});

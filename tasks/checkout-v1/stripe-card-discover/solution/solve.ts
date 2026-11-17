@@ -66,15 +66,30 @@ async function main(): Promise<void> {
     for (let attempt = 0; attempt < (optional ? 4 : 60); attempt++) {
       for (const frame of [page, ...page.frames()]) {
         const control = frame.getByRole(role, { name }).first();
-        if (await control.count()) return control;
+        // A frame Stripe removes mid-poll throws; skip it and keep looking.
+        if (await control.count().catch(() => 0)) return control;
       }
       await page.waitForTimeout(500);
     }
     if (!optional) throw new Error('Missing checkout control: ' + name);
   };
-  if (!(await find('textbox', /card number/i, true))) {
-    const cardButton = await find('button', /^(Card|Pay with card)$/, true);
-    if (cardButton) await cardButton.click();
+  // Wait for whichever renders first: the card fields, or the Card choice.
+  const cardForm = async () => {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      for (const [role, name] of [['textbox', /card number/i], ['button', /^(Card|Pay with card)$/], ['radio', /^Card(?![A-Za-z])/]]) {
+        for (const frame of [page, ...page.frames()]) {
+          const control = frame.getByRole(role, { name }).first();
+          if (await control.count().catch(() => 0)) return [role, control];
+        }
+      }
+      await page.waitForTimeout(500);
+    }
+    throw new Error('Missing checkout control: card number');
+  };
+  const [formRole, formControl] = await cardForm();
+  if (formRole !== 'textbox') {
+    if (await formControl.isVisible()) await formControl.click();
+    else await formControl.evaluate((control) => control.click());
   }
   await fill(/card number/i, ${JSON.stringify(card.number)});
   await fill(/expir/i, ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
@@ -99,7 +114,7 @@ async function main(): Promise<void> {
     for (let attempt = 0; attempt < (optional ? 4 : 60); attempt++) {
       for (const frame of [page, ...page.frames()]) {
         const field = frame.getByLabel(pattern).first();
-        if (await field.count()) { await field.fill(value); return true; }
+        if (await field.count().catch(() => 0)) { await field.fill(value); return true; }
       }
       await page.waitForTimeout(500);
     }
