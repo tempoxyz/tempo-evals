@@ -101,7 +101,7 @@ async function main() {
     // Checkout may list payment methods as a collapsed choice: open Card so
     // its fields show. Older layouts show the card form directly.
     if (!(await find('textbox', 'Card number', true))) {
-      const choice = await find('button', /^Card$/, true) || await find('radio', /^Card\b/);
+      const choice = await find('button', /^Card$/, true) || await find('radio', /^Card(?![A-Za-z])/);
       await choice.click();
     }
     await fill('Card number', ${JSON.stringify(card.number)});
