@@ -82,28 +82,39 @@ async function main() {
     }
     const script = `async (page) => {
     await page.goto(${JSON.stringify(session.url)});
-    const fill = async (name, value, optional = false) => {
+    // Stripe renders the form inside frames and has renamed its fields, so
+    // look in every frame and accept each field's older and newer label.
+    const find = async (role, name, optional = false) => {
       for (let attempt = 0; attempt < (optional ? 4 : 60); attempt++) {
         for (const frame of [page, ...page.frames()]) {
-          const field = frame.getByRole('textbox', { name }).first();
-          if (await field.count()) { await field.fill(value); return; }
+          const field = frame.getByRole(role, { name }).first();
+          if (await field.count()) return field;
         }
         await page.waitForTimeout(500);
       }
       if (!optional) throw new Error('Missing Link setup field: ' + name);
     };
+    const fill = async (name, value, optional = false) => {
+      const field = await find('textbox', name, optional);
+      if (field) await field.fill(value);
+    };
+    // Checkout may list payment methods as a collapsed choice: open Card so
+    // its fields show. Older layouts show the card form directly.
+    if (!(await find('textbox', 'Card number', true))) {
+      const choice = await find('button', /^Card$/, true) || await find('radio', /^Card\b/);
+      await choice.click();
+    }
     await fill('Card number', ${JSON.stringify(card.number)});
-    await fill('Expiration', ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
-    await fill(/CVC/, ${JSON.stringify(card.cvc)});
-    await fill('Cardholder name', 'Tempo Test Buyer');
-    await page.getByRole('combobox', { name: 'Country or region' }).selectOption('US');
+    await fill(/^Expiration/, ${JSON.stringify(card.expMonth + String(card.expYear).slice(-2))});
+    await fill(/CVC|Security code/, ${JSON.stringify(card.cvc)});
+    await fill(/Cardholder name|Name on card/, 'Tempo Test Buyer');
+    await (await find('combobox', /^(Country or region|Country)$/)).selectOption('US');
     await fill(/ZIP|Postal code/i, '94103', true);
-    const saveWithLink = page.getByRole('checkbox', { name: /Save my information/i });
-    await saveWithLink.waitFor({ state: 'visible', timeout: 30000 });
+    const saveWithLink = await find('checkbox', /Save my information/i);
     await saveWithLink.check();
-    await page.getByRole('combobox', { name: 'Phone number country code' }).selectOption('US');
-    await page.getByRole('textbox', { name: 'Phone number' }).fill(${JSON.stringify(phone)});
-    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await (await find('combobox', /Phone number country code|for phone number/)).selectOption('US');
+    await fill(/^(Phone number|Mobile number)$/, ${JSON.stringify(phone)});
+    await (await find('button', /^Save$/)).click();
     await page.waitForURL(${JSON.stringify(base + '/')}, { timeout: 60000 });
     return 'Link setup returned to merchant';
   }`;
