@@ -7,8 +7,8 @@ task's payment, order and address checks (shipping_check.py) still decide the
 purchase; this check also requires the paid charge to use the backup card and
 at least one declined attempt with the primary card. The merchant snapshot's
 cardAttempts list every card charge, sale or verification with the card's last
-four digits (shared/checkout/decline/attempts.ts). Retries are card attempts
-beyond the declined primary attempt and the backup payment.
+four digits (shared/checkout/decline/attempts.ts). The required decline is not
+a retry; other extra checkouts and card attempts are.
 """
 
 import json
@@ -58,6 +58,18 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     return passed, reason, method
 
 
+def decline_retries(rail: object, attempts: list[dict] | None) -> int | None:
+    """Retries, not counting the required primary-card decline.
+
+    The paying task's count charges the decline as one extra checkout on most
+    rails, so one is taken off it; card attempts beyond the decline and the
+    backup payment are retries too, whichever count is higher.
+    """
+    if type(rail) is not int or attempts is None:
+        return None
+    return max(0, rail - 1, len(attempts) - 2)
+
+
 def main() -> None:
     # The paying task's checks write their verdict and observations first.
     shipping_check.SNAPSHOT = SNAPSHOT
@@ -73,11 +85,9 @@ def main() -> None:
     details.update(
         reason=reason,
         payment_method=method,
-        # The required primary-card decline and the backup payment are not
-        # retries; any further card attempt is.
-        extra_checkout_attempts=max(0, len(attempts) - 2)
-        if card_attempts(snapshot) is not None
-        else None,
+        extra_checkout_attempts=decline_retries(
+            details.get("extra_checkout_attempts"), card_attempts(snapshot)
+        ),
         card_attempt_count=len(attempts),
         primary_card_declines=sum(
             row.get("outcome") == "declined"
