@@ -61,6 +61,11 @@ def trial(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
 
 
 class ExportResultsTest(unittest.TestCase):
+    def test_checkout_v1_jobs_still_export_as_checkout(self) -> None:
+        for name in ("checkout-v1/stripe-card-directed", "checkout-v2/stripe-card"):
+            with self.subTest(name=name):
+                self.assertNotEqual(parse_task_name(name)["profile"], "unknown")
+
     def test_checkout_summary_requires_complete_telemetry_for_totals(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             job = Path(directory)

@@ -157,6 +157,9 @@ QUALITY_SUMMARY_COLUMNS = [
     "quality_at_k",
 ]
 
+# Both checkout majors export with checkout telemetry.
+CHECKOUT_PREFIXES = ("checkout-v1/", "checkout-v2/")
+
 
 def read_json(file_path: Path) -> JsonObject | None:
     try:
@@ -207,7 +210,7 @@ def result_files(root: Path) -> list[Path]:
 
 def profile_from_trial(result: JsonObject) -> str:
     agent = as_object(as_object(result.get("config")).get("agent"))
-    if as_string(result.get("task_name")).startswith("checkout-v2/"):
+    if as_string(result.get("task_name")).startswith(CHECKOUT_PREFIXES):
         profile = as_string(as_object(agent.get("env")).get("CHECKOUT_BROWSER_PROFILE"))
         if profile in {"local", "browserbase", "kernel"}:
             return profile
@@ -242,7 +245,7 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
         return {"task_family": task_name[: -len(MCP_PROFILE_SUFFIX)], "profile": "mcp"}
     if task_name.startswith(("tempo-v1/", "tempo-mcp-v1/")):
         return {"task_family": task_name, "profile": tempo_profile}
-    if task_name.startswith("checkout-v2/"):
+    if task_name.startswith(CHECKOUT_PREFIXES):
         return {
             "task_family": task_name,
             "profile": "browser-mcp" if tempo_profile == "docs" else tempo_profile,
@@ -657,7 +660,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     model_info = as_object(agent_info.get("model_info"))
     exception_info = as_object(result.get("exception_info"))
     task = parse_task_name(result["task_name"], profile_from_trial(result))
-    checkout = task["task_family"].startswith("checkout-v2/")
+    checkout = task["task_family"].startswith(CHECKOUT_PREFIXES)
     checkout_details = (
         as_object(read_json(file_path.parent / "verifier" / "details.json"))
         if checkout
@@ -875,7 +878,7 @@ def assign_attempt_indexes(rows: list[JsonObject]) -> list[JsonObject]:
             str(row.get(field, ""))
             for field in ("task_name", "agent", "model", "prompt_condition")
         )
-        if str(row.get("task_name", "")).startswith("checkout-v2/"):
+        if str(row.get("task_name", "")).startswith(CHECKOUT_PREFIXES):
             key += "\0" + str(row.get("profile", ""))
         counts[key] = counts.get(key, 0) + 1
         row["attempt_index"] = counts[key]
@@ -924,7 +927,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame["_passed"] = frame["passed"].astype(int)
     frame["_eligible"] = frame["eligible"].astype(int)
     frame["_error"] = frame["exception_type"].astype(bool).astype(int)
-    checkout_mask = frame["task_family"].str.startswith("checkout-v2/")
+    checkout_mask = frame["task_family"].str.startswith(CHECKOUT_PREFIXES)
     frame.loc[checkout_mask, "_error"] = (
         frame.loc[checkout_mask, "outcome"].eq("execution_error").astype(int)
     )
@@ -993,14 +996,14 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     )
     for column in ("mean_quality", "median_quality", "quality_at_k"):
         summary[column] = summary[column].where(summary[column].notna(), "")
-    checkout = summary["task_family"].str.startswith("checkout-v2/")
+    checkout = summary["task_family"].str.startswith(CHECKOUT_PREFIXES)
     for column in telemetry_columns:
         complete = summary[f"_known_{column}"] == summary["n_trials"]
         # A partial total is not the total for the checkout group.
         summary[column] = summary[column].where(~checkout | complete, "")
     results = summary[[*SUMMARY_COLUMNS, *checkout_columns]].to_dict("records")
     for result in results:
-        if str(result["task_family"]).startswith("checkout-v2/"):
+        if str(result["task_family"]).startswith(CHECKOUT_PREFIXES):
             n_trials = int(result["n_trials"])
             n_passed = int(result["n_passed"])
             result["pass_5"] = (
@@ -1019,7 +1022,7 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
 
     frame = pd.DataFrame(rows)
     frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
-    frame["_checkout"] = frame["task_family"].str.startswith("checkout-v2/")
+    frame["_checkout"] = frame["task_family"].str.startswith(CHECKOUT_PREFIXES)
     group_columns = ["run_id", "job_name", "model", "agent", "profile"]
     columns = QUALITY_SUMMARY_COLUMNS
     if frame["_checkout"].any():
@@ -1126,7 +1129,9 @@ def export_results(
             *TRIAL_COLUMNS,
             *(
                 CHECKOUT_TRIAL_COLUMNS
-                if any(row["task_family"].startswith("checkout-v2/") for row in trials)
+                if any(
+                    row["task_family"].startswith(CHECKOUT_PREFIXES) for row in trials
+                )
                 else []
             ),
             *reward_columns(trials),

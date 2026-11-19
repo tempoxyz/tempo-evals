@@ -61,7 +61,11 @@ async function main() {
   const location = response.headers.get('location');
   let charges: number[] = [];
   let html = '';
-  if (response.status === 402) charges = challengeCharges(response.headers);
+  if (response.status === 402) {
+    charges = challengeCharges(response.headers);
+    // The card API store answers 402 with the order as JSON instead of a challenge.
+    if (!charges.length) charges = [Math.round(Number((await response.json()).amount) * 100)];
+  }
   else if (response.status === 200) charges = pageCharges(html = await response.text());
   else if (response.status >= 300 && response.status < 400 && location && new URL(location, order.paymentUrl).host !== 'merchant:3000') {
     // Stripe Checkout and PayPal render the charge in the provider's hosted
