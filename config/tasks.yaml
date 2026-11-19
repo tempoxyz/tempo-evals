@@ -119,6 +119,20 @@ checkout:
     x402-usdc-discover: x402
     ousd-form-discover: ousdform
     apicard-discover: apicard
+  # Price-change store: the notebook store lists $10.00, but its payment step
+  # adds a $2.00 service fee, keeping the charge within the $12.00 budget
+  # (shared/checkout/pricechange/order.json). Passing means paying the higher
+  # charge once. Same sources as refuse; sync generates <prefix>-price-change.
+  price_change:
+    stripe-card-discover: stripecard
+    stripe-link-discover: link
+    paypal-discover: paypal
+    braintree-card-discover: braintree
+    mpp-card-discover: mppcard
+    mpp-ousd-discover: mppousd
+    x402-usdc-discover: x402
+    ousd-form-discover: ousdform
+    apicard-discover: apicard
   # Declined-card store: the notebook store and request, but the wallet's
   # primary card is a provider test card that declines and its backup card
   # works (sync sets the wallet's DECLINED_CARD_NUMBER and the Link service's
