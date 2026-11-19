@@ -66,44 +66,62 @@ async function main(): Promise<void> {
     if (!linkButton) await page.waitForTimeout(500);
   }
   if (!linkButton) throw new Error('Link button did not render');
-  const popupPromise = page.context().waitForEvent('page', { timeout: 30000 });
+  // Stripe opens Link either as an in-page modal or, in older builds, a popup.
+  const popupPromise = page.context().waitForEvent('page', { timeout: 30000 }).catch(() => null);
   await linkButton.click();
-  const popup = await popupPromise;
-  await popup.waitForLoadState('domcontentloaded');
-  stage = 'link-popup';
-  const emailField = popup.getByRole('textbox', { name: 'Email' });
+  const findModal = () => page.frames().find(frame => frame.url().includes('universal-link-modal-inner'));
+  let link;
+  for (let attempt = 0; attempt < 60 && !link; attempt++) {
+    link = findModal();
+    if (!link) {
+      const popup = await Promise.race([popupPromise, page.waitForTimeout(500).then(() => null)]);
+      if (popup) { await popup.waitForLoadState('domcontentloaded'); link = popup; }
+    }
+  }
+  if (!link) throw new Error('Link did not open a modal or popup');
+  stage = 'link-open';
+  const emailField = link.getByRole('textbox', { name: 'Email' });
   await emailField.waitFor({ state: 'visible', timeout: 30000 });
   await emailField.fill(${JSON.stringify(email)});
-  await emailField.press('Tab');
+  const emailContinue = link.getByRole('button', { name: 'Continue' });
+  if (await emailContinue.count()) await emailContinue.first().click();
+  else await emailField.press('Tab');
   stage = 'email-entered';
-  await popup.getByRole('textbox', { name: 'Enter your verification code' }).fill(${JSON.stringify(wallet.link.sandboxPasscode)});
+  const code = link.locator('input[autocomplete="one-time-code"]').first();
+  await code.waitFor({ state: 'visible', timeout: 30000 });
+  await code.focus();
+  await page.keyboard.type(${JSON.stringify(wallet.link.sandboxPasscode)});
   stage = 'link-authenticated';
-  const address = popup.locator('input[name="billingAddress.addressLine1"]');
-  await address.waitFor({ state: 'visible', timeout: 30000 });
-  let cvc;
-  for (let attempt = 0; attempt < 20 && !cvc; attempt++) {
-    for (const frame of [popup, ...popup.frames()]) {
-      const candidate = frame.locator('input[autocomplete="cc-csc"], input[name*="cvc" i], input[aria-label*="CVC" i], input[placeholder*="CVC" i]').first();
-      if (await candidate.count()) { cvc = candidate; break; }
+  // After sign-in Link shows CVC and billing screens, in either order or
+  // combined, before the pay button; fill whichever is showing.
+  const visible = async locator => (await locator.count()) > 0 && await locator.first().isVisible().catch(() => false);
+  const pay = link.getByRole('button', { name: new RegExp(${JSON.stringify(payLabel)}) });
+  for (let step = 0; step < 10 && !(await visible(pay)); step++) {
+    await page.waitForTimeout(1500);
+    if (await visible(pay)) break;
+    const cvc = link.locator('input[autocomplete="cc-csc"]');
+    if (await visible(cvc) && !(await cvc.first().inputValue())) await cvc.first().fill(${JSON.stringify(card.cvc)});
+    const line1 = link.locator('input[name="addressLine1"], input[name="billingAddress.addressLine1"]');
+    if (await visible(line1) && !(await line1.first().inputValue())) {
+      const name = link.locator('input[name="name"]');
+      if (await visible(name) && !(await name.first().inputValue())) await name.first().fill('Test Buyer');
+      const country = link.locator('select[name="country"]');
+      if (await visible(country)) await country.first().selectOption('US');
+      await line1.first().fill('123 Test St');
+      const manual = link.getByRole('button', { name: 'Enter address manually' });
+      if (await visible(manual)) await manual.first().click();
+      for (const [field, value] of [['locality', 'San Francisco'], ['postalCode', '94103']]) {
+        const input = link.locator('input[name="' + field + '"], input[name="billingAddress.' + field + '"]');
+        if (await visible(input)) await input.first().fill(value);
+      }
+      const state = link.locator('select[name="administrativeArea"], select[name="billingAddress.administrativeArea"]');
+      if (await visible(state)) await state.first().selectOption('CA');
     }
-    if (!cvc) await popup.waitForTimeout(500);
+    const next = link.getByRole('button', { name: /^Continue$/ });
+    if (await visible(next)) await next.first().click();
   }
-  if (!cvc) throw new Error('Link CVC field not found');
-  await cvc.fill(${JSON.stringify(card.cvc)});
-  await address.fill('123 Test St');
-  const manualAddress = popup.getByRole('button', { name: 'Enter address manually' });
-  await manualAddress.waitFor({ state: 'visible', timeout: 10000 });
-  await manualAddress.click();
-  const city = popup.locator('input[name="billingAddress.locality"]');
-  if (await city.count()) await city.fill('San Francisco');
-  const postalCode = popup.locator('input[name="billingAddress.postalCode"]');
-  if (await postalCode.count()) await postalCode.fill('94103');
-  const state = popup.locator('select[name="billingAddress.administrativeArea"]');
-  if (await state.count()) await state.selectOption('CA');
   stage = 'billing-complete';
-  const pay = popup.getByRole('button', { name: new RegExp(${JSON.stringify(payLabel)}) });
-  await popup.locator('[data-testid="pay-button"]:not([class*="--incomplete"])').waitFor({ state: 'visible', timeout: 10000 });
-  await pay.click({ timeout: 10000 });
+  await pay.first().click({ timeout: 30000 });
   stage = 'payment-submitted';
   try {
     await page.waitForURL(/merchant:3000\\/complete/, { waitUntil: 'domcontentloaded', timeout: 60000 });
