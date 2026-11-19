@@ -17,8 +17,10 @@ updates:
     cooldown:
       default-days: 7
     ignore:
-      # mppx is the client the MPP graders pay with; it moves only with a new dataset major.
+      # The MPP graders pay through these; they move only with a new dataset major.
       - dependency-name: mppx
+      - dependency-name: viem
+      - dependency-name: "@modelcontextprotocol/sdk"
     groups:
       verifier-npm-deps:
         patterns: ["*"]
