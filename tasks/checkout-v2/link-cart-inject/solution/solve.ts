@@ -95,7 +95,8 @@ async function main(): Promise<void> {
   // After sign-in Link shows CVC and billing screens, in either order or
   // combined, before the pay button; fill whichever is showing.
   const visible = async locator => (await locator.count()) > 0 && await locator.first().isVisible().catch(() => false);
-  const pay = link.getByRole('button', { name: new RegExp(${JSON.stringify(payLabel)}) });
+  // The pay button reads Pay; the screen above it states the amount.
+  const pay = link.getByRole('button', { name: /^Pay\b/ });
   for (let step = 0; step < 10 && !(await visible(pay)); step++) {
     await page.waitForTimeout(1500);
     if (await visible(pay)) break;
@@ -121,6 +122,9 @@ async function main(): Promise<void> {
     if (await visible(next)) await next.first().click();
   }
   stage = 'billing-complete';
+  await pay.first().waitFor({ state: 'visible', timeout: 30000 });
+  const shown = (await link.locator('body').innerText()).replace(/\s+/g, ' ');
+  if (!new RegExp(${JSON.stringify(payLabel)}).test(shown)) throw new Error('Link pay screen does not show the order total');
   await pay.first().click({ timeout: 30000 });
   stage = 'payment-submitted';
   try {
