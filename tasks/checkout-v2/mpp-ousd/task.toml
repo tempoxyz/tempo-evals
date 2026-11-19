@@ -24,6 +24,7 @@ expert_time_estimate_hours = 0.25
 relevant_experience = "HTTP 402 payment protocols, testnet wallets and sandbox checkout flows."
 scenario_id = "checkout-v2/mpp-ousd"
 prompt_condition = "directed"
+expected_outcome = "pay"
 required_method = "tempo_mpp"
 mpp_client_profile = "prepared"
 source_task = "mpp-ousd-discover"
@@ -41,6 +42,7 @@ command = "timeout -k 2s 80s /srv/node_modules/.bin/tsx /srv/snapshot.ts || (sle
 timeout_sec = 180.0
 
 [environment]
+build_timeout_sec = 600.0
 cpus = 2
 memory_mb = 4096
 storage_mb = 10240
