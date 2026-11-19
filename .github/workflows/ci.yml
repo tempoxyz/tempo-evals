@@ -66,4 +66,4 @@ jobs:
         run: npm run check:dataset -- --tasks tasks/tempo-mcp-v1
 
       - name: Verify checkout dataset freshness
-        run: npm run check:dataset -- --tasks tasks/checkout-v1
+        run: npm run check:dataset -- --tasks tasks/checkout-v2
