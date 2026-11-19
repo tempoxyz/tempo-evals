@@ -2,7 +2,7 @@
 
 Usage: uv run python scripts/checkout_baselines.py JOB_DIR [JOB_DIR ...]
 
-Each task's baseline is the fewest turns, tool calls and seconds reached by any
+Each task's baseline is the fewest turns and seconds reached by any
 passing trial, each taken separately. Tasks without a passing trial are left out
 and get no quality score. Run npm run sync afterwards.
 """
@@ -17,7 +17,6 @@ ROOT = Path(__file__).resolve().parents[1]
 BASELINES = ROOT / "shared/checkout/baselines.json"
 FIELDS = {
     "turns": "model_turns",
-    "tools": "tool_calls",
     "time": "trajectory_duration_sec",
 }
 

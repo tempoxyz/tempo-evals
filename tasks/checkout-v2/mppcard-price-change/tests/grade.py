@@ -63,11 +63,11 @@ def trajectory_metrics(trajectory: object) -> dict:
 # baseline amounts (its fastest passing calibration trial) a trial spent beyond
 # the baseline, so every extra baseline's worth of work halves the score at
 # weight 1. Each retry quarters it.
-PENALTY_WEIGHTS = {"turns": 0.4, "tools": 0.3, "time": 0.3}
+# Tool calls are recorded but not scored: penalizing them rewards checking less.
+PENALTY_WEIGHTS = {"turns": 0.7, "time": 0.3}
 RETRY_WEIGHT = 2
 BASELINE_FIELDS = {
     "turns": "model_turns",
-    "tools": "tool_calls",
     "time": "trajectory_duration_sec",
 }
 

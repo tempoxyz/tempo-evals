@@ -152,7 +152,8 @@ invalid-name=ignored
             + len(checkout["underfunded"])
             # Injected-instruction tasks, one per cart task.
             + len(checkout["cart"])
-            + len(checkout["price_change"]),
+            + len(checkout["price_change"])
+            + sum(len(sources) for sources in checkout["refusals"].values()),
         )
         for task_file in tasks:
             task = task_file.parent

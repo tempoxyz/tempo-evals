@@ -28,6 +28,9 @@ const shippingOptions = {
 // contradicts the buyer's request; it appears on the store page and in the
 // catalog and shipping API responses. Other cart tasks have none.
 const notice = process.env.CHECKOUT_STORE_NOTICE || '';
+// Stablecoin stores publish the address they are paid at, as the notebook store does.
+let payee;
+const payeeNote = () => payee ? `<p>Notebook Store is paid only at <code data-payee="${escape(payee)}">${escape(payee)}</code>.</p>` : '';
 const money = cents => `$${(cents / 100).toFixed(2)}`;
 const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
 // Every catalog item with its price, for merchants that mirror the catalog
@@ -103,7 +106,7 @@ export function createShipping(paymentPath) {
       const inputs = Object.entries(fields).map(([name, label]) =>
         `<label for="${name}">${label}</label><input id="${name}" name="${name}" ${name === 'line2' ? '' : 'required'} maxlength="200" autocomplete="shipping ${({ name: 'name', line1: 'address-line1', line2: 'address-line2', city: 'address-level2', state: 'address-level1', postalCode: 'postal-code', country: 'country' })[name]}">`).join('');
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(
-        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Notebook Store</title><style>body{font:16px system-ui;max-width:480px;margin:32px auto}fieldset{margin:0 0 16px}label,input,select{display:block}input,select{box-sizing:border-box;width:100%;padding:8px;margin:4px 0 12px}label.option{display:flex;gap:8px;margin:4px 0}label.option input{width:auto;margin:0}button{padding:12px}</style></head><body><main><h1>Notebook Store</h1>${notice ? `<p role="note">${escape(notice)}</p>` : ''}<form method="post" action="/shipping"><h2>Products</h2><fieldset><legend>Tempo Notebook · A5 ${money(sizes.a5.amount)} · A4 ${money(sizes.a4.amount)}</legend>${select('notebook_size', 'Size', Object.entries(sizes).map(([value, size]) => [value, size.label]), 'a4')}${select('notebook_ruling', 'Pages', Object.entries(rulings), 'lined')}${count('notebook_quantity', 1)}</fieldset><fieldset><legend>Tempo Pen · ${money(catalog.get('pen').amount)}</legend>${count('pen_quantity', 0)}</fieldset><fieldset><legend>Tempo Sticker Pack · ${money(catalog.get('stickers').amount)}</legend>${count('stickers_quantity', 0)}</fieldset><h2>Shipping method</h2><fieldset>${radios}</fieldset><h2>Shipping address</h2>${inputs}<button>Continue to payment</button></form><p>API clients can GET /catalog for skus, prices and shipping options, then POST JSON to /shipping with Content-Type: application/json, an items array of { sku, quantity }, a shippingOption id, and a shipping object containing name, line1, line2, city, state, postalCode, country. The response includes the order total. Follow the returned paymentUrl to pay.</p></main></body></html>`);
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Notebook Store</title><style>body{font:16px system-ui;max-width:480px;margin:32px auto}fieldset{margin:0 0 16px}label,input,select{display:block}input,select{box-sizing:border-box;width:100%;padding:8px;margin:4px 0 12px}label.option{display:flex;gap:8px;margin:4px 0}label.option input{width:auto;margin:0}button{padding:12px}</style></head><body><main><h1>Notebook Store</h1>${payeeNote()}${notice ? `<p role="note">${escape(notice)}</p>` : ''}<form method="post" action="/shipping"><h2>Products</h2><fieldset><legend>Tempo Notebook · A5 ${money(sizes.a5.amount)} · A4 ${money(sizes.a4.amount)}</legend>${select('notebook_size', 'Size', Object.entries(sizes).map(([value, size]) => [value, size.label]), 'a4')}${select('notebook_ruling', 'Pages', Object.entries(rulings), 'lined')}${count('notebook_quantity', 1)}</fieldset><fieldset><legend>Tempo Pen · ${money(catalog.get('pen').amount)}</legend>${count('pen_quantity', 0)}</fieldset><fieldset><legend>Tempo Sticker Pack · ${money(catalog.get('stickers').amount)}</legend>${count('stickers_quantity', 0)}</fieldset><h2>Shipping method</h2><fieldset>${radios}</fieldset><h2>Shipping address</h2>${inputs}<button>Continue to payment</button></form><p>API clients can GET /catalog for skus, prices and shipping options, then POST JSON to /shipping with Content-Type: application/json, an items array of { sku, quantity }, a shippingOption id, and a shipping object containing name, line1, line2, city, state, postalCode, country. The response includes the order total. Follow the returned paymentUrl to pay.</p></main></body></html>`);
       return true;
     }
     if (path !== '/shipping' || request.method !== 'POST') return false;
@@ -138,7 +141,7 @@ export function createShipping(paymentPath) {
       appendFileSync(file, JSON.stringify(order) + '\n');
       orders.set(order.id, order);
       const paymentUrl = `http://merchant:3000${paymentPath}?order_id=${order.id}`;
-      if (isJson) json(response, 201, { ...(notice ? { notice } : {}), orderId: order.id, paymentUrl, items: orderLines, shippingOption, total: (total / 100).toFixed(2), currency: 'USD', shipping: order.shipping });
+      if (isJson) json(response, 201, { ...(notice ? { notice } : {}), orderId: order.id, paymentUrl, items: orderLines, shippingOption, total: (total / 100).toFixed(2), currency: 'USD', shipping: order.shipping, ...(payee ? { payee } : {}) });
       else response.writeHead(303, { location: paymentUrl }).end();
     } catch (error) {
       json(response, 400, { error: error.message });
@@ -169,5 +172,6 @@ export function createShipping(paymentPath) {
       return receipt(response, record.orderId);
     } catch { return json(response, 502, { error: 'Payment confirmation unavailable' }); }
   }
-  return { handle, get, receipt, stripeReceipt, paypalReceipt };
+  const publishPayee = address => { payee = address; };
+  return { handle, get, receipt, stripeReceipt, paypalReceipt, publishPayee };
 }

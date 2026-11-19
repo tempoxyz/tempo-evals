@@ -9,6 +9,7 @@ import { Mppx, NodeListener, Request as ServerRequest, tempo } from 'mppx/server
 import { Proxy } from 'mppx/proxy';
 
 const recipient = `0x${randomBytes(20).toString('hex')}` as `0x${string}`;
+shipping.publishPayee(recipient);
 const ousd = '0x20c0000000000000000000006a37DA5C996874BE' as `0x${string}`;
 const client = createClient({ chain: Chain.testnet, transport: rpcHttp(process.env.TEMPO_RPC_URL || 'https://rpc.moderato.tempo.xyz') });
 // Respond once the simulated charge is broadcast. Waiting for inclusion through

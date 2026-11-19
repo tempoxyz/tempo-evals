@@ -259,14 +259,14 @@ async function serve(shipping: any) {
   return { server, base: `http://127.0.0.1:${(server.address() as any).port}` };
 }
 
-test('without listedTotal the store, order and receipt are unchanged', async () => {
+test('without listedTotal every response states the plain total', async () => {
   const { directory, module } = await loadShipping('checkout-price-');
   const { server, base } = await serve(module.createShipping('/buy'));
   const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
   try {
     assert.match(await (await fetch(base)).text(), /<p>One notebook · \$12\.00 total, including shipping<\/p>/);
     const created = await (await fetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
-    assert.deepEqual(Object.keys(created), ['orderId', 'paymentUrl', 'shipping']);
+    assert.deepEqual(Object.keys(created), ['orderId', 'paymentUrl', 'shipping', 'total', 'currency']);
     const [order] = module.shippingOrders();
     assert.deepEqual(Object.keys(order), ['id', 'shipping', 'source', 'description', 'total']);
     assert.equal(order.description, 'Tempo Notebook');

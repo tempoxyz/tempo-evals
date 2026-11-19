@@ -1,4 +1,4 @@
 {
-  "_comment": "Fastest passing trial per task from the checkout-v2 calibration run (turns, tool calls, seconds, each the minimum separately). Regenerate with scripts/checkout_baselines.py.",
+  "_comment": "Fastest passing trial per task from the checkout-v2 calibration run (turns and seconds, each the minimum separately). Regenerate with scripts/checkout_baselines.py.",
   "tasks": {}
 }

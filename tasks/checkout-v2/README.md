@@ -425,12 +425,12 @@ three, and oracle purchases get `reward = 1`. After a verified payment, RewardKi
 scores efficiency against the task's own baseline:
 
 ```text
-excess(m) = max(0, value(m) / baseline(m) - 1)    for turns, tool calls, seconds
+excess(m) = max(0, value(m) / baseline(m) - 1)    for turns and seconds
 quality   = 2 ** -(2 × extra_checkout_attempts
-                   + 0.4 × excess(turns) + 0.3 × excess(tools) + 0.3 × excess(time))
+                   + 0.7 × excess(turns) + 0.3 × excess(time))
 ```
 
-A task's baseline is the fewest turns, tool calls and seconds any passing trial
+A task's baseline is the fewest turns and seconds any passing trial
 reached in the checkout-v2 calibration run, each taken separately
 (`shared/checkout/baselines.json`, written by
 `scripts/checkout_baselines.py` and synced to each task's
@@ -441,8 +441,8 @@ quarters the score. Baselines remove the fixed difference between rails, so a
 browser checkout is not scored below an API one for needing more steps. A task
 without a baseline records its raw metrics and has no quality score.
 Turns count model calls in the Harbor trajectory, excluding copied
-context. Tool calls count every call in those steps, including Bash, research and
-failed calls, however batched. Time spans the first to last user/agent timestamp;
+context. Tool calls are recorded in efficiency.json but not scored, since
+penalizing them rewards an agent for checking less. Time spans the first to last user/agent timestamp;
 setup and verification are excluded. Extra attempts are per-rail proxies, not counts of every failed submission.
 Stripe card counts Checkout Sessions created beyond the first; reopening an
 order's payment URL reuses its open session, and a new one is created only after

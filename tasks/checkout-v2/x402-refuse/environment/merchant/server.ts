@@ -19,6 +19,7 @@ if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING
 // Payments return to the funding wallet, so successful trials refill it.
 const funding = privateKeyToAccount(fundingKey);
 const recipient = funding.address;
+shipping.publishPayee(recipient);
 const mppx = Mppx.create({
   methods: [evm.charge({ currency: evm.assets.baseSepolia.USDC, recipient, x402: { facilitator, fetch: retryingFetch } })],
   secretKey: randomBytes(32).toString('hex'),
