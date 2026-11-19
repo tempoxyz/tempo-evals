@@ -306,7 +306,7 @@ class CheckoutRefuseTest(unittest.TestCase):
                 )
 
     def test_unreadable_balances_fail_unless_a_payment_shows_anyway(self):
-        tests = TASKS / "x402-refuse-directed/tests"
+        tests = TASKS / "x402-refuse/tests"
         _, check, _ = modules(tests, "x402_unreadable")
         for slug, field in (
             ("mpp-ousd-discover", "balance"),
@@ -424,7 +424,7 @@ class CheckoutRefuseTest(unittest.TestCase):
             with self.subTest(task=task):
                 target = TASKS / task
                 peer = TASKS / directed[slug]["task"]
-                self.assertEqual(task, f"{refuse[slug]}-refuse-directed")
+                self.assertEqual(task, f"{refuse[slug]}-refuse")
                 for source, destination in (
                     ("check.py", "tests/check.py"),
                     ("oracle.ts", "solution/solve.ts"),

@@ -411,7 +411,10 @@ def sync_checkout_prompt_variants() -> None:
         )
         metadata["task"]["name"] = f"checkout-v2/{directed_slug}"
         metadata["metadata"].update(
-            prompt_condition="directed", required_method=prompt["method"]
+            scenario_id=f"checkout-v2/{directed_slug}",
+            source_task=slug,
+            prompt_condition="directed",
+            required_method=prompt["method"],
         )
         write_file(target / "task.toml", tomlkit.dumps(metadata))
         instruction = (source / "instruction.md").read_text()
@@ -569,9 +572,8 @@ CHECKOUT_CART_SERVER_EDITS: dict[str, tuple[tuple[str, str], ...]] = {
 def cart_tasks() -> dict[str, tuple[str, str]]:
     """Map each cart task to its source task and prompt condition."""
     return {
-        f"{prefix}-{condition}": (source, condition)
+        prefix: (source, "directed")
         for source, prefix in TASKS_CONFIG["checkout"].get("cart", {}).items()
-        for condition in ("directed",)
     }
 
 
@@ -651,7 +653,7 @@ def sync_checkout_cart_variants() -> None:
                 f"${order['total'] // 100} total and full shipping address."
             ),
             tags=[*metadata["metadata"]["tags"], "cart"],
-            scenario_id=f"checkout-v2/{target_slug.rsplit('-', 1)[0]}-discover",
+            scenario_id=f"checkout-v2/{target_slug}",
             prompt_condition=condition,
             required_method=prompt["method"] if directed else "",
             store="cart",
@@ -756,7 +758,7 @@ CHECKOUT_REFUSE_SERVER_EDITS: dict[str, tuple[tuple[str, str], ...]] = {
 def refuse_tasks() -> dict[str, str]:
     """Map each must-refuse task to its source task."""
     return {
-        f"{prefix}-refuse-directed": source
+        f"{prefix}-refuse": source
         for source, prefix in TASKS_CONFIG["checkout"].get("refuse", {}).items()
     }
 
@@ -1039,7 +1041,7 @@ CHECKOUT_DECLINE_SERVER_EDITS: dict[str, tuple[tuple[str, str], ...]] = {
 def decline_tasks() -> dict[str, str]:
     """Map each declined-card task to its source task."""
     return {
-        f"{prefix}-decline-directed": source
+        f"{prefix}-decline": source
         for source, prefix in TASKS_CONFIG["checkout"].get("decline", {}).items()
     }
 
@@ -1051,7 +1053,7 @@ def decline_tasks() -> dict[str, str]:
 def inject_tasks() -> dict[str, str]:
     """Map each injected-instruction task to its cart task."""
     return {
-        f"{prefix}-inject-directed": f"{prefix}-directed"
+        f"{prefix}-inject": f"{prefix}"
         for prefix in TASKS_CONFIG["checkout"].get("cart", {}).values()
     }
 
@@ -1315,7 +1317,7 @@ CHECKOUT_UNDERFUNDED_SERVER_EDITS: dict[str, tuple[tuple[str, str], ...]] = {
 def underfunded_tasks() -> dict[str, str]:
     """Map each underfunded task to its source task."""
     return {
-        f"{prefix}-underfunded-directed": source
+        f"{prefix}-underfunded": source
         for source, prefix in TASKS_CONFIG["checkout"].get("underfunded", {}).items()
     }
 

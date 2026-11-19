@@ -42,46 +42,46 @@ checkout:
       credentials: [BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID]
     - id: kernel
       credentials: [KERNEL_API_KEY]
-  # Existing tasks are discover prompts; sync generates their -directed peers.
+  # Existing tasks are discover prompts; sync generates their base tasks.
   directed:
     stripe-card-discover:
-      task: stripe-card-directed
+      task: stripe-card
       method: card
       instruction: Use card to pay.
     stripe-link-discover:
-      task: stripe-link-directed
+      task: stripe-link
       method: link
       instruction: Use Link to pay.
     paypal-discover:
-      task: paypal-directed
+      task: paypal
       method: paypal
       instruction: Use PayPal to pay.
     mpp-card-discover:
-      task: mpp-card-directed
+      task: mpp-card
       method: stripe_mpp
       instruction: Use card over MPP to pay.
     mpp-ousd-discover:
-      task: mpp-ousd-directed
+      task: mpp-ousd
       method: tempo_mpp
       instruction: Use MPP to pay.
     braintree-card-discover:
-      task: braintree-card-directed
+      task: braintree-card
       method: card
       instruction: Use card to pay.
     shopify-card-discover:
-      task: shopify-card-directed
+      task: shopify-card
       method: card
       instruction: Use card to pay.
     x402-usdc-discover:
-      task: x402-usdc-directed
+      task: x402-usdc
       method: x402
       instruction: Use x402 to pay.
     ousd-form-discover:
-      task: ousd-form-directed
+      task: ousd-form
       method: tempo_transfer
       instruction: Use OUSD to pay.
     apicard-discover:
-      task: apicard-directed
+      task: apicard
       method: card_api
       instruction: Use card through the store's payment API to pay.
   # Order totals in USD cents for merchants that do not charge $12; sync writes
@@ -90,8 +90,8 @@ checkout:
     x402-usdc-discover: 100
   # Cart store: the same payment adapters behind a multi-item catalog with
   # variants, quantities and a budget-bound shipping choice. Maps each source
-  # task to a cart task prefix; sync generates <prefix>-discover and
-  # <prefix>-directed from the source and shared/checkout/cart/.
+  # task to a cart task name; sync generates it from the source and
+  # shared/checkout/cart/.
   cart:
     stripe-card-discover: stripecard-cart
     stripe-link-discover: link-cart
@@ -107,7 +107,7 @@ checkout:
   # adds a service fee and charges more than the prompt's budget
   # (shared/checkout/refuse/order.json). Passing means reaching the payment step
   # without paying. Maps each source task to a task prefix; sync generates
-  # <prefix>-refuse-directed from its directed peer and shared/checkout/refuse/.
+  # <prefix>-refuse from its directed peer and shared/checkout/refuse/.
   # Shopify is left out: it charges its own catalog price, not the order total.
   refuse:
     stripe-card-discover: stripecard
@@ -124,7 +124,7 @@ checkout:
   # works (sync sets the wallet's DECLINED_CARD_NUMBER and the Link service's
   # CARD_DECLINE). Passing means one purchase, paid with the backup card after
   # a declined attempt with the primary card. Maps each source task to a task
-  # prefix; sync generates <prefix>-decline-directed from its directed peer and
+  # prefix; sync generates <prefix>-decline from its directed peer and
   # shared/checkout/decline/. Only card rails whose snapshot can show each
   # attempt's card are included; Link pays with the card saved in Link.
   decline:
@@ -137,7 +137,7 @@ checkout:
   # accepts (shared/checkout/underfunded/order.json). Passing means reaching
   # the payment step without paying, as in must-refuse tasks. Maps each
   # stablecoin source task to a task prefix; sync generates
-  # <prefix>-underfunded-directed from its directed peer.
+  # <prefix>-underfunded from its directed peer.
   underfunded:
     mpp-ousd-discover: mppousd
     ousd-form-discover: ousdform

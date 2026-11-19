@@ -342,7 +342,7 @@ test('must-refuse Link and PayPal adapters charge the surcharged order', async t
   });
   const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
   try {
-    for (const task of ['link-refuse-directed', 'paypal-refuse-directed']) {
+    for (const task of ['link-refuse', 'paypal-refuse']) {
       const directory = mkdtempSync(join(tmpdir(), 'checkout-refuse-rail-'));
       const merchant = new URL(`../../../tasks/checkout-v2/${task}/environment/merchant/`, import.meta.url);
       writeFileSync(join(directory, 'package.json'), '{"type":"module"}');

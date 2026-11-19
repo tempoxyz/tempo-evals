@@ -118,9 +118,9 @@ class CheckoutUnderfundedTest(unittest.TestCase):
         self.assertEqual(
             sorted(sync_shared.underfunded_tasks()),
             [
-                "mppousd-underfunded-directed",
-                "ousdform-underfunded-directed",
-                "x402-underfunded-directed",
+                "mppousd-underfunded",
+                "ousdform-underfunded",
+                "x402-underfunded",
             ],
         )
         self.assertLess(ORDER["walletBalance"], ORDER["total"])
@@ -147,8 +147,8 @@ class CheckoutUnderfundedTest(unittest.TestCase):
         for task in sync_shared.checkout_task_dirs():
             compose = (task / "environment/docker-compose.yaml").read_text()
             tempo = task.name in {
-                "mppousd-underfunded-directed",
-                "ousdform-underfunded-directed",
+                "mppousd-underfunded",
+                "ousdform-underfunded",
             }
             with self.subTest(task=task.name):
                 self.assertEqual(
@@ -235,7 +235,7 @@ class CheckoutUnderfundedTest(unittest.TestCase):
             with self.subTest(task=task):
                 target = TASKS / task
                 peer = TASKS / directed[slug]["task"]
-                self.assertEqual(task, f"{underfunded[slug]}-underfunded-directed")
+                self.assertEqual(task, f"{underfunded[slug]}-underfunded")
                 for source, destination in (
                     (UNDERFUNDED / "order.json", "solution/order.json"),
                     (UNDERFUNDED / "order.json", "tests/order.json"),

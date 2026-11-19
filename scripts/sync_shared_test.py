@@ -100,8 +100,10 @@ class SyncSharedTest(unittest.TestCase):
                         config["task"]["name"], f"checkout-v2/{directed_slug}"
                     )
                     self.assertEqual(
-                        config["metadata"]["scenario_id"], f"checkout-v2/{slug}"
+                        config["metadata"]["scenario_id"],
+                        f"checkout-v2/{directed_slug}",
                     )
+                    self.assertEqual(config["metadata"]["source_task"], slug)
                     self.assertEqual(config["metadata"]["prompt_condition"], "directed")
                     self.assertEqual(
                         config["metadata"]["required_method"], prompt["method"]
@@ -200,8 +202,7 @@ class SyncSharedTest(unittest.TestCase):
                 sync_shared.sync_checkout_cart_variants()
             for slug, prefix in cart.items():
                 method = sync_shared.CHECKOUT_CART_METHODS[slug]
-                for condition in ("directed",):
-                    task = checkout / f"{prefix}-{condition}"
+                for task in (checkout / prefix,):
                     with self.subTest(task=task.name):
                         readme = (task / "README.md").read_text()
                         self.assertIn(f"\n# {method['method']} cart checkout\n", readme)

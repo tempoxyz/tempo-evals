@@ -103,10 +103,10 @@ class CheckoutDeclineTest(unittest.TestCase):
         self.assertEqual(
             sorted(sync_shared.decline_tasks()),
             [
-                "apicard-decline-directed",
-                "braintree-decline-directed",
-                "mppcard-decline-directed",
-                "stripecard-decline-directed",
+                "apicard-decline",
+                "braintree-decline",
+                "mppcard-decline",
+                "stripecard-decline",
             ],
         )
 
@@ -247,7 +247,7 @@ class CheckoutDeclineTest(unittest.TestCase):
                 target = TASKS / task
                 peer = TASKS / directed[slug]["task"]
                 card = sync_shared.CHECKOUT_DECLINE_CARDS[slug]
-                self.assertEqual(task, f"{decline[slug]}-decline-directed")
+                self.assertEqual(task, f"{decline[slug]}-decline")
                 for source, destination in (
                     (DECLINE / "check.py", "tests/check.py"),
                     (DECLINE / "solve.sh", "solution/solve.sh"),

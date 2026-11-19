@@ -608,7 +608,7 @@ invalid-name=ignored
 
     def test_checkout_explicit_task_path_requires_suite_selection(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
-            preflight({}, {"tasks": "tasks/checkout-v2/stripe-card-directed"})
+            preflight({}, {"tasks": "tasks/checkout-v2/stripe-card"})
 
     def test_checkout_preflight_rejects_missing_task(self) -> None:
         with (
@@ -622,18 +622,14 @@ invalid-name=ignored
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=False),
             self.assertRaisesRegex(RuntimeError, "no authored task"),
         ):
-            preflight(
-                {}, {"task_suite": "checkout", "task_filter": "stripe-card-directed"}
-            )
+            preflight({}, {"task_suite": "checkout", "task_filter": "stripe-card"})
 
     def test_checkout_shared_setup_requires_stripe_and_paypal_buyer(self) -> None:
         with (
             patch.dict(os.environ, {}, clear=True),
             self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
         ):
-            preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-directed"}
-            )
+            preflight({}, {"task_suite": "checkout", "task_filter": "mpp-ousd"})
         with (
             patch.dict(
                 os.environ,
@@ -644,9 +640,7 @@ invalid-name=ignored
             ),
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_BUYER_EMAIL"),
         ):
-            preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-directed"}
-            )
+            preflight({}, {"task_suite": "checkout", "task_filter": "mpp-ousd"})
         with patch.dict(
             os.environ,
             {
@@ -657,9 +651,7 @@ invalid-name=ignored
             },
             clear=True,
         ):
-            preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-directed"}
-            )
+            preflight({}, {"task_suite": "checkout", "task_filter": "mpp-ousd"})
 
     def test_x402_checkout_preflight_requires_funding_key(self) -> None:
         env = {
@@ -668,7 +660,7 @@ invalid-name=ignored
             "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
             "SHOPIFY_STOREFRONT_PASSWORD": "password",
         }
-        for task_filter in ("x402-usdc-directed", "x402-cart-directed"):
+        for task_filter in ("x402-usdc", "x402-cart"):
             with (
                 self.subTest(task_filter=task_filter),
                 patch.dict(os.environ, env, clear=True),
@@ -694,15 +686,15 @@ invalid-name=ignored
             ),
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_CLIENT_ID"),
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-directed"})
+            preflight({}, {"task_suite": "checkout", "task_filter": "paypal"})
 
     def test_directed_checkout_preflight_requires_the_same_provider_credentials(
         self,
     ) -> None:
         for slug, missing in (
-            ("stripe-link-directed", "STRIPE_TEST_PUBLISHABLE_KEY"),
-            ("paypal-directed", "PAYPAL_SANDBOX_CLIENT_ID"),
-            ("shopify-card-directed", "SHOPIFY_SHOP"),
+            ("stripe-link", "STRIPE_TEST_PUBLISHABLE_KEY"),
+            ("paypal", "PAYPAL_SANDBOX_CLIENT_ID"),
+            ("shopify-card", "SHOPIFY_SHOP"),
         ):
             for selection in (
                 {"task_filter": slug},
@@ -738,9 +730,7 @@ invalid-name=ignored
             ),
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=True),
         ):
-            preflight(
-                {}, {"task_suite": "checkout", "task_filter": "stripe-card-directed"}
-            )
+            preflight({}, {"task_suite": "checkout", "task_filter": "stripe-card"})
 
     def test_checkout_preserves_parallel_trial_count(self) -> None:
         options = {
@@ -1121,7 +1111,7 @@ invalid-name=ignored
                 "profile": profile,
                 "sync": False,
                 "task_suite": "checkout",
-                "tasks": "tasks/checkout-v2/stripe-card-directed",
+                "tasks": "tasks/checkout-v2/stripe-card",
             }
             with (
                 self.subTest(profile=profile),

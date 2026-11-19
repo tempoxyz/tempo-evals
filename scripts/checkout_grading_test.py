@@ -166,10 +166,10 @@ class CheckoutBaselinesTest(unittest.TestCase):
             job = Path(temporary)
             for index, (task, correct, turns, tools, seconds) in enumerate(
                 (
-                    ("checkout-v2/a-directed", 1, 12, 9, 40.5),
-                    ("checkout-v2/a-directed", 1, 8, 14, 55.0),
-                    ("checkout-v2/a-directed", 0, 2, 2, 5.0),
-                    ("checkout-v2/b-directed", 0, 5, 5, 20.0),
+                    ("checkout-v2/a", 1, 12, 9, 40.5),
+                    ("checkout-v2/a", 1, 8, 14, 55.0),
+                    ("checkout-v2/a", 0, 2, 2, 5.0),
+                    ("checkout-v2/b", 0, 5, 5, 20.0),
                 )
             ):
                 trial = job / f"t{index}"
@@ -189,7 +189,7 @@ class CheckoutBaselinesTest(unittest.TestCase):
                 )
             self.assertEqual(
                 baselines([job]),
-                {"a-directed": {"turns": 8, "tools": 9, "time": 40.5}},
+                {"a": {"turns": 8, "tools": 9, "time": 40.5}},
             )
 
 

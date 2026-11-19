@@ -405,8 +405,8 @@ class CheckoutShippingTest(unittest.TestCase):
     def test_x402_charges_the_store_total(self):
         cart = json.loads((ROOT / "shared/checkout/cart/order.json").read_text())
         for slug, total in (
-            ("x402-usdc-directed", 100),
-            ("x402-cart-directed", cart["total"]),
+            ("x402-usdc", 100),
+            ("x402-cart", cart["total"]),
         ):
             with self.subTest(task=slug):
                 task = ROOT / "tasks/checkout-v2" / slug
