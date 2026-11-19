@@ -106,14 +106,18 @@ class CheckoutGradingTest(unittest.TestCase):
             (True, trajectory(), 0, None, None),
         ):
             with (
-                self.subTest(passed=passed, quality=expected_quality, baseline=baseline),
+                self.subTest(
+                    passed=passed, quality=expected_quality, baseline=baseline
+                ),
                 tempfile.TemporaryDirectory() as temporary,
             ):
                 root = Path(temporary)
                 tests = root / "tests"
                 tests.mkdir()
                 if baseline:
-                    (tests / "efficiency_baseline.json").write_text(json.dumps(baseline))
+                    (tests / "efficiency_baseline.json").write_text(
+                        json.dumps(baseline)
+                    )
                 shutil.copytree(
                     ROOT / "shared/checkout/tests/quality", tests / "quality"
                 )

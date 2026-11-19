@@ -15,7 +15,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINES = ROOT / "shared/checkout/baselines.json"
-FIELDS = {"turns": "model_turns", "tools": "tool_calls", "time": "trajectory_duration_sec"}
+FIELDS = {
+    "turns": "model_turns",
+    "tools": "tool_calls",
+    "time": "trajectory_duration_sec",
+}
 
 
 def baselines(job_dirs: list[Path]) -> dict[str, dict[str, float]]:
@@ -25,7 +29,9 @@ def baselines(job_dirs: list[Path]) -> dict[str, dict[str, float]]:
             trial = efficiency.parent
             reward = json.loads((trial / "reward.json").read_text())
             metrics = json.loads(efficiency.read_text())
-            if reward.get("correctness") != 1 or any(f not in metrics for f in FIELDS.values()):
+            if reward.get("correctness") != 1 or any(
+                f not in metrics for f in FIELDS.values()
+            ):
                 continue
             result = json.loads((trial.parent / "result.json").read_text())
             task = result["task_name"].split("/", 1)[-1]
@@ -34,7 +40,9 @@ def baselines(job_dirs: list[Path]) -> dict[str, dict[str, float]]:
                 value = metrics[field]
                 if value > 0 and value < entry.get(name, float("inf")):
                     entry[name] = round(value, 3) if name == "time" else value
-    return {task: entry for task, entry in sorted(best.items()) if len(entry) == len(FIELDS)}
+    return {
+        task: entry for task, entry in sorted(best.items()) if len(entry) == len(FIELDS)
+    }
 
 
 def main(argv: list[str]) -> int:

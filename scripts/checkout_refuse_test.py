@@ -410,7 +410,9 @@ class CheckoutRefuseTest(unittest.TestCase):
                         }
                         self.assertEqual(
                             efficiency_metrics(
-                                trajectory, details["extra_checkout_attempts"]
+                                trajectory,
+                                details["extra_checkout_attempts"],
+                                {"turns": 1, "tools": 1, "time": 1},
                             )["extra_checkout_attempts"],
                             attempts,
                         )
