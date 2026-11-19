@@ -393,10 +393,8 @@ class CheckoutRefuseTest(unittest.TestCase):
                     self.assertIsNone(details["payment_method"])
                     self.assertIn("observed_methods", details)
                     self.assertEqual(details["charged_total"], ORDER["total"])
-                    self.assertIs(
-                        type(details["extra_checkout_attempts"]), type(attempts)
-                    )
-                    self.assertEqual(details["extra_checkout_attempts"], attempts)
+                    # Nothing was charged, so nothing counts as a retry.
+                    self.assertEqual(details["extra_checkout_attempts"], 0)
                     if attempts is not None:
                         trajectory = {
                             "steps": [
@@ -414,7 +412,7 @@ class CheckoutRefuseTest(unittest.TestCase):
                                 details["extra_checkout_attempts"],
                                 {"turns": 1, "tools": 1, "time": 1},
                             )["extra_checkout_attempts"],
-                            attempts,
+                            0,
                         )
 
     def test_generated_tasks_differ_from_their_directed_peer_only_as_intended(self):

@@ -359,9 +359,9 @@ enrollment uses the backup card.
 The verifier (`shared/checkout/decline/check.py`, synced as `tests/check.py`)
 wraps the shared shipping check (synced as `tests/shipping_check.py`); details
 add `card_attempt_count`, `primary_card_declines` and `backup_card_payments`.
-Retries count as in the paying task, so a decline and a retry in the same Stripe
-Checkout Session is no extra attempt, while card over MPP, Card API and
-Braintree count the second payment request. The oracle
+The required decline is not a retry: retries are the paying task's count less
+one, or card attempts beyond the decline and the backup payment, whichever is
+higher. The oracle
 (`shared/checkout/decline/solve.sh`) runs the paying task's oracle with the
 primary card, requires it to fail, and runs it again with the backup card.
 

@@ -203,6 +203,20 @@ class CheckoutDeclineTest(unittest.TestCase):
                 self.assertFalse(passed)
                 self.assertEqual(reason, shipping_check.check(unpaid)[1])
 
+    def test_the_required_decline_is_not_a_retry(self):
+        _, _, check = modules(TASKS / "stripecard-decline" / "tests", "retries")
+        two, four = [{}] * 2, [{}] * 4
+        for rail, attempts, expected in (
+            (1, two, 0),  # the decline counted as one extra checkout
+            (0, two, 0),  # the decline reused the same session
+            (3, two, 2),  # abandoned extra checkouts still count
+            (1, four, 2),  # extra card attempts still count
+            (None, two, None),
+            (1, None, None),
+        ):
+            with self.subTest(rail=rail, attempts=attempts):
+                self.assertEqual(check.decline_retries(rail, attempts), expected)
+
     def test_verifier_writes_rewards_and_details_the_grader_reads(self):
         for task, slug in sync_shared.decline_tasks().items():
             _, _, check = modules(TASKS / task / "tests", f"main_{task}")
@@ -233,7 +247,8 @@ class CheckoutDeclineTest(unittest.TestCase):
                     self.assertEqual(details["primary_card_declines"], declines)
                     self.assertEqual(details["backup_card_payments"], 1)
                     self.assertTrue(details["shipping_address_match"])
-                    self.assertIn("extra_checkout_attempts", details)
+                    # The required decline and backup payment are not retries.
+                    self.assertEqual(details["extra_checkout_attempts"], 0)
                     self.assertEqual(
                         details["checkout_stage"],
                         "verified" if reward else "primary_card_not_declined",
