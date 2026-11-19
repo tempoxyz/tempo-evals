@@ -88,17 +88,16 @@ async function main(): Promise<void> {
   stage = 'email-entered';
   const code = link.locator('input[autocomplete="one-time-code"]').first();
   await code.waitFor({ state: 'visible', timeout: 30000 });
-  await code.focus();
-  await page.keyboard.type(${JSON.stringify(wallet.link.sandboxPasscode)});
+  await code.pressSequentially(${JSON.stringify(wallet.link.sandboxPasscode)});
   stage = 'link-authenticated';
   // After sign-in Link shows CVC and billing screens, in either order or
   // combined, before the pay button; fill whichever is showing.
   const visible = async locator => (await locator.count()) > 0 && await locator.first().isVisible().catch(() => false);
   // The pay button reads Pay; the screen above it states the amount.
   const pay = link.getByRole('button', { name: /^Pay(?![A-Za-z])/ });
-  for (let step = 0; step < 10 && !(await visible(pay)); step++) {
+  // Fill every visible required field before deciding the screen is done.
+  for (let step = 0; step < 10; step++) {
     await page.waitForTimeout(1500);
-    if (await visible(pay)) break;
     const cvc = link.locator('input[autocomplete="cc-csc"]');
     if (await visible(cvc) && !(await cvc.first().inputValue())) await cvc.first().fill(${JSON.stringify(card.cvc)});
     const line1 = link.locator('input[name="addressLine1"], input[name="billingAddress.addressLine1"]');
@@ -117,6 +116,8 @@ async function main(): Promise<void> {
       const state = link.locator('select[name="administrativeArea"], select[name="billingAddress.administrativeArea"]');
       if (await visible(state)) await state.first().selectOption('CA');
     }
+    // Link marks a pay button with incomplete required fields with an --incomplete class.
+    if (await visible(pay) && await pay.first().isEnabled() && !((await pay.first().getAttribute('class')) ?? '').includes('incomplete')) break;
     const next = link.getByRole('button', { name: /^Continue$/ });
     if (await visible(next)) await next.first().click();
   }
