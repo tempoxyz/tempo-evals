@@ -36,6 +36,7 @@ class CheckoutShippingTest(unittest.TestCase):
                 tempfile.TemporaryDirectory() as directory,
             ):
                 root = Path(directory)
+                command = command.replace("/srv/node_modules/.bin/tsx", "tsx")
                 fake = root / "tsx"
                 fake.write_text(
                     '#!/bin/sh\nprintf x >> "$COLLECTION_COUNT"\n'

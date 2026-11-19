@@ -341,7 +341,7 @@ class CheckoutDeclineTest(unittest.TestCase):
                     {
                         "prompt_condition": "directed",
                         "required_method": directed[slug]["method"],
-                        "expected_outcome": None,
+                        "expected_outcome": "pay",
                         "source_task": slug,
                         "scenario_id": f"checkout-v2/{task}",
                     },
