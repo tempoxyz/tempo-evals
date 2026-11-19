@@ -96,7 +96,7 @@ async function main(): Promise<void> {
   // combined, before the pay button; fill whichever is showing.
   const visible = async locator => (await locator.count()) > 0 && await locator.first().isVisible().catch(() => false);
   // The pay button reads Pay; the screen above it states the amount.
-  const pay = link.getByRole('button', { name: /^Pay\b/ });
+  const pay = link.getByRole('button', { name: /^Pay(?![A-Za-z])/ });
   for (let step = 0; step < 10 && !(await visible(pay)); step++) {
     await page.waitForTimeout(1500);
     if (await visible(pay)) break;
