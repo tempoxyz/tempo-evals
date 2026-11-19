@@ -62,7 +62,8 @@ install software, and the 900-second limit.
 
 **Tool bundle.** `/opt/agent` has the same contents in every task: the trial
 wallet at `wallet/wallet.json` (the wallet volume, mounted read-only), pinned
-mppx, viem and tsx, and a README listing both and how to run scripts there. It
+mppx, viem and tsx, and a short README that says Node packages are installed
+there without naming them. It
 has no payment code or protocol guidance for any rail: agents find how to pay
 from the merchant and public documentation. Bundle, wallet fields and prompt
 match across rails, so in a discover task only the merchant tells the agent

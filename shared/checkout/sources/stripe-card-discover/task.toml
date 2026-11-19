@@ -24,6 +24,7 @@ expert_time_estimate_hours = 0.25
 relevant_experience = "Browser automation and sandbox checkout flows."
 scenario_id = "checkout-v2/stripe-card-discover"
 prompt_condition = "discover"
+expected_outcome = "pay"
 required_method = ""
 mpp_client_profile = "prepared"
 
@@ -36,10 +37,11 @@ environment_mode = "separate"
 
 [[verifier.collect]]
 service = "merchant"
-command = "timeout -k 2s 80s tsx /srv/snapshot.ts || (sleep 1 && timeout -k 2s 80s tsx /srv/snapshot.ts)"
+command = "timeout -k 2s 80s /srv/node_modules/.bin/tsx /srv/snapshot.ts || (sleep 1 && timeout -k 2s 80s /srv/node_modules/.bin/tsx /srv/snapshot.ts)"
 timeout_sec = 180.0
 
 [environment]
+build_timeout_sec = 600.0
 cpus = 2
 memory_mb = 4096
 storage_mb = 10240
