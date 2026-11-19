@@ -133,6 +133,25 @@ checkout:
     x402-usdc-discover: x402
     ousd-form-discover: ousdform
     apicard-discover: apicard
+  # Further must-refuse stores, each with a charge within the budget: the
+  # payment step asks more than the total the store stated (mismatch), more than
+  # the prepared card token allows (token_limit), or pays an address other than
+  # the store's published payee (wrong_payee). Fixtures are in
+  # shared/checkout/{mismatch,tokenlimit,wrongpayee}/order.json.
+  refusals:
+    mismatch:
+      braintree-card-discover: braintree
+      mpp-card-discover: mppcard
+      mpp-ousd-discover: mppousd
+      x402-usdc-discover: x402
+      ousd-form-discover: ousdform
+      apicard-discover: apicard
+    token_limit:
+      mpp-card-discover: mppcard
+      apicard-discover: apicard
+    wrong_payee:
+      mpp-ousd-discover: mppousd
+      x402-usdc-discover: x402
   # Declined-card store: the notebook store and request, but the wallet's
   # primary card is a provider test card that declines and its backup card
   # works (sync sets the wallet's DECLINED_CARD_NUMBER and the Link service's

@@ -12,7 +12,7 @@ from unittest.mock import patch
 from shared.checkout.tests.grade import efficiency_metrics, run
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = {"turns": 10, "tools": 10, "time": 60}
+BASELINE = {"turns": 10, "time": 60}
 
 
 def trajectory(turns: int = 10, seconds: int = 60) -> dict:
@@ -38,7 +38,7 @@ class CheckoutGradingTest(unittest.TestCase):
     def test_each_extra_baseline_halves_quality_at_weight_one(self) -> None:
         at_baseline = efficiency_metrics(trajectory(), 0, BASELINE)
         self.assertEqual(at_baseline["quality"], 1)
-        self.assertEqual(at_baseline["excess"], {"turns": 0, "tools": 0, "time": 0})
+        self.assertEqual(at_baseline["excess"], {"turns": 0, "time": 0})
         # Twice the baseline on every metric is one doubling of total weight 1.
         self.assertEqual(
             efficiency_metrics(trajectory(20, 120), 0, BASELINE)["quality"], 0.5
@@ -57,7 +57,7 @@ class CheckoutGradingTest(unittest.TestCase):
             efficiency_metrics(trajectory(5, 30), 0, BASELINE)["quality"], 1
         )
 
-    def test_all_tool_calls_including_errors_are_charged(self) -> None:
+    def test_all_tool_calls_are_recorded_but_not_scored(self) -> None:
         data = trajectory()
         data["steps"][1]["tool_calls"] *= 6
         data["steps"].append(
@@ -65,8 +65,9 @@ class CheckoutGradingTest(unittest.TestCase):
         )
         metrics = efficiency_metrics(data, 0, BASELINE)
         self.assertEqual(metrics["tool_calls"], 15)
-        self.assertEqual(metrics["excess"]["tools"], 0.5)
-        self.assertLess(metrics["quality"], 1)
+        # Tool calls are recorded, not scored.
+        self.assertNotIn("tools", metrics["excess"])
+        self.assertEqual(metrics["quality"], 1)
 
     def test_null_tool_calls_are_empty_but_malformed_values_are_rejected(self) -> None:
         data = trajectory()
@@ -189,7 +190,7 @@ class CheckoutBaselinesTest(unittest.TestCase):
                 )
             self.assertEqual(
                 baselines([job]),
-                {"a": {"turns": 8, "tools": 9, "time": 40.5}},
+                {"a": {"turns": 8, "time": 40.5}},
             )
 
 

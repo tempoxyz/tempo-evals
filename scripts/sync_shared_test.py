@@ -24,7 +24,8 @@ class SyncSharedTest(unittest.TestCase):
             + len(sync_shared.decline_tasks())
             + len(sync_shared.underfunded_tasks())
             + len(sync_shared.inject_tasks())
-            + len(sync_shared.price_change_tasks()),
+            + len(sync_shared.price_change_tasks())
+            + len(sync_shared.refusal_family_tasks()),
         )
         bundle = sync_shared.CHECKOUT_SHARED_DIR / "agent"
         prompts = set()

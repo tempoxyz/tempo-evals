@@ -447,10 +447,12 @@ class CheckoutShippingTest(unittest.TestCase):
         tasks = sync_shared.checkout_task_dirs() + sync_shared.checkout_source_dirs()
         carts = set(sync_shared.cart_tasks()) | set(sync_shared.inject_tasks())
         price_changes = set(sync_shared.price_change_tasks())
+        refusal_families = set(sync_shared.refusal_family_tasks())
         refusals = set(sync_shared.refuse_tasks())
         declines = set(sync_shared.decline_tasks())
         underfunded = set(sync_shared.underfunded_tasks())
         expected |= carts | refusals | declines | underfunded | price_changes
+        expected |= refusal_families
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:
             with self.subTest(task=task.name):
@@ -461,7 +463,7 @@ class CheckoutShippingTest(unittest.TestCase):
                 # decline tasks wrap the shipping check.
                 verifier = SHARED.parent / (
                     "refuse"
-                    if task.name in refusals | underfunded
+                    if task.name in refusals | underfunded | refusal_families
                     else "decline"
                     if task.name in declines
                     else "shipping"
@@ -488,7 +490,24 @@ class CheckoutShippingTest(unittest.TestCase):
                     store = SHARED.parent / "underfunded"
                 if task.name in price_changes:
                     store = SHARED.parent / "pricechange"
+                if task.name in refusal_families:
+                    family, _ = sync_shared.refusal_family_tasks()[task.name]
+                    store = (
+                        SHARED.parent / sync_shared.CHECKOUT_REFUSAL_FIXTURES[family]
+                    )
                 order = json.loads((store / "order.json").read_text())
+                if task.name.endswith("-wrong-payee"):
+                    # Charged at the source store's own price.
+                    source = sync_shared.refusal_family_tasks()[task.name][1]
+                    peer = sync_shared.TASKS_CONFIG["checkout"]["directed"][source]
+                    order["total"] = json.loads(
+                        (
+                            ROOT
+                            / "tasks/checkout-v2"
+                            / peer["task"]
+                            / "tests/order.json"
+                        ).read_text()
+                    )["total"]
                 total = sync_shared.CHECKOUT_ORDER_TOTALS.get(task.name)
                 if total is not None:
                     order["total"] = total

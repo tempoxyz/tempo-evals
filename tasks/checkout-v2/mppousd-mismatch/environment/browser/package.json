@@ -1,0 +1,6 @@
+{
+  "name": "checkout-browser",
+  "private": true,
+  "type": "module",
+  "dependencies": { "tsx": "4.23.1" }
+}
