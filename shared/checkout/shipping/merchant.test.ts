@@ -69,7 +69,7 @@ test('PayPal inspection and repeated returns keep one captured order', async t =
   const directory = mkdtempSync(join(tmpdir(), 'checkout-paypal-'));
   writeFileSync(join(directory, 'package.json'), '{"type":"module"}');
   writeFileSync(join(directory, 'shipping.js'), source.replace("'/var/log/checkout'", JSON.stringify(directory)));
-  const merchant = readFileSync(new URL('../../../tasks/checkout-v1/paypal-discover/environment/merchant/server.js', import.meta.url), 'utf8');
+  const merchant = readFileSync(new URL('../../../tasks/checkout-v2/paypal-discover/environment/merchant/server.js', import.meta.url), 'utf8');
   writeFileSync(join(directory, 'server.js'), merchant.replaceAll('/var/log/checkout', directory)
     .replace('http.createServer(', 'export const server = http.createServer(')
     .replace(".listen(3000, '0.0.0.0')", ".listen(0, '127.0.0.1')"));
@@ -157,7 +157,7 @@ test('Link inspection, refresh and concurrent requests reuse one intent per orde
   const directory = mkdtempSync(join(tmpdir(), 'checkout-link-'));
   writeFileSync(join(directory, 'package.json'), '{"type":"module"}');
   writeFileSync(join(directory, 'shipping.js'), source.replace("'/var/log/checkout'", JSON.stringify(directory)));
-  const merchant = readFileSync(new URL('../../../tasks/checkout-v1/stripe-link-discover/environment/merchant/server.js', import.meta.url), 'utf8');
+  const merchant = readFileSync(new URL('../../../tasks/checkout-v2/stripe-link-discover/environment/merchant/server.js', import.meta.url), 'utf8');
   writeFileSync(join(directory, 'server.js'), merchant.replaceAll('/var/log/checkout', directory)
     .replace('http.createServer(', 'export const server = http.createServer(')
     .replace(".listen(3000, '0.0.0.0')", ".listen(0, '127.0.0.1')"));
@@ -344,7 +344,7 @@ test('must-refuse Link and PayPal adapters charge the surcharged order', async t
   try {
     for (const task of ['link-refuse-directed', 'paypal-refuse-directed']) {
       const directory = mkdtempSync(join(tmpdir(), 'checkout-refuse-rail-'));
-      const merchant = new URL(`../../../tasks/checkout-v1/${task}/environment/merchant/`, import.meta.url);
+      const merchant = new URL(`../../../tasks/checkout-v2/${task}/environment/merchant/`, import.meta.url);
       writeFileSync(join(directory, 'package.json'), '{"type":"module"}');
       writeFileSync(join(directory, 'shipping.js'), readFileSync(new URL('shipping.js', merchant), 'utf8').replace("'/var/log/checkout'", JSON.stringify(directory)));
       writeFileSync(join(directory, 'server.js'), readFileSync(new URL('server.js', merchant), 'utf8').replaceAll('/var/log/checkout', directory)

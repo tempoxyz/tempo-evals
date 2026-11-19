@@ -24,9 +24,9 @@ benchmarks:
     keywords: [tempo, mcp, docs, code-mode, efficiency]
     author: Tempo Labs
   checkout:
-    id: checkout-bench-v1
-    dataset: tempo/checkout-bench-v1
-    path: tasks/checkout-v1
+    id: checkout-bench-v2
+    dataset: tempo/checkout-bench-v2
+    path: tasks/checkout-v2
     description: Agent checkout benchmark
     keywords: [checkout, payments, agents]
     author: Tempo Labs

@@ -139,17 +139,19 @@ invalid-name=ignored
         volume = "checkout-browser-output"
         output = f"{volume}:/tmp/.playwright-mcp"
         completed = {"condition": "service_completed_successfully"}
-        tasks = sorted(Path("tasks/checkout-v1").glob("*/task.toml"))
-        # Notebook and cart discover/directed pairs, and must-refuse,
+        tasks = sorted(Path("tasks/checkout-v2").glob("*/task.toml"))
+        # Directed notebook and cart tasks, and must-refuse,
         # declined-card and underfunded tasks.
         checkout = yaml.safe_load(Path("config/tasks.yaml").read_text())["checkout"]
         self.assertEqual(
             len(tasks),
-            2 * len(checkout["directed"])
-            + 2 * len(checkout["cart"])
+            len(checkout["directed"])
+            + len(checkout["cart"])
             + len(checkout["refuse"])
             + len(checkout["decline"])
-            + len(checkout["underfunded"]),
+            + len(checkout["underfunded"])
+            # Injected-instruction tasks, one per cart task.
+            + len(checkout["cart"]),
         )
         for task_file in tasks:
             task = task_file.parent
@@ -201,10 +203,10 @@ invalid-name=ignored
             for profile in ("local", "browserbase", "kernel"):
                 stage = Path(root) / profile
                 stage_task_datasets(stage, None, checkout=True, browser_profile=profile)
-                for task in (stage / "tasks/checkout-v1").iterdir():
+                for task in (stage / "tasks/checkout-v2").iterdir():
                     if not (task / "task.toml").exists():
                         continue
-                    source = Path("tasks/checkout-v1") / task.name
+                    source = Path("tasks/checkout-v2") / task.name
                     # Every profile runs the committed compose unchanged.
                     for path in source.rglob("*"):
                         if (
@@ -280,7 +282,7 @@ invalid-name=ignored
 
     @unittest.skipUnless(shutil.which("docker"), "docker compose is not installed")
     def test_checkout_cloud_overlay_merges_with_committed_compose(self) -> None:
-        environment = Path("tasks/checkout-v1/stripe-link-discover/environment")
+        environment = Path("shared/checkout/sources/stripe-link-discover/environment")
         compose_file = environment / "docker-compose.yaml"
         required = re.findall(r"\$\{([A-Z0-9_]+):\?", compose_file.read_text())
         env = {key: "test" for key in required} | {
@@ -487,7 +489,7 @@ invalid-name=ignored
 
     def test_finalize_config_selects_checkout_only_when_requested(self) -> None:
         config = finalize_config(base_config(), {"task_suite": "checkout"})
-        self.assertEqual(config["datasets"], [{"path": "tasks/checkout-v1"}])
+        self.assertEqual(config["datasets"], [{"path": "tasks/checkout-v2"}])
         self.assertEqual(config["verifier"]["env"], {})
 
     def test_checkout_method_hint_only_reaches_oracle(self) -> None:
@@ -525,7 +527,7 @@ invalid-name=ignored
                 )
                 self.assertEqual(
                     result["datasets"],
-                    [{"path": "tasks/checkout-v1", "task_names": [slug]}],
+                    [{"path": "tasks/checkout-v2", "task_names": [slug]}],
                 )
 
     def test_mpp_slug_filter_still_selects_mpp(self) -> None:
@@ -543,7 +545,7 @@ invalid-name=ignored
                 datasets = finalize_config(base_config(), {"task_suite": suite})[
                     "datasets"
                 ]
-                self.assertNotIn({"path": "tasks/checkout-v1"}, datasets)
+                self.assertNotIn({"path": "tasks/checkout-v2"}, datasets)
 
     def test_claude_preflight_accepts_proxy_credentials(self) -> None:
         with patch.dict(
@@ -606,7 +608,7 @@ invalid-name=ignored
 
     def test_checkout_explicit_task_path_requires_suite_selection(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "--task-suite checkout"):
-            preflight({}, {"tasks": "tasks/checkout-v1/stripe-card-discover"})
+            preflight({}, {"tasks": "tasks/checkout-v2/stripe-card-directed"})
 
     def test_checkout_preflight_rejects_missing_task(self) -> None:
         with (
@@ -621,7 +623,7 @@ invalid-name=ignored
             self.assertRaisesRegex(RuntimeError, "no authored task"),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "stripe-card-discover"}
+                {}, {"task_suite": "checkout", "task_filter": "stripe-card-directed"}
             )
 
     def test_checkout_shared_setup_requires_stripe_and_paypal_buyer(self) -> None:
@@ -630,7 +632,7 @@ invalid-name=ignored
             self.assertRaisesRegex(RuntimeError, "STRIPE_TEST_SECRET_KEY"),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-discover"}
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-directed"}
             )
         with (
             patch.dict(
@@ -643,7 +645,7 @@ invalid-name=ignored
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_BUYER_EMAIL"),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-discover"}
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-directed"}
             )
         with patch.dict(
             os.environ,
@@ -656,7 +658,7 @@ invalid-name=ignored
             clear=True,
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-discover"}
+                {}, {"task_suite": "checkout", "task_filter": "mpp-ousd-directed"}
             )
 
     def test_x402_checkout_preflight_requires_funding_key(self) -> None:
@@ -666,7 +668,7 @@ invalid-name=ignored
             "PAYPAL_SANDBOX_BUYER_PASSWORD": "password",
             "SHOPIFY_STOREFRONT_PASSWORD": "password",
         }
-        for task_filter in ("x402-usdc-discover", "x402-usdc-directed"):
+        for task_filter in ("x402-usdc-directed", "x402-cart-directed"):
             with (
                 self.subTest(task_filter=task_filter),
                 patch.dict(os.environ, env, clear=True),
@@ -692,7 +694,7 @@ invalid-name=ignored
             ),
             self.assertRaisesRegex(RuntimeError, "PAYPAL_SANDBOX_CLIENT_ID"),
         ):
-            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-discover"})
+            preflight({}, {"task_suite": "checkout", "task_filter": "paypal-directed"})
 
     def test_directed_checkout_preflight_requires_the_same_provider_credentials(
         self,
@@ -704,7 +706,7 @@ invalid-name=ignored
         ):
             for selection in (
                 {"task_filter": slug},
-                {"tasks": f"tasks/checkout-v1/{slug}"},
+                {"tasks": f"tasks/checkout-v2/{slug}"},
             ):
                 with (
                     self.subTest(slug=slug, selection=selection),
@@ -737,7 +739,7 @@ invalid-name=ignored
             patch("scripts.run_benchmark.has_checkout_tasks", return_value=True),
         ):
             preflight(
-                {}, {"task_suite": "checkout", "task_filter": "stripe-card-discover"}
+                {}, {"task_suite": "checkout", "task_filter": "stripe-card-directed"}
             )
 
     def test_checkout_preserves_parallel_trial_count(self) -> None:
@@ -1119,7 +1121,7 @@ invalid-name=ignored
                 "profile": profile,
                 "sync": False,
                 "task_suite": "checkout",
-                "tasks": "tasks/checkout-v1/stripe-card-discover",
+                "tasks": "tasks/checkout-v2/stripe-card-directed",
             }
             with (
                 self.subTest(profile=profile),
@@ -1510,7 +1512,7 @@ invalid-name=ignored
             with patch("scripts.run_benchmark.copy_tasks") as copy:
                 stage_task_datasets(staging_root, None, checkout=True)
             copy.assert_called_once_with(
-                Path("tasks/checkout-v1"), staging_root / "tasks/checkout-v1"
+                Path("tasks/checkout-v2"), staging_root / "tasks/checkout-v2"
             )
 
     def test_daytona_image_override_replaces_only_agent_and_verifier_bases(
@@ -1523,10 +1525,10 @@ invalid-name=ignored
         with tempfile.TemporaryDirectory() as directory:
             staging_root = Path(directory)
             stage_task_datasets(staging_root, None, images=images, checkout=True)
-            for task in (staging_root / "tasks/checkout-v1").iterdir():
+            for task in (staging_root / "tasks/checkout-v2").iterdir():
                 if not (task / "task.toml").exists():
                     continue
-                source = Path("tasks/checkout-v1") / task.name
+                source = Path("tasks/checkout-v2") / task.name
                 for role, dockerfile in (
                     ("agent", "environment/Dockerfile"),
                     ("verifier", "tests/Dockerfile"),

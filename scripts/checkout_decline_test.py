@@ -15,7 +15,8 @@ from unittest.mock import patch
 from scripts import sync_shared
 
 ROOT = Path(__file__).resolve().parents[1]
-TASKS = ROOT / "tasks/checkout-v1"
+TASKS = ROOT / "tasks/checkout-v2"
+SOURCES = ROOT / "shared/checkout/sources"
 DECLINE = ROOT / "shared/checkout/decline"
 WALLET = ROOT / "shared/checkout/wallet"
 ADDRESS = json.loads((ROOT / "shared/checkout/shipping/address.json").read_text())
@@ -49,7 +50,7 @@ def modules(directory: Path, name: str):
 def paid(task: str, slug: str) -> dict:
     """The source's verified purchase, shipped to the fixture address and paid
     with the backup card after the primary card was declined."""
-    source = TASKS / slug / "tests"
+    source = SOURCES / slug / "tests"
     original = sys.path[:]
     try:
         sys.path.insert(0, str(source))
@@ -309,7 +310,7 @@ class CheckoutDeclineTest(unittest.TestCase):
                 self.assertNotEqual(instruction, peer_instruction)
                 metadata = tomllib.loads((target / "task.toml").read_text())
                 peer_metadata = tomllib.loads((peer / "task.toml").read_text())
-                self.assertEqual(metadata["task"]["name"], f"checkout-v1/{task}")
+                self.assertEqual(metadata["task"]["name"], f"checkout-v2/{task}")
                 self.assertIn("decline", metadata["task"]["keywords"])
                 self.assertEqual(
                     {
@@ -327,7 +328,7 @@ class CheckoutDeclineTest(unittest.TestCase):
                         "required_method": directed[slug]["method"],
                         "expected_outcome": None,
                         "source_task": slug,
-                        "scenario_id": f"checkout-v1/{task}",
+                        "scenario_id": f"checkout-v2/{task}",
                     },
                 )
                 (collect,) = metadata["verifier"]["collect"]

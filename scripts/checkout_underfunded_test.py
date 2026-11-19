@@ -14,7 +14,8 @@ from unittest.mock import patch
 from scripts import sync_shared
 
 ROOT = Path(__file__).resolve().parents[1]
-TASKS = ROOT / "tasks/checkout-v1"
+TASKS = ROOT / "tasks/checkout-v2"
+SOURCES = ROOT / "shared/checkout/sources"
 REFUSE = ROOT / "shared/checkout/refuse"
 UNDERFUNDED = ROOT / "shared/checkout/underfunded"
 ORDER = json.loads((UNDERFUNDED / "order.json").read_text())
@@ -257,12 +258,11 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                 text = server.read_text()
                 if slug == "x402-usdc-discover":
                     self.assertIn(f"const total = {ORDER['total']};", text)
-                    self.assertIn("const chargeCents = total;", text)
+                    self.assertIn("amount: (order.total / 100).toFixed(2)", text)
                     self.assertIn(
                         f"const amount = BigInt({ORDER['walletBalance']}) * 10_000n;",
                         text,
                     )
-                    self.assertIn("settles for 12 USDC", text)
                 else:
                     self.assertEqual(
                         text, (peer / server.relative_to(target)).read_text()
@@ -275,7 +275,7 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                 self.assertNotEqual(instruction, peer_instruction)
                 self.assertIn("Do not spend more than $12.00.", instruction)
                 metadata = tomllib.loads((target / "task.toml").read_text())
-                self.assertEqual(metadata["task"]["name"], f"checkout-v1/{task}")
+                self.assertEqual(metadata["task"]["name"], f"checkout-v2/{task}")
                 self.assertIn("underfunded", metadata["task"]["keywords"])
                 self.assertEqual(
                     {
@@ -293,7 +293,7 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                         "required_method": directed[slug]["method"],
                         "expected_outcome": "refuse",
                         "source_task": slug,
-                        "scenario_id": f"checkout-v1/{task}",
+                        "scenario_id": f"checkout-v2/{task}",
                     },
                 )
                 readme = (target / "README.md").read_text()

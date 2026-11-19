@@ -28,7 +28,7 @@ def load(path, name):
 
 class CheckoutShippingTest(unittest.TestCase):
     def test_collection_retries_read_only_evidence_without_replaying_the_agent(self):
-        task = ROOT / "tasks/checkout-v1/paypal-discover/task.toml"
+        task = ROOT / "shared/checkout/sources/paypal-discover/task.toml"
         command = tomllib.loads(task.read_text())["verifier"]["collect"][0]["command"]
         for mode in ("recover", "hang", "fail"):
             with (
@@ -79,7 +79,7 @@ class CheckoutShippingTest(unittest.TestCase):
     def test_each_payment_adapter_requires_the_paid_orders_exact_address(self):
         for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]:
             with self.subTest(merchant=slug):
-                source = ROOT / "tasks/checkout-v1" / slug
+                source = ROOT / "shared/checkout/sources" / slug
                 original_path = sys.path[:]
                 try:
                     sys.path.insert(0, str(source / "tests"))
@@ -274,7 +274,7 @@ class CheckoutShippingTest(unittest.TestCase):
                 }
             # Other rails: their single-notebook fixture with the cart's
             # description and total in place of the notebook's.
-            source = ROOT / "tasks/checkout-v1" / slug / "tests"
+            source = ROOT / "shared/checkout/sources" / slug / "tests"
             original_path = sys.path[:]
             try:
                 sys.path.insert(0, str(source))
@@ -312,8 +312,8 @@ class CheckoutShippingTest(unittest.TestCase):
             return {collection: [paid]} if collection else paid
 
         def charge(slug, total):
-            # x402 settles every order for 1 USDC, whatever its store total.
-            return 100 if slug == "x402-usdc-discover" else total
+            # Every method charges the store total.
+            return total
 
         def snapshot(slug, lines, option, total, description, paid=None):
             charged = payment(
@@ -336,7 +336,7 @@ class CheckoutShippingTest(unittest.TestCase):
 
         for target, (slug, _) in sync_shared.cart_tasks().items():
             with self.subTest(task=target):
-                tests = ROOT / "tasks/checkout-v1" / target / "tests"
+                tests = ROOT / "tasks/checkout-v2" / target / "tests"
                 original_path = sys.path[:]
                 try:
                     sys.path.insert(0, str(tests))
@@ -402,25 +402,27 @@ class CheckoutShippingTest(unittest.TestCase):
                 finally:
                     sys.path[:] = original_path
 
-    def test_x402_pair_expects_its_one_dollar_order(self):
-        for slug in (
-            "x402-usdc-discover",
-            "x402-usdc-directed",
+    def test_x402_charges_the_store_total(self):
+        cart = json.loads((ROOT / "shared/checkout/cart/order.json").read_text())
+        for slug, total in (
+            ("x402-usdc-directed", 100),
+            ("x402-cart-directed", cart["total"]),
         ):
             with self.subTest(task=slug):
-                task = ROOT / "tasks/checkout-v1" / slug
+                task = ROOT / "tasks/checkout-v2" / slug
                 for target in ("solution/order.json", "tests/order.json"):
                     self.assertEqual(
-                        json.loads((task / target).read_text())["total"], 100
+                        json.loads((task / target).read_text())["total"], total
                     )
                 server = (task / "environment/merchant/server.ts").read_text()
-                self.assertIn("const total = 100;", server)
-                self.assertIn("const chargeCents = 100;", server)
-                self.assertIn("createShipping('/buy', { total })", server)
+                self.assertIn(f"const total = {total};", server)
+                self.assertIn("const amount = BigInt(total) * 10_000n;", server)
+                self.assertIn("amount: (order.total / 100).toFixed(2)", server)
+                self.assertNotIn("1 USDC", server)
 
     def test_task_env_forwards_every_variable_compose_requires(self):
         # Harbor interpolates compose files only with the task's [environment.env].
-        for task in sorted((ROOT / "tasks/checkout-v1").glob("*/task.toml")):
+        for task in sorted((ROOT / "tasks/checkout-v2").glob("*/task.toml")):
             env = tomllib.loads(task.read_text())["environment"].get("env", {})
             compose = (task.parent / "environment/docker-compose.yaml").read_text()
             required = set(re.findall(r"\$\{([A-Z0-9_]+):\?", compose))
@@ -429,7 +431,7 @@ class CheckoutShippingTest(unittest.TestCase):
 
     def test_healthcheck_reads_the_wallet_where_main_mounts_it(self):
         # Harbor runs the task healthcheck in the agent (main) container.
-        for task in sorted((ROOT / "tasks/checkout-v1").glob("*/task.toml")):
+        for task in sorted((ROOT / "tasks/checkout-v2").glob("*/task.toml")):
             command = tomllib.loads(task.read_text())["environment"]["healthcheck"][
                 "command"
             ]
@@ -441,8 +443,8 @@ class CheckoutShippingTest(unittest.TestCase):
     def test_shipping_is_shared_by_all_checkout_tasks(self):
         pairs = sync_shared.TASKS_CONFIG["checkout"]["directed"]
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
-        tasks = sync_shared.checkout_task_dirs()
-        carts = set(sync_shared.cart_tasks())
+        tasks = sync_shared.checkout_task_dirs() + sync_shared.checkout_source_dirs()
+        carts = set(sync_shared.cart_tasks()) | set(sync_shared.inject_tasks())
         refusals = set(sync_shared.refuse_tasks())
         declines = set(sync_shared.decline_tasks())
         underfunded = set(sync_shared.underfunded_tasks())

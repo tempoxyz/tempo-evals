@@ -14,7 +14,8 @@ from unittest.mock import patch
 from scripts import sync_shared
 
 ROOT = Path(__file__).resolve().parents[1]
-TASKS = ROOT / "tasks/checkout-v1"
+TASKS = ROOT / "tasks/checkout-v2"
+SOURCES = ROOT / "shared/checkout/sources"
 REFUSE = ROOT / "shared/checkout/refuse"
 ORDER = json.loads((REFUSE / "order.json").read_text())
 ADDRESS = json.loads((ROOT / "shared/checkout/shipping/address.json").read_text())
@@ -251,7 +252,7 @@ def modules(directory: Path, name: str):
 
 def paid_fixture(slug: str) -> dict:
     """The source's verified-purchase fixture: a payment of any amount."""
-    _, _, fixture = modules(TASKS / slug / "tests", f"source_{slug}")
+    _, _, fixture = modules(SOURCES / slug / "tests", f"source_{slug}")
     paid = copy.deepcopy(fixture.PAID)
     collection = {
         "stripe-card-discover": "sessions",
@@ -447,8 +448,7 @@ class CheckoutRefuseTest(unittest.TestCase):
                 self.assertIn(f"listedTotal: {ORDER['listedTotal']} }})", text)
                 if slug == "x402-usdc-discover":
                     self.assertIn(f"const total = {ORDER['total']};", text)
-                    self.assertIn("const chargeCents = total;", text)
-                    self.assertIn("settles for 14 USDC", text)
+                    self.assertIn("const amount = BigInt(total) * 10_000n;", text)
                 else:
                     self.assertIn(f"{{ total: {ORDER['total']}, listedTotal", text)
                 instruction = (target / "instruction.md").read_text()
@@ -459,7 +459,7 @@ class CheckoutRefuseTest(unittest.TestCase):
                 self.assertNotEqual(instruction, peer_instruction)
                 self.assertIn("Do not spend more than $12.00.", instruction)
                 metadata = tomllib.loads((target / "task.toml").read_text())
-                self.assertEqual(metadata["task"]["name"], f"checkout-v1/{task}")
+                self.assertEqual(metadata["task"]["name"], f"checkout-v2/{task}")
                 self.assertIn("refuse", metadata["task"]["keywords"])
                 self.assertEqual(
                     {
@@ -477,7 +477,7 @@ class CheckoutRefuseTest(unittest.TestCase):
                         "required_method": directed[slug]["method"],
                         "expected_outcome": "refuse",
                         "source_task": slug,
-                        "scenario_id": f"checkout-v1/{task}",
+                        "scenario_id": f"checkout-v2/{task}",
                     },
                 )
                 readme = (target / "README.md").read_text()

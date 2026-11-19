@@ -14,15 +14,16 @@ from scripts import sync_shared
 class SyncSharedTest(unittest.TestCase):
     def test_every_checkout_task_gets_the_same_agent_bundle(self):
         tasks = sync_shared.checkout_task_dirs()
-        # Discover/directed notebook pairs, cart pairs, and must-refuse,
-        # declined-card and underfunded tasks.
+        # Directed notebook and cart tasks, and must-refuse, declined-card
+        # and underfunded tasks. Discover sources are not in the dataset.
         self.assertEqual(
             len(tasks),
-            2 * len(sync_shared.TASKS_CONFIG["checkout"]["directed"])
+            len(sync_shared.TASKS_CONFIG["checkout"]["directed"])
             + len(sync_shared.cart_tasks())
             + len(sync_shared.refuse_tasks())
             + len(sync_shared.decline_tasks())
-            + len(sync_shared.underfunded_tasks()),
+            + len(sync_shared.underfunded_tasks())
+            + len(sync_shared.inject_tasks()),
         )
         bundle = sync_shared.CHECKOUT_SHARED_DIR / "agent"
         prompts = set()
@@ -61,10 +62,13 @@ class SyncSharedTest(unittest.TestCase):
             checkout = Path(directory)
             original_prompts = {}
             for slug in sync_shared.TASKS_CONFIG["checkout"]["directed"]:
-                source = sync_shared.CHECKOUT_TASKS_DIR / slug
+                source = sync_shared.CHECKOUT_SOURCES_DIR / slug
                 shutil.copytree(source, checkout / slug)
                 original_prompts[slug] = (source / "instruction.md").read_text()
-            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+            with (
+                patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout),
+                patch.object(sync_shared, "CHECKOUT_SOURCES_DIR", checkout),
+            ):
                 sync_shared.sync_checkout_prompt_variants()
                 for slug, prompt in sync_shared.TASKS_CONFIG["checkout"][
                     "directed"
@@ -93,10 +97,10 @@ class SyncSharedTest(unittest.TestCase):
                     config = tomllib.loads((directed / "task.toml").read_text())
                     original = tomllib.loads((source / "task.toml").read_text())
                     self.assertEqual(
-                        config["task"]["name"], f"checkout-v1/{directed_slug}"
+                        config["task"]["name"], f"checkout-v2/{directed_slug}"
                     )
                     self.assertEqual(
-                        config["metadata"]["scenario_id"], f"checkout-v1/{slug}"
+                        config["metadata"]["scenario_id"], f"checkout-v2/{slug}"
                     )
                     self.assertEqual(config["metadata"]["prompt_condition"], "directed")
                     self.assertEqual(
@@ -150,8 +154,8 @@ class SyncSharedTest(unittest.TestCase):
             for name in ("first", "second"):
                 task = checkout / name
                 task.mkdir()
-                (task / "task.toml").write_text('[task]\nname = "checkout-v1/test"\n')
-            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+                (task / "task.toml").write_text('[task]\nname = "checkout-v2/test"\n')
+            with patch.object(sync_shared, "CHECKOUT_SOURCES_DIR", checkout):
                 sync_shared.sync_checkout_wallet()
             for name in ("first", "second"):
                 for source, target in sync_shared.CHECKOUT_WALLET_FILES:
@@ -186,12 +190,17 @@ class SyncSharedTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory)
             for slug in cart:
-                shutil.copytree(sync_shared.CHECKOUT_TASKS_DIR / slug, checkout / slug)
-            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+                shutil.copytree(
+                    sync_shared.CHECKOUT_SOURCES_DIR / slug, checkout / slug
+                )
+            with (
+                patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout),
+                patch.object(sync_shared, "CHECKOUT_SOURCES_DIR", checkout),
+            ):
                 sync_shared.sync_checkout_cart_variants()
             for slug, prefix in cart.items():
                 method = sync_shared.CHECKOUT_CART_METHODS[slug]
-                for condition in ("discover", "directed"):
+                for condition in ("directed",):
                     task = checkout / f"{prefix}-{condition}"
                     with self.subTest(task=task.name):
                         readme = (task / "README.md").read_text()
@@ -208,13 +217,10 @@ class SyncSharedTest(unittest.TestCase):
                         self.assertIn("$33 total", explanation)
                         self.assertIn("cart", config["task"]["keywords"])
                         self.assertIn("cart", config["metadata"]["tags"])
-                        # x402 settles 1 USDC whatever the cart total.
-                        x402 = slug == "x402-usdc-discover"
-                        self.assertEqual("1 USDC" in readme, x402)
-                        self.assertEqual("1 USDC" in explanation, x402)
-                        self.assertEqual(
-                            "requires one payment for exactly" in readme, not x402
-                        )
+                        # Every method, x402 included, charges the cart total.
+                        self.assertNotIn("1 USDC", readme)
+                        self.assertNotIn("1 USDC", explanation)
+                        self.assertIn("requires one payment for exactly", readme)
 
     def test_checkout_grading_copies_only_to_checkout_tasks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -222,7 +228,7 @@ class SyncSharedTest(unittest.TestCase):
             task = checkout / "merchant"
             task.mkdir(parents=True)
             (task / "task.toml").write_text('[task]\nname = "merchant"\n')
-            with patch.object(sync_shared, "CHECKOUT_TASKS_DIR", checkout):
+            with patch.object(sync_shared, "CHECKOUT_SOURCES_DIR", checkout):
                 sync_shared.sync_checkout_grading()
             for relative in (
                 "tests/grade.py",
@@ -246,13 +252,13 @@ class SyncSharedTest(unittest.TestCase):
                 task_dir = tasks_dir / "merchant-item"
                 task_dir.mkdir()
                 (task_dir / "task.toml").write_text(
-                    '[task]\nname = "checkout-v1/merchant-item"\n'
+                    '[task]\nname = "checkout-v2/merchant-item"\n'
                 )
                 sync_shared.write_checkout_dataset_manifest()
                 manifest = tomllib.loads((tasks_dir / "dataset.toml").read_text())
-                self.assertEqual(manifest["dataset"]["name"], "tempo/checkout-bench-v1")
+                self.assertEqual(manifest["dataset"]["name"], "tempo/checkout-bench-v2")
                 self.assertEqual(
-                    manifest["tasks"][0]["name"], "checkout-v1/merchant-item"
+                    manifest["tasks"][0]["name"], "checkout-v2/merchant-item"
                 )
             finally:
                 sync_shared.CHECKOUT_TASKS_DIR = original_tasks_dir
@@ -302,6 +308,8 @@ class SyncSharedTest(unittest.TestCase):
                 sync_shared.MCP_TASKS_DIR,
                 sync_shared.CHECKOUT_TASKS_DIR,
             ) = suite_dirs
+            sources = sync_shared.CHECKOUT_SOURCES_DIR
+            sync_shared.CHECKOUT_SOURCES_DIR = root / "no-sources"
             try:
                 self.assertEqual(sync_shared.sync_task_dockerfiles(), 4)
                 for suite_dir in suite_dirs:
@@ -325,6 +333,7 @@ class SyncSharedTest(unittest.TestCase):
                         ),
                     )
             finally:
+                sync_shared.CHECKOUT_SOURCES_DIR = sources
                 (
                     sync_shared.TASKS_DIR,
                     sync_shared.MPP_TASKS_DIR,
