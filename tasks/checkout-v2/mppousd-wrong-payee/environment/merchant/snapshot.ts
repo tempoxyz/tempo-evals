@@ -35,6 +35,9 @@ for (const record of records) {
 }
 const balance = await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [recipient] });
 const decimals = await client.readContract({ address: ousd, abi, functionName: 'decimals' });
+const payees = [...new Set(shippingOrders().map(order => order.payee).filter(Boolean))];
+let payeeBalance = 0n;
+for (const payee of payees) payeeBalance += await client.readContract({ address: ousd, abi, functionName: 'balanceOf', args: [payee] });
 const deliveries = records.map(record => {
   const receipt = record.receipt ? Receipt.deserialize(record.receipt) : null;
   return {
@@ -43,4 +46,4 @@ const deliveries = records.map(record => {
     receiptStatus: receipt?.status ?? null, receiptMethod: receipt?.method ?? null,
   };
 });
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), recipient, ousd, balance: balance.toString(), decimals, deliveries, paymentAttemptCount }, null, 2) + '\n');
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), recipient, ousd, balance: balance.toString(), payeeBalance: payeeBalance.toString(), decimals, deliveries, paymentAttemptCount }, null, 2) + '\n');

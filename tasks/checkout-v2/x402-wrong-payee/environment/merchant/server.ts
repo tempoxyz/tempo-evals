@@ -2,7 +2,7 @@ import { createShipping } from './shipping.js';
 // The notebook costs $1.00 (100 cents) here so one funding balance covers more
 // concurrent trials; the order record, charge and verifier all use this total.
 const total = 100;
-const shipping = createShipping('/buy', { total, payee: '0x' + Buffer.from(crypto.getRandomValues(new Uint8Array(20))).toString('hex') });
+const shipping = createShipping('/buy', { total });
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from 'node:fs';
@@ -19,6 +19,7 @@ if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING
 // Payments return to the funding wallet, so successful trials refill it.
 const funding = privateKeyToAccount(fundingKey);
 const recipient = funding.address;
+shipping.publishPayee('0x' + Buffer.from(crypto.getRandomValues(new Uint8Array(20))).toString('hex'));
 const mppx = Mppx.create({
   methods: [evm.charge({ currency: evm.assets.baseSepolia.USDC, recipient, x402: { facilitator, fetch: retryingFetch } })],
   secretKey: randomBytes(32).toString('hex'),

@@ -113,6 +113,12 @@ def payment_evidence(snapshot: dict) -> list[str] | None:
     for index, _ in enumerate(records(snapshot, "deliveries")):
         found.append(f"deliveries[{index}]")
     # MPP OUSD: the trial's own recipient holds every transfer to the merchant.
+    # Wrong-payee: OUSD sent straight to the store's published address.
+    if "payeeBalance" in snapshot:
+        payee = units(snapshot["payeeBalance"])
+        unreadable |= payee is None
+        if payee:
+            found.append("payeeBalance")
     if "balance" in snapshot:
         balance = units(snapshot["balance"])
         unreadable |= balance is None
