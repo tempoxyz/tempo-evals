@@ -446,10 +446,11 @@ class CheckoutShippingTest(unittest.TestCase):
         expected = set(pairs) | {peer["task"] for peer in pairs.values()}
         tasks = sync_shared.checkout_task_dirs() + sync_shared.checkout_source_dirs()
         carts = set(sync_shared.cart_tasks()) | set(sync_shared.inject_tasks())
+        price_changes = set(sync_shared.price_change_tasks())
         refusals = set(sync_shared.refuse_tasks())
         declines = set(sync_shared.decline_tasks())
         underfunded = set(sync_shared.underfunded_tasks())
-        expected |= carts | refusals | declines | underfunded
+        expected |= carts | refusals | declines | underfunded | price_changes
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:
             with self.subTest(task=task.name):
@@ -485,6 +486,8 @@ class CheckoutShippingTest(unittest.TestCase):
                     store = verifier
                 if task.name in underfunded:
                     store = SHARED.parent / "underfunded"
+                if task.name in price_changes:
+                    store = SHARED.parent / "pricechange"
                 order = json.loads((store / "order.json").read_text())
                 total = sync_shared.CHECKOUT_ORDER_TOTALS.get(task.name)
                 if total is not None:
