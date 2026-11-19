@@ -123,7 +123,7 @@ async function main(): Promise<void> {
   stage = 'billing-complete';
   await pay.first().waitFor({ state: 'visible', timeout: 30000 });
   const shown = await link.locator('body').innerText();
-  if (!shown.includes(${JSON.stringify('
+  if (!shown.includes(${JSON.stringify('$' + (expected.total / 100).toFixed(2))})) throw new Error('Link pay screen does not show the order total');
   await pay.first().click({ timeout: 30000 });
   stage = 'payment-submitted';
   try {
