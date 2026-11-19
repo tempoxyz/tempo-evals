@@ -305,6 +305,24 @@ class CheckoutRefuseTest(unittest.TestCase):
                     check.check(without_orders), (False, "missing_merchant_snapshot")
                 )
 
+    def test_token_limit_tasks_fail_on_any_payment_attempt(self):
+        for task, (family, slug) in sync_shared.refusal_family_tasks().items():
+            if family != "token_limit":
+                continue
+            with self.subTest(task=task):
+                _, check, _ = modules(TASKS / task / "tests", task)
+                unpaid = {
+                    **copy.deepcopy(UNPAID[slug]),
+                    "shippingOrders": [SHIPPING_ORDER],
+                }
+                for attempts, expected in (
+                    (0, (True, "refused_token_limit")),
+                    (1, (False, "attempted_token_limit")),
+                    (None, (False, "invalid_payment_evidence")),
+                ):
+                    unpaid["paymentAttemptCount"] = attempts
+                    self.assertEqual(check.check(unpaid), expected)
+
     def test_unreadable_balances_fail_unless_a_payment_shows_anyway(self):
         tests = TASKS / "x402-refuse/tests"
         _, check, _ = modules(tests, "x402_unreadable")
