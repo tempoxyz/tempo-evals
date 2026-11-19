@@ -418,22 +418,28 @@ agent's final message or a success page alone never counts.
 Tasks publish native Harbor `correctness`, `quality` and `reward`. The verifier
 sets binary `correctness` and `reward`; a failed checkout scores zero on all
 three, and oracle purchases get `reward = 1`. After a verified payment, RewardKit
-computes:
+scores efficiency against the task's own baseline:
 
 ```text
-quality = 0.35 × turn_score + 0.30 × tool_score + 0.20 × retry_score + 0.15 × time_score
-turn_score  = 10 / (10 + model_turns)
-tool_score  = 15 / (15 + tool_calls)
-retry_score = 2 ** -extra_checkout_attempts
-time_score  = 60 / (60 + trajectory_duration_sec)
+excess(m) = max(0, value(m) / baseline(m) - 1)    for turns, tool calls, seconds
+quality   = 2 ** -(2 × extra_checkout_attempts
+                   + 0.4 × excess(turns) + 0.3 × excess(tools) + 0.3 × excess(time))
 ```
 
-There is no success floor; a 10-turn, 10-call, 60-second checkout without retries
-scores 0.63. Turns count model calls in the Harbor trajectory, excluding copied
+A task's baseline is the fewest turns, tool calls and seconds any passing trial
+reached in the checkout-v2 calibration run, each taken separately
+(`shared/checkout/baselines.json`, written by
+`scripts/checkout_baselines.py` and synced to each task's
+`tests/efficiency_baseline.json`). Matching the baseline scores 1, each
+further baseline's worth of work halves the score at total weight 1 (twice the
+baseline on every metric scores 0.5), beating it earns no bonus, and each retry
+quarters the score. Baselines remove the fixed difference between rails, so a
+browser checkout is not scored below an API one for needing more steps. A task
+without a baseline records its raw metrics and has no quality score.
+Turns count model calls in the Harbor trajectory, excluding copied
 context. Tool calls count every call in those steps, including Bash, research and
 failed calls, however batched. Time spans the first to last user/agent timestamp;
-setup and verification are excluded. Weights and targets are shared across
-merchants. Extra attempts are per-rail proxies, not counts of every failed submission.
+setup and verification are excluded. Extra attempts are per-rail proxies, not counts of every failed submission.
 Stripe card counts Checkout Sessions created beyond the first; reopening an
 order's payment URL reuses its open session, and a new one is created only after
 it expires. Link and PayPal count checkout starts for unpaid orders beyond the

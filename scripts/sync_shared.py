@@ -357,6 +357,26 @@ def sync_checkout_grading() -> None:
             copy_file(CHECKOUT_SHARED_DIR / relative, task_dir / relative)
 
 
+# Per-task efficiency baselines: the fastest passing calibration trial's turns,
+# tool calls and seconds, each taken separately. Sync writes each task's entry
+# to tests/efficiency_baseline.json; a task without one has no quality score.
+CHECKOUT_BASELINES = CHECKOUT_SHARED_DIR / "baselines.json"
+
+
+def sync_checkout_baselines() -> None:
+    baselines = json.loads(CHECKOUT_BASELINES.read_text())["tasks"]
+    tasks = {task.name: task for task in checkout_task_dirs()}
+    unknown = sorted(set(baselines) - set(tasks))
+    if unknown:
+        raise ValueError(f"baselines for unknown checkout tasks: {unknown}")
+    for name, task in tasks.items():
+        target = task / "tests/efficiency_baseline.json"
+        if name in baselines:
+            write_file(target, json.dumps(baselines[name], indent=2) + "\n")
+        else:
+            remove_path(target)
+
+
 def sync_checkout_prompt_variants() -> None:
     """Generate directed Harbor tasks from the authored discover tasks."""
     for slug, prompt in TASKS_CONFIG["checkout"]["directed"].items():
@@ -1478,6 +1498,7 @@ def main() -> None:
     sync_checkout_decline_variants()
     sync_checkout_underfunded_variants()
     sync_checkout_inject_variants()
+    sync_checkout_baselines()
     sync_checkout_agent_bundle()
     write_dataset_manifest()
     write_mcp_dataset_manifest()
