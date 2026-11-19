@@ -108,14 +108,16 @@ async function main(): Promise<void> {
       if (await visible(country)) await country.first().selectOption('US');
       await line1.first().fill('123 Test St');
       const manual = link.getByRole('button', { name: 'Enter address manually' });
+      await manual.first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
       if (await visible(manual)) await manual.first().click();
-      for (const [field, value] of [['locality', 'San Francisco'], ['postalCode', '94103']]) {
-        const input = link.locator('input[name="' + field + '"], input[name="billingAddress.' + field + '"]');
-        if (await visible(input)) await input.first().fill(value);
-      }
-      const state = link.locator('select[name="administrativeArea"], select[name="billingAddress.administrativeArea"]');
-      if (await visible(state)) await state.first().selectOption('CA');
     }
+    // Checked on every pass, since these fields can appear after line 1.
+    for (const [field, value] of [['locality', 'San Francisco'], ['postalCode', '94103']]) {
+      const input = link.locator('input[name="' + field + '"], input[name="billingAddress.' + field + '"]');
+      if (await visible(input) && !(await input.first().inputValue())) await input.first().fill(value);
+    }
+    const state = link.locator('select[name="administrativeArea"], select[name="billingAddress.administrativeArea"]');
+    if (await visible(state) && !(await state.first().inputValue())) await state.first().selectOption('CA');
     // Link marks a pay button with incomplete required fields with an --incomplete class.
     if (await visible(pay) && await pay.first().isEnabled() && !((await pay.first().getAttribute('class')) ?? '').includes('incomplete')) break;
     const next = link.getByRole('button', { name: /^Continue$/ });

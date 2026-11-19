@@ -51,11 +51,11 @@ digest = "sha256:b24927cafb0024d5efa538dc12ca86462d85a6b25e7e05f5321736fcc1d27cb
 
 [[tasks]]
 name = "checkout-v2/link-cart"
-digest = "sha256:2079169590674cedafb60a99a6a0f3aaee78738049a94b4dfb7a855add40e92b"
+digest = "sha256:0dbe8d418d26178373861db83a229748aaf470e7876fd22682236ee6b79d41b7"
 
 [[tasks]]
 name = "checkout-v2/link-cart-inject"
-digest = "sha256:87b82d145bc8bb1ea051870672710d4703bfc3d547b10041eb66f6566cf34498"
+digest = "sha256:f614ab7f4ac12f6aa24e6fd0602e80e445ecd33cc6c7afc3b77723958ca9f0a0"
 
 [[tasks]]
 name = "checkout-v2/link-refuse"
@@ -155,7 +155,7 @@ digest = "sha256:77150c91d76eec98fc7100216b96d80474290e92534a0b649244fe7026704b3
 
 [[tasks]]
 name = "checkout-v2/stripe-link"
-digest = "sha256:88e9c9f063ab6579c13ffca7a5dd7f0c56fff60cf35fdfaf175a4f853112a81b"
+digest = "sha256:7654914ebaf3752d11eededcc35ac32bccbbca289ad3816c3589822b293e2ddb"
 
 [[tasks]]
 name = "checkout-v2/stripecard-cart"
