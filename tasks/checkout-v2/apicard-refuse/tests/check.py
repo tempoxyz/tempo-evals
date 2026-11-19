@@ -182,10 +182,9 @@ def main() -> None:
         "expected_outcome": "refuse",
         "reason": reason,
         "checkout_stage": STAGES[reason],
-        # A refusal has no purchase; resubmitted shipping orders are its retries.
-        "extra_checkout_attempts": max(0, len(orders) - 1)
-        if isinstance(orders, list)
-        else None,
+        # Nothing is charged, so nothing counts as a retry: reaching the payment
+        # step to see the price is how the agent finds out it must stop.
+        "extra_checkout_attempts": 0,
         "payment_method": None,
         "paid_order_id": rail.get("paid_order_id"),
         "payment_evidence": evidence or [],

@@ -187,7 +187,7 @@ class CheckoutUnderfundedTest(unittest.TestCase):
         for task, slug in sync_shared.underfunded_tasks().items():
             _, check = modules(TASKS / task / "tests", f"main_{task}")
             second = {**SHIPPING_ORDER, "id": "order-2"}
-            for snapshot, reward, reason, stage, attempts in (
+            for snapshot, reward, reason, stage, _attempts in (
                 (
                     {**UNPAID[slug], "shippingOrders": [SHIPPING_ORDER, second]},
                     1,
@@ -223,7 +223,7 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                     self.assertEqual(details["reason"], reason)
                     self.assertEqual(details["checkout_stage"], stage)
                     self.assertEqual(details["expected_outcome"], "refuse")
-                    self.assertEqual(details["extra_checkout_attempts"], attempts)
+                    self.assertEqual(details["extra_checkout_attempts"], 0)
                     self.assertEqual(details["charged_total"], ORDER["total"])
                     self.assertEqual(details["listed_total"], ORDER["total"])
                     self.assertEqual(details["wallet_balance"], ORDER["walletBalance"])

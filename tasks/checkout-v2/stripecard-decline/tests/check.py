@@ -7,7 +7,8 @@ task's payment, order and address checks (shipping_check.py) still decide the
 purchase; this check also requires the paid charge to use the backup card and
 at least one declined attempt with the primary card. The merchant snapshot's
 cardAttempts list every card charge, sale or verification with the card's last
-four digits (shared/checkout/decline/attempts.ts).
+four digits (shared/checkout/decline/attempts.ts). Retries are card attempts
+beyond the declined primary attempt and the backup payment.
 """
 
 import json
@@ -72,6 +73,11 @@ def main() -> None:
     details.update(
         reason=reason,
         payment_method=method,
+        # The required primary-card decline and the backup payment are not
+        # retries; any further card attempt is.
+        extra_checkout_attempts=max(0, len(attempts) - 2)
+        if card_attempts(snapshot) is not None
+        else None,
         card_attempt_count=len(attempts),
         primary_card_declines=sum(
             row.get("outcome") == "declined"

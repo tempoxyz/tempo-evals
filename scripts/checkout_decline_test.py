@@ -233,7 +233,8 @@ class CheckoutDeclineTest(unittest.TestCase):
                     self.assertEqual(details["primary_card_declines"], declines)
                     self.assertEqual(details["backup_card_payments"], 1)
                     self.assertTrue(details["shipping_address_match"])
-                    self.assertIn("extra_checkout_attempts", details)
+                    # The required decline and backup payment are not retries.
+                    self.assertEqual(details["extra_checkout_attempts"], 0)
                     self.assertEqual(
                         details["checkout_stage"],
                         "verified" if reward else "primary_card_not_declined",
