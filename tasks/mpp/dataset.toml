@@ -11,37 +11,37 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "tempo/mpp-client-access-keys"
-digest = "sha256:ad8358f4d4200f462d4d033be64708c9d1051c67da3fa6168a3d689801359596"
+digest = "sha256:86c0d1c6fce1254aa7289a3b4bd95d2b8a014a9b403fd73dd85aaffc0d54e35b"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-and-session"
-digest = "sha256:7fe981fe3fe9e7934909f1abe48688cfc9da44c3cac3419b1cc17e1cb527a2fa"
+digest = "sha256:d226a13f418faf3b3a4b7554c54727c5981ff8003f6dcdb7079d27530f918638"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd"
-digest = "sha256:7300284b60b467098c2b9d36f98afb94141a0bcd0a0ab4667340e4f12c2f6191"
+digest = "sha256:db9b6670f8f94cfcef1fde9379d37ce12b8d5782ce33ad0f964344294e14aeaf"
 
 [[tasks]]
 name = "tempo/mpp-server-charge-pathusd-usdc"
-digest = "sha256:6825ce83336ed1fc72bb7ed4bfd16a50cf22b39d2f58292405c2a5cd0f078658"
+digest = "sha256:1f56149f90e2aeae4801307c34f345a04608475010ce8499c125f417aec5f813"
 
 [[tasks]]
 name = "tempo/mpp-server-custom-payment-method"
-digest = "sha256:dc17a77e3ce37e3c50a23caad47097283c1f3eae59122df3912a57b3dc002164"
+digest = "sha256:351f8064f3c7c2460344a6771703196ca90f556c26acea5e9529ee150bb31630"
 
 [[tasks]]
 name = "tempo/mpp-server-discovery-endpoint"
-digest = "sha256:dba028bdc322692e9cd38d4eac44431bb1c7b041e86eb4e9de6c81744e0fd248"
+digest = "sha256:bc9f9395985a43c8887084eda39a6a39b175184e143308265c4785fae953f954"
 
 [[tasks]]
 name = "tempo/mpp-server-hono-charge-pathusd"
-digest = "sha256:fcab941293ee55e4a5ebdbbfb7dc652c17a61bab42aa29cc83ecfb8ed8c05713"
+digest = "sha256:6b4c6293c2f2d4030da01d6df6afc1de165c7b0f8d5001dc1ea20d958a06f001"
 
 [[tasks]]
 name = "tempo/mpp-server-mcp-pathusd"
-digest = "sha256:7c86fe8ec93767ce7a2ca3c875f81ab45c6f99103d652f111f5ee5e13522094d"
+digest = "sha256:0ef2cfc465e5ce8483eb779f3b1f6ab609765f5ff9fb00e28540becbd36bb1b1"
 
 [[tasks]]
 name = "tempo/mpp-server-x402-mpp-charges"
-digest = "sha256:031cc1dc58e73991e72c35781409622df640b6ed6d75cb87f1489cc24f74bb93"
+digest = "sha256:f090709e5edaf5e5fccd82a141edfbe7deae83de569fd1cdaec10ffb0c796766"
 
