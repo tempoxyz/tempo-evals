@@ -2,16 +2,16 @@
   "_comment": "Half the median turns and half the median seconds of each task's passing trials in the checkout-v2 trial run (claude-opus-5-5 and gpt-6.1-sol at cd2be3e); a task with no pass takes its family's median. Regenerate with scripts/checkout_baselines.py.",
   "tasks": {
     "apicard-mismatch": {
-      "turns": 2.315,
-      "time": 6.198
+      "turns": 2.8,
+      "time": 9.181
     },
     "braintree-mismatch": {
-      "turns": 3.42,
-      "time": 9.076
+      "turns": 3.75,
+      "time": 12.591
     },
     "ousdform-mismatch": {
-      "turns": 3.635,
-      "time": 14.633
+      "turns": 3.75,
+      "time": 13.087
     },
     "apicard": {
       "turns": 3.5,

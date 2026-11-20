@@ -8,7 +8,8 @@ trial from setting it, and halving it makes a typical passing trial score 0.5,
 so quality separates good runs from merely typical ones.
 A task without a passing trial borrows from its family (the same variant on
 other rails, such as mismatch): each peer's baseline is scaled by the median
-ratio between the two rails over the families both have measured, and the
+ratio between the two rails over the families both have measured (those
+sharing a tag with the task's family when there are any), and the
 task takes the median. A task with no such peer is left out.
 Run npm run sync afterwards.
 """
@@ -85,8 +86,10 @@ def family_baselines(
         if task in measured:
             rails.setdefault(rail, {})[family] = measured[task]
 
-    def scaled(value: dict[str, float], rail: str, peer_rail: str, name: str):
+    def scaled(value, rail: str, peer_rail: str, family, name: str):
         shared = set(rails.get(rail, {})) & set(rails[peer_rail])
+        # Families sharing a tag (mismatch and refuse) compare the rails best.
+        shared = {f for f in shared if f & family} or shared
         if not shared:
             return None
         ratio = statistics.median(
@@ -105,7 +108,7 @@ def family_baselines(
         ]
         estimate = {}
         for name in FIELDS:
-            values = [scaled(v, rail, r, name) for v, r in peers]
+            values = [scaled(v, rail, r, family, name) for v, r in peers]
             values = [v for v in values if v is not None]
             if values:
                 estimate[name] = round(statistics.median(values), 3)
