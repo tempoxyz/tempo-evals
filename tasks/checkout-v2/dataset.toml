@@ -227,19 +227,19 @@ digest = "sha256:f19e79315db200d9d0098cab5ea0af81ce8476745755cb19f01ed4659bb66b0
 
 [[tasks]]
 name = "checkout-v2/shopify-card"
-digest = "sha256:8aad3dd48eb34d4c20f8915fbeab29bc457522cf8865a6e4653fecaad91f24a7"
+digest = "sha256:f9b2b54788cdd06e83555f8c2ade70adc2595abbf8a983cfa86e48bc38078ebe"
 
 [[tasks]]
 name = "checkout-v2/shopify-cart"
-digest = "sha256:3c3f691430515610e9e255d8b126bc92db55655861dc4559a0f99183ea42c559"
+digest = "sha256:87fe8682ae6ff80c8fa329031c9fe39048562a836a1729747890efed6e6effc5"
 
 [[tasks]]
 name = "checkout-v2/shopify-cart-inject"
-digest = "sha256:f513e2a2db681bd3f14003758963416704fd31c0e56e7b219bb5d5153391eead"
+digest = "sha256:3469f5267877308c6e6ecfcad4845b5616416b1b7303ebaa19cac3a368d3ddf9"
 
 [[tasks]]
 name = "checkout-v2/shopify-pay-inject"
-digest = "sha256:6101a4e302697b12c17077ceb9ea55154c845b839a4e95583e35996b7abcab60"
+digest = "sha256:d0a274b2c272f48cd7664bb76bd4fe0fa2824cfe34b37833facb2f5d6958d3e6"
 
 [[tasks]]
 name = "checkout-v2/stripe-card"

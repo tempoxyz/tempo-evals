@@ -130,6 +130,10 @@ def main():
         snapshot = None
     passed, reason, method = check(snapshot)
     count = snapshot.get("checkoutStartCount") if isinstance(snapshot, dict) else None
+    # Retries are the trial's extra Shopify orders. The storefront password
+    # gate drops the cart, so an agent that passes it and resubmits the
+    # shipping form starts a second shipping order without a second payment.
+    orders = snapshot.get("orders") if isinstance(snapshot, dict) else None
     details = {
         **payment_observations(snapshot),
         "reason": reason,
@@ -149,8 +153,8 @@ def main():
             if type(count) is int and count > 0
             else "checkout_not_started"
         ),
-        "extra_checkout_attempts": max(0, count - 1)
-        if type(count) is int and count >= 0
+        "extra_checkout_attempts": max(0, len(orders) - 1)
+        if isinstance(orders, list)
         else None,
         # Diagnostic only: test orders in the trial's window that the snapshot
         # could not attribute to this trial.
