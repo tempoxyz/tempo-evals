@@ -190,8 +190,8 @@ class CheckoutBaselinesTest(unittest.TestCase):
                 )
             self.assertEqual(
                 baselines([job]),
-                # Medians of the two passing trials; the failing one is ignored.
-                {"a": {"turns": 10, "time": 47.75}},
+                # Half the medians of the two passing trials; failures are skipped.
+                {"a": {"turns": 5, "time": 23.875}},
             )
 
 

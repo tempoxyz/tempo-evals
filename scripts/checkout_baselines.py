@@ -2,8 +2,10 @@
 
 Usage: uv run python scripts/checkout_baselines.py JOB_DIR [JOB_DIR ...]
 
-Each task's baseline is the median turns and median seconds of its passing
-trials, each taken separately, so one unusually fast trial does not set it.
+Each task's baseline is half the median turns and half the median seconds of
+its passing trials, each taken separately: the median keeps one unusually fast
+trial from setting it, and halving it makes a typical passing trial score 0.5,
+so quality separates good runs from merely typical ones.
 Tasks without a passing trial are left out and get no quality score.
 Run npm run sync afterwards.
 """
@@ -17,6 +19,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINES = ROOT / "shared/checkout/baselines.json"
+# A typical passing trial is this many baselines of work.
+TYPICAL_OVER_BASELINE = 2
 FIELDS = {
     "turns": "model_turns",
     "time": "trajectory_duration_sec",
@@ -41,7 +45,10 @@ def baselines(job_dirs: list[Path]) -> dict[str, dict[str, float]]:
                 if metrics[field] > 0:
                     entry[name].append(metrics[field])
     return {
-        task: {name: round(statistics.median(entry[name]), 3) for name in FIELDS}
+        task: {
+            name: round(statistics.median(entry[name]) / TYPICAL_OVER_BASELINE, 3)
+            for name in FIELDS
+        }
         for task, entry in sorted(values.items())
         if all(entry[name] for name in FIELDS)
     }
