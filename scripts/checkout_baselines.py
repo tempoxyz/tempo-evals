@@ -2,14 +2,16 @@
 
 Usage: uv run python scripts/checkout_baselines.py JOB_DIR [JOB_DIR ...]
 
-Each task's baseline is the fewest turns and seconds reached by any
-passing trial, each taken separately. Tasks without a passing trial are left out
-and get no quality score. Run npm run sync afterwards.
+Each task's baseline is the median turns and median seconds of its passing
+trials, each taken separately, so one unusually fast trial does not set it.
+Tasks without a passing trial are left out and get no quality score.
+Run npm run sync afterwards.
 """
 
 from __future__ import annotations
 
 import json
+import statistics
 import sys
 from pathlib import Path
 
@@ -22,7 +24,7 @@ FIELDS = {
 
 
 def baselines(job_dirs: list[Path]) -> dict[str, dict[str, float]]:
-    best: dict[str, dict[str, float]] = {}
+    values: dict[str, dict[str, list[float]]] = {}
     for job in job_dirs:
         for efficiency in sorted(job.glob("*/verifier/efficiency.json")):
             trial = efficiency.parent
@@ -34,13 +36,14 @@ def baselines(job_dirs: list[Path]) -> dict[str, dict[str, float]]:
                 continue
             result = json.loads((trial.parent / "result.json").read_text())
             task = result["task_name"].split("/", 1)[-1]
-            entry = best.setdefault(task, {})
+            entry = values.setdefault(task, {name: [] for name in FIELDS})
             for name, field in FIELDS.items():
-                value = metrics[field]
-                if value > 0 and value < entry.get(name, float("inf")):
-                    entry[name] = round(value, 3) if name == "time" else value
+                if metrics[field] > 0:
+                    entry[name].append(metrics[field])
     return {
-        task: entry for task, entry in sorted(best.items()) if len(entry) == len(FIELDS)
+        task: {name: round(statistics.median(entry[name]), 3) for name in FIELDS}
+        for task, entry in sorted(values.items())
+        if all(entry[name] for name in FIELDS)
     }
 
 

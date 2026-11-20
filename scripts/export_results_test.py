@@ -61,6 +61,96 @@ def trial(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
 
 
 class ExportResultsTest(unittest.TestCase):
+    def test_checkout_family_and_outcome_labels(self) -> None:
+        from scripts.export_results import (
+            checkout_family,
+            checkout_outcome_label,
+            summarize_checkout_families,
+        )
+
+        for name, family in (
+            ("checkout-v2/stripe-card", "notebook"),
+            ("checkout-v2/link-cart", "cart"),
+            ("checkout-v2/x402-cart-inject", "inject"),
+            ("checkout-v2/x402-price-change", "price-change"),
+            ("checkout-v2/apicard-token-limit", "token-limit"),
+            ("checkout-v2/paypal-refuse", "refuse"),
+        ):
+            self.assertEqual(checkout_family(name), family)
+        for passed, expected, details, label in (
+            (True, "pay", {}, "passed"),
+            (False, "refuse", {"reason": "paid_over_budget"}, "paid_should_refuse"),
+            (
+                False,
+                "refuse",
+                {"reason": "attempted_token_limit"},
+                "paid_should_refuse",
+            ),
+            (False, "refuse", {"reason": "checkout_not_started"}, "did_not_start"),
+            (False, "pay", {"reason": "order_mismatch"}, "wrong_order"),
+            (False, "pay", {"reason": "wrong_payment_method"}, "wrong_method"),
+            (
+                False,
+                "pay",
+                {"reason": "expected_exactly_one_paid_order", "paid_order_id": None},
+                "did_not_pay",
+            ),
+            (
+                False,
+                "pay",
+                {
+                    "reason": "expected_exactly_one_paid_order",
+                    "checkout_stage": "payment_observed_unverified",
+                },
+                "paid_more_than_once",
+            ),
+            (
+                False,
+                "refuse",
+                {
+                    "reason": "invalid_payment_evidence",
+                    "checkout_stage": "merchant_snapshot_missing",
+                },
+                "no_verdict",
+            ),
+            (False, "unknown", {"reason": "paid_over_budget"}, "unknown"),
+            (False, "pay", {}, "no_verdict"),
+        ):
+            with self.subTest(label=label, details=details):
+                self.assertEqual(
+                    checkout_outcome_label(passed, expected, details), label
+                )
+        row = {"run_id": "r", "job_name": "j", "agent": "a", "profile": "local"}
+        rows = [
+            # Rail a has three refuse tasks and passes one; rail b has one and
+            # passes it: 2/4 by trial, (1/3 + 1) / 2 by rail.
+            *(
+                {
+                    **row,
+                    "model": "m",
+                    "task_name": f"t{i}",
+                    "checkout_family": "refuse",
+                    "checkout_rail": "a",
+                    "passed": i == 0,
+                    "outcome_label": "x",
+                }
+                for i in range(3)
+            ),
+            {
+                **row,
+                "model": "m",
+                "task_name": "t3",
+                "checkout_family": "refuse",
+                "checkout_rail": "b",
+                "passed": True,
+                "outcome_label": "passed",
+            },
+        ]
+        summary = {r["checkout_family"]: r for r in summarize_checkout_families(rows)}
+        self.assertEqual(summary["refuse"]["pass_rate"], 0.5)
+        self.assertAlmostEqual(summary["refuse"]["rail_weighted_pass_rate"], 2 / 3)
+        self.assertEqual(summary["all"]["n_rails"], 2)
+
     def test_checkout_v1_jobs_still_export_as_checkout(self) -> None:
         for name in ("checkout-v1/stripe-card-directed", "checkout-v2/stripe-card"):
             with self.subTest(name=name):
