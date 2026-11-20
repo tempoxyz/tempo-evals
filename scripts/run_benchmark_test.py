@@ -63,6 +63,22 @@ def production_model_config() -> dict[str, Any]:
 
 
 class RunBenchmarkTest(unittest.TestCase):
+    def test_checkout_retries_all_but_agent_owned_failures(self) -> None:
+        from scripts.run_benchmark import checkout_retry_flags
+
+        flags = checkout_retry_flags()
+        self.assertNotIn("--retry-include", flags)
+        excluded = set(flags[1::2])
+        self.assertTrue(set(flags[0::2]) == {"--retry-exclude"})
+        for kept in ("AgentTimeoutError", "VerifierTimeoutError"):
+            self.assertIn(kept, excluded)
+        for retried in (
+            "RuntimeError",
+            "SandboxBuildFailedError",
+            "ApiOverloadedError",
+        ):
+            self.assertNotIn(retried, excluded)
+
     def test_env_file_preserves_quoted_secrets_and_existing_environment(self) -> None:
         content = r"""# dotenv quoting must survive wallet injection.
 PLAIN=plain#value

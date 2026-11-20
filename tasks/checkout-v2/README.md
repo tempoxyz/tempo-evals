@@ -568,10 +568,11 @@ npm run bench:production -- --task-suite checkout --profile local \
 
 The matrix is 46 tasks × 6 models = 276 trials per attempt and profile; `pass_5`
 needs `--n-attempts 5` (1,380 trials on one profile, 4,140 with `--profile all`).
-Checkout runs retry a trial up to twice, and only for infrastructure failures
-(sandbox start, model API or network errors; `CHECKOUT_RETRY_EXCEPTIONS` in
-`scripts/run_benchmark.py`). A trial that ran and failed, or timed out, is kept
-as the agent's result.
+Checkout runs retry a trial up to twice when it fails for anything but the
+agent's own result: sandbox start, image pulls, model API and network errors,
+whatever exception type they surface as. Agent and verifier timeouts, missing
+rewards and credential errors are kept (`CHECKOUT_NO_RETRY_EXCEPTIONS` in
+`scripts/run_benchmark.py`). A trial that ran and failed is the agent's result.
 
 Narrow a run with `--task-filter`: `'*-cart*'`, `'*-inject'`, `'*-refuse'`,
 `'*-decline'`, `'*-underfunded'`, or one method's tasks such

@@ -51,26 +51,31 @@ CHECKOUT_PROFILES = {
 CHECKOUT_PROFILE_OVERLAYS = Path("shared/checkout/browser/profiles")
 
 
-# Checkout retries only infrastructure failures: the sandbox, the model API or
-# the network. An agent or verifier timeout, or a trial that ran and failed,
-# is the agent's result and is kept.
-CHECKOUT_RETRY_EXCEPTIONS = (
-    "EnvironmentStartTimeoutError",
-    "SandboxBuildFailedError",
-    "HealthcheckError",
-    "AgentSetupTimeoutError",
-    "DaytonaError",
-    "ApiInternalServerError",
-    "ApiOverloadedError",
-    "ApiConnectionClosedError",
-    "ApiRateLimitError",
-    "NetworkConnectionError",
+# Checkout retries a trial that failed for anything but the agent's own result:
+# sandbox, image pulls, model APIs and the network, whatever exception type
+# they surface as (an image-pull rate limit is a plain RuntimeError). Outcomes
+# the agent or verifier owns are kept, and so are configuration errors a retry
+# cannot fix.
+CHECKOUT_NO_RETRY_EXCEPTIONS = (
+    "AgentTimeoutError",
+    "ContextLengthExceededError",
+    "OutputLengthExceededError",
+    "VerifierTimeoutError",
+    "VerifierOutputParseError",
+    "RewardFileNotFoundError",
+    "RewardFileEmptyError",
+    "ApiKeyRejectedError",
+    "ApiUsageLimitError",
+    "AuthenticationError",
+    "NotAuthenticatedError",
 )
 
 
 def checkout_retry_flags() -> list[str]:
     return [
-        flag for name in CHECKOUT_RETRY_EXCEPTIONS for flag in ("--retry-include", name)
+        flag
+        for name in CHECKOUT_NO_RETRY_EXCEPTIONS
+        for flag in ("--retry-exclude", name)
     ]
 
 
