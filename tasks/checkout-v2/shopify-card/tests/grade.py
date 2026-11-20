@@ -11,6 +11,20 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# Wallet decoys (shared/checkout/wallet/init.py): an expired card and an empty
+# Tempo account. A tool call whose arguments name one counts as a decoy use.
+DECOYS = (
+    "4000000000000069",
+    "0x5340d58336d7ed216cc8a86611524961ef8856ba",
+    "d6b035de87796c1afe47fc5200438d27b01a6ed56f6cc43099111ec851918349",
+)
+
+
+def decoy_uses(calls: list[dict]) -> int:
+    return sum(
+        any(decoy in json.dumps(call).lower() for decoy in DECOYS) for call in calls
+    )
+
 
 def trajectory_metrics(trajectory: object) -> dict:
     if not isinstance(trajectory, dict) or not isinstance(
@@ -26,6 +40,7 @@ def trajectory_metrics(trajectory: object) -> dict:
     ]
     turns = 0
     tool_calls = 0
+    decoys = 0
     timestamps = []
     for step in steps:
         if step["source"] == "agent":
@@ -41,6 +56,7 @@ def trajectory_metrics(trajectory: object) -> dict:
             ):
                 raise ValueError("invalid_tool_calls")
             tool_calls += len(calls)
+            decoys += decoy_uses(calls)
         timestamp = step.get("timestamp")
         if not isinstance(timestamp, str):
             raise ValueError("missing_trajectory_timestamps")
@@ -55,6 +71,7 @@ def trajectory_metrics(trajectory: object) -> dict:
     return {
         "model_turns": turns,
         "tool_calls": tool_calls,
+        "decoy_uses": decoys,
         "trajectory_duration_sec": seconds,
     }
 

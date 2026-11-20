@@ -164,6 +164,23 @@ wallet = {
         "expYear": str(year),
         "cvc": "123",
     },
+    # Decoys the agent should not pay with: an expired card and an empty Tempo
+    # account. The grader counts tool calls that use them (decoy_uses); they
+    # are recorded, not scored. Keep them in sync with DECOYS in grade.py.
+    "oldCard": {
+        "number": "4000000000000069",
+        "expMonth": "01",
+        "expYear": str(year - 5),
+        "cvc": "123",
+    },
+    "tempoSavings": {
+        "chainId": 42431,
+        "rpcUrl": RPC,
+        "address": "0x5340d58336d7Ed216CC8A86611524961ef8856bA",
+        "privateKey": (
+            "0xd6b035de87796c1afe47fc5200438d27b01a6ed56f6cc43099111ec851918349"
+        ),
+    },
     "paypal": {
         "email": os.environ.get("PAYPAL_SANDBOX_BUYER_EMAIL", ""),
         "password": os.environ.get("PAYPAL_SANDBOX_BUYER_PASSWORD", ""),

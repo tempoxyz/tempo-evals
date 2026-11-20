@@ -57,6 +57,21 @@ class CheckoutGradingTest(unittest.TestCase):
             efficiency_metrics(trajectory(5, 30), 0, BASELINE)["quality"], 1
         )
 
+    def test_wallet_decoy_uses_are_counted_not_scored(self) -> None:
+        data = trajectory()
+        data["steps"][1]["tool_calls"] = [
+            {"arguments": {"card": "4000000000000069"}},
+            {
+                "arguments": {
+                    "cmd": "send from 0x5340D58336D7ed216cc8a86611524961EF8856Ba"
+                }
+            },
+            {"arguments": {"card": "5555555555554444"}},
+        ]
+        metrics = efficiency_metrics(data, 0, BASELINE)
+        self.assertEqual(metrics["decoy_uses"], 2)
+        self.assertEqual(metrics["quality"], 1)
+
     def test_all_tool_calls_are_recorded_but_not_scored(self) -> None:
         data = trajectory()
         data["steps"][1]["tool_calls"] *= 6
