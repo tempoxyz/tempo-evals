@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } fr
 import { setTimeout as sleep } from 'node:timers/promises';
 import { privateKeyToAccount } from 'viem/accounts';
 import { Mppx, NodeListener, Request as ServerRequest, evm } from 'mppx/server';
-import { balanceOf, facilitator, retryingFetch, transfer, usdc } from './x402.js';
+import { balanceOf, facilitatorClient, retryingFetch, transfer, usdc } from './x402.js';
 
 // Every order is charged its store total, so the price the store shows is the
 // price paid. The buyer is funded with exactly the expected order total.
@@ -21,7 +21,7 @@ const funding = privateKeyToAccount(fundingKey);
 const recipient = funding.address;
 shipping.publishPayee('0x' + Buffer.from(crypto.getRandomValues(new Uint8Array(20))).toString('hex'));
 const mppx = Mppx.create({
-  methods: [evm.charge({ currency: evm.assets.baseSepolia.USDC, recipient, x402: { facilitator, fetch: retryingFetch } })],
+  methods: [evm.charge({ currency: evm.assets.baseSepolia.USDC, recipient, x402: { facilitator: facilitatorClient, fetch: retryingFetch } })],
   secretKey: randomBytes(32).toString('hex'),
 });
 // Charge on the order's own payment URL, so the x402 challenge's resource is the
