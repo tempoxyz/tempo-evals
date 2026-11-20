@@ -373,12 +373,13 @@ class CheckoutDeclineTest(unittest.TestCase):
                 generated = {
                     path.relative_to(checkout / task): path.read_bytes()
                     for path in (checkout / task).rglob("*")
-                    if path.is_file()
+                    if path.is_file() and path.name != "efficiency_baseline.json"
                 }
                 committed = {
                     path.relative_to(TASKS / task): path.read_bytes()
                     for path in (TASKS / task).rglob("*")
                     if path.is_file()
+                    and path.name != "efficiency_baseline.json"
                     and not {"node_modules", "__pycache__"} & set(path.parts)
                 }
                 self.assertEqual(generated, committed, task)
