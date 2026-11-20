@@ -99,6 +99,13 @@ def load(path: Path, name: str):
 
 
 def modules(directory: Path, name: str):
+    # Generated tasks draw their own amounts (sync_shared.vary_order); the
+    # verifier logic is tested against the shared fixture's amounts.
+    if (directory / "order.json").exists() and TASKS in directory.parents:
+        copy = Path(tempfile.mkdtemp())
+        shutil.copytree(directory, copy, dirs_exist_ok=True)
+        (copy / "order.json").write_text(json.dumps(ORDER))
+        directory = copy
     original = sys.path[:]
     try:
         sys.path.insert(0, str(directory))
@@ -151,9 +158,13 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                 "ousdform-underfunded",
             }
             with self.subTest(task=task.name):
-                self.assertEqual(
-                    f'TEMPO_PAYER_OUSD_UNITS: "{FUNDED_UNITS}"' in compose, tempo
-                )
+                self.assertEqual("TEMPO_PAYER_OUSD_UNITS:" in compose, tempo)
+                if tempo:
+                    funded = sync_shared.vary_order("underfunded", task.name, ORDER)
+                    self.assertIn(
+                        f'TEMPO_PAYER_OUSD_UNITS: "{funded["walletBalance"] * 10_000}"',
+                        compose,
+                    )
                 # Main waits for the wallet service, so funding ends first.
                 self.assertIn(
                     "  main:\n    depends_on:\n      wallet:\n"
@@ -236,9 +247,13 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                 target = TASKS / task
                 peer = TASKS / directed[slug]["task"]
                 self.assertEqual(task, f"{underfunded[slug]}-underfunded")
+                order = sync_shared.vary_order("underfunded", task, ORDER)
+                self.assertLess(order["walletBalance"], order["total"])
+                for destination in ("solution/order.json", "tests/order.json"):
+                    self.assertEqual(
+                        json.loads((target / destination).read_text()), order
+                    )
                 for source, destination in (
-                    (UNDERFUNDED / "order.json", "solution/order.json"),
-                    (UNDERFUNDED / "order.json", "tests/order.json"),
                     (REFUSE / "oracle.ts", "solution/solve.ts"),
                     (REFUSE / "solve.sh", "solution/solve.sh"),
                     (REFUSE / "check.py", "tests/check.py"),
@@ -250,17 +265,20 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                 compose = (target / "environment/docker-compose.yaml").read_text()
                 self.assertEqual(
                     compose.replace(
-                        f'      TEMPO_PAYER_OUSD_UNITS: "{FUNDED_UNITS}"\n', "", 1
+                        "      TEMPO_PAYER_OUSD_UNITS: "
+                        f'"{order["walletBalance"] * 10_000}"\n',
+                        "",
+                        1,
                     ),
                     (peer / "environment/docker-compose.yaml").read_text(),
                 )
                 (server,) = (target / "environment/merchant").glob("server.[jt]s")
                 text = server.read_text()
                 if slug == "x402-usdc-discover":
-                    self.assertIn(f"const total = {ORDER['total']};", text)
+                    self.assertIn(f"const total = {order['total']};", text)
                     self.assertIn("amount: (order.total / 100).toFixed(2)", text)
                     self.assertIn(
-                        f"const amount = BigInt({ORDER['walletBalance']}) * 10_000n;",
+                        f"const amount = BigInt({order['walletBalance']}) * 10_000n;",
                         text,
                     )
                 else:
@@ -299,7 +317,10 @@ class CheckoutUnderfundedTest(unittest.TestCase):
                 readme = (target / "README.md").read_text()
                 method = sync_shared.CHECKOUT_CART_METHODS[slug]["method"]
                 self.assertIn(f"\n# {method} underfunded checkout\n", readme)
-                self.assertIn("holds only $5.00", readme)
+                self.assertIn(
+                    f"holds only {sync_shared.money(order['walletBalance'] / 100)}",
+                    readme,
+                )
                 self.assertIn(sync_shared.CHECKOUT_REFUSE_EVIDENCE[slug], readme)
                 self.assertTrue(readme.endswith(f"{directed[slug]['instruction']}\n"))
 

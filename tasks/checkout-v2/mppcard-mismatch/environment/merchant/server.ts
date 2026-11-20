@@ -1,5 +1,5 @@
 import { createShipping } from './shipping.js';
-const shipping = createShipping('/buy', { total: 1100, listedTotal: 1000, disclose: false });
+const shipping = createShipping('/buy', { total: 1200, listedTotal: 875, disclose: false });
 import http from 'node:http';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync, appendFileSync, writeFileSync, readFileSync } from 'node:fs';

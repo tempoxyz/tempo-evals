@@ -234,6 +234,23 @@ def load(path: Path, name: str):
 
 def modules(directory: Path, name: str):
     """A task's payment_check and refuse check, plus a source's paid fixture."""
+    # Generated tasks draw their own amounts (sync_shared.vary_order); the
+    # verifier logic is tested against the shared fixture's amounts.
+    if (directory / "order.json").exists() and TASKS in directory.parents:
+        copy = Path(tempfile.mkdtemp())
+        shutil.copytree(directory, copy, dirs_exist_ok=True)
+        refusal = json.loads((directory / "order.json").read_text()).get("refusal")
+        fixture = {
+            "token_limit": "tokenlimit",
+            "charge_mismatch": "mismatch",
+        }.get(refusal)
+        base = (
+            json.loads((ROOT / "shared/checkout" / fixture / "order.json").read_text())
+            if fixture
+            else ORDER
+        )
+        (copy / "order.json").write_text(json.dumps(base))
+        directory = copy
     original = sys.path[:]
     try:
         sys.path.insert(0, str(directory))
@@ -445,30 +462,35 @@ class CheckoutRefuseTest(unittest.TestCase):
                     ("check.py", "tests/check.py"),
                     ("oracle.ts", "solution/solve.ts"),
                     ("solve.sh", "solution/solve.sh"),
-                    ("order.json", "solution/order.json"),
-                    ("order.json", "tests/order.json"),
                 ):
                     self.assertEqual(
                         (target / destination).read_bytes(),
                         (REFUSE / source).read_bytes(),
                     )
+                order = sync_shared.vary_order("refuse", task, ORDER)
+                self.assertLessEqual(order["listedTotal"], order["budget"])
+                self.assertGreater(order["total"], order["budget"])
+                for destination in ("solution/order.json", "tests/order.json"):
+                    self.assertEqual(
+                        json.loads((target / destination).read_text()), order
+                    )
                 self.assertTrue((target / "solution/solve.sh").stat().st_mode & 0o100)
                 self.assertFalse((target / "tests/check_test.py").exists())
                 compose = (target / "environment/docker-compose.yaml").read_text()
-                self.assertIn(f'SPT_MAX_AMOUNT: "{ORDER["total"]}"', compose)
+                self.assertIn(f'SPT_MAX_AMOUNT: "{order["total"]}"', compose)
                 self.assertEqual(
-                    compose.replace(f'      SPT_MAX_AMOUNT: "{ORDER["total"]}"\n', ""),
+                    compose.replace(f'      SPT_MAX_AMOUNT: "{order["total"]}"\n', ""),
                     (peer / "environment/docker-compose.yaml").read_text(),
                 )
                 (server,) = (target / "environment/merchant").glob("server.[jt]s")
                 text = server.read_text()
                 self.assertEqual(text.count("createShipping("), 1)
-                self.assertIn(f"listedTotal: {ORDER['listedTotal']} }})", text)
+                self.assertIn(f"listedTotal: {order['listedTotal']} }})", text)
                 if slug == "x402-usdc-discover":
-                    self.assertIn(f"const total = {ORDER['total']};", text)
+                    self.assertIn(f"const total = {order['total']};", text)
                     self.assertIn("const amount = BigInt(total) * 10_000n;", text)
                 else:
-                    self.assertIn(f"{{ total: {ORDER['total']}, listedTotal", text)
+                    self.assertIn(f"{{ total: {order['total']}, listedTotal", text)
                 instruction = (target / "instruction.md").read_text()
                 peer_instruction = (peer / "instruction.md").read_text()
                 self.assertEqual(

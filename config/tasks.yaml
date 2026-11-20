@@ -119,8 +119,9 @@ checkout:
     x402-usdc-discover: x402
     ousd-form-discover: ousdform
     apicard-discover: apicard
-  # Price-change store: the notebook store lists $10.00, but its payment step
-  # adds a $2.00 service fee, keeping the charge within the $12.00 budget
+  # Price-change store: the notebook store lists a lower price, but its payment
+  # step adds a service fee, keeping the charge within the $12.00 budget
+  # ($11.50-$12.00, drawn per task by vary_order)
   # (shared/checkout/pricechange/order.json). Passing means paying the higher
   # charge once. Same sources as refuse; sync generates <prefix>-price-change.
   price_change:
