@@ -98,9 +98,22 @@ class ExportResultsTest(unittest.TestCase):
             (
                 False,
                 "pay",
-                {"reason": "expected_exactly_one_paid_order", "paid_order_id": "o1"},
+                {
+                    "reason": "expected_exactly_one_paid_order",
+                    "checkout_stage": "payment_observed_unverified",
+                },
                 "paid_more_than_once",
             ),
+            (
+                False,
+                "refuse",
+                {
+                    "reason": "invalid_payment_evidence",
+                    "checkout_stage": "merchant_snapshot_missing",
+                },
+                "no_verdict",
+            ),
+            (False, "unknown", {"reason": "paid_over_budget"}, "unknown"),
             (False, "pay", {}, "no_verdict"),
         ):
             with self.subTest(label=label, details=details):
