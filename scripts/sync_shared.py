@@ -808,8 +808,9 @@ def refuse_merchant(
 CHECKOUT_AMOUNT_RANGES: dict[str, dict[str, tuple[int, int]]] = {
     # Listed within budget, charged above it.
     "refuse": {"listedTotal": (900, 1200), "total": (1250, 1600)},
-    # Listed below the charge, charged within budget but rarely exactly at it.
-    "price_change": {"listedTotal": (800, 1100), "total": (1150, 1200)},
+    # Listed below the charge, charged within budget; one draw in five lands
+    # exactly on it.
+    "price_change": {"listedTotal": (800, 1075), "total": (1100, 1200)},
     # Stated below the charge, charged within budget.
     "mismatch": {"listedTotal": (800, 1100), "total": (1125, 1200)},
     # The card token's limit below the store's fixed charge.
