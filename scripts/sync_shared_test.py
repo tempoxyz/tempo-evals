@@ -25,7 +25,8 @@ class SyncSharedTest(unittest.TestCase):
             + len(sync_shared.underfunded_tasks())
             + len(sync_shared.inject_tasks())
             + len(sync_shared.price_change_tasks())
-            + len(sync_shared.refusal_family_tasks()),
+            + len(sync_shared.refusal_family_tasks())
+            + len(sync_shared.pay_inject_tasks()),
         )
         bundle = sync_shared.CHECKOUT_SHARED_DIR / "agent"
         prompts = set()
@@ -179,10 +180,11 @@ class SyncSharedTest(unittest.TestCase):
             },
         )
         # Every rail lists the same card, one test Mastercard that Stripe and
-        # the Braintree sandbox both accept, from the same public registry.
+        # the Braintree sandbox both accept, plus the expired decoy card.
         wallet = (sync_shared.CHECKOUT_SHARED_DIR / "wallet/init.py").read_text()
         self.assertEqual(
-            re.findall(r'"number": "(\d{2,})"', wallet), ["5555555555554444"]
+            re.findall(r'"number": "(\d{2,})"', wallet),
+            ["5555555555554444", "4000000000000069"],
         )
         for name in ("Dockerfile", "link.Dockerfile"):
             dockerfile = (sync_shared.CHECKOUT_SHARED_DIR / "wallet" / name).read_text()

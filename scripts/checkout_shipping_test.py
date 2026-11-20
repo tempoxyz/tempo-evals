@@ -448,11 +448,12 @@ class CheckoutShippingTest(unittest.TestCase):
         carts = set(sync_shared.cart_tasks()) | set(sync_shared.inject_tasks())
         price_changes = set(sync_shared.price_change_tasks())
         refusal_families = set(sync_shared.refusal_family_tasks())
+        pay_injects = set(sync_shared.pay_inject_tasks())
         refusals = set(sync_shared.refuse_tasks())
         declines = set(sync_shared.decline_tasks())
         underfunded = set(sync_shared.underfunded_tasks())
         expected |= carts | refusals | declines | underfunded | price_changes
-        expected |= refusal_families
+        expected |= refusal_families | pay_injects
         self.assertEqual({p.name for p in tasks}, expected)
         for task in tasks:
             with self.subTest(task=task.name):
@@ -510,6 +511,18 @@ class CheckoutShippingTest(unittest.TestCase):
                 }.get(task.name)
                 if family in sync_shared.CHECKOUT_AMOUNT_RANGES:
                     order = sync_shared.vary_order(family, task.name, order)
+                if task.name in pay_injects:
+                    # The notebook task's own order, such as x402's $1.00.
+                    source = sync_shared.pay_inject_tasks()[task.name]
+                    peer = sync_shared.TASKS_CONFIG["checkout"]["directed"][source]
+                    order = json.loads(
+                        (
+                            ROOT
+                            / "tasks/checkout-v2"
+                            / peer["task"]
+                            / "tests/order.json"
+                        ).read_text()
+                    )
                 if task.name.endswith("-wrong-payee"):
                     # Charged at the source store's own price.
                     source = sync_shared.refusal_family_tasks()[task.name][1]
