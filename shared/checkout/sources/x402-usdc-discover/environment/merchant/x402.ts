@@ -126,6 +126,19 @@ function transferArgs({ payload: { signature, authorization: a } }: Payload) {
 // its nonce to another trial's; those are resent with the next pending nonce.
 const nonceRace = /nonce|replacement|already known|underpriced|timed? ?out|fetch failed|ECONNRESET/i;
 
+type Requirements = { amount?: string; asset?: string; payTo?: string; network?: string };
+
+// The authorization must pay exactly what the charge asks, to its recipient, in
+// USDC on Base Sepolia; simulation alone would accept any validly signed one.
+function mismatch({ payload: { authorization: a } }: Payload, requirements?: Requirements) {
+  if (!requirements) return 'missing payment requirements';
+  if (requirements.network && requirements.network !== 'eip155:84532') return `network ${requirements.network}`;
+  if (requirements.asset && getAddress(requirements.asset) !== getAddress(usdc)) return 'asset is not Base Sepolia USDC';
+  if (!requirements.payTo || getAddress(a.to) !== getAddress(requirements.payTo)) return 'recipient does not match payTo';
+  if (!requirements.amount || BigInt(a.value) !== BigInt(requirements.amount)) return 'value does not match amount';
+  return null;
+}
+
 // Settles x402 "exact" EVM payments on-chain with the funding key as sender.
 function localFacilitator() {
   const key = process.env.X402_FUNDING_PRIVATE_KEY as `0x${string}` | undefined;
@@ -134,8 +147,10 @@ function localFacilitator() {
   const wallet = createWalletClient({ account: sender, chain: baseSepolia, transport });
   const network = 'eip155:84532';
   return {
-    async verify(paymentPayload: Payload) {
+    async verify(paymentPayload: Payload, requirements?: Requirements) {
       const payer = paymentPayload.payload.authorization.from;
+      const invalid = mismatch(paymentPayload, requirements);
+      if (invalid) return { isValid: false, invalidReason: 'invalid_exact_evm_payload', invalidMessage: invalid, payer };
       try {
         await client.simulateContract({ account: sender, address: usdc, abi: transferAbi, functionName: 'transferWithAuthorization', args: transferArgs(paymentPayload) });
         return { isValid: true, payer };
@@ -143,24 +158,30 @@ function localFacilitator() {
         return { isValid: false, invalidReason: 'invalid_exact_evm_transaction_failed', invalidMessage: String((error as Error).message).slice(0, 300), payer };
       }
     },
-    async settle(paymentPayload: Payload) {
+    async settle(paymentPayload: Payload, requirements?: Requirements, signal?: AbortSignal) {
       const authorization = paymentPayload.payload.authorization;
       const payer = authorization.from;
+      const invalid = mismatch(paymentPayload, requirements);
+      if (invalid) return { success: false, errorReason: 'invalid_exact_evm_payload', errorMessage: invalid, network, transaction: '', payer };
       let failure: unknown;
-      for (let attempt = 0; attempt < 8; attempt++) {
+      for (let attempt = 0; attempt < 8 && !signal?.aborted; attempt++) {
         const used = await settlementOf(authorization).catch(() => null);
         if (used) return { success: true, transaction: used, network, payer };
         try {
           const nonce = await client.getTransactionCount({ address: sender.address, blockTag: 'pending' });
           const hash = await wallet.writeContract({ address: usdc, abi: transferAbi, functionName: 'transferWithAuthorization', args: transferArgs(paymentPayload), nonce });
-          const receipt = await client.waitForTransactionReceipt({ hash, timeout: 90_000 });
-          if (receipt.status === 'success') return { success: true, transaction: hash, network, payer };
-          failure = new Error(`transferWithAuthorization reverted in ${hash}`);
+          // A concurrent trial can replace this transaction at the shared nonce,
+          // and the receipt wait then resolves with that one; only the chain's
+          // record of this authorization proves it settled.
+          await client.waitForTransactionReceipt({ hash, timeout: 20_000 }).catch(error => { failure = error; });
+          const settledBy = await settlementOf(authorization).catch(() => null);
+          if (settledBy) return { success: true, transaction: settledBy, network, payer };
+          failure ??= new Error(`transferWithAuthorization ${hash} did not settle`);
         } catch (error) {
           failure = error;
           if (!nonceRace.test(String((error as Error).message))) break;
         }
-        await sleep(500 + Math.floor(Math.random() * 2_000));
+        await sleep(500 + Math.floor(Math.random() * 2_000), undefined, { signal }).catch(() => {});
       }
       const used = await settlementOf(authorization).catch(() => null);
       if (used) return { success: true, transaction: used, network, payer };
