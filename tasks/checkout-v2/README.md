@@ -430,8 +430,8 @@ quality   = 2 ** -(2 × extra_checkout_attempts
                    + 0.7 × excess(turns) + 0.3 × excess(time))
 ```
 
-A task's baseline is the fewest turns and seconds any passing trial
-reached in the checkout-v2 calibration run, each taken separately
+A task's baseline is the median turns and median seconds of its passing trials
+in the checkout-v2 calibration run, each taken separately
 (`shared/checkout/baselines.json`, written by
 `scripts/checkout_baselines.py` and synced to each task's
 `tests/efficiency_baseline.json`). Matching the baseline scores 1, each
@@ -563,10 +563,10 @@ npm run bench:production -- --task-suite checkout --profile local \
 
 The matrix is 46 tasks × 6 models = 276 trials per attempt and profile; `pass_5`
 needs `--n-attempts 5` (1,380 trials on one profile, 4,140 with `--profile all`).
-Checkout runs default to `--max-retries 0`, keeping one native attempt per cell:
-Harbor deletes earlier exception-attempt directories when it retries, so rerun
-infrastructure failures separately to keep their evidence apart from agent
-failures.
+Checkout runs retry a trial up to twice, and only for infrastructure failures
+(sandbox start, model API or network errors; `CHECKOUT_RETRY_EXCEPTIONS` in
+`scripts/run_benchmark.py`). A trial that ran and failed, or timed out, is kept
+as the agent's result.
 
 Narrow a run with `--task-filter`: `'*-cart*'`, `'*-inject'`, `'*-refuse'`,
 `'*-decline'`, `'*-underfunded'`, or one method's tasks such
