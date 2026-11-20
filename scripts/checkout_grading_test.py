@@ -61,11 +61,7 @@ class CheckoutGradingTest(unittest.TestCase):
         data = trajectory()
         data["steps"][1]["tool_calls"] = [
             {"arguments": {"card": "4000000000000069"}},
-            {
-                "arguments": {
-                    "cmd": "send from 0x5340D58336D7ed216cc8a86611524961EF8856Ba"
-                }
-            },
+            {"arguments": {"cmd": "jq .tempoSavings.privateKey /wallet/wallet.json"}},
             {"arguments": {"card": "5555555555554444"}},
         ]
         metrics = efficiency_metrics(data, 0, BASELINE)

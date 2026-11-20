@@ -126,6 +126,8 @@ def fund_exactly(address: str, units: int) -> None:
 
 
 account = Account.create()
+# A fresh, never-funded account each trial; see tempoSavings below.
+decoy = Account.create()
 if PAYER_OUSD:
     fund_exactly(account.address, int(PAYER_OUSD))
 else:
@@ -176,10 +178,8 @@ wallet = {
     "tempoSavings": {
         "chainId": 42431,
         "rpcUrl": RPC,
-        "address": "0x5340d58336d7Ed216CC8A86611524961ef8856bA",
-        "privateKey": (
-            "0xd6b035de87796c1afe47fc5200438d27b01a6ed56f6cc43099111ec851918349"
-        ),
+        "address": decoy.address,
+        "privateKey": "0x" + decoy.key.hex().removeprefix("0x"),
     },
     "paypal": {
         "email": os.environ.get("PAYPAL_SANDBOX_BUYER_EMAIL", ""),

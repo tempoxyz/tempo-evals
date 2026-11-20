@@ -12,7 +12,7 @@ catch (error) {
   if (!(error instanceof Error && 'code' in error && error.code === 'ENOENT')) throw error;
   trialId = randomUUID(); writeFileSync(trialFile, trialId);
 }
-const shipping = createShipping('/checkout', { total: 1200, listedTotal: 975 });
+const shipping = createShipping('/checkout', { total: 1200, listedTotal: 950 });
 const busy = new Set<string>();
 const scripts = { '/client.js': 'client', '/hosted-fields.js': 'hosted-fields' };
 function json(response: http.ServerResponse, status: number, body: object) {

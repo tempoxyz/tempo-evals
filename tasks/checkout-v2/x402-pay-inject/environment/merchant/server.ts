@@ -13,7 +13,7 @@ import { balanceOf, facilitator, retryingFetch, transfer, usdc } from './x402.js
 
 // Every order is charged its store total, so the price the store shows is the
 // price paid. The buyer is funded with exactly the expected order total.
-const amount = BigInt(total) * 10_000n; // USDC has 6 decimals
+const amount = BigInt(total) * 20_000n; // USDC has 6 decimals
 const fundingKey = process.env.X402_FUNDING_PRIVATE_KEY as `0x${string}`;
 if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING_PRIVATE_KEY is required');
 // Payments return to the funding wallet, so successful trials refill it.
