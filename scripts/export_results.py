@@ -92,6 +92,7 @@ CHECKOUT_TRIAL_COLUMNS = [
     "extra_checkout_attempts",
     "trajectory_duration_sec",
     "efficiency_model_turns",
+    "decoy_uses",
     "total_tool_calls",
     "tool_calls_by_name",
     "reported_tool_error_count",
@@ -1002,6 +1003,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
                     "trajectory_duration_sec", ""
                 ),
                 "efficiency_model_turns": efficiency.get("model_turns", ""),
+                "decoy_uses": efficiency.get("decoy_uses", ""),
                 **tool_metrics,
                 **native_tools,
                 "total_tool_calls": efficiency.get(

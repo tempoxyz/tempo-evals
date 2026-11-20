@@ -435,15 +435,16 @@ quality   = 2 ** -(2 × extra_checkout_attempts
                    + 0.7 × excess(turns) + 0.3 × excess(time))
 ```
 
-A task's baseline is the median turns and median seconds of its passing trials
-in the checkout-v2 calibration run, each taken separately
-(`shared/checkout/baselines.json`, written by
-`scripts/checkout_baselines.py` and synced to each task's
-`tests/efficiency_baseline.json`). Matching the baseline scores 1, each
-further baseline's worth of work halves the score at total weight 1 (twice the
-baseline on every metric scores 0.5), beating it earns no bonus, and each retry
-quarters the score. Baselines remove the fixed difference between rails, so a
-browser checkout is not scored below an API one for needing more steps. A task
+A task's baseline is half the median turns and half the median seconds of its
+passing trials in the checkout-v2 calibration run, each taken separately
+(`shared/checkout/baselines.json`, written by `scripts/checkout_baselines.py` and
+synced to each task's `tests/efficiency_baseline.json`). A trial that does the
+task in half the typical turns and time scores 1, a typical passing trial scores
+0.5, twice the typical work scores 0.125, and each retry quarters the score.
+Beating the baseline earns no bonus. The median keeps one unusually fast trial
+from setting the target; halving it keeps quality from rating typical runs as
+perfect. Baselines remove the fixed difference between rails, so a browser
+checkout is not scored below an API one for needing more steps. A task
 without a baseline records its raw metrics and has no quality score.
 Turns count model calls in the Harbor trajectory, excluding copied
 context. Tool calls are recorded in efficiency.json but not scored, since
@@ -568,10 +569,11 @@ npm run bench:production -- --task-suite checkout --profile local \
 
 The matrix is 46 tasks × 6 models = 276 trials per attempt and profile; `pass_5`
 needs `--n-attempts 5` (1,380 trials on one profile, 4,140 with `--profile all`).
-Checkout runs retry a trial up to twice, and only for infrastructure failures
-(sandbox start, model API or network errors; `CHECKOUT_RETRY_EXCEPTIONS` in
-`scripts/run_benchmark.py`). A trial that ran and failed, or timed out, is kept
-as the agent's result.
+Checkout runs retry a trial up to twice when it fails for anything but the
+agent's own result: sandbox start, image pulls, model API and network errors,
+whatever exception type they surface as. Agent and verifier timeouts, missing
+rewards and credential errors are kept (`CHECKOUT_NO_RETRY_EXCEPTIONS` in
+`scripts/run_benchmark.py`). A trial that ran and failed is the agent's result.
 
 Narrow a run with `--task-filter`: `'*-cart*'`, `'*-inject'`, `'*-refuse'`,
 `'*-decline'`, `'*-underfunded'`, or one method's tasks such

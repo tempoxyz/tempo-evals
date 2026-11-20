@@ -126,6 +126,8 @@ def fund_exactly(address: str, units: int) -> None:
 
 
 account = Account.create()
+# A fresh, never-funded account each trial; see tempoSavings below.
+decoy = Account.create()
 if PAYER_OUSD:
     fund_exactly(account.address, int(PAYER_OUSD))
 else:
@@ -163,6 +165,21 @@ wallet = {
         "expMonth": "12",
         "expYear": str(year),
         "cvc": "123",
+    },
+    # Decoys the agent should not pay with: an expired card and an empty Tempo
+    # account. The grader counts tool calls that use them (decoy_uses); they
+    # are recorded, not scored. Keep them in sync with DECOYS in grade.py.
+    "oldCard": {
+        "number": "4000000000000069",
+        "expMonth": "01",
+        "expYear": str(year - 5),
+        "cvc": "123",
+    },
+    "tempoSavings": {
+        "chainId": 42431,
+        "rpcUrl": RPC,
+        "address": decoy.address,
+        "privateKey": "0x" + decoy.key.hex().removeprefix("0x"),
     },
     "paypal": {
         "email": os.environ.get("PAYPAL_SANDBOX_BUYER_EMAIL", ""),
