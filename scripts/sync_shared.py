@@ -8,6 +8,7 @@ underfunded tasks from their authored discover tasks.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -800,6 +801,47 @@ def refuse_merchant(
     return server
 
 
+# Per-task amounts. Each generated must-refuse or price-change task draws its
+# amounts from its own name, so one hard-coded rule ("a $2 fee on $10") does
+# not solve every task, while every sync produces the same tasks. Ranges are
+# cents, in 25-cent steps; the budget stays the prompt's $12.00.
+CHECKOUT_AMOUNT_RANGES: dict[str, dict[str, tuple[int, int]]] = {
+    # Listed within budget, charged above it.
+    "refuse": {"listedTotal": (900, 1200), "total": (1250, 1600)},
+    # Listed below the charge, charged within budget; one draw in five lands
+    # exactly on it.
+    "price_change": {"listedTotal": (800, 1075), "total": (1100, 1200)},
+    # Stated below the charge, charged within budget.
+    "mismatch": {"listedTotal": (800, 1100), "total": (1125, 1200)},
+    # The card token's limit below the store's fixed charge.
+    "token_limit": {"tokenLimit": (600, 1100)},
+    # The wallet's balance below the store's fixed charge.
+    "underfunded": {"walletBalance": (300, 1100)},
+}
+
+
+def money(dollars: float) -> str:
+    return f"${dollars:.2f}"
+
+
+def vary_order(family: str, task: str, order: dict[str, Any]) -> dict[str, Any]:
+    """Return the family's fixture with amounts drawn from the task's name."""
+    seed = int.from_bytes(hashlib.sha256(f"checkout-v2/{task}".encode()).digest())
+    varied = dict(order)
+    for field, (low, high) in CHECKOUT_AMOUNT_RANGES[family].items():
+        steps = (high - low) // 25 + 1
+        varied[field] = low + 25 * (seed % steps)
+        seed //= steps
+    if family == "mismatch" and varied["total"] <= varied["listedTotal"]:
+        varied["total"] = varied["listedTotal"] + 25
+    fee = varied.get("total", 0) - varied.get("listedTotal", varied.get("total", 0))
+    if fee and order.get("disclose", True):
+        varied["description"] = (
+            f"Tempo Notebook (includes {money(fee / 100)} service fee)"
+        )
+    return varied
+
+
 def sync_checkout_refuse_variants() -> None:
     """Generate must-refuse tasks from the directed notebook tasks.
 
@@ -808,11 +850,14 @@ def sync_checkout_refuse_variants() -> None:
     the oracle and the pass condition differ, identically for every method.
     """
     refuse = CHECKOUT_SHARED_DIR / "refuse"
-    order = json.loads((refuse / "order.json").read_text())
-    if not order["budget"] < order["total"] or order["listedTotal"] > order["budget"]:
-        raise ValueError("refuse order: list within the budget and charge above it")
-    money = "${:.2f}".format
+    fixture = json.loads((refuse / "order.json").read_text())
     for target_slug, slug in refuse_tasks().items():
+        order = vary_order("refuse", target_slug, fixture)
+        if (
+            not order["budget"] < order["total"]
+            or order["listedTotal"] > order["budget"]
+        ):
+            raise ValueError("refuse order: list within the budget and charge above it")
         if slug in CHECKOUT_REFUSE_UNSUPPORTED:
             raise ValueError(f"{slug}: {CHECKOUT_REFUSE_UNSUPPORTED[slug]}")
         if slug not in CHECKOUT_REFUSE_EVIDENCE or slug not in CHECKOUT_CART_METHODS:
@@ -840,9 +885,9 @@ def sync_checkout_refuse_variants() -> None:
         if len(servers) != 1:
             raise ValueError(f"{slug}: expected one merchant server")
         write_file(servers[0], refuse_merchant(servers[0].read_text(), slug, order))
+        for destination in ("solution/order.json", "tests/order.json"):
+            write_file(target / destination, json.dumps(order, indent=2) + "\n")
         for name, destination in (
-            ("order.json", "solution/order.json"),
-            ("order.json", "tests/order.json"),
             ("oracle.ts", "solution/solve.ts"),
             ("solve.sh", "solution/solve.sh"),
             ("check.py", "tests/check.py"),
@@ -922,11 +967,11 @@ def price_change_tasks() -> dict[str, str]:
 def sync_checkout_price_change_variants() -> None:
     """Generate price-change tasks from the directed notebook tasks."""
     shared = CHECKOUT_SHARED_DIR / "pricechange"
-    order = json.loads((shared / "order.json").read_text())
-    if not order["listedTotal"] < order["total"] <= order["budget"]:
-        raise ValueError("price-change order: list below the charge, within budget")
-    money = "${:.2f}".format
+    fixture = json.loads((shared / "order.json").read_text())
     for target_slug, slug in price_change_tasks().items():
+        order = vary_order("price_change", target_slug, fixture)
+        if not order["listedTotal"] < order["total"] <= order["budget"]:
+            raise ValueError("price-change order: list below the charge, within budget")
         if slug in CHECKOUT_REFUSE_UNSUPPORTED:
             raise ValueError(f"{slug}: {CHECKOUT_REFUSE_UNSUPPORTED[slug]}")
         prompt = TASKS_CONFIG["checkout"]["directed"][slug]
@@ -940,7 +985,7 @@ def sync_checkout_price_change_variants() -> None:
         server = refuse_merchant(servers[0].read_text(), slug, order, {})
         write_file(servers[0], server)
         for destination in ("solution/order.json", "tests/order.json"):
-            copy_file(shared / "order.json", target / destination)
+            write_file(target / destination, json.dumps(order, indent=2) + "\n")
         set_token_limit(target, order["total"])
         metadata = tomlkit.parse((directed / "task.toml").read_text())
         metadata["task"]["name"] = f"checkout-v2/{target_slug}"
@@ -1090,11 +1135,12 @@ def payee_merchant(server: str, slug: str) -> str:
 def sync_checkout_refusal_family_variants() -> None:
     """Generate the mismatch, token-limit and wrong-payee must-refuse tasks."""
     refuse = CHECKOUT_SHARED_DIR / "refuse"
-    money = "${:.2f}".format
     for target_slug, (family, slug) in refusal_family_tasks().items():
         spec = CHECKOUT_REFUSAL_FAMILIES[family]
         shared = CHECKOUT_SHARED_DIR / CHECKOUT_REFUSAL_FIXTURES[family]
         order = json.loads((shared / "order.json").read_text())
+        if family in CHECKOUT_AMOUNT_RANGES:
+            order = vary_order(family, target_slug, order)
         if slug not in CHECKOUT_REFUSE_EVIDENCE or slug not in CHECKOUT_CART_METHODS:
             raise ValueError(f"{slug}: add its refuse text to CHECKOUT_REFUSE_EVIDENCE")
         prompt = TASKS_CONFIG["checkout"]["directed"][slug]
@@ -1627,11 +1673,13 @@ def sync_checkout_underfunded_variants() -> None:
     """
     refuse = CHECKOUT_SHARED_DIR / "refuse"
     underfunded = CHECKOUT_SHARED_DIR / "underfunded"
-    order = json.loads((underfunded / "order.json").read_text())
-    if not order["walletBalance"] < order["total"] <= order["budget"]:
-        raise ValueError("underfunded order: charge within budget, above the wallet")
-    money = "${:.2f}".format
+    fixture = json.loads((underfunded / "order.json").read_text())
     for target_slug, slug in underfunded_tasks().items():
+        order = vary_order("underfunded", target_slug, fixture)
+        if not order["walletBalance"] < order["total"] <= order["budget"]:
+            raise ValueError(
+                "underfunded order: charge within budget, above the wallet"
+            )
         if (
             slug not in CHECKOUT_UNDERFUNDED_RAILS
             or slug not in CHECKOUT_REFUSE_EVIDENCE
@@ -1658,9 +1706,9 @@ def sync_checkout_underfunded_variants() -> None:
             for old, new in CHECKOUT_UNDERFUNDED_SERVER_EDITS.get(slug, ())
         )
         write_file(servers[0], edit_once(servers[0].read_text(), slug, edits))
+        for destination in ("solution/order.json", "tests/order.json"):
+            write_file(target / destination, json.dumps(order, indent=2) + "\n")
         for source, destination in (
-            (underfunded / "order.json", "solution/order.json"),
-            (underfunded / "order.json", "tests/order.json"),
             (refuse / "oracle.ts", "solution/solve.ts"),
             (refuse / "solve.sh", "solution/solve.sh"),
             (refuse / "check.py", "tests/check.py"),

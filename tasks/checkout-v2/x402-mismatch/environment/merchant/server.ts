@@ -1,8 +1,8 @@
 import { createShipping } from './shipping.js';
 // The notebook costs $1.00 (100 cents) here so one funding balance covers more
 // concurrent trials; the order record, charge and verifier all use this total.
-const total = 1100;
-const shipping = createShipping('/buy', { total, listedTotal: 1000, disclose: false });
+const total = 1175;
+const shipping = createShipping('/buy', { total, listedTotal: 950, disclose: false });
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from 'node:fs';

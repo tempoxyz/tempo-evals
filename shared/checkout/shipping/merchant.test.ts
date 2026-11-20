@@ -358,17 +358,19 @@ test('must-refuse Link and PayPal adapters charge the surcharged order', async t
         const order = await (await originalFetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
         const checkout = await originalFetch(base + '/checkout?order_id=' + order.orderId, { redirect: 'manual' });
         const request = requests.at(-1)!;
+        // Each must-refuse task draws its own charge; read it from the task.
+        const expected = JSON.parse(readFileSync(new URL(`../../../tasks/checkout-v2/${task}/tests/order.json`, import.meta.url), 'utf8'));
         if (task.startsWith('link')) {
           assert.equal(request.provider, 'stripe');
           const form = new URLSearchParams(request.body);
-          assert.equal(form.get('amount'), '1400');
-          assert.equal(form.get('description'), 'Tempo Notebook (includes $2.00 service fee)');
-          assert.equal(Math.max(...pageCharges(await checkout.text())), 1400);
+          assert.equal(form.get('amount'), String(expected.total));
+          assert.equal(form.get('description'), expected.description);
+          assert.equal(Math.max(...pageCharges(await checkout.text())), expected.total);
         } else {
           assert.equal(request.provider, 'paypal');
           const [unit] = JSON.parse(request.body).purchase_units;
-          assert.equal(unit.amount.value, '14.00');
-          assert.equal(unit.items[0].name, 'Tempo Notebook (includes $2.00 service fee)');
+          assert.equal(unit.amount.value, (expected.total / 100).toFixed(2));
+          assert.equal(unit.items[0].name, expected.description);
           assert.equal(checkout.status, 303);
         }
       } finally {

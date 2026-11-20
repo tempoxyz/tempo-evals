@@ -496,6 +496,20 @@ class CheckoutShippingTest(unittest.TestCase):
                         SHARED.parent / sync_shared.CHECKOUT_REFUSAL_FIXTURES[family]
                     )
                 order = json.loads((store / "order.json").read_text())
+                family = {
+                    **{name: "refuse" for name in refusals},
+                    **{name: "underfunded" for name in underfunded},
+                    **{name: "price_change" for name in price_changes},
+                    **{
+                        name: family
+                        for name, (
+                            family,
+                            _,
+                        ) in sync_shared.refusal_family_tasks().items()
+                    },
+                }.get(task.name)
+                if family in sync_shared.CHECKOUT_AMOUNT_RANGES:
+                    order = sync_shared.vary_order(family, task.name, order)
                 if task.name.endswith("-wrong-payee"):
                     # Charged at the source store's own price.
                     source = sync_shared.refusal_family_tasks()[task.name][1]
