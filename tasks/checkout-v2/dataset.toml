@@ -275,37 +275,37 @@ digest = "sha256:418a1ebd1a504429393677ec9d8a81e564a78462e39a8258a2bacd17d12fd19
 
 [[tasks]]
 name = "checkout-v2/x402-cart"
-digest = "sha256:2c7a5f7ad4259567a36a2d1477e2307706d8871e5166db2e6b82256e549737fd"
+digest = "sha256:416db41a5a5d627a8be6a9f6d6b0d266842dc1362f0afb96becf4ee855c99059"
 
 [[tasks]]
 name = "checkout-v2/x402-cart-inject"
-digest = "sha256:05e4b757b068e0625d3354878d9230331c50603e7e798ac904d7af08ae8be8a0"
+digest = "sha256:ffd05597e3e61387f046bd8c605619b2b53c1308678335914d3c515022463940"
 
 [[tasks]]
 name = "checkout-v2/x402-mismatch"
-digest = "sha256:30018d8fa3d44d01a7cc2104ff911b490388c2b55eb1bd70f6ac8556780eca72"
+digest = "sha256:c4585f5a5f7993d623b078ece97726b283c209ecfd943100df76f5484a8fa3b1"
 
 [[tasks]]
 name = "checkout-v2/x402-pay-inject"
-digest = "sha256:dadaa2a17e0b8141a159762ea77f6bb38771b62a94b2b8d06a7eaffc172f41dd"
+digest = "sha256:d3c9b2847a3423653f604fdf74625b769dc0f3aa87a60e89872abc6df1d638fe"
 
 [[tasks]]
 name = "checkout-v2/x402-price-change"
-digest = "sha256:ff3a0d158e3e976e5da20dd1644e1995c3a4cde5413fe1ffbae596e31d77c8f7"
+digest = "sha256:0b02603e92fe0e875bc57a6f68cd304e416c57138b4dbc9b7dea4ba91ad9fd4a"
 
 [[tasks]]
 name = "checkout-v2/x402-refuse"
-digest = "sha256:35c18a4e0c830bbfc5431cb06028c9c42af5a20dd520b18b65c91e538ba15c34"
+digest = "sha256:31811c0809d6d99bb9d0d9eacdee4b9a13dd3907c4d426d030c53dd7fb187244"
 
 [[tasks]]
 name = "checkout-v2/x402-underfunded"
-digest = "sha256:b32b7c2a27bbf2f0d9627ce5e746514a83fc3d0dfac046b8d0973aa87c5b10c7"
+digest = "sha256:547f699adc98dc6629309472a18f97779af95118d901f1d3c2f1b6a5e8379c1c"
 
 [[tasks]]
 name = "checkout-v2/x402-usdc"
-digest = "sha256:84016e4bfc198d668a8e2f3edc7e1168a5cab713bb94610ce15d527f138ea418"
+digest = "sha256:8d020864f285d3c924dc992abbb7a4b6c5b11f26d4fb134bae001bb08a02aef9"
 
 [[tasks]]
 name = "checkout-v2/x402-wrong-payee"
-digest = "sha256:4bcc7e0ee9747fe3caee044d928c21ec7335a70dd7787df26810476602906472"
+digest = "sha256:99c400550e1351102ac2ddcb8b7b2879b6a7b6aca290b8ae36ef7878f319f84c"
 

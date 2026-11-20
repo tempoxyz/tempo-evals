@@ -35,7 +35,7 @@ services:
         condition: service_completed_successfully
     environment:
       BASE_SEPOLIA_RPC_URL: ${BASE_SEPOLIA_RPC_URL:-https://sepolia.base.org}
-      X402_FACILITATOR_URL: ${X402_FACILITATOR_URL:-https://x402.org/facilitator}
+      X402_FACILITATOR_URL: ${X402_FACILITATOR_URL:-local}
       X402_FUNDING_PRIVATE_KEY: ${X402_FUNDING_PRIVATE_KEY:?x402 funding wallet key is required}
     volumes:
       - checkout-wallet:/wallet:ro

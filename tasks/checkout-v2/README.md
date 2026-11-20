@@ -250,23 +250,24 @@ through a form instead of a protocol.
 the same shipping form, `POST /shipping` and per-order `/buy` URL charge through
 mppx's `evm.charge` with an x402 challenge for Base Sepolia USDC
 (`eip155:84532`). The native MPP challenge is removed; each charge is bound to
-its order by the route scope and settled through the public facilitator
-(`X402_FACILITATOR_URL`, default `https://x402.org/facilitator`). Every x402
-order settles for exactly 1 USDC: the notebook store shows $1.00, while the cart
-shows its usual $33 and its 402 challenge asks for 1 USDC, with a description
-saying the order settles for 1 USDC. Prompts keep the common spending limits.
-Compare x402 spend in USDC, not against other merchants.
+its order by the route scope and settled on-chain by the store itself
+(`X402_FACILITATOR_URL`, default `local`): the funding key submits each EIP-3009
+`transferWithAuthorization` and pays its gas, so trials do not depend on a
+shared public facilitator's gas wallet. Set a facilitator URL to use one
+instead. Every x402 order is charged its store total in USDC, as on every other
+rail. Prompts keep the common spending limits.
 
-Before reporting healthy, the merchant sends 1 USDC from the funding wallet
-(`X402_FUNDING_PRIVATE_KEY`, kept in the sidecar) to the trial buyer through the
-facilitator, which pays gas, so neither wallet needs ETH and trials never share
-a nonce; each trial reserves 1 USDC. Payments return to the funding wallet, and
-the snapshot recovers any USDC left with the buyer
-(`buyer_balance_after_agent` records it first). Funding, recovery and settlement
-retry the facilitator's occasional failed concurrent broadcasts, which cannot pay
-twice because each authorization settles once. The verifier requires exactly one
-delivery, a successful settlement and a confirmed transaction with exactly one
-USDC transfer of 1 USDC from the buyer to the merchant. The order total stays
+Before reporting healthy, the merchant sends the expected order total from the
+funding wallet (`X402_FUNDING_PRIVATE_KEY`, kept in the sidecar) to the trial
+buyer, so the buyer needs no ETH. The funding wallet needs a little Base Sepolia
+ETH for gas, about 3 transactions per trial. Payments return to the funding
+wallet, and the snapshot recovers any USDC left with the buyer
+(`buyer_balance_after_agent` records it first). Concurrent trials share the
+funding key as sender, so a transaction that loses its nonce is resent; an
+authorization settles at most once, so a resend cannot pay twice. The verifier
+requires exactly one delivery, a successful settlement and a confirmed
+transaction with exactly one USDC transfer of the order total from the buyer to
+the merchant. The order total stays
 $1.00 for the notebook (`checkout.order_totals` in `config/tasks.yaml`) and $33
 for the cart.
 
