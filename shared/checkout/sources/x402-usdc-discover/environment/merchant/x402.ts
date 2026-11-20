@@ -124,7 +124,16 @@ function transferArgs({ payload: { signature, authorization: a } }: Payload) {
 
 // Concurrent trials share the funding key as sender, so a transaction can lose
 // its nonce to another trial's; those are resent with the next pending nonce.
-const nonceRace = /nonce|replacement|already known|underpriced|timed? ?out|fetch failed|ECONNRESET/i;
+const nonceRace = /nonce too low|nonce has already been used|replacement transaction underpriced|already known|timed? ?out|fetch failed|ECONNRESET|socket hang up/i;
+const resendable = (error: unknown) => {
+  const { shortMessage, details, message } = (error ?? {}) as { shortMessage?: string; details?: string; message?: string };
+  return nonceRace.test(`${shortMessage ?? ''} ${details ?? ''}`) || (!shortMessage && nonceRace.test(message ?? ''));
+};
+// Resolves when the promise does, or with undefined once the signal fires.
+const until = <T,>(promise: Promise<T>, signal?: AbortSignal) => !signal ? promise : Promise.race([
+  promise,
+  new Promise<undefined>(resolve => signal.aborted ? resolve(undefined) : signal.addEventListener('abort', () => resolve(undefined), { once: true })),
+]);
 
 type Requirements = { amount?: string; asset?: string; payTo?: string; network?: string };
 
@@ -169,21 +178,22 @@ function localFacilitator() {
         if (used) return { success: true, transaction: used, network, payer };
         try {
           const nonce = await client.getTransactionCount({ address: sender.address, blockTag: 'pending' });
+          if (signal?.aborted) break;
           const hash = await wallet.writeContract({ address: usdc, abi: transferAbi, functionName: 'transferWithAuthorization', args: transferArgs(paymentPayload), nonce });
           // A concurrent trial can replace this transaction at the shared nonce,
           // and the receipt wait then resolves with that one; only the chain's
           // record of this authorization proves it settled.
-          await client.waitForTransactionReceipt({ hash, timeout: 20_000 }).catch(error => { failure = error; });
-          const settledBy = await settlementOf(authorization).catch(() => null);
+          await until(client.waitForTransactionReceipt({ hash, timeout: 20_000 }).catch(error => { failure = error; }), signal);
+          const settledBy = await until(settlementOf(authorization).catch(() => null), signal);
           if (settledBy) return { success: true, transaction: settledBy, network, payer };
           failure ??= new Error(`transferWithAuthorization ${hash} did not settle`);
         } catch (error) {
           failure = error;
-          if (!nonceRace.test(String((error as Error).message))) break;
+          if (!resendable(error)) break;
         }
         await sleep(500 + Math.floor(Math.random() * 2_000), undefined, { signal }).catch(() => {});
       }
-      const used = await settlementOf(authorization).catch(() => null);
+      const used = await until(settlementOf(authorization).catch(() => null), signal);
       if (used) return { success: true, transaction: used, network, payer };
       return { success: false, errorReason: 'invalid_exact_evm_transaction_failed', errorMessage: String((failure as Error)?.message ?? failure).slice(0, 300), network, transaction: '', payer };
     },
