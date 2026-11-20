@@ -434,15 +434,16 @@ quality   = 2 ** -(2 × extra_checkout_attempts
                    + 0.7 × excess(turns) + 0.3 × excess(time))
 ```
 
-A task's baseline is the median turns and median seconds of its passing trials
-in the checkout-v2 calibration run, each taken separately
-(`shared/checkout/baselines.json`, written by
-`scripts/checkout_baselines.py` and synced to each task's
-`tests/efficiency_baseline.json`). Matching the baseline scores 1, each
-further baseline's worth of work halves the score at total weight 1 (twice the
-baseline on every metric scores 0.5), beating it earns no bonus, and each retry
-quarters the score. Baselines remove the fixed difference between rails, so a
-browser checkout is not scored below an API one for needing more steps. A task
+A task's baseline is half the median turns and half the median seconds of its
+passing trials in the checkout-v2 calibration run, each taken separately
+(`shared/checkout/baselines.json`, written by `scripts/checkout_baselines.py` and
+synced to each task's `tests/efficiency_baseline.json`). A trial that does the
+task in half the typical turns and time scores 1, a typical passing trial scores
+0.5, twice the typical work scores 0.125, and each retry quarters the score.
+Beating the baseline earns no bonus. The median keeps one unusually fast trial
+from setting the target; halving it keeps quality from rating typical runs as
+perfect. Baselines remove the fixed difference between rails, so a browser
+checkout is not scored below an API one for needing more steps. A task
 without a baseline records its raw metrics and has no quality score.
 Turns count model calls in the Harbor trajectory, excluding copied
 context. Tool calls are recorded in efficiency.json but not scored, since
