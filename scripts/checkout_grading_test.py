@@ -160,7 +160,7 @@ class CheckoutGradingTest(unittest.TestCase):
 
 
 class CheckoutBaselinesTest(unittest.TestCase):
-    def test_each_metric_takes_its_own_passing_minimum(self) -> None:
+    def test_each_metric_takes_its_own_passing_median(self) -> None:
         from scripts.checkout_baselines import baselines
 
         with tempfile.TemporaryDirectory() as temporary:
@@ -190,7 +190,8 @@ class CheckoutBaselinesTest(unittest.TestCase):
                 )
             self.assertEqual(
                 baselines([job]),
-                {"a": {"turns": 8, "time": 40.5}},
+                # Medians of the two passing trials; the failing one is ignored.
+                {"a": {"turns": 10, "time": 47.75}},
             )
 
 

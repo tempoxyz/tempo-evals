@@ -51,6 +51,29 @@ CHECKOUT_PROFILES = {
 CHECKOUT_PROFILE_OVERLAYS = Path("shared/checkout/browser/profiles")
 
 
+# Checkout retries only infrastructure failures: the sandbox, the model API or
+# the network. An agent or verifier timeout, or a trial that ran and failed,
+# is the agent's result and is kept.
+CHECKOUT_RETRY_EXCEPTIONS = (
+    "EnvironmentStartTimeoutError",
+    "SandboxBuildFailedError",
+    "HealthcheckError",
+    "AgentSetupTimeoutError",
+    "DaytonaError",
+    "ApiInternalServerError",
+    "ApiOverloadedError",
+    "ApiConnectionClosedError",
+    "ApiRateLimitError",
+    "NetworkConnectionError",
+)
+
+
+def checkout_retry_flags() -> list[str]:
+    return [
+        flag for name in CHECKOUT_RETRY_EXCEPTIONS for flag in ("--retry-include", name)
+    ]
+
+
 def checkout_compose_overlay(profile: str) -> str | None:
     if profile not in CHECKOUT_PROFILES:
         raise ValueError(f"Unknown checkout browser profile: {profile}")
@@ -939,14 +962,15 @@ def run_production_variant(
     config = stage_daytona_config(
         rendered, run_id, docs_bundle, mpp_docs_bundle, options
     )
-    max_retries = options.get("max_retries") or (
-        "0" if options.get("task_suite") == "checkout" else "4"
-    )
+    checkout = options.get("task_suite") == "checkout"
+    max_retries = options.get("max_retries") or ("2" if checkout else "4")
     args = ["run", "harbor", "run", "-c", config]
     if options.get("env_file"):
         args.extend(["--env-file", options["env_file"]])
     args.extend(harbor_flags(options))
     args.extend(["--max-retries", max_retries])
+    if checkout:
+        args.extend(checkout_retry_flags())
     os.environ["TEMPO_DOCS_BUNDLE_PATH"] = ""
     os.environ["MPP_DOCS_BUNDLE_PATH"] = ""
     args.append("-y")
@@ -1733,15 +1757,14 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
     if options.get("agent_concurrency"):
         args.extend(["--n-concurrent-agents", options["agent_concurrency"]])
     args.extend(harbor_flags(options))
+    checkout = options.get("task_suite") == "checkout"
     max_retries = options.get("max_retries") or (
-        "0"
-        if options.get("task_suite") == "checkout"
-        else "2"
-        if variant.get("needs_daytona_auth")
-        else None
+        "2" if checkout or variant.get("needs_daytona_auth") else None
     )
     if max_retries:
         args.extend(["--max-retries", max_retries])
+        if checkout:
+            args.extend(checkout_retry_flags())
     os.environ["TEMPO_DOCS_BUNDLE_PATH"] = (
         "" if variant.get("needs_daytona_auth") or docs_bundle is None else docs_bundle
     )
