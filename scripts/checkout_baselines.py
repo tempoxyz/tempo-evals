@@ -6,9 +6,10 @@ Each task's baseline is half the median turns and half the median seconds of
 its passing trials, each taken separately: the median keeps one unusually fast
 trial from setting it, and halving it makes a typical passing trial score 0.5,
 so quality separates good runs from merely typical ones.
-A task without a passing trial takes the median baseline of the other tasks
-in its family (the same name after the rail, such as mismatch), so it can
-still score quality; a family with no passes is left out.
+A task without a passing trial borrows from its family (the same variant on
+other rails, such as mismatch): each peer's baseline is scaled by the median
+ratio between the two rails over the families both have measured, and the
+task takes the median. A task with no such peer is left out.
 Run npm run sync afterwards.
 """
 
@@ -17,6 +18,7 @@ from __future__ import annotations
 import json
 import statistics
 import sys
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,23 +60,58 @@ def baselines(job_dirs: list[Path]) -> dict[str, dict[str, float]]:
     return {**family_baselines(measured), **measured}
 
 
-def family(task: str) -> str:
-    return task.split("-", 1)[1] if "-" in task else ""
+def task_shapes() -> dict[str, tuple[str, frozenset[str]]]:
+    """Map each task to its rail (source task) and family (tags beyond its rail's)."""
+    tags: dict[str, dict[str, set[str]]] = {}
+    for path in TASKS.glob("*/task.toml"):
+        metadata = tomllib.loads(path.read_text())["metadata"]
+        rail = tags.setdefault(metadata["source_task"], {})
+        rail[path.parent.name] = set(metadata["tags"])
+    shapes = {}
+    for rail, tasks in tags.items():
+        common = set.intersection(*tasks.values())
+        for task, task_tags in tasks.items():
+            shapes[task] = (rail, frozenset(task_tags - common))
+    return shapes
 
 
 def family_baselines(
     measured: dict[str, dict[str, float]],
+    shapes: dict[str, tuple[str, frozenset[str]]] | None = None,
 ) -> dict[str, dict[str, float]]:
-    tasks = sorted(p.parent.name for p in TASKS.glob("*/task.toml"))
+    shapes = task_shapes() if shapes is None else shapes
+    rails: dict[str, dict[frozenset[str], dict[str, float]]] = {}
+    for task, (rail, family) in shapes.items():
+        if task in measured:
+            rails.setdefault(rail, {})[family] = measured[task]
+
+    def scaled(value: dict[str, float], rail: str, peer_rail: str, name: str):
+        shared = set(rails.get(rail, {})) & set(rails[peer_rail])
+        if not shared:
+            return None
+        ratio = statistics.median(
+            rails[rail][f][name] / rails[peer_rail][f][name] for f in shared
+        )
+        return value[name] * ratio
+
     result = {}
-    for task in tasks:
-        peers = [v for t, v in measured.items() if family(t) == family(task)]
-        if task not in measured and family(task) and peers:
-            result[task] = {
-                name: round(statistics.median(p[name] for p in peers), 3)
-                for name in FIELDS
-            }
-    return dict(sorted(result.items()))
+    for task, (rail, family) in sorted(shapes.items()):
+        if task in measured or not family:
+            continue
+        peers = [
+            (measured[peer], peer_rail)
+            for peer, (peer_rail, peer_family) in shapes.items()
+            if peer_family == family and peer in measured
+        ]
+        estimate = {}
+        for name in FIELDS:
+            values = [scaled(v, rail, r, name) for v, r in peers]
+            values = [v for v in values if v is not None]
+            if values:
+                estimate[name] = round(statistics.median(values), 3)
+        if len(estimate) == len(FIELDS):
+            result[task] = estimate
+    return result
 
 
 def main(argv: list[str]) -> int:
