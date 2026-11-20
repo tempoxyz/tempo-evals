@@ -205,6 +205,34 @@ class CheckoutBaselinesTest(unittest.TestCase):
                 {"a": {"turns": 5, "time": 23.875}},
             )
 
+    def test_unmeasured_task_scales_its_family_by_rail(self) -> None:
+        from scripts.checkout_baselines import family_baselines
+
+        def shape(rail: str, *tags: str):
+            return (rail, frozenset(tags))
+
+        shapes = {
+            "fast": shape("fast"),
+            "fast-refuse": shape("fast", "refuse"),
+            "fast-mismatch": shape("fast", "refuse", "mismatch"),
+            "slow": shape("slow"),
+            "slow-refuse": shape("slow", "refuse"),
+            "slow-mismatch": shape("slow", "refuse", "mismatch"),
+            "lone-mismatch": shape("lone", "refuse", "mismatch"),
+        }
+        measured = {
+            "fast": {"turns": 2, "time": 10},
+            "fast-refuse": {"turns": 2, "time": 10},
+            "slow": {"turns": 4, "time": 30},
+            "slow-refuse": {"turns": 4, "time": 30},
+            "slow-mismatch": {"turns": 6, "time": 60},
+        }
+        # fast is half slow's turns and a third of its time; lone shares no family.
+        self.assertEqual(
+            family_baselines(measured, shapes),
+            {"fast-mismatch": {"turns": 3, "time": 20}},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

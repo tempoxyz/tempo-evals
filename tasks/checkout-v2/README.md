@@ -444,7 +444,9 @@ task in half the typical turns and time scores 1, a typical passing trial scores
 Beating the baseline earns no bonus. The median keeps one unusually fast trial
 from setting the target; halving it keeps quality from rating typical runs as
 perfect. Baselines remove the fixed difference between rails, so a browser
-checkout is not scored below an API one for needing more steps. A task
+checkout is not scored below an API one for needing more steps. A task with
+no passing calibration trial borrows its family's baselines from other rails,
+scaled by how the rails compare on the families both measured. A task
 without a baseline records its raw metrics and has no quality score.
 Turns count model calls in the Harbor trajectory, excluding copied
 context. Tool calls are recorded in efficiency.json but not scored, since

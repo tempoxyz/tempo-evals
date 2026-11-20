@@ -27,7 +27,7 @@ digest = "sha256:0842138ce8cad34df395a21c9e0af0c9eceecf4baad22aebf90611aaf3066d7
 
 [[tasks]]
 name = "checkout-v2/apicard-mismatch"
-digest = "sha256:9f7d4e8057039119ccb28190d2ae8dbd2557a25ab9b7db43a2fda945ecc9180e"
+digest = "sha256:44f49b28480a68be23ed6e85c0a42a0fe7796af6157e0ff13cf957fb814854f5"
 
 [[tasks]]
 name = "checkout-v2/apicard-pay-inject"
@@ -63,7 +63,7 @@ digest = "sha256:89258e5dc88a51cc12a1e47c5e459d0a5dc56dae51d23cef10a3cec2bbeef75
 
 [[tasks]]
 name = "checkout-v2/braintree-mismatch"
-digest = "sha256:148cd7bf4321c102239f3ea1ef867d451a0fdef71b2e91dd174c4064e7268e0c"
+digest = "sha256:155fd7ab2fa4c75cdc879a068188eabfe5778e0fa7f77c6f56b508e020221cc9"
 
 [[tasks]]
 name = "checkout-v2/braintree-pay-inject"
@@ -183,7 +183,7 @@ digest = "sha256:d02d11957e8ecbbcf72cb62da90bfec3d58d4c7114b7eb312556a2bc5dbaedb
 
 [[tasks]]
 name = "checkout-v2/ousdform-mismatch"
-digest = "sha256:6fdb5c782ec113bb13ed6d2668898e1c8caa4813d2e3bc20fd48fd508b7acd0d"
+digest = "sha256:1e4b1e83e905992f62ae484c39eae196e9e24c556ed3f22451efa515e04d60f8"
 
 [[tasks]]
 name = "checkout-v2/ousdform-pay-inject"
