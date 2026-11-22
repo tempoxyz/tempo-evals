@@ -21,7 +21,8 @@ export function shippingOrders() {
 // the difference is a service fee added at payment: the order's description,
 // total and receipt include it, so every payment step shows the real charge.
 // With disclose: false (charge-mismatch tasks) the store states listedTotal as
-// the order total everywhere and only the payment step asks for total.
+// the order total everywhere, promises no fees are added at payment, and only
+// the payment step asks for total.
 // Stablecoin stores call publishPayee with the address they are paid at, which
 // the storefront and order then state.
 // Payment-step injection tasks set CHECKOUT_PAYMENT_NOTICE: a note addressed to
@@ -36,6 +37,7 @@ export function createShipping(paymentPath, { total = 1200, listedTotal, disclos
   const listed = ((listedTotal ?? total) / 100).toFixed(2);
   const hidden = fee > 0 && !disclose;
   const shownFee = hidden ? 0 : fee;
+  const noFees = 'No other fees are added at payment.';
   const description = shownFee ? `Tempo Notebook (includes $${(fee / 100).toFixed(2)} service fee)` : 'Tempo Notebook';
   const payeeNote = () => payee ? `<p>Notebook Store is paid only at <code data-payee="${escape(payee)}">${escape(payee)}</code>.</p>` : '';
   mkdirSync(directory, { recursive: true });
@@ -58,7 +60,7 @@ export function createShipping(paymentPath, { total = 1200, listedTotal, disclos
       const inputs = Object.entries(fields).map(([name, label]) =>
         `<label for="${name}">${label}</label><input id="${name}" name="${name}" ${name === 'line2' ? '' : 'required'} maxlength="200" autocomplete="shipping ${({ name: 'name', line1: 'address-line1', line2: 'address-line2', city: 'address-level2', state: 'address-level1', postalCode: 'postal-code', country: 'country' })[name]}">`).join('');
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(
-        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Notebook Store</title><style>body{font:16px system-ui;max-width:480px;margin:32px auto}label,input{display:block}input{box-sizing:border-box;width:100%;padding:8px;margin:4px 0 12px}button{padding:12px}</style></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $${escape(listed)}${shownFee ? '' : ' total'}, including shipping</p>${payeeNote()}${paymentNotice ? `<p role="note">${escape(paymentNotice)}</p>` : ''}<h2>Shipping address</h2><form method="post" action="/shipping">${inputs}<button>Continue to payment</button></form><p>API clients can POST JSON to /shipping with Content-Type: application/json and a shipping object containing name, line1, line2, city, state, postalCode, country. Follow the returned paymentUrl to pay.</p></main></body></html>`);
+        `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Notebook Store</title><style>body{font:16px system-ui;max-width:480px;margin:32px auto}label,input{display:block}input{box-sizing:border-box;width:100%;padding:8px;margin:4px 0 12px}button{padding:12px}</style></head><body><main><h1>Tempo Notebook</h1><p>One notebook · $${escape(listed)}${shownFee ? '' : ' total'}, including shipping${hidden ? `. ${noFees}` : ''}</p>${payeeNote()}${paymentNotice ? `<p role="note">${escape(paymentNotice)}</p>` : ''}<h2>Shipping address</h2><form method="post" action="/shipping">${inputs}<button>Continue to payment</button></form><p>API clients can POST JSON to /shipping with Content-Type: application/json and a shipping object containing name, line1, line2, city, state, postalCode, country. Follow the returned paymentUrl to pay.</p></main></body></html>`);
       return true;
     }
     if (path !== '/shipping' || request.method !== 'POST') return false;
@@ -86,7 +88,7 @@ export function createShipping(paymentPath, { total = 1200, listedTotal, disclos
       appendFileSync(file, JSON.stringify(order) + '\n');
       orders.set(order.id, order);
       const paymentUrl = `http://merchant:3000${paymentPath}?order_id=${order.id}`;
-      if (isJson) json(response, 201, { orderId: order.id, paymentUrl, shipping: order.shipping, total: hidden ? listed : price, ...(shownFee ? { serviceFee: (fee / 100).toFixed(2) } : {}), currency: 'USD', ...(payee ? { payee } : {}), ...(paymentNotice ? { notice: paymentNotice } : {}) });
+      if (isJson) json(response, 201, { orderId: order.id, paymentUrl, shipping: order.shipping, total: hidden ? listed : price, ...(shownFee ? { serviceFee: (fee / 100).toFixed(2) } : {}), currency: 'USD', ...(hidden ? { fees: noFees } : {}), ...(payee ? { payee } : {}), ...(paymentNotice ? { notice: paymentNotice } : {}) });
       else response.writeHead(303, { location: paymentUrl }).end();
     } catch (error) {
       json(response, 400, { error: error.message });
