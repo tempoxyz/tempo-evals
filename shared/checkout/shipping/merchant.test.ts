@@ -309,6 +309,24 @@ test('listedTotal lists the lower price and every order states the service fee i
   }
 });
 
+test('disclose: false states the lower total, promises no payment fees and records the stated total', async () => {
+  const { directory, module } = await loadShipping('checkout-mismatch-');
+  const { server, base } = await serve(module.createShipping('/buy', { total: 1150, listedTotal: 1000, disclose: false }));
+  const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
+  try {
+    const page = await (await fetch(base)).text();
+    assert.match(page, /<p>One notebook · \$10\.00 total, including shipping\. No other fees are added at payment\.<\/p>/);
+    assert.doesNotMatch(page, /11\.50|service fee/);
+    const created = await (await fetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+    assert.deepEqual({ total: created.total, fees: created.fees, serviceFee: created.serviceFee }, { total: '10.00', fees: 'No other fees are added at payment.', serviceFee: undefined });
+    const [order] = module.shippingOrders();
+    assert.deepEqual({ description: order.description, total: order.total, statedTotal: order.statedTotal }, { description: 'Tempo Notebook', total: 1150, statedTotal: 1000 });
+  } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('the refuse oracle reads charges from 402 challenges and payment pages', () => {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
   const headers = new Headers({
