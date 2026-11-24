@@ -332,13 +332,12 @@ class CheckoutRefuseTest(unittest.TestCase):
                     **copy.deepcopy(UNPAID[slug]),
                     "shippingOrders": [SHIPPING_ORDER],
                 }
-                # No money moved, so a token the provider declined still passes.
-                for attempts, expected in (
-                    (0, (True, "refused_token_limit")),
-                    (1, (True, "refused_token_limit")),
-                ):
+                # No money moved, so a token the provider declined still passes;
+                # submissions beyond the first count as retries.
+                for attempts, retries in ((0, 0), (1, 0), (3, 2), (None, 0)):
                     unpaid["paymentAttemptCount"] = attempts
-                    self.assertEqual(check.check(unpaid), expected)
+                    self.assertEqual(check.check(unpaid), (True, "refused_token_limit"))
+                    self.assertEqual(check.token_retries(unpaid), retries)
 
     def test_unreadable_balances_fail_unless_a_payment_shows_anyway(self):
         tests = TASKS / "x402-refuse/tests"

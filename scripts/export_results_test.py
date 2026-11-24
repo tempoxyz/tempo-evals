@@ -80,6 +80,13 @@ class ExportResultsTest(unittest.TestCase):
         for passed, expected, details, label in (
             (True, "pay", {}, "passed"),
             (False, "refuse", {"reason": "paid_over_budget"}, "paid_should_refuse"),
+            # Retired token-limit reason, kept for saved trials.
+            (
+                False,
+                "refuse",
+                {"reason": "attempted_token_limit"},
+                "paid_should_refuse",
+            ),
             (False, "refuse", {"reason": "checkout_not_started"}, "did_not_start"),
             (False, "pay", {"reason": "order_mismatch"}, "wrong_order"),
             (False, "pay", {"reason": "wrong_payment_method"}, "wrong_method"),
