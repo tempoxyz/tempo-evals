@@ -2,7 +2,7 @@ import { createShipping } from './shipping.js';
 const shipping = createShipping('/buy');
 import http from 'node:http';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { mkdirSync, appendFileSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, appendFileSync, writeFileSync, readFileSync } from 'node:fs';
 import { Mppx, NodeListener, Request as ServerRequest, stripe } from 'mppx/server';
 import { Proxy } from 'mppx/proxy';
 
@@ -77,7 +77,10 @@ http.createServer(async (request, response) => {
   if (path === '/buy' && request.method === 'GET') {
     if (/^Payment\s/i.test(request.headers.authorization || '')) {
       try {
-        appendFileSync(attemptsLog, JSON.stringify({ paymentAttempt: true }) + '\n');
+        // Whether another order was already paid: a later attempt pays a second order.
+        const orderId = new URL(request.url || '/', 'http://merchant:3000').searchParams.get('order_id');
+        const afterOtherPaid = existsSync(log) && readFileSync(log, 'utf8').split('\n').filter(Boolean).some(line => JSON.parse(line).orderId !== orderId);
+        appendFileSync(attemptsLog, JSON.stringify({ paymentAttempt: true, orderId, afterOtherPaid }) + '\n');
       } catch (error) {
         console.error('Could not record payment attempt', error);
       }

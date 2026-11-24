@@ -11,8 +11,8 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { Mppx, NodeListener, Request as ServerRequest, evm } from 'mppx/server';
 import { balanceOf, facilitatorClient, retryingFetch, transfer, usdc } from './x402.js';
 
-// Every order is charged its store total, so the price the store shows is the
-// price paid. The buyer is funded with only the wallet balance.
+// Every order is charged its order total. The buyer is funded with only the
+// wallet balance, less than the charge; the snapshot returns it.
 const amount = BigInt(975) * 10_000n; // USDC has 6 decimals
 const fundingKey = process.env.X402_FUNDING_PRIVATE_KEY as `0x${string}`;
 if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING_PRIVATE_KEY is required');

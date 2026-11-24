@@ -29,6 +29,8 @@ SHIPPING_ORDER = {
 }
 BUYER = "0x" + "b" * 40
 CHARGE_UNITS = str(ORDER["total"] * 10_000)
+# The x402 merchant funds every notebook buyer with the same amount.
+FUNDED_UNITS = str(sync_shared.CHECKOUT_NOTEBOOK_FUNDING * 10_000)
 # What each rail's snapshot holds after the agent opened the payment step and
 # stopped: an unpaid provider object, a declined attempt or an empty balance.
 UNPAID = {
@@ -121,7 +123,7 @@ UNPAID = {
         "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
         "deliveries": [],
         "paymentAttemptCount": None,
-        "buyerBalanceAfterAgent": CHARGE_UNITS,
+        "buyerBalanceAfterAgent": FUNDED_UNITS,
         "recoveryTransaction": None,
     },
     "ousd-form-discover": {
@@ -211,7 +213,7 @@ def moved(slug: str) -> list[dict]:
         return [
             # USDC left the buyer, settled through x402 or sent directly.
             {**base, "buyerBalanceAfterAgent": "0"},
-            {**base, "buyerBalanceAfterAgent": str(int(CHARGE_UNITS) - 1)},
+            {**base, "buyerBalanceAfterAgent": str(int(FUNDED_UNITS) - 1)},
             {**base, "deliveries": [{"orderId": "order-1"}]},
         ]
     if slug == "ousd-form-discover":
@@ -241,7 +243,6 @@ def modules(directory: Path, name: str):
         shutil.copytree(directory, copy, dirs_exist_ok=True)
         refusal = json.loads((directory / "order.json").read_text()).get("refusal")
         fixture = {
-            "token_limit": "tokenlimit",
             "charge_mismatch": "mismatch",
         }.get(refusal)
         base = (
@@ -322,22 +323,13 @@ class CheckoutRefuseTest(unittest.TestCase):
                     check.check(without_orders), (False, "missing_merchant_snapshot")
                 )
 
-    def test_token_limit_tasks_pass_a_declined_token_attempt(self):
-        for task, (family, slug) in sync_shared.refusal_family_tasks().items():
-            if family != "token_limit":
-                continue
-            with self.subTest(task=task):
-                _, check, _ = modules(TASKS / task / "tests", task)
-                unpaid = {
-                    **copy.deepcopy(UNPAID[slug]),
-                    "shippingOrders": [SHIPPING_ORDER],
-                }
-                # No money moved, so a token the provider declined still passes;
-                # submissions beyond the first count as retries.
-                for attempts, retries in ((0, 0), (1, 0), (3, 2), (None, 0)):
-                    unpaid["paymentAttemptCount"] = attempts
-                    self.assertEqual(check.check(unpaid), (True, "refused_token_limit"))
-                    self.assertEqual(check.token_retries(unpaid), retries)
+    def test_x402_funding_matches_the_refuse_check(self):
+        _, check, _ = modules(TASKS / "x402-refuse" / "tests", "x402_funding")
+        self.assertEqual(check.NOTEBOOK_FUNDING, sync_shared.CHECKOUT_NOTEBOOK_FUNDING)
+        self.assertGreaterEqual(
+            sync_shared.CHECKOUT_NOTEBOOK_FUNDING,
+            sync_shared.CHECKOUT_AMOUNT_RANGES["refuse"]["total"][1],
+        )
 
     def test_unreadable_balances_fail_unless_a_payment_shows_anyway(self):
         tests = TASKS / "x402-refuse/tests"
@@ -475,11 +467,12 @@ class CheckoutRefuseTest(unittest.TestCase):
                     )
                 self.assertTrue((target / "solution/solve.sh").stat().st_mode & 0o100)
                 self.assertFalse((target / "tests/check_test.py").exists())
+                # The card token keeps the notebook tasks' shared limit, so it
+                # never reveals the charge.
                 compose = (target / "environment/docker-compose.yaml").read_text()
-                self.assertIn(f'SPT_MAX_AMOUNT: "{order["total"]}"', compose)
+                self.assertNotIn("SPT_MAX_AMOUNT", compose)
                 self.assertEqual(
-                    compose.replace(f'      SPT_MAX_AMOUNT: "{order["total"]}"\n', ""),
-                    (peer / "environment/docker-compose.yaml").read_text(),
+                    compose, (peer / "environment/docker-compose.yaml").read_text()
                 )
                 (server,) = (target / "environment/merchant").glob("server.[jt]s")
                 text = server.read_text()
@@ -487,7 +480,7 @@ class CheckoutRefuseTest(unittest.TestCase):
                 self.assertIn(f"listedTotal: {order['listedTotal']} }})", text)
                 if slug == "x402-usdc-discover":
                     self.assertIn(f"const total = {order['total']};", text)
-                    self.assertIn("const amount = BigInt(total) * 10_000n;", text)
+                    self.assertIn("const amount = 1_600n * 10_000n;", text)
                 else:
                     self.assertIn(f"{{ total: {order['total']}, listedTotal", text)
                 instruction = (target / "instruction.md").read_text()

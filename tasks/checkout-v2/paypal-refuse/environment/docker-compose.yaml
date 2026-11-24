@@ -50,7 +50,6 @@ services:
       browser:
         condition: service_healthy
     environment:
-      SPT_MAX_AMOUNT: "1350"
       STRIPE_TEST_SECRET_KEY: ${STRIPE_TEST_SECRET_KEY:?Stripe sandbox key is required}
     volumes:
       - checkout-wallet:/wallet

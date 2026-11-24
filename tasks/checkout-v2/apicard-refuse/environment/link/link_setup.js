@@ -159,8 +159,10 @@ async function main() {
     // per card. The test helper grants this account an SPT without exposing
     // its API key.
     const expiresAt = Math.floor(Date.now() / 1000) + 7200;
-    // The token's limit is the task's spending limit in cents (cart tasks set it).
-    const maxAmount = Number(process.env.SPT_MAX_AMOUNT || '1200');
+    // The token's limit in cents: one value for every notebook task and one for
+    // every cart task, above any charge, so it never reveals what a store
+    // charges. The prompt's budget, not the token, is the spending limit.
+    const maxAmount = Number(process.env.SPT_MAX_AMOUNT || '1600');
     if (!Number.isInteger(maxAmount) || maxAmount <= 0) throw new Error('Invalid SPT_MAX_AMOUNT');
     const tokens = [
       [wallet.card, decline ? 'pm_card_chargeDeclined' : 'pm_card_visa'],

@@ -41,10 +41,6 @@
       "turns": 3.0,
       "time": 8.858
     },
-    "apicard-token-limit": {
-      "turns": 3.5,
-      "time": 11.876
-    },
     "braintree-card": {
       "turns": 4.5,
       "time": 13.437
@@ -128,10 +124,6 @@
     "mppcard-refuse": {
       "turns": 4.0,
       "time": 11.39
-    },
-    "mppcard-token-limit": {
-      "turns": 11.0,
-      "time": 40.102
     },
     "mppousd-cart": {
       "turns": 5.5,

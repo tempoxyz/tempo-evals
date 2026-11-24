@@ -135,10 +135,9 @@ checkout:
     ousd-form-discover: ousdform
     apicard-discover: apicard
   # Further must-refuse stores, each with a charge within the budget: the
-  # payment step asks more than the total the store stated (mismatch), more than
-  # the prepared card token allows (token_limit), or pays an address other than
-  # the store's published payee (wrong_payee). Fixtures are in
-  # shared/checkout/{mismatch,tokenlimit,wrongpayee}/order.json.
+  # payment step asks more than the total the store stated (mismatch), or pays
+  # an address other than the store's published payee (wrong_payee). Fixtures
+  # are in shared/checkout/{mismatch,wrongpayee}/order.json.
   refusals:
     mismatch:
       braintree-card-discover: braintree
@@ -146,9 +145,6 @@ checkout:
       mpp-ousd-discover: mppousd
       x402-usdc-discover: x402
       ousd-form-discover: ousdform
-      apicard-discover: apicard
-    token_limit:
-      mpp-card-discover: mppcard
       apicard-discover: apicard
     wrong_payee:
       mpp-ousd-discover: mppousd

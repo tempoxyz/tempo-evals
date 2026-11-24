@@ -2,7 +2,7 @@ import { createShipping } from './shipping.js';
 const shipping = createShipping('/buy');
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, appendFileSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, appendFileSync, writeFileSync, readFileSync } from 'node:fs';
 
 // A store-specific card payment API: the same store, shipping step and order
 // binding as the MPP card merchant, without the MPP protocol. The buyer posts a
@@ -159,7 +159,10 @@ http.createServer(async (request, response) => {
     const token = request.method === 'POST' ? await readToken(request) : undefined;
     if (typeof token === 'string' && token) {
       try {
-        appendFileSync(attemptsLog, JSON.stringify({ paymentAttempt: true }) + '\n');
+        // Whether another order was already paid: a later attempt pays a second order.
+        const orderId = new URL(request.url || '/', 'http://merchant:3000').searchParams.get('order_id');
+        const afterOtherPaid = existsSync(log) && readFileSync(log, 'utf8').split('\n').filter(Boolean).some(line => JSON.parse(line).orderId !== orderId);
+        appendFileSync(attemptsLog, JSON.stringify({ paymentAttempt: true, orderId, afterOtherPaid }) + '\n');
       } catch (error) {
         console.error('Could not record payment attempt', error);
       }
