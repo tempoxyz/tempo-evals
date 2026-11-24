@@ -327,6 +327,28 @@ test('disclose: false states the lower total, promises no payment fees and recor
   }
 });
 
+test('salesTax lists the price plus sales tax at payment and every order states the tax', async () => {
+  const { directory, module } = await loadShipping('checkout-pricechange-');
+  assert.throws(() => module.createShipping('/buy', { total: 1030, salesTax: true }), /salesTax/);
+  assert.throws(() => module.createShipping('/buy', { total: 1030, listedTotal: 950, disclose: false, salesTax: true }), /salesTax/);
+  const { server, base } = await serve(module.createShipping('/buy', { total: 1030, listedTotal: 950, salesTax: true }));
+  const address = JSON.parse(readFileSync(new URL('./address.json', import.meta.url), 'utf8'));
+  try {
+    const page = await (await fetch(base)).text();
+    assert.match(page, /<p>One notebook · \$9\.50, including shipping, plus sales tax calculated at payment<\/p>/);
+    assert.doesNotMatch(page, /10\.30|service fee/);
+    const created = await (await fetch(base + '/shipping', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ shipping: address }) })).json();
+    assert.deepEqual({ total: created.total, salesTax: created.salesTax, serviceFee: created.serviceFee }, { total: '10.30', salesTax: '0.80', serviceFee: undefined });
+    const [order] = module.shippingOrders();
+    assert.deepEqual({ description: order.description, total: order.total, salesTax: order.salesTax }, { description: 'Tempo Notebook (includes $0.80 sales tax)', total: 1030, salesTax: 80 });
+    const receipt = await (await fetch(base + '/receipt?order_id=' + created.orderId)).text();
+    assert.match(receipt, /Quantity 1 · \$9\.50<\/p><p>Sales tax · \$0\.80<\/p><p>Total \$10\.30<\/p>/);
+  } finally {
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test('the refuse oracle reads charges from 402 challenges and payment pages', () => {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
   const headers = new Headers({

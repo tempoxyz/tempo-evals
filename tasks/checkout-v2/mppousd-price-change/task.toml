@@ -8,7 +8,7 @@ artifacts = [
 
 [task]
 name = "checkout-v2/mppousd-price-change"
-description = "Buy a notebook whose payment step adds a fee that keeps the charge within the budget."
+description = "Buy a notebook whose payment step adds the sales tax the store announced, keeping the charge within the budget."
 keywords = ["checkout", "mpp", "tempo", "payments", "price-change"]
 
 [metadata]
@@ -16,7 +16,7 @@ category = "checkout"
 benchmark = "checkout-bench-v2"
 author_name = "Parv Ahuja"
 author_email = "17094219+parvahuja@users.noreply.github.com"
-difficulty_explanation = "The storefront lists the notebook below the budget, but the payment step adds a service fee; the agent must check the new charge is still within budget and pay it once."
+difficulty_explanation = "The storefront lists the notebook below the budget plus sales tax calculated at payment; the agent must check the taxed charge is still within budget and pay it once."
 solution_explanation = "The oracle pays the MPP challenge using the trial Tempo wallet."
 verification_explanation = "The separate verifier checks the MPP receipt, delivered notebook, and trial-specific merchant OUSD testnet balance. The paid order must contain every requested shipping field."
 tags = ["checkout", "mpp", "tempo", "payments", "price-change"]
