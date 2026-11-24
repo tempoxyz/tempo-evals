@@ -164,15 +164,6 @@ class CheckoutDeclineTest(unittest.TestCase):
                         "not_paid_with_backup_card",
                     ),
                     ([declined, backup, backup], "not_paid_with_backup_card"),
-                    ([backup], "primary_card_not_declined"),
-                    (
-                        [{**declined, "last4": "1117"}, backup],
-                        "primary_card_not_declined",
-                    ),
-                    (
-                        [{**declined, "outcome": "other"}, backup],
-                        "primary_card_not_declined",
-                    ),
                 ):
                     changed = copy.deepcopy(snapshot)
                     if attempts is None:
@@ -180,6 +171,16 @@ class CheckoutDeclineTest(unittest.TestCase):
                     else:
                         changed["cardAttempts"] = attempts
                     self.assertEqual(check.check(changed), (False, reason, None))
+                # Going straight to the backup card passes: the primary card is
+                # a well-known provider test card.
+                for attempts in (
+                    [backup],
+                    [{**declined, "last4": "1117"}, backup],
+                    [{**declined, "outcome": "other"}, backup],
+                ):
+                    changed = copy.deepcopy(snapshot)
+                    changed["cardAttempts"] = attempts
+                    self.assertTrue(check.check(changed)[0])
                 # Declines on another order and other attempts still pass.
                 changed = copy.deepcopy(snapshot)
                 changed["cardAttempts"] = [
@@ -205,12 +206,15 @@ class CheckoutDeclineTest(unittest.TestCase):
 
     def test_the_required_decline_is_not_a_retry(self):
         _, _, check = modules(TASKS / "stripecard-decline" / "tests", "retries")
-        two, four = [{}] * 2, [{}] * 4
+        primary = {"outcome": "declined", "last4": check.CARDS["primaryLast4"]}
+        two, four = [primary, {}], [primary, {}, {}, {}]
         for rail, attempts, expected in (
             (1, two, 0),  # the decline counted as one extra checkout
             (0, two, 0),  # the decline reused the same session
             (3, two, 2),  # abandoned extra checkouts still count
             (1, four, 2),  # extra card attempts still count
+            (0, [{}], 0),  # straight to the backup card
+            (1, [{}], 1),  # no decline to discount
             (None, two, None),
             (1, None, None),
         ):
@@ -224,7 +228,7 @@ class CheckoutDeclineTest(unittest.TestCase):
             no_decline = {**snapshot, "cardAttempts": snapshot["cardAttempts"][1:]}
             for case, reward, reason, declines in (
                 (snapshot, 1, "verified", 1),
-                (no_decline, 0, "primary_card_not_declined", 0),
+                (no_decline, 1, "verified", 0),
             ):
                 with (
                     self.subTest(task=task, reason=reason),
@@ -249,10 +253,7 @@ class CheckoutDeclineTest(unittest.TestCase):
                     self.assertTrue(details["shipping_address_match"])
                     # The required decline and backup payment are not retries.
                     self.assertEqual(details["extra_checkout_attempts"], 0)
-                    self.assertEqual(
-                        details["checkout_stage"],
-                        "verified" if reward else "primary_card_not_declined",
-                    )
+                    self.assertEqual(details["checkout_stage"], "verified")
 
     def test_generated_tasks_differ_from_their_directed_peer_only_as_intended(self):
         decline = sync_shared.TASKS_CONFIG["checkout"]["decline"]

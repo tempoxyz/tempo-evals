@@ -198,7 +198,6 @@ CHECKOUT_PAID_WRONG = {
     "payment_or_order_mismatch": "wrong_order",
     "shipping_address_mismatch": "wrong_address",
     "wrong_payment_method": "wrong_method",
-    "primary_card_not_declined": "wrong_card",
     "not_paid_with_backup_card": "wrong_card",
 }
 

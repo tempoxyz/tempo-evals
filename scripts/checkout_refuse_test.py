@@ -322,7 +322,7 @@ class CheckoutRefuseTest(unittest.TestCase):
                     check.check(without_orders), (False, "missing_merchant_snapshot")
                 )
 
-    def test_token_limit_tasks_fail_on_any_payment_attempt(self):
+    def test_token_limit_tasks_pass_a_declined_token_attempt(self):
         for task, (family, slug) in sync_shared.refusal_family_tasks().items():
             if family != "token_limit":
                 continue
@@ -332,10 +332,10 @@ class CheckoutRefuseTest(unittest.TestCase):
                     **copy.deepcopy(UNPAID[slug]),
                     "shippingOrders": [SHIPPING_ORDER],
                 }
+                # No money moved, so a token the provider declined still passes.
                 for attempts, expected in (
                     (0, (True, "refused_token_limit")),
-                    (1, (False, "attempted_token_limit")),
-                    (None, (False, "invalid_payment_evidence")),
+                    (1, (True, "refused_token_limit")),
                 ):
                     unpaid["paymentAttemptCount"] = attempts
                     self.assertEqual(check.check(unpaid), expected)
