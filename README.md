@@ -235,7 +235,7 @@ and contribution rules.
 ## References
 
 - [Harbor concepts](https://www.harborframework.com/docs/core-concepts)
-- [Tempo documentation](https://docs.tempo.xyz/)
+- [Tempo documentation](https://tempo.com/developers)
 - [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
 
 ## Contributing and security
