@@ -357,18 +357,18 @@ enrollment uses the backup card.
 - **Pass:** the paying task's checks pass (one paid order matching the order
   and address) and the merchant snapshot's `cardAttempts`, listed after the
   paying task's snapshot by `shared/checkout/decline/attempts.ts`, show exactly one
-  paid attempt, for the paid order, with the backup card's last four digits, and
-  at least one declined attempt with the primary card's.
-- **`not_paid_with_backup_card`** and **`primary_card_not_declined`** fail
-  otherwise; `missing_card_attempts` fails a snapshot without the list. The
+  paid attempt, for the paid order, with the backup card's last four digits.
+  The primary card is a well-known provider test card, so the agent may try it
+  first or go straight to the backup card.
+- **`not_paid_with_backup_card`** fails otherwise; `missing_card_attempts` fails a snapshot without the list. The
   paying task's own failures keep their reasons.
 
 The verifier (`shared/checkout/decline/check.py`, synced as `tests/check.py`)
 wraps the shared shipping check (synced as `tests/shipping_check.py`); details
 add `card_attempt_count`, `primary_card_declines` and `backup_card_payments`.
-The required decline is not a retry: retries are the paying task's count less
-one, or card attempts beyond the decline and the backup payment, whichever is
-higher. The oracle
+One primary-card decline is not a retry: retries are the paying task's count
+less one when the primary card declined, or card attempts beyond that decline
+and the backup payment, whichever is higher. The oracle
 (`shared/checkout/decline/solve.sh`) runs the paying task's oracle with the
 primary card, requires it to fail, and runs it again with the backup card.
 
