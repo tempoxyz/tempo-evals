@@ -72,12 +72,35 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertTrue(set(flags[0::2]) == {"--retry-exclude"})
         for kept in ("AgentTimeoutError", "VerifierTimeoutError"):
             self.assertIn(kept, excluded)
-        for retried in (
-            "RuntimeError",
-            "SandboxBuildFailedError",
-            "ApiOverloadedError",
-        ):
+        # Errors raised after the agent started are kept, since a retry would
+        # delete the trial the agent acted in.
+        for kept in ("ApiOverloadedError", "NonZeroAgentExitCodeError"):
+            self.assertIn(kept, excluded)
+        for retried in ("RuntimeError", "SandboxBuildFailedError", "AgentSetupTimeoutError"):
             self.assertNotIn(retried, excluded)
+
+    def test_checkout_tasks_are_staged_under_opaque_names(self) -> None:
+        from scripts.run_benchmark import alias_checkout_tasks
+
+        with tempfile.TemporaryDirectory() as root:
+            staging = Path(root)
+            staged = staging / "tasks" / "checkout-v2"
+            for name in ("apicard", "apicard-mismatch", "x402-mismatch"):
+                (staged / name).mkdir(parents=True)
+                (staged / name / "task.toml").write_text("")
+            config = {"datasets": [{"path": str(staged), "task_names": ["*-mismatch"]}]}
+            alias_checkout_tasks(config, staging, "run-1")
+            aliases = json.loads((staging / "checkout-task-aliases.json").read_text())
+            self.assertEqual(sorted(aliases), ["apicard", "apicard-mismatch", "x402-mismatch"])
+            names = sorted(path.name for path in staged.iterdir())
+            self.assertEqual(names, sorted(aliases.values()))
+            for alias in names:
+                self.assertNotIn("mismatch", alias)
+                self.assertNotIn("apicard", alias)
+            self.assertEqual(
+                sorted(config["datasets"][0]["task_names"]),
+                sorted([aliases["apicard-mismatch"], aliases["x402-mismatch"]]),
+            )
 
     def test_env_file_preserves_quoted_secrets_and_existing_environment(self) -> None:
         content = r"""# dotenv quoting must survive wallet injection.

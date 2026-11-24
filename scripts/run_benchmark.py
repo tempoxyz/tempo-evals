@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import copy
 import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -68,6 +69,18 @@ CHECKOUT_NO_RETRY_EXCEPTIONS = (
     "ApiUsageLimitError",
     "AuthenticationError",
     "NotAuthenticatedError",
+    # Raised after the agent has started acting. Harbor deletes a retried
+    # trial's directory, so retrying these would discard what the agent did;
+    # they are kept and rerun by hand instead.
+    # Matched by exact type name, so every subclass is listed.
+    "NonZeroAgentExitCodeError",
+    "ApiError",
+    "ApiRateLimitError",
+    "ApiInternalServerError",
+    "ApiOverloadedError",
+    "ApiConnectionClosedError",
+    "UnknownApiError",
+    "NetworkConnectionError",
 )
 
 
@@ -1491,6 +1504,43 @@ def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str
     return result
 
 
+def alias_checkout_tasks(
+    config: dict[str, Any], staging_root: Path, run_id: str
+) -> None:
+    """Stage checkout tasks under opaque directory names.
+
+    Harbor names each trial, its Compose project and so its containers after
+    the task directory, and Docker's DNS answers a reverse lookup of the
+    merchant's address with that container name, so an agent could read the
+    task's family (such as -mismatch) from inside the sandbox. Results keep the
+    task.toml name; checkout-task-aliases.json maps each alias back.
+    """
+    staged = staging_root / "tasks" / "checkout-v2"
+    if not staged.is_dir():
+        return
+    tasks = sorted(path for path in staged.iterdir() if (path / "task.toml").exists())
+    aliases = {
+        path.name: "task-"
+        + hashlib.sha256(f"{run_id}/{path.name}".encode()).hexdigest()[:12]
+        for path in tasks
+    }
+    for dataset in config.get("datasets", []):
+        if Path(dataset.get("path", "")) != staged:
+            continue
+        for key in ("task_names", "exclude_task_names"):
+            if patterns := dataset.get(key):
+                dataset[key] = [
+                    alias
+                    for name, alias in aliases.items()
+                    if any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns)
+                ]
+    for path in tasks:
+        path.rename(staged / aliases[path.name])
+    (staging_root / "checkout-task-aliases.json").write_text(
+        json.dumps(aliases, indent=2) + "\n"
+    )
+
+
 def stage_daytona_config(
     config: dict[str, Any],
     run_id: str,
@@ -1516,6 +1566,8 @@ def stage_daytona_config(
         options.get("pair_id"),
     )
     redirect_dataset_paths(config, staging_root)
+    if options.get("task_suite") == "checkout":
+        alias_checkout_tasks(config, staging_root, run_id)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
 
@@ -1549,6 +1601,8 @@ def stage_filtered_config(
             browser_profile=checkout_profile(options),
         )
         redirect_dataset_paths(config, staging_root)
+        if options.get("task_suite") == "checkout":
+            alias_checkout_tasks(config, staging_root, run_id)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
 
