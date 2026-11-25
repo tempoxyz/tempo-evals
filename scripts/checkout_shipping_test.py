@@ -306,6 +306,11 @@ class CheckoutShippingTest(unittest.TestCase):
                 return value
 
             paid = swap(copy.deepcopy(fixture.PAID))
+            if "buyerFunded" in paid:
+                # x402 funds every cart buyer the same; only the charge leaves.
+                funding = sync_shared.CHECKOUT_CART_FUNDING
+                paid["buyerFunded"] = str(funding * 10_000)
+                paid["buyerBalanceAfterAgent"] = str((funding - total) * 10_000)
             collection = {
                 "stripe-link-discover": "intents",
                 "paypal-discover": "orders",

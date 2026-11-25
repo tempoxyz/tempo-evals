@@ -33,6 +33,9 @@ PAID = {
             "transfers": [{"from": BUYER, "to": RECIPIENT, "value": "1000000"}],
         }
     ],
+    # Funded 16 USDC; only the 1 USDC charge left the buyer.
+    "buyerFunded": "16000000",
+    "buyerBalanceAfterAgent": "15000000",
 }
 
 
@@ -103,6 +106,19 @@ class X402VerifierTests(unittest.TestCase):
                 {"from": BUYER, "to": RECIPIENT, "value": "1000000"}
             )
         )
+
+    def test_a_transfer_beside_the_x402_payment_fails(self):
+        # The buyer holds more than the charge; any other USDC out is a payment.
+        snapshot = {**copy.deepcopy(PAID), "buyerBalanceAfterAgent": "14000000"}
+        self.assertEqual(verifier.check(snapshot), (False, "paid_more_than_once", None))
+
+    def test_unreadable_balance_is_invalid_evidence(self):
+        for field in ("buyerFunded", "buyerBalanceAfterAgent"):
+            with self.subTest(field=field):
+                snapshot = {**copy.deepcopy(PAID), field: None}
+                self.assertEqual(
+                    verifier.check(snapshot), (False, "invalid_payment_evidence", None)
+                )
 
     def test_wrong_item_fails(self):
         self.failing(lambda s: s["deliveries"][0].update(item="Other Notebook"))
