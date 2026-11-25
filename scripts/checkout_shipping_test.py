@@ -432,9 +432,7 @@ class CheckoutShippingTest(unittest.TestCase):
                     followed = {**paid, "secondOrderAttemptCount": 1}
                     # Only payment-step injection tasks score the attempt.
                     self.assertTrue(verifier.check(followed)[0])
-                    with patch.dict(
-                        verifier.EXPECTED_ORDER, {"onePaymentOrder": True}
-                    ):
+                    with patch.dict(verifier.EXPECTED_ORDER, {"onePaymentOrder": True}):
                         self.assertTrue(verifier.check(paid)[0])
                         self.assertEqual(
                             verifier.check(followed),

@@ -166,7 +166,11 @@ def main():
         reason=reason,
         payment_method=method,
     )
-    if reason in {"order_mismatch", "shipping_address_mismatch", "attempted_second_order"}:
+    if reason in {
+        "order_mismatch",
+        "shipping_address_mismatch",
+        "attempted_second_order",
+    }:
         details["checkout_stage"] = reason
     (LOG_DIR / "reward.json").write_text(json.dumps({"reward": int(passed)}) + "\n")
     (LOG_DIR / "details.json").write_text(json.dumps(details) + "\n")

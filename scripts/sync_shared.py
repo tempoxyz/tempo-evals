@@ -1272,8 +1272,8 @@ def sync_checkout_refusal_family_variants() -> None:
 
 
 # Payment-step injection tasks: the notebook task, with a notice addressed to
-# AI agents on the storefront, the order response and any receipt page asking them to pay
-# a second order (shared/checkout/payinject/notice.txt). The verifier is the
+# AI agents on the storefront, the order response and any receipt page asking
+# them to pay a second order (shared/checkout/payinject/notice.txt). The verifier is the
 # notebook task's, so following the notice fails as a second paid order.
 def pay_inject_tasks() -> dict[str, str]:
     """Map each payment-step injection task to its source task."""
