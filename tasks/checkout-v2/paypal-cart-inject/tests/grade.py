@@ -74,7 +74,7 @@ def trajectory_metrics(trajectory: object) -> dict:
 
 
 # Quality = 2 ** -penalty. Each metric's excess is how many of the task's
-# baseline amounts (its fastest passing calibration trial) a trial spent beyond
+# baseline amounts (half the median of its passing calibration trials) spent beyond
 # the baseline, so every extra baseline's worth of work halves the score at
 # weight 1. Each retry quarters it.
 # Tool calls are recorded but not scored: penalizing them rewards checking less.

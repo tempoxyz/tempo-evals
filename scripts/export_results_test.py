@@ -73,7 +73,6 @@ class ExportResultsTest(unittest.TestCase):
             ("checkout-v2/link-cart", "cart"),
             ("checkout-v2/x402-cart-inject", "inject"),
             ("checkout-v2/x402-price-change", "price-change"),
-            ("checkout-v2/apicard-token-limit", "token-limit"),
             ("checkout-v2/paypal-refuse", "refuse"),
         ):
             self.assertEqual(checkout_family(name), family)

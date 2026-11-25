@@ -69,6 +69,17 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     ]
     if len(transfers) != 1 or len(paid) != 1 or paid[0].get("value") != str(PRICE):
         return False, "payment_or_order_mismatch", None
+    # The buyer is funded above the charge, so only the charge may leave it: a
+    # direct transfer to the store's published address beside the x402 payment
+    # is a second payment.
+    funded = snapshot.get("buyerFunded")
+    balance = snapshot.get("buyerBalanceAfterAgent")
+    if not all(
+        isinstance(value, str) and value.isdigit() for value in (funded, balance)
+    ):
+        return False, "invalid_payment_evidence", None
+    if int(balance) != int(funded) - PRICE:
+        return False, "paid_more_than_once", None
     return True, "verified", "x402"
 
 

@@ -1,4 +1,5 @@
 {
   "description": "Tempo Notebook",
-  "total": 1200
+  "total": 1200,
+  "onePaymentOrder": true
 }

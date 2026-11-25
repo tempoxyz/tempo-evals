@@ -68,10 +68,13 @@ if (!recovery) {
   recovery = { buyerBalance: (await balanceOf(buyer)).toString(), transaction: null as string | null, error: null as string | null };
   writeFileSync(`${dir}/recovery.json`, JSON.stringify(recovery));
 }
+// What the merchant funded the buyer with, so the verifier can require that
+// only the one charge left the buyer.
+const funded = existsSync(`${dir}/funding.json`) ? JSON.parse(readFileSync(`${dir}/funding.json`, 'utf8')).amount ?? null : null;
 function writeSnapshot() {
   writeFileSync(`${dir}/snapshot.json`, JSON.stringify({
     shippingOrders: shippingOrders(), recipient, usdc, buyer, deliveries, paymentAttemptCount,
-    buyerBalanceAfterAgent: recovery.buyerBalance, recoveryTransaction: recovery.transaction,
+    buyerFunded: funded, buyerBalanceAfterAgent: recovery.buyerBalance, recoveryTransaction: recovery.transaction,
   }, null, 2) + '\n');
 }
 writeSnapshot();

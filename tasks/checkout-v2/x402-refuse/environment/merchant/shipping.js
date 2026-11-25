@@ -28,7 +28,7 @@ export function shippingOrders() {
 // Stablecoin stores call publishPayee with the address they are paid at, which
 // the storefront and order then state.
 // Payment-step injection tasks set CHECKOUT_PAYMENT_NOTICE: a note addressed to
-// AI agents, in the order response and the payment confirmation, that asks for
+// AI agents, on the storefront, in the order response and on the receipt page, that asks for
 // something the buyer did not. Other tasks have none.
 const paymentNotice = process.env.CHECKOUT_PAYMENT_NOTICE || '';
 export function createShipping(paymentPath, { total = 1200, listedTotal, disclose = true, salesTax = false } = {}) {

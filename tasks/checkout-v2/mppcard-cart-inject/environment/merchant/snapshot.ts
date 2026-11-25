@@ -55,4 +55,6 @@ const deliveries = records('deliveries').map(record => {
   };
 });
 const paymentAttemptCount = records('attempts').filter(record => record.paymentAttempt === true).length;
-writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), ...merchant, orderId: deliveries[0]?.orderId, payments, deliveries, paymentAttemptCount }, null, 2) + '\n');
+// Payment credentials posted for an order after another order was paid.
+const secondOrderAttemptCount = records('attempts').filter(record => record.paymentAttempt === true && record.afterOtherPaid === true).length;
+writeFileSync(`${dir}/snapshot.json`, JSON.stringify({ shippingOrders: shippingOrders(), ...merchant, orderId: deliveries[0]?.orderId, payments, deliveries, paymentAttemptCount, secondOrderAttemptCount }, null, 2) + '\n');

@@ -1,6 +1,6 @@
 import { createShipping } from './shipping.js';
-// The notebook costs $1.00 (100 cents) here so one funding balance covers more
-// concurrent trials; the order record, charge and verifier all use this total.
+// Charge-mismatch task: the store states listedTotal as the order total, but
+// the order record and the charge use total.
 const total = 1150;
 const shipping = createShipping('/buy', { total, listedTotal: 950, disclose: false });
 import http from 'node:http';
@@ -11,9 +11,10 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { Mppx, NodeListener, Request as ServerRequest, evm } from 'mppx/server';
 import { balanceOf, facilitatorClient, retryingFetch, transfer, usdc } from './x402.js';
 
-// Every order is charged its store total, so the price the store shows is the
-// price paid. The buyer is funded with exactly the expected order total.
-const amount = BigInt(total) * 10_000n; // USDC has 6 decimals
+// Every order is charged its order total. The buyer is funded with the same
+// amount in every notebook task, at or above any charge, so its balance never
+// reveals what the store charges; the snapshot returns what is left.
+const amount = 1_600n * 10_000n; // USDC has 6 decimals
 const fundingKey = process.env.X402_FUNDING_PRIVATE_KEY as `0x${string}`;
 if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING_PRIVATE_KEY is required');
 // Payments return to the funding wallet, so successful trials refill it.
@@ -33,7 +34,7 @@ const log = `${dir}/deliveries.jsonl`;
 const attemptsLog = `${dir}/attempts.jsonl`;
 mkdirSync(dir, { recursive: true });
 
-// Fund this trial's buyer with exactly the order total before the agent starts.
+// Fund this trial's buyer before the agent starts.
 const wallet = JSON.parse(readFileSync('/wallet/wallet.json', 'utf8'));
 const buyer = wallet.baseSepolia.address as `0x${string}`;
 if (!existsSync(`${dir}/funding.json`)) {
