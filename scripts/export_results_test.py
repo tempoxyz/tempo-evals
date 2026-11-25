@@ -978,7 +978,9 @@ class ExportResultsTest(unittest.TestCase):
                     }
                 ),
             )
-            write_json(trial_dir / "verifier/details.json", {"reason": "checkout_not_started"})
+            write_json(
+                trial_dir / "verifier/details.json", {"reason": "checkout_not_started"}
+            )
             row = export_results(job)["trials"][0]
             self.assertEqual(row["outcome"], "verifier_failed")
             self.assertTrue(row["eligible"])

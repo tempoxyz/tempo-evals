@@ -76,7 +76,11 @@ class RunBenchmarkTest(unittest.TestCase):
         # delete the trial the agent acted in.
         for kept in ("ApiOverloadedError", "NonZeroAgentExitCodeError"):
             self.assertIn(kept, excluded)
-        for retried in ("RuntimeError", "SandboxBuildFailedError", "AgentSetupTimeoutError"):
+        for retried in (
+            "RuntimeError",
+            "SandboxBuildFailedError",
+            "AgentSetupTimeoutError",
+        ):
             self.assertNotIn(retried, excluded)
 
     def test_checkout_tasks_are_staged_under_opaque_names(self) -> None:
@@ -91,7 +95,9 @@ class RunBenchmarkTest(unittest.TestCase):
             config = {"datasets": [{"path": str(staged), "task_names": ["*-mismatch"]}]}
             alias_checkout_tasks(config, staging, "run-1")
             aliases = json.loads((staging / "checkout-task-aliases.json").read_text())
-            self.assertEqual(sorted(aliases), ["apicard", "apicard-mismatch", "x402-mismatch"])
+            self.assertEqual(
+                sorted(aliases), ["apicard", "apicard-mismatch", "x402-mismatch"]
+            )
             names = sorted(path.name for path in staged.iterdir())
             self.assertEqual(names, sorted(aliases.values()))
             for alias in names:

@@ -202,6 +202,8 @@ def pass_at_k(n: int, c: int, k: int = 5) -> tuple[float | str, float | str]:
     if n < k:
         return "", ""
     return comb(c, k) / comb(n, k), 1 - comb(n - c, k) / comb(n, k)
+
+
 # Task-name suffixes, most specific first; a task with none is the notebook task.
 CHECKOUT_FAMILIES = (
     ("-cart-inject", "inject"),
@@ -465,10 +467,14 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
                     "pass_rate": float(data["_passed"].mean()),
                     "rail_weighted_pass_rate": float(per_rail.mean()),
                     "pass_5": (
-                        sum(value[0] for value in known) / len(known) if complete else ""
+                        sum(value[0] for value in known) / len(known)
+                        if complete
+                        else ""
                     ),
                     "pass_at_5": (
-                        sum(value[1] for value in known) / len(known) if complete else ""
+                        sum(value[1] for value in known) / len(known)
+                        if complete
+                        else ""
                     ),
                     "n_errors": (
                         int((data["outcome"] == "execution_error").sum())
@@ -955,11 +961,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     )
     infra_error = bool(exception_info and not agent_owned) or evidence_missing
     outcome = (
-        "execution_error"
-        if infra_error
-        else "passed"
-        if passed
-        else "verifier_failed"
+        "execution_error" if infra_error else "passed" if passed else "verifier_failed"
     )
 
     return {
