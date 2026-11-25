@@ -188,7 +188,7 @@ class SyncSharedTest(unittest.TestCase):
         )
         for name in ("Dockerfile", "link.Dockerfile"):
             dockerfile = (sync_shared.CHECKOUT_SHARED_DIR / "wallet" / name).read_text()
-            self.assertIn("FROM public.ecr.aws/docker/library/", dockerfile)
+            self.assertIn("FROM mirror.gcr.io/library/", dockerfile)
 
     def test_checkout_cart_text_names_each_method(self) -> None:
         cart = sync_shared.TASKS_CONFIG["checkout"]["cart"]
