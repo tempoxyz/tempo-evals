@@ -954,6 +954,29 @@ class ExportResultsTest(unittest.TestCase):
             self.assertAlmostEqual(family["pass_at_5"], 1.0)
             self.assertEqual(family["n_errors"], 0)
 
+    def test_checkout_pass_five_skips_infrastructure_errors(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for index in range(6):
+                fields = {
+                    "task_name": "checkout-v2/stripe-card-discover",
+                    "trial_name": f"trial-{index}",
+                    "verifier_result": {"rewards": {"reward": int(index != 0)}},
+                }
+                if index == 0:
+                    # Kept, not retried, and rerun by hand.
+                    fields["exception_info"] = {"exception_type": "ApiOverloadedError"}
+                write_json(job_dir / f"trial-{index}" / "result.json", trial(fields))
+            exported = export_results(job_dir)
+            self.assertEqual(exported["summary"][0]["pass_5"], 1.0)
+            family = [
+                row
+                for row in exported["checkout_summary"]
+                if row["checkout_family"] == "all"
+            ][0]
+            self.assertEqual(family["pass_5"], 1.0)
+            self.assertEqual(family["n_errors"], 1)
+
     def test_pass_at_k_needs_k_trials(self) -> None:
         from scripts.export_results import pass_at_k
 

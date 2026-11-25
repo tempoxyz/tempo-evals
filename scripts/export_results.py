@@ -444,9 +444,15 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
             )
             per_rail = data.groupby("checkout_rail")["_passed"].mean()
             # pass^5 and pass@5 per task, averaged with each task weighted equally.
+            # Infrastructure errors are rerun, not counted as the agent's results.
+            clean = (
+                data[data["outcome"] != "execution_error"]
+                if "outcome" in data
+                else data
+            )
             per_task = [
                 pass_at_k(len(cell), int(cell["_passed"].sum()))
-                for _, cell in data.groupby("task_name")
+                for _, cell in clean.groupby("task_name")
             ]
             known = [value for value in per_task if value[0] != ""]
             complete = bool(per_task) and len(known) == len(per_task)
@@ -1157,6 +1163,8 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame.loc[checkout_mask, "_error"] = (
         frame.loc[checkout_mask, "outcome"].eq("execution_error").astype(int)
     )
+    # Passes outside infrastructure errors, for pass^k over the agent's results.
+    frame["_clean_passed"] = frame["_passed"] * (1 - frame["_error"])
     checkout_columns = [key for key in CHECKOUT_SUMMARY_COLUMNS if key in frame]
     frame[checkout_columns] = frame[checkout_columns].fillna("")
     telemetry_columns = [
@@ -1191,6 +1199,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             n_passed=("_passed", "sum"),
             n_eligible=("_eligible", "sum"),
             n_errors=("_error", "sum"),
+            _clean_passed=("_clean_passed", "sum"),
             mean_reward=("_reward", "mean"),
             n_quality_scored=("_quality", "count"),
             mean_quality=("_quality", "mean"),
@@ -1227,12 +1236,17 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
         complete = summary[f"_known_{column}"] == summary["n_trials"]
         # A partial total is not the total for the checkout group.
         summary[column] = summary[column].where(~checkout | complete, "")
-    results = summary[[*SUMMARY_COLUMNS, *checkout_columns]].to_dict("records")
+    results = summary[[*SUMMARY_COLUMNS, *checkout_columns, "_clean_passed"]].to_dict(
+        "records"
+    )
     for result in results:
+        clean_passed = int(result.pop("_clean_passed"))
         if str(result["task_family"]).startswith(CHECKOUT_PREFIXES):
             n_trials = int(result["n_trials"])
-            n_passed = int(result["n_passed"])
-            result["pass_5"], result["pass_at_5"] = pass_at_k(n_trials, n_passed)
+            # Infrastructure errors are rerun, not counted as the agent's results.
+            result["pass_5"], result["pass_at_5"] = pass_at_k(
+                n_trials - int(result["n_errors"]), clean_passed
+            )
             # Do not average failures with zero quality while omitting unscored passes.
             if result["n_quality_scored"] < n_trials:
                 for column in ("mean_quality", "median_quality", "quality_at_k"):

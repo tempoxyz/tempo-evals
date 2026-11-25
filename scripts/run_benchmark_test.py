@@ -107,6 +107,12 @@ class RunBenchmarkTest(unittest.TestCase):
                 sorted(config["datasets"][0]["task_names"]),
                 sorted([aliases["apicard-mismatch"], aliases["x402-mismatch"]]),
             )
+            # A filter that matches nothing must not widen into a full run.
+            for path in staged.iterdir():
+                path.rename(staged / {v: k for k, v in aliases.items()}[path.name])
+            unmatched = {"datasets": [{"path": str(staged), "task_names": ["*-typo"]}]}
+            with self.assertRaises(ValueError):
+                alias_checkout_tasks(unmatched, staging, "run-1")
 
     def test_env_file_preserves_quoted_secrets_and_existing_environment(self) -> None:
         content = r"""# dotenv quoting must survive wallet injection.

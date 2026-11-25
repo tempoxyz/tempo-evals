@@ -600,7 +600,7 @@ stays blank rather than becoming zero or a perfect score.
   context overflow that the verifier still graded is the agent's result and
   keeps its verdict; other exceptions are `execution_error`.
 - `pass_at_5` beside `pass_5` is the fraction of five-trial subsets with at least
-  one pass. `checkout_summary.csv` adds both per family and for `all`, averaged
+  one pass. Both leave out infrastructure errors, which are rerun instead. `checkout_summary.csv` adds both per family and for `all`, averaged
   with each task weighted equally, and `n_errors`.
 
 v2 is unpublished, and runs from before the published dataset digest are not
@@ -664,8 +664,9 @@ those as `n_errors`; rerun each such trial by hand until every task and model
 cell has its attempts, and keep the originals. A trial that ran and failed is
 the agent's result.
 
-Staging renames each checkout task directory to an opaque alias
-(`checkout-task-aliases.json` in the staging directory maps them back), because
+Staging renames each checkout task directory to an opaque alias, hashed with a
+random per-job salt the sandbox never sees (`checkout-task-aliases.json` in the
+staging directory maps them back), because
 Harbor names trials and containers after the directory and Docker's DNS answers
 a reverse lookup of the merchant with its container name. Results keep the
 task.toml name.
