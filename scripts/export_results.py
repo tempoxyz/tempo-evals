@@ -450,9 +450,13 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
                 if "outcome" in data
                 else data
             )
+            # A task with no clean trial leaves the score blank, not dropped.
             per_task = [
-                pass_at_k(len(cell), int(cell["_passed"].sum()))
-                for _, cell in clean.groupby("task_name")
+                pass_at_k(
+                    len(cell := clean[clean["task_name"] == task]),
+                    int(cell["_passed"].sum()),
+                )
+                for task in data["task_name"].unique()
             ]
             known = [value for value in per_task if value[0] != ""]
             complete = bool(per_task) and len(known) == len(per_task)

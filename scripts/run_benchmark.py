@@ -1620,6 +1620,24 @@ def stage_filtered_config(
     return str(staged_config)
 
 
+def direct_task_filters(run_id: str, options: dict[str, Any]) -> list[str]:
+    """The task filter for a job-less run, mapped to staged checkout aliases."""
+    pattern = options["task_filter"]
+    aliases_file = (
+        Path(".cache") / "harbor-model" / run_id / "checkout-task-aliases.json"
+    )
+    if options.get("task_suite") != "checkout" or not aliases_file.exists():
+        return [pattern]
+    pattern = pattern.removeprefix("checkout-v2/")
+    aliases = json.loads(aliases_file.read_text())
+    matched = [
+        alias for name, alias in aliases.items() if fnmatch.fnmatchcase(name, pattern)
+    ]
+    if not matched:
+        raise ValueError(f"No checkout task matches --task-filter {pattern!r}")
+    return matched
+
+
 def stage_direct_task_path(
     run_id: str,
     task_path: str,
@@ -1820,7 +1838,11 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         if model:
             args.extend(["--model", model])
         if options.get("task_filter"):
-            args.extend(["--include-task-name", options["task_filter"]])
+            args.extend(
+                flag
+                for name in direct_task_filters(run_id, options)
+                for flag in ("--include-task-name", name)
+            )
         if options.get("n_tasks"):
             args.extend(["--n-tasks", options["n_tasks"]])
     if options.get("env_file"):

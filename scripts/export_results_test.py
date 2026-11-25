@@ -977,6 +977,29 @@ class ExportResultsTest(unittest.TestCase):
             self.assertEqual(family["pass_5"], 1.0)
             self.assertEqual(family["n_errors"], 1)
 
+    def test_family_pass_five_is_blank_when_a_task_has_no_clean_trials(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for index in range(10):
+                fields = {
+                    "task_name": "checkout-v2/stripe-card-discover"
+                    if index < 5
+                    else "checkout-v2/paypal-discover",
+                    "trial_name": f"trial-{index}",
+                    "verifier_result": {"rewards": {"reward": 1}},
+                }
+                if index >= 5:
+                    fields["exception_info"] = {"exception_type": "ApiOverloadedError"}
+                write_json(job_dir / f"trial-{index}" / "result.json", trial(fields))
+            exported = export_results(job_dir)
+            family = [
+                row
+                for row in exported["checkout_summary"]
+                if row["checkout_family"] == "all"
+            ][0]
+            self.assertEqual(family["pass_5"], "")
+            self.assertEqual(family["pass_at_5"], "")
+
     def test_pass_at_k_needs_k_trials(self) -> None:
         from scripts.export_results import pass_at_k
 

@@ -83,6 +83,30 @@ class RunBenchmarkTest(unittest.TestCase):
         ):
             self.assertNotIn(retried, excluded)
 
+    def test_direct_checkout_filters_map_to_aliases(self) -> None:
+        from scripts.run_benchmark import direct_task_filters
+
+        cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as root:
+            os.chdir(root)
+            try:
+                staging = Path(".cache/harbor-model/run-2")
+                staging.mkdir(parents=True)
+                (staging / "checkout-task-aliases.json").write_text(
+                    json.dumps({"apicard": "task-a", "apicard-mismatch": "task-b"})
+                )
+                options = {"task_suite": "checkout", "task_filter": "*-mismatch"}
+                self.assertEqual(direct_task_filters("run-2", options), ["task-b"])
+                options["task_filter"] = "*-typo"
+                with self.assertRaises(ValueError):
+                    direct_task_filters("run-2", options)
+                # Without staged aliases the filter passes through.
+                self.assertEqual(
+                    direct_task_filters("run-3", {"task_filter": "x"}), ["x"]
+                )
+            finally:
+                os.chdir(cwd)
+
     def test_checkout_tasks_are_staged_under_opaque_names(self) -> None:
         from scripts.run_benchmark import alias_checkout_tasks
 
