@@ -72,12 +72,71 @@ class RunBenchmarkTest(unittest.TestCase):
         self.assertTrue(set(flags[0::2]) == {"--retry-exclude"})
         for kept in ("AgentTimeoutError", "VerifierTimeoutError"):
             self.assertIn(kept, excluded)
+        # Errors raised after the agent started are kept, since a retry would
+        # delete the trial the agent acted in.
+        for kept in ("ApiOverloadedError", "NonZeroAgentExitCodeError"):
+            self.assertIn(kept, excluded)
         for retried in (
             "RuntimeError",
             "SandboxBuildFailedError",
-            "ApiOverloadedError",
+            "AgentSetupTimeoutError",
         ):
             self.assertNotIn(retried, excluded)
+
+    def test_direct_checkout_filters_map_to_aliases(self) -> None:
+        from scripts.run_benchmark import direct_task_filters
+
+        cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as root:
+            os.chdir(root)
+            try:
+                staging = Path(".cache/harbor-model/run-2")
+                staging.mkdir(parents=True)
+                (staging / "checkout-task-aliases.json").write_text(
+                    json.dumps({"apicard": "task-a", "apicard-mismatch": "task-b"})
+                )
+                options = {"task_suite": "checkout", "task_filter": "*-mismatch"}
+                self.assertEqual(direct_task_filters("run-2", options), ["task-b"])
+                options["task_filter"] = "*-typo"
+                with self.assertRaises(ValueError):
+                    direct_task_filters("run-2", options)
+                # Without staged aliases the filter passes through.
+                self.assertEqual(
+                    direct_task_filters("run-3", {"task_filter": "x"}), ["x"]
+                )
+            finally:
+                os.chdir(cwd)
+
+    def test_checkout_tasks_are_staged_under_opaque_names(self) -> None:
+        from scripts.run_benchmark import alias_checkout_tasks
+
+        with tempfile.TemporaryDirectory() as root:
+            staging = Path(root)
+            staged = staging / "tasks" / "checkout-v2"
+            for name in ("apicard", "apicard-mismatch", "x402-mismatch"):
+                (staged / name).mkdir(parents=True)
+                (staged / name / "task.toml").write_text("")
+            config = {"datasets": [{"path": str(staged), "task_names": ["*-mismatch"]}]}
+            alias_checkout_tasks(config, staging, "run-1")
+            aliases = json.loads((staging / "checkout-task-aliases.json").read_text())
+            self.assertEqual(
+                sorted(aliases), ["apicard", "apicard-mismatch", "x402-mismatch"]
+            )
+            names = sorted(path.name for path in staged.iterdir())
+            self.assertEqual(names, sorted(aliases.values()))
+            for alias in names:
+                self.assertNotIn("mismatch", alias)
+                self.assertNotIn("apicard", alias)
+            self.assertEqual(
+                sorted(config["datasets"][0]["task_names"]),
+                sorted([aliases["apicard-mismatch"], aliases["x402-mismatch"]]),
+            )
+            # A filter that matches nothing must not widen into a full run.
+            for path in staged.iterdir():
+                path.rename(staged / {v: k for k, v in aliases.items()}[path.name])
+            unmatched = {"datasets": [{"path": str(staged), "task_names": ["*-typo"]}]}
+            with self.assertRaises(ValueError):
+                alias_checkout_tasks(unmatched, staging, "run-1")
 
     def test_env_file_preserves_quoted_secrets_and_existing_environment(self) -> None:
         content = r"""# dotenv quoting must survive wallet injection.

@@ -4,9 +4,11 @@ from __future__ import annotations
 import argparse
 import copy
 import fnmatch
+import hashlib
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -68,6 +70,18 @@ CHECKOUT_NO_RETRY_EXCEPTIONS = (
     "ApiUsageLimitError",
     "AuthenticationError",
     "NotAuthenticatedError",
+    # Raised after the agent has started acting. Harbor deletes a retried
+    # trial's directory, so retrying these would discard what the agent did;
+    # they are kept and rerun by hand instead.
+    # Matched by exact type name, so every subclass is listed.
+    "NonZeroAgentExitCodeError",
+    "ApiError",
+    "ApiRateLimitError",
+    "ApiInternalServerError",
+    "ApiOverloadedError",
+    "ApiConnectionClosedError",
+    "UnknownApiError",
+    "NetworkConnectionError",
 )
 
 
@@ -1491,6 +1505,55 @@ def finalize_config(config: dict[str, Any], options: dict[str, Any]) -> dict[str
     return result
 
 
+def alias_checkout_tasks(
+    config: dict[str, Any], staging_root: Path, run_id: str
+) -> dict[str, str]:
+    """Stage checkout tasks under opaque directory names.
+
+    Harbor names each trial, its Compose project and so its containers after
+    the task directory, and Docker's DNS answers a reverse lookup of the
+    merchant's address with that container name, so an agent could read the
+    task's family (such as -mismatch) from inside the sandbox. Results keep the
+    task.toml name; checkout-task-aliases.json maps each alias back. Aliases
+    hash a random salt kept outside the staging directory, so a resumed job
+    keeps its names while no value in the sandbox reproduces them.
+    """
+    staged = staging_root / "tasks" / "checkout-v2"
+    if not staged.is_dir():
+        return {}
+    salt_path = Path(".cache") / "checkout-alias-salts" / run_id
+    if not salt_path.exists():
+        salt_path.parent.mkdir(parents=True, exist_ok=True)
+        salt_path.write_text(secrets.token_hex(16))
+    salt = salt_path.read_text().strip()
+    tasks = sorted(path for path in staged.iterdir() if (path / "task.toml").exists())
+    aliases = {
+        path.name: "task-"
+        + hashlib.sha256(f"{salt}/{path.name}".encode()).hexdigest()[:12]
+        for path in tasks
+    }
+    for dataset in config.get("datasets", []):
+        if Path(dataset.get("path", "")) != staged:
+            continue
+        for key in ("task_names", "exclude_task_names"):
+            if patterns := dataset.get(key):
+                matched = [
+                    alias
+                    for name, alias in aliases.items()
+                    if any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns)
+                ]
+                # An empty list would mean no filter, widening into a full run.
+                if not matched:
+                    raise ValueError(f"No checkout task matches {key} {patterns}")
+                dataset[key] = matched
+    for path in tasks:
+        path.rename(staged / aliases[path.name])
+    (staging_root / "checkout-task-aliases.json").write_text(
+        json.dumps(aliases, indent=2) + "\n"
+    )
+    return aliases
+
+
 def stage_daytona_config(
     config: dict[str, Any],
     run_id: str,
@@ -1516,6 +1579,8 @@ def stage_daytona_config(
         options.get("pair_id"),
     )
     redirect_dataset_paths(config, staging_root)
+    if options.get("task_suite") == "checkout":
+        alias_checkout_tasks(config, staging_root, run_id)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
 
@@ -1549,8 +1614,28 @@ def stage_filtered_config(
             browser_profile=checkout_profile(options),
         )
         redirect_dataset_paths(config, staging_root)
+        if options.get("task_suite") == "checkout":
+            alias_checkout_tasks(config, staging_root, run_id)
     staged_config.write_text(dump_yaml(config))
     return str(staged_config)
+
+
+def direct_task_filters(run_id: str, options: dict[str, Any]) -> list[str]:
+    """The task filter for a job-less run, mapped to staged checkout aliases."""
+    pattern = options["task_filter"]
+    aliases_file = (
+        Path(".cache") / "harbor-model" / run_id / "checkout-task-aliases.json"
+    )
+    if options.get("task_suite") != "checkout" or not aliases_file.exists():
+        return [pattern]
+    pattern = pattern.removeprefix("checkout-v2/")
+    aliases = json.loads(aliases_file.read_text())
+    matched = [
+        alias for name, alias in aliases.items() if fnmatch.fnmatchcase(name, pattern)
+    ]
+    if not matched:
+        raise ValueError(f"No checkout task matches --task-filter {pattern!r}")
+    return matched
 
 
 def stage_direct_task_path(
@@ -1566,11 +1651,13 @@ def stage_direct_task_path(
         stage_task_datasets(
             staging_root, None, checkout=True, browser_profile=browser_profile
         )
-        return str(
-            staging_root
-            / "tasks/checkout-v2"
-            / Path(task_path).resolve().relative_to(Path("tasks/checkout-v2").resolve())
+        aliases = alias_checkout_tasks({}, staging_root, run_id)
+        relative = (
+            Path(task_path).resolve().relative_to(Path("tasks/checkout-v2").resolve())
         )
+        if relative.parts:
+            relative = Path(aliases.get(relative.parts[0], relative.parts[0]))
+        return str(staging_root / "tasks/checkout-v2" / relative)
     if docs_bundle is None and mpp_docs_bundle is None:
         return task_path
 
@@ -1751,7 +1838,11 @@ def run_benchmark_variant(variant_name: str, options: dict[str, Any]) -> None:
         if model:
             args.extend(["--model", model])
         if options.get("task_filter"):
-            args.extend(["--include-task-name", options["task_filter"]])
+            args.extend(
+                flag
+                for name in direct_task_filters(run_id, options)
+                for flag in ("--include-task-name", name)
+            )
         if options.get("n_tasks"):
             args.extend(["--n-tasks", options["n_tasks"]])
     if options.get("env_file"):

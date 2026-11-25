@@ -940,8 +940,116 @@ class ExportResultsTest(unittest.TestCase):
             exported = export_results(job_dir)
             self.assertAlmostEqual(exported["summary"][0]["pass_rate"], 5 / 6)
             self.assertAlmostEqual(exported["summary"][0]["pass_5"], 1 / 6)
+            # Six trials with one failure: every five-trial subset has a pass.
+            self.assertAlmostEqual(exported["summary"][0]["pass_at_5"], 1.0)
             columns = pd.read_csv(Path(exported["out_dir"]) / "summary.csv").columns
             self.assertIn("pass_5", columns)
+            self.assertIn("pass_at_5", columns)
+            family = [
+                row
+                for row in exported["checkout_summary"]
+                if row["checkout_family"] == "all"
+            ][0]
+            self.assertAlmostEqual(family["pass_5"], 1 / 6)
+            self.assertAlmostEqual(family["pass_at_5"], 1.0)
+            self.assertEqual(family["n_errors"], 0)
+
+    def test_checkout_pass_five_skips_infrastructure_errors(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for index in range(6):
+                fields = {
+                    "task_name": "checkout-v2/stripe-card-discover",
+                    "trial_name": f"trial-{index}",
+                    "verifier_result": {"rewards": {"reward": int(index != 0)}},
+                }
+                if index == 0:
+                    # Kept, not retried, and rerun by hand.
+                    fields["exception_info"] = {"exception_type": "ApiOverloadedError"}
+                write_json(job_dir / f"trial-{index}" / "result.json", trial(fields))
+            exported = export_results(job_dir)
+            self.assertEqual(exported["summary"][0]["pass_5"], 1.0)
+            family = [
+                row
+                for row in exported["checkout_summary"]
+                if row["checkout_family"] == "all"
+            ][0]
+            self.assertEqual(family["pass_5"], 1.0)
+            self.assertEqual(family["n_errors"], 1)
+
+    def test_family_pass_five_is_blank_when_a_task_has_no_clean_trials(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for index in range(10):
+                fields = {
+                    "task_name": "checkout-v2/stripe-card-discover"
+                    if index < 5
+                    else "checkout-v2/paypal-discover",
+                    "trial_name": f"trial-{index}",
+                    "verifier_result": {"rewards": {"reward": 1}},
+                }
+                if index >= 5:
+                    fields["exception_info"] = {"exception_type": "ApiOverloadedError"}
+                write_json(job_dir / f"trial-{index}" / "result.json", trial(fields))
+            exported = export_results(job_dir)
+            family = [
+                row
+                for row in exported["checkout_summary"]
+                if row["checkout_family"] == "all"
+            ][0]
+            self.assertEqual(family["pass_5"], "")
+            self.assertEqual(family["pass_at_5"], "")
+
+    def test_pass_at_k_needs_k_trials(self) -> None:
+        from scripts.export_results import pass_at_k
+
+        self.assertEqual(pass_at_k(4, 4), ("", ""))
+        self.assertEqual(pass_at_k(5, 5), (1.0, 1.0))
+        self.assertEqual(pass_at_k(5, 0), (0.0, 0.0))
+        all_pass, any_pass = pass_at_k(10, 5)
+        self.assertAlmostEqual(all_pass, 1 / 252)
+        self.assertAlmostEqual(any_pass, 1 - 1 / 252)
+
+    def test_checkout_agent_timeout_is_the_agents_result(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            job = Path(root) / "job"
+            trial_dir = job / "trial"
+            write_json(
+                trial_dir / "result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v2/paypal-discover",
+                        "verifier_result": {"rewards": {"reward": 0}},
+                        "exception_info": {"exception_type": "AgentTimeoutError"},
+                    }
+                ),
+            )
+            write_json(
+                trial_dir / "verifier/details.json", {"reason": "checkout_not_started"}
+            )
+            row = export_results(job)["trials"][0]
+            self.assertEqual(row["outcome"], "verifier_failed")
+            self.assertTrue(row["eligible"])
+            self.assertEqual(row["exception_type"], "AgentTimeoutError")
+
+    def test_checkout_unreadable_evidence_is_an_infrastructure_error(self) -> None:
+        for reason in ("invalid_payment_evidence", "missing_card_attempts"):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as root:
+                job = Path(root) / "job"
+                trial_dir = job / "trial"
+                write_json(
+                    trial_dir / "result.json",
+                    trial(
+                        {
+                            "task_name": "checkout-v2/paypal-discover",
+                            "verifier_result": {"rewards": {"reward": 0}},
+                        }
+                    ),
+                )
+                write_json(trial_dir / "verifier/details.json", {"reason": reason})
+                row = export_results(job)["trials"][0]
+                self.assertEqual(row["outcome"], "execution_error")
+                self.assertFalse(row["eligible"])
 
     def test_checkout_missing_evidence_is_unscored_and_ineligible(self) -> None:
         with tempfile.TemporaryDirectory() as root:

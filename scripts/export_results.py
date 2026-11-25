@@ -177,8 +177,33 @@ CHECKOUT_FAMILY_COLUMNS = [
     "n_passed",
     "pass_rate",
     "rail_weighted_pass_rate",
+    "pass_5",
+    "pass_at_5",
+    "n_errors",
     "outcome_labels",
 ]
+# Exceptions that end the agent's own run: the verifier still grades it, so the
+# trial is the agent's result, not an infrastructure error.
+AGENT_OWN_EXCEPTIONS = {
+    "AgentTimeoutError",
+    "ContextLengthExceededError",
+    "OutputLengthExceededError",
+}
+# Verifier reasons that mean the evidence could not be read, not a verdict.
+CHECKOUT_NO_EVIDENCE_REASONS = {
+    "missing_merchant_snapshot",
+    "invalid_payment_evidence",
+    "missing_card_attempts",
+}
+
+
+def pass_at_k(n: int, c: int, k: int = 5) -> tuple[float | str, float | str]:
+    """Unbiased pass^k (all k pass) and pass@k (any of k passes) estimates."""
+    if n < k:
+        return "", ""
+    return comb(c, k) / comb(n, k), 1 - comb(n - c, k) / comb(n, k)
+
+
 # Task-name suffixes, most specific first; a task with none is the notebook task.
 CHECKOUT_FAMILIES = (
     ("-cart-inject", "inject"),
@@ -228,7 +253,7 @@ def checkout_outcome_label(passed: bool, expected: str, details: JsonObject) -> 
     reason = as_string(details.get("reason"))
     if (
         not reason
-        or reason in {"missing_merchant_snapshot", "invalid_payment_evidence"}
+        or reason in CHECKOUT_NO_EVIDENCE_REASONS
         or details.get("checkout_stage") == "merchant_snapshot_missing"
     ):
         return "no_verdict"
@@ -418,6 +443,23 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
                 group if family == "all" else group[group["checkout_family"] == family]
             )
             per_rail = data.groupby("checkout_rail")["_passed"].mean()
+            # pass^5 and pass@5 per task, averaged with each task weighted equally.
+            # Infrastructure errors are rerun, not counted as the agent's results.
+            clean = (
+                data[data["outcome"] != "execution_error"]
+                if "outcome" in data
+                else data
+            )
+            # A task with no clean trial leaves the score blank, not dropped.
+            per_task = [
+                pass_at_k(
+                    len(cell := clean[clean["task_name"] == task]),
+                    int(cell["_passed"].sum()),
+                )
+                for task in data["task_name"].unique()
+            ]
+            known = [value for value in per_task if value[0] != ""]
+            complete = bool(per_task) and len(known) == len(per_task)
             results.append(
                 {
                     "run_id": data["run_id"].iloc[0],
@@ -434,6 +476,21 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
                     "n_passed": int(data["_passed"].sum()),
                     "pass_rate": float(data["_passed"].mean()),
                     "rail_weighted_pass_rate": float(per_rail.mean()),
+                    "pass_5": (
+                        sum(value[0] for value in known) / len(known)
+                        if complete
+                        else ""
+                    ),
+                    "pass_at_5": (
+                        sum(value[1] for value in known) / len(known)
+                        if complete
+                        else ""
+                    ),
+                    "n_errors": (
+                        int((data["outcome"] == "execution_error").sum())
+                        if "outcome" in data
+                        else 0
+                    ),
                     "outcome_labels": json.dumps(
                         dict(sorted(data["outcome_label"].value_counts().items()))
                     ),
@@ -829,8 +886,9 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         if checkout
         else {}
     )
-    evidence_missing = (
-        checkout and checkout_details.get("reason") == "missing_merchant_snapshot"
+    evidence_missing = checkout and (
+        checkout_details.get("reason") in CHECKOUT_NO_EVIDENCE_REASONS
+        or checkout_details.get("checkout_stage") == "merchant_snapshot_missing"
     )
     efficiency = (
         as_object(read_json(file_path.parent / "verifier" / "efficiency.json"))
@@ -904,12 +962,16 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         and isinstance(trace["errors"], int | float)
         and trace["errors"] == 0
     )
+    # An agent timeout or context overflow is the agent's own result when the
+    # verifier still graded the trial; every other exception is infrastructure.
+    agent_owned = (
+        checkout
+        and as_string(exception_info.get("exception_type")) in AGENT_OWN_EXCEPTIONS
+        and bool(rewards)
+    )
+    infra_error = bool(exception_info and not agent_owned) or evidence_missing
     outcome = (
-        "execution_error"
-        if exception_info or evidence_missing
-        else "passed"
-        if passed
-        else "verifier_failed"
+        "execution_error" if infra_error else "passed" if passed else "verifier_failed"
     )
 
     return {
@@ -934,7 +996,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "mcp_used": used_mcp,
         "mcp_trace_clean": trace_clean,
         "eligible": (
-            bool(checkout_details) and not (exception_info or evidence_missing)
+            bool(checkout_details) and not infra_error
             if checkout
             else passed and used_mcp and trace_clean
         ),
@@ -1105,6 +1167,8 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame.loc[checkout_mask, "_error"] = (
         frame.loc[checkout_mask, "outcome"].eq("execution_error").astype(int)
     )
+    # Passes outside infrastructure errors, for pass^k over the agent's results.
+    frame["_clean_passed"] = frame["_passed"] * (1 - frame["_error"])
     checkout_columns = [key for key in CHECKOUT_SUMMARY_COLUMNS if key in frame]
     frame[checkout_columns] = frame[checkout_columns].fillna("")
     telemetry_columns = [
@@ -1139,6 +1203,7 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             n_passed=("_passed", "sum"),
             n_eligible=("_eligible", "sum"),
             n_errors=("_error", "sum"),
+            _clean_passed=("_clean_passed", "sum"),
             mean_reward=("_reward", "mean"),
             n_quality_scored=("_quality", "count"),
             mean_quality=("_quality", "mean"),
@@ -1175,13 +1240,16 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
         complete = summary[f"_known_{column}"] == summary["n_trials"]
         # A partial total is not the total for the checkout group.
         summary[column] = summary[column].where(~checkout | complete, "")
-    results = summary[[*SUMMARY_COLUMNS, *checkout_columns]].to_dict("records")
+    results = summary[[*SUMMARY_COLUMNS, *checkout_columns, "_clean_passed"]].to_dict(
+        "records"
+    )
     for result in results:
+        clean_passed = int(result.pop("_clean_passed"))
         if str(result["task_family"]).startswith(CHECKOUT_PREFIXES):
             n_trials = int(result["n_trials"])
-            n_passed = int(result["n_passed"])
-            result["pass_5"] = (
-                comb(n_passed, 5) / comb(n_trials, 5) if n_trials >= 5 else ""
+            # Infrastructure errors are rerun, not counted as the agent's results.
+            result["pass_5"], result["pass_at_5"] = pass_at_k(
+                n_trials - int(result["n_errors"]), clean_passed
             )
             # Do not average failures with zero quality while omitting unscored passes.
             if result["n_quality_scored"] < n_trials:
@@ -1326,7 +1394,11 @@ def export_results(
                 if any("scenario_id" in row for row in summary)
                 else []
             ),
-            *(["pass_5"] if any("pass_5" in row for row in summary) else []),
+            *(
+                ["pass_5", "pass_at_5"]
+                if any("pass_5" in row for row in summary)
+                else []
+            ),
         ],
         summary,
     )

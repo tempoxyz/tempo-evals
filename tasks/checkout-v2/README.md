@@ -593,9 +593,15 @@ stays blank rather than becoming zero or a perfect score.
   checkout passed.
 - Exports prefer the trial's staged task metadata and group by `profile`,
   `prompt_condition` and `mpp_client_profile` (`prepared` for every current task).
-- The merchant collection hook retries a failed snapshot read once; missing
-  evidence exports as an ineligible `execution_error` with quality unavailable,
-  keeping Harbor's original rewards.
+- The merchant collection hook retries a failed snapshot read once; missing or
+  unreadable evidence (`missing_merchant_snapshot`, `invalid_payment_evidence`,
+  `missing_card_attempts`) exports as an ineligible `execution_error` with
+  quality unavailable, keeping Harbor's original rewards. An agent timeout or
+  context overflow that the verifier still graded is the agent's result and
+  keeps its verdict; other exceptions are `execution_error`.
+- `pass_at_5` beside `pass_5` is the fraction of five-trial subsets with at least
+  one pass. Both leave out infrastructure errors, which are rerun instead. `checkout_summary.csv` adds both per family and for `all`, averaged
+  with each task weighted equally, and `n_errors`.
 
 v2 is unpublished, and runs from before the published dataset digest are not
 comparable with it: task amounts, pass rules and the task set changed while it
@@ -648,11 +654,22 @@ npm run bench:production -- --task-suite checkout --profile local \
 
 The matrix is 73 tasks × 6 models = 438 trials per attempt and profile; `pass_5`
 needs `--n-attempts 5` (2,190 trials on one profile, 6,570 with `--profile all`).
-Checkout runs retry a trial up to twice when it fails for anything but the
-agent's own result: sandbox start, image pulls, model API and network errors,
-whatever exception type they surface as. Agent and verifier timeouts, missing
-rewards and credential errors are kept (`CHECKOUT_NO_RETRY_EXCEPTIONS` in
-`scripts/run_benchmark.py`). A trial that ran and failed is the agent's result.
+Checkout runs retry a trial up to twice when it fails before the agent starts:
+sandbox start, image pulls and setup, whatever exception type they surface as.
+Harbor deletes a retried trial's directory, so failures raised after the agent
+has started (model API and network errors, agent CLI exits) are kept, as are
+agent and verifier timeouts, missing rewards and credential errors
+(`CHECKOUT_NO_RETRY_EXCEPTIONS` in `scripts/run_benchmark.py`). Exports count
+those as `n_errors`; rerun each such trial by hand until every task and model
+cell has its attempts, and keep the originals. A trial that ran and failed is
+the agent's result.
+
+Staging renames each checkout task directory to an opaque alias, hashed with a
+random per-job salt the sandbox never sees (`checkout-task-aliases.json` in the
+staging directory maps them back), because
+Harbor names trials and containers after the directory and Docker's DNS answers
+a reverse lookup of the merchant with its container name. Results keep the
+task.toml name.
 
 Narrow a run with `--task-filter`: `'*-cart*'`, `'*-cart-inject'`,
 `'*-pay-inject'`, `'*-refuse'`, `'*-price-change'`, `'*-mismatch'`,
