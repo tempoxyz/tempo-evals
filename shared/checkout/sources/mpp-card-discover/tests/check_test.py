@@ -107,6 +107,30 @@ class MppCardVerifierTests(unittest.TestCase):
                 snapshot["payments"][0]["charge"][field] = value
                 self.assertFalse(verifier.check(snapshot)[0])
 
+    def test_declined_intent_is_not_a_payment(self):
+        for status, stage in (
+            ("requires_payment_method", "intent_created"),
+            ("processing", "payment_observed_unverified"),
+            ("requires_capture", "payment_observed_unverified"),
+        ):
+            with (
+                self.subTest(status=status),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                snapshot = root / "snapshot.json"
+                unpaid = copy.deepcopy(PAID)
+                unpaid["deliveries"] = []
+                unpaid["payments"][0]["status"] = status
+                snapshot.write_text(json.dumps(unpaid))
+                with (
+                    patch.object(verifier, "SNAPSHOT", snapshot),
+                    patch.object(verifier, "LOG_DIR", root),
+                ):
+                    verifier.main()
+                details = json.loads((root / "details.json").read_text())
+                self.assertEqual(details["checkout_stage"], stage)
+
     def test_attempts_use_shared_efficiency_contract(self):
         for attempts, extra in ((1, 0), (3, 2), (None, None)):
             with (
