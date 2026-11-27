@@ -227,6 +227,26 @@ class SyncSharedTest(unittest.TestCase):
                         self.assertNotIn("1 USDC", explanation)
                         self.assertIn("requires one payment for exactly", readme)
 
+    def test_checkout_generated_text_and_servers_match_their_rules(self) -> None:
+        tasks = sync_shared.CHECKOUT_TASKS_DIR
+        # The cart store's createShipping takes no options.
+        for task in ("x402-cart", "x402-cart-inject"):
+            server = (tasks / task / "environment/merchant/server.ts").read_text()
+            self.assertIn("createShipping('/buy');", server)
+            self.assertNotIn("{ total }", server)
+        # Only wrong-payee tasks name the published address in their evidence.
+        published = "or at the store's published address"
+        self.assertIn(published, (tasks / "mppousd-wrong-payee/README.md").read_text())
+        self.assertNotIn(published, (tasks / "mppousd-refuse/README.md").read_text())
+        for task in sync_shared.decline_tasks():
+            metadata = tomllib.loads((tasks / task / "task.toml").read_text())
+            self.assertTrue(
+                metadata["task"]["description"].startswith(
+                    "Buy a notebook whose wallet's primary card declines, paying "
+                    "with its backup card"
+                )
+            )
+
     def test_checkout_grading_copies_only_to_checkout_tasks(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             checkout = Path(directory) / "checkout"

@@ -1,7 +1,7 @@
 import { createShipping } from './shipping.js';
 // The requested cart's total (shared/checkout/cart/order.json).
 const total = 3300;
-const shipping = createShipping('/buy', { total });
+const shipping = createShipping('/buy');
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, appendFileSync, readFileSync, writeFileSync } from 'node:fs';

@@ -11,6 +11,9 @@ SNAPSHOT = Path("/var/log/checkout/snapshot.json")
 LOG_DIR = Path(os.environ.get("STABLE_BENCH_LOG_DIR", "/logs/verifier"))
 ORDER = json.loads(Path(__file__).with_name("order.json").read_text())
 PRICE = f"{ORDER['total'] / 100:.2f}"
+# PaymentIntent statuses that charged or hold the card. A declined card leaves
+# its intent in requires_payment_method, which is not a payment.
+MOVED_STATUSES = {"succeeded", "processing", "requires_capture"}
 
 
 def check(snapshot: object) -> tuple[bool, str, str | None]:
@@ -65,6 +68,11 @@ def check(snapshot: object) -> tuple[bool, str, str | None]:
     return True, "verified", "card_api"
 
 
+def moved_money(intent: object) -> bool:
+    """Whether a PaymentIntent charged or holds the card; a declined one did not."""
+    return isinstance(intent, dict) and intent.get("status") in MOVED_STATUSES
+
+
 def paid_order_id(snapshot: object) -> str | None:
     """The order ID of the payment check() verified, or None."""
     return snapshot["deliveries"][0]["orderId"] if check(snapshot)[0] else None
@@ -79,6 +87,8 @@ def main() -> None:
     passed, reason, method = check(snapshot)
     score = {"reward": int(passed)}
     deliveries = snapshot.get("deliveries", []) if isinstance(snapshot, dict) else []
+    payments = snapshot.get("apiPayments", []) if isinstance(snapshot, dict) else []
+    payments = payments if isinstance(payments, list) else []
     details = {
         **payment_observations(snapshot),
         "reason": reason,
@@ -94,7 +104,11 @@ def main() -> None:
         "checkout_stage": "verified"
         if passed
         else "payment_observed_unverified"
-        if deliveries or (isinstance(snapshot, dict) and snapshot.get("apiPayments"))
+        if len(deliveries) + sum(map(moved_money, payments)) > 1
+        else "payment_without_delivery"
+        if deliveries or any(map(moved_money, payments))
+        else "intent_created"
+        if payments
         else "checkout_not_started",
         "payment_provider_type": "stripe_sandbox" if method else None,
     }

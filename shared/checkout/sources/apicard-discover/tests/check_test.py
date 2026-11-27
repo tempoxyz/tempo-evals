@@ -138,9 +138,34 @@ class CardApiVerifierTests(unittest.TestCase):
                 json.loads((root / "reward.json").read_text()), {"reward": 0}
             )
             details = json.loads((root / "details.json").read_text())
-            self.assertEqual(details["checkout_stage"], "payment_observed_unverified")
+            # One charge without a delivery is not a second payment.
+            self.assertEqual(details["checkout_stage"], "payment_without_delivery")
             self.assertIsNone(details["payment_method"])
             self.assertIsNone(details["paid_order_id"])
+
+    def test_declined_intent_is_not_a_payment(self):
+        for status, stage in (
+            ("requires_payment_method", "intent_created"),
+            ("processing", "payment_without_delivery"),
+            ("requires_capture", "payment_without_delivery"),
+        ):
+            with (
+                self.subTest(status=status),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                snapshot = root / "snapshot.json"
+                unpaid = copy.deepcopy(PAID)
+                unpaid["deliveries"] = []
+                unpaid["apiPayments"][0]["status"] = status
+                snapshot.write_text(json.dumps(unpaid))
+                with (
+                    patch.object(verifier, "SNAPSHOT", snapshot),
+                    patch.object(verifier, "LOG_DIR", root),
+                ):
+                    verifier.main()
+                details = json.loads((root / "details.json").read_text())
+                self.assertEqual(details["checkout_stage"], stage)
 
     def test_attempts_use_shared_efficiency_contract(self):
         for attempts, extra in ((1, 0), (3, 2), (None, None)):

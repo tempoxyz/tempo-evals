@@ -71,7 +71,8 @@ class ExportResultsTest(unittest.TestCase):
         for name, family in (
             ("checkout-v2/stripe-card", "notebook"),
             ("checkout-v2/link-cart", "cart"),
-            ("checkout-v2/x402-cart-inject", "inject"),
+            ("checkout-v2/x402-cart-inject", "cart-inject"),
+            ("checkout-v2/x402-pay-inject", "pay-inject"),
             ("checkout-v2/x402-price-change", "price-change"),
             ("checkout-v2/paypal-refuse", "refuse"),
         ):
@@ -89,6 +90,16 @@ class ExportResultsTest(unittest.TestCase):
             (False, "refuse", {"reason": "checkout_not_started"}, "did_not_start"),
             (False, "pay", {"reason": "order_mismatch"}, "wrong_order"),
             (False, "pay", {"reason": "wrong_payment_method"}, "wrong_method"),
+            (False, "pay", {"reason": "paid_more_than_once"}, "paid_more_than_once"),
+            (
+                False,
+                "pay",
+                {
+                    "reason": "expected_exactly_one_paid_order",
+                    "checkout_stage": "intent_created",
+                },
+                "did_not_pay",
+            ),
             (
                 False,
                 "pay",
@@ -1521,6 +1532,296 @@ class ExportResultsTest(unittest.TestCase):
         self.assertEqual(summary[0]["n_quality_scored"], 2)
         self.assertAlmostEqual(summary[0]["quality_coverage"], 2 / 3)
         self.assertEqual(summary[0]["quality_at_k"], 0.8)
+
+    def test_checkout_rates_and_quality_leave_out_infrastructure_errors(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for name, rewards, exception in (
+                ("pass", {"reward": 1, "quality": 0.8}, None),
+                ("fail", {"reward": 0, "quality": 0.4}, None),
+                ("error", {}, {"exception_type": "SandboxBuildFailedError"}),
+            ):
+                fields = {
+                    "task_name": "checkout-v2/apicard-cart",
+                    "trial_name": name,
+                    "verifier_result": {"rewards": rewards},
+                    "exception_info": exception,
+                }
+                write_json(job_dir / name / "result.json", trial(fields))
+            exported = export_results(job_dir)
+            (summary,) = exported["summary"]
+            self.assertEqual(
+                (summary["n_trials"], summary["n_clean"], summary["n_errors"]),
+                (3, 2, 1),
+            )
+            self.assertEqual(summary["n_passed"], 1)
+            self.assertEqual(summary["pass_rate"], 0.5)
+            self.assertEqual(summary["quality_coverage"], 1)
+            self.assertAlmostEqual(summary["mean_quality"], 0.6)
+            (quality,) = exported["quality_summary"]
+            self.assertEqual((quality["n_trials"], quality["n_clean"]), (3, 2))
+            self.assertAlmostEqual(quality["mean_quality"], 0.6)
+            self.assertEqual(quality["quality_coverage"], 1)
+            for family in exported["checkout_summary"]:
+                with self.subTest(family=family["checkout_family"]):
+                    self.assertEqual(family["n_trials"], 3)
+                    self.assertEqual(family["n_clean"], 2)
+                    self.assertEqual(family["n_errors"], 1)
+                    self.assertEqual(family["pass_rate"], 0.5)
+                    self.assertEqual(family["rail_weighted_pass_rate"], 0.5)
+
+    def test_checkout_rates_are_blank_without_clean_trials(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            write_json(
+                job_dir / "error/result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v2/apicard-cart",
+                        "trial_name": "error",
+                        "verifier_result": None,
+                        "exception_info": {"exception_type": "SandboxBuildFailedError"},
+                    }
+                ),
+            )
+            exported = export_results(job_dir)
+            self.assertEqual(exported["summary"][0]["pass_rate"], "")
+            self.assertEqual(exported["quality_summary"][0]["mean_quality"], "")
+            family = exported["checkout_summary"][0]
+            self.assertEqual((family["n_clean"], family["pass_rate"]), (0, ""))
+            self.assertEqual(family["rail_weighted_pass_rate"], "")
+            self.assertEqual(family["cost_usd_sum"], "")
+
+    def test_checkout_summary_rolls_up_telemetry_over_clean_trials(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for name, agent_result, exception in (
+                ("a", {"n_input_tokens": 10, "cost_usd": 0.25}, None),
+                ("b", {"n_input_tokens": 30}, None),
+                ("c", {"n_input_tokens": 99, "cost_usd": 9.0}, {"exception_type": "X"}),
+            ):
+                write_json(
+                    job_dir / name / "result.json",
+                    trial(
+                        {
+                            "task_name": "checkout-v2/apicard-cart",
+                            "trial_name": name,
+                            "agent_result": agent_result,
+                            "exception_info": exception,
+                        }
+                    ),
+                )
+                write_json(
+                    job_dir / name / "verifier/efficiency.json", {"model_turns": 4}
+                )
+            exported = export_results(job_dir)
+            rows = {row["checkout_family"]: row for row in exported["checkout_summary"]}
+            self.assertEqual(set(rows), {"cart", "all"})
+            for row in rows.values():
+                self.assertEqual((row["n_with_cost"], row["n_with_tokens"]), (1, 2))
+                self.assertEqual(row["cost_usd_sum"], 0.25)
+                self.assertEqual(row["cost_usd_mean"], 0.25)
+                self.assertEqual(row["input_tokens_sum"], 40)
+                self.assertEqual(row["input_tokens_mean"], 20)
+                self.assertEqual(row["cache_tokens_sum"], "")
+                self.assertEqual(row["efficiency_model_turns_sum"], 8)
+                self.assertEqual(row["duration_sec_sum"], 120)
+                self.assertEqual(row["agent_execution_duration_sec_mean"], 30)
+            columns = pd.read_csv(Path(exported["out_dir"]) / "checkout_summary.csv")
+            self.assertIn("cost_usd_sum", columns)
+
+    def test_jobs_export_together_and_reruns_replace_errors(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            first, rerun = Path(root) / "calib-a", Path(root) / "calib-r"
+            for job, name, task, started, exception in (
+                (first, "z-late", "apicard-cart", "10:05", None),
+                (first, "a-error", "apicard", "10:00", {"exception_type": "X"}),
+                (first, "y-early", "apicard-cart", "10:01", None),
+                (first, "kept-error", "paypal", "10:00", {"exception_type": "X"}),
+                (rerun, "b-rerun", "apicard", "11:00", None),
+            ):
+                write_json(
+                    job / name / "result.json",
+                    trial(
+                        {
+                            "task_name": f"checkout-v2/{task}",
+                            "trial_name": name,
+                            "started_at": f"2026-07-07T{started}:00.000Z",
+                            "exception_info": exception,
+                        }
+                    ),
+                )
+            exported = export_results([first, rerun])
+            names = {row["trial_name"]: row for row in exported["trials"]}
+            self.assertEqual(len(names), 5)
+            self.assertEqual(names["b-rerun"]["source_job"], "calib-r")
+            self.assertEqual(names["a-error"]["source_job"], "calib-a")
+            self.assertEqual(names["b-rerun"]["job_name"], "calib-a+calib-r")
+            self.assertEqual(exported["run_id"], "calib-a+calib-r")
+            # Attempts follow start time, not the opaque trial name.
+            self.assertEqual(names["y-early"]["attempt_index"], 1)
+            self.assertEqual(names["z-late"]["attempt_index"], 2)
+            replaced = export_results([first, rerun], replace_errors=True)
+            self.assertEqual(
+                sorted(row["trial_name"] for row in replaced["trials"]),
+                ["b-rerun", "kept-error", "y-early", "z-late"],
+            )
+            self.assertIn(
+                "source_job", pd.read_csv(Path(replaced["out_dir"]) / "trials.csv")
+            )
+            self.assertEqual(len(replaced["quality_summary"]), 1)
+
+    def test_replace_errors_matches_reruns_one_for_one(self) -> None:
+        from scripts.export_results import replace_errored_trials
+
+        def row(name, job, outcome="passed"):
+            return {
+                "trial_name": name,
+                "task_name": "checkout-v2/apicard",
+                "agent": "a",
+                "model": "m",
+                "profile": "local",
+                "source_job": job,
+                "outcome": outcome,
+            }
+
+        rows = [
+            row("e1", "a", "execution_error"),
+            row("e2", "a", "execution_error"),
+            row("c1", "a"),
+            row("c2", "a"),
+            row("r1", "r"),
+        ]
+        kept = [r["trial_name"] for r in replace_errored_trials(rows, ["a", "r"])]
+        # One rerun replaces one error; the job's own clean trials replace none.
+        self.assertEqual(sorted(kept), ["c1", "c2", "e2", "r1"])
+        alone = [r["trial_name"] for r in replace_errored_trials(rows[:4], ["a"])]
+        self.assertEqual(sorted(alone), ["c1", "c2", "e1", "e2"])
+
+    def test_dataset_digest_is_blank_for_an_unknown_commit(self) -> None:
+        from scripts.export_results import dataset_digests
+
+        dataset_digests.cache_clear()
+        self.assertEqual(dataset_digests("checkout-v2", "0" * 40), {})
+        self.assertTrue(dataset_digests("checkout-v2"))
+        dataset_digests.cache_clear()
+
+    def test_export_cli_takes_repeated_jobs(self) -> None:
+        from scripts import export_results as module
+
+        with patch(
+            "sys.argv",
+            ["export", "--job", "a", "--job", "b", "--replace-errors"],
+        ):
+            args = module.parse_args()
+        self.assertEqual(args.job, ["a", "b"])
+        self.assertTrue(args.replace_errors)
+
+    def test_missing_staged_task_falls_back_to_the_named_task(self) -> None:
+        import contextlib
+        import io
+
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            for name, task in (
+                ("a", "apicard-cart-inject"),
+                ("b", "apicard-cart-inject"),
+                ("c", "nonexistent-cart"),
+            ):
+                write_json(
+                    job_dir / name / "result.json",
+                    trial(
+                        {
+                            "task_name": f"checkout-v2/{task}",
+                            "trial_name": name,
+                            "config": {
+                                "task": {"path": ".cache/gone/tasks/task-0219e3542e6f"}
+                            },
+                        }
+                    ),
+                )
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                exported = export_results(job_dir)
+            self.assertEqual(stderr.getvalue().count("warning:"), 1)
+            rows = {row["trial_name"]: row for row in exported["trials"]}
+            self.assertEqual(
+                {
+                    key: rows["a"][key]
+                    for key in (
+                        "checkout_family",
+                        "checkout_rail",
+                        "expected_outcome",
+                        "prompt_condition",
+                        "required_method",
+                        "task_metadata_source",
+                        "outcome_label",
+                    )
+                },
+                {
+                    "checkout_family": "cart-inject",
+                    "checkout_rail": "apicard",
+                    "expected_outcome": "pay",
+                    "prompt_condition": "directed",
+                    "required_method": "card_api",
+                    "task_metadata_source": "working_copy_fallback",
+                    "outcome_label": "passed",
+                },
+            )
+            # A task this checkout does not have stays unknown.
+            self.assertEqual(rows["c"]["checkout_rail"], "unknown")
+            self.assertEqual(rows["c"]["task_metadata_source"], "")
+
+    def test_trials_record_provenance_without_metadata_json(self) -> None:
+        from scripts import export_results as module
+
+        sha = "0123456789abcdef0123456789abcdef01234567"
+        with tempfile.TemporaryDirectory(prefix="checkout-export-") as root:
+            job_dir = Path(root) / "job"
+            write_json(job_dir / "lock.json", {"harbor": {"version": "0.18.0"}})
+            write_json(
+                job_dir / "t/result.json",
+                trial(
+                    {
+                        "task_name": "checkout-v2/apicard",
+                        "trial_name": "t",
+                        "agent_info": {
+                            "name": "claude-code",
+                            "version": "2.1.309",
+                            "model_info": {"name": "m"},
+                        },
+                        "config": {"verifier": {"env": {"TEMPO_EVALS_SHA": sha}}},
+                    }
+                ),
+            )
+            manifest = (
+                '[[tasks]]\nname = "checkout-v2/apicard"\ndigest = "sha256:at-sha"\n'
+            )
+            module.dataset_digests.cache_clear()
+            with patch.object(
+                module.subprocess,
+                "run",
+                return_value=module.subprocess.CompletedProcess([], 0, manifest, ""),
+            ) as run:
+                row = export_results(job_dir)["trials"][0]
+            module.dataset_digests.cache_clear()
+            self.assertIn(f"{sha}:tasks/checkout-v2/dataset.toml", run.call_args[0][0])
+            self.assertEqual(row["git_sha"], sha)
+            self.assertEqual(row["dataset_digest"], "sha256:at-sha")
+            self.assertEqual(row["harbor_version"], "0.18.0")
+            self.assertEqual(row["agent_version"], "2.1.309")
+            columns = pd.read_csv(job_dir / "exports/trials.csv").columns
+            for column in ("git_sha", "dataset_digest", "harbor_version"):
+                self.assertIn(column, columns)
+            # A SHA this clone cannot resolve gives no digest, not the working copy's.
+            with patch.object(
+                module.subprocess,
+                "run",
+                side_effect=module.subprocess.CalledProcessError(128, "git"),
+            ):
+                row = export_results(job_dir)["trials"][0]
+            module.dataset_digests.cache_clear()
+            self.assertEqual(row["dataset_digest"], "")
 
 
 if __name__ == "__main__":

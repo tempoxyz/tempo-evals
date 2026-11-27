@@ -255,6 +255,41 @@ class CheckoutDeclineTest(unittest.TestCase):
                     self.assertEqual(details["extra_checkout_attempts"], 0)
                     self.assertEqual(details["checkout_stage"], "verified")
 
+    def test_a_declined_primary_card_alone_is_not_a_payment(self):
+        from scripts.export_results import checkout_outcome_label
+
+        collections = {
+            "apicard-discover": "apiPayments",
+            "mpp-card-discover": "payments",
+        }
+        for task, slug in sync_shared.decline_tasks().items():
+            if slug not in collections:
+                continue
+            _, _, check = modules(TASKS / task / "tests", f"declined_{task}")
+            snapshot = paid(task, slug)
+            snapshot["deliveries"] = []
+            snapshot["cardAttempts"] = snapshot["cardAttempts"][:1]
+            intent = snapshot[collections[slug]][0]
+            intent.update(status="requires_payment_method", amountReceived=0)
+            intent["charge"].update(status="failed", paid=False, captured=False)
+            with (
+                self.subTest(task=task),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                path = root / "snapshot.json"
+                path.write_text(json.dumps(snapshot))
+                with (
+                    patch.object(check, "SNAPSHOT", path),
+                    patch.object(check, "LOG_DIR", root),
+                ):
+                    check.main()
+                details = json.loads((root / "details.json").read_text())
+                self.assertEqual(details["checkout_stage"], "intent_created")
+                self.assertEqual(
+                    checkout_outcome_label(False, "pay", details), "did_not_pay"
+                )
+
     def test_generated_tasks_differ_from_their_directed_peer_only_as_intended(self):
         decline = sync_shared.TASKS_CONFIG["checkout"]["decline"]
         directed = sync_shared.TASKS_CONFIG["checkout"]["directed"]
