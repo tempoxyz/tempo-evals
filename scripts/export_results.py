@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
+import sys
 import tomllib
 from collections import Counter
+from collections.abc import Sequence
 from datetime import datetime
 from functools import cache
 from math import comb, isfinite
@@ -32,6 +35,7 @@ TRIAL_COLUMNS = [
     "run_id",
     "pair_id",
     "job_name",
+    "source_job",
     "trial_name",
     "task_name",
     "task_family",
@@ -70,6 +74,9 @@ TRIAL_COLUMNS = [
     "cost_usd",
     "task_checksum",
     "git_sha",
+    "dataset_digest",
+    "harbor_version",
+    "agent_version",
     "docs_source",
     "mcp_target_id",
     "result_path",
@@ -109,6 +116,7 @@ CHECKOUT_TRIAL_COLUMNS = [
     "order_mismatched_fields",
     "trajectory_path",
     "quality_unavailable",
+    "task_metadata_source",
 ]
 CHECKOUT_SUMMARY_COLUMNS = [
     "scenario_id",
@@ -126,6 +134,7 @@ SUMMARY_COLUMNS = [
     "task_family",
     "profile",
     "n_trials",
+    "n_clean",
     "n_passed",
     "pass_rate",
     "n_eligible",
@@ -155,6 +164,7 @@ QUALITY_SUMMARY_COLUMNS = [
     "profile",
     "n_tasks",
     "n_trials",
+    "n_clean",
     "n_quality_scored",
     "quality_coverage",
     "mean_quality",
@@ -174,6 +184,7 @@ CHECKOUT_FAMILY_COLUMNS = [
     "n_rails",
     "n_tasks",
     "n_trials",
+    "n_clean",
     "n_passed",
     "pass_rate",
     "rail_weighted_pass_rate",
@@ -181,6 +192,23 @@ CHECKOUT_FAMILY_COLUMNS = [
     "pass_at_5",
     "n_errors",
     "outcome_labels",
+]
+# Per-model telemetry in checkout_summary.csv: a sum and a mean over the clean
+# trials that report each metric, with n_with_cost and n_with_tokens counting
+# them, so a few trials without a value do not blank the row.
+CHECKOUT_TELEMETRY = (
+    "cost_usd",
+    "input_tokens",
+    "cache_tokens",
+    "output_tokens",
+    "efficiency_model_turns",
+    "agent_execution_duration_sec",
+    "duration_sec",
+)
+CHECKOUT_FAMILY_COLUMNS += [
+    "n_with_cost",
+    "n_with_tokens",
+    *(f"{metric}_{stat}" for metric in CHECKOUT_TELEMETRY for stat in ("sum", "mean")),
 ]
 # Exceptions that end the agent's own run: the verifier still grades it, so the
 # trial is the agent's result, not an infrastructure error.
@@ -206,9 +234,10 @@ def pass_at_k(n: int, c: int, k: int = 5) -> tuple[float | str, float | str]:
 
 # Task-name suffixes, most specific first; a task with none is the notebook task.
 CHECKOUT_FAMILIES = (
-    ("-cart-inject", "inject"),
+    ("-cart-inject", "cart-inject"),
     ("-pay-inject", "pay-inject"),
     ("-price-change", "price-change"),
+    # Retired task family, kept so saved trials still export as before.
     ("-token-limit", "token-limit"),
     ("-wrong-payee", "wrong-payee"),
     ("-underfunded", "underfunded"),
@@ -225,6 +254,7 @@ CHECKOUT_PAID_WRONG = {
     "wrong_payment_method": "wrong_method",
     "not_paid_with_backup_card": "wrong_card",
     "attempted_second_order": "paid_more_than_once",
+    "paid_more_than_once": "paid_more_than_once",
     # Retired verifier reason, kept so saved trials still export as before.
     "primary_card_not_declined": "wrong_card",
 }
@@ -307,14 +337,85 @@ def default_out_dir(job_dir: Path) -> Path:
     )
 
 
+def source_job_name(job_dir: Path) -> str:
+    return job_dir.parent.name if job_dir.name == "harbor-job" else job_dir.name
+
+
+def harbor_version(job_dir: Path) -> str:
+    """Harbor's version from the job's lock file, else its config."""
+    for name in ("lock.json", "config.json"):
+        data = as_object(read_json(job_dir / name))
+        version = as_string(as_object(data.get("harbor")).get("version")) or as_string(
+            data.get("harbor_version")
+        )
+        if version:
+            return version
+    return ""
+
+
 def build_context(job_dir: Path, run_id: str, metadata: JsonObject) -> JsonObject:
     return {
         "run_id": run_id,
         "job_name": job_dir.name,
+        "source_job": source_job_name(job_dir),
         "git_sha": as_string(metadata.get("git_sha")),
+        "harbor_version": harbor_version(job_dir),
         "docs_source": as_string(metadata.get("docs_source")),
         "mcp_target_id": metadata.get("mcp_target_id", ""),
     }
+
+
+def is_git_sha(value: str) -> bool:
+    return 7 <= len(value) <= 40 and all(char in "0123456789abcdef" for char in value)
+
+
+def trial_git_sha(result: JsonObject) -> str:
+    """The checkout SHA the runner gave the trial's verifier or agent."""
+    config = as_object(result.get("config"))
+    for section in ("verifier", "agent"):
+        env = as_object(as_object(config.get(section)).get("env"))
+        sha = as_string(env.get("TEMPO_EVALS_SHA")).strip().lower()
+        if is_git_sha(sha):
+            return sha
+    return ""
+
+
+@cache
+def dataset_digests(suite: str, git_sha: str = "") -> dict[str, str]:
+    """Task digests from a suite's dataset.toml at git_sha, else the working copy."""
+    root = Path(__file__).resolve().parents[1]
+    relative = f"tasks/{suite}/dataset.toml"
+    text = ""
+    if git_sha:
+        try:
+            text = subprocess.run(
+                ["git", "-C", str(root), "show", f"{git_sha}:{relative}"],
+                capture_output=True,
+                check=True,
+                text=True,
+            ).stdout
+        except (OSError, subprocess.CalledProcessError):
+            text = ""
+    if not text:
+        try:
+            text = (root / relative).read_text()
+        except OSError:
+            return {}
+    try:
+        manifest = tomllib.loads(text)
+    except tomllib.TOMLDecodeError:
+        return {}
+    return {
+        as_string(task.get("name")): as_string(task.get("digest"))
+        for task in manifest.get("tasks") or []
+        if isinstance(task, dict)
+    }
+
+
+def dataset_digest(task_name: str, git_sha: str = "") -> str:
+    if "/" not in task_name:
+        return ""
+    return dataset_digests(task_name.split("/", 1)[0], git_sha).get(task_name, "")
 
 
 def result_files(root: Path) -> list[Path]:
@@ -370,30 +471,57 @@ def parse_task_name(task_name: str, tempo_profile: str = "docs") -> dict[str, st
     return {"task_family": task_name, "profile": "unknown"}
 
 
+def read_task_metadata(
+    root: Path, directory: Path, task_name: str
+) -> JsonObject | None:
+    """A task.toml's metadata when its [task].name is task_name, else None."""
+    if not directory.resolve().is_relative_to(root):
+        return None
+    try:
+        task = tomllib.loads((directory / "task.toml").read_text())
+    except (OSError, tomllib.TOMLDecodeError):
+        return None
+    if task.get("task", {}).get("name") != task_name:
+        return None
+    return task.get("metadata", {})
+
+
 @cache
-def checkout_task_metadata(task_name: str, task_path: str = "") -> JsonObject:
-    """Read native task fields, preferring the task snapshot used by the run."""
+def checkout_task_source(task_name: str, task_path: str = "") -> tuple[JsonObject, str]:
+    """Native task fields and their source.
+
+    The source is "staged" (the run's snapshot), "working_copy" (no snapshot
+    path), "working_copy_fallback" (the snapshot is gone) or "" (not found).
+    """
     root = Path(__file__).resolve().parents[1]
-    # A missing staged snapshot must not silently become a discover trial.
-    candidates = (
-        [root / task_path]
-        if task_path
-        else [
-            root / "tasks" / task_name,
-            # Discover tasks are authored sources since checkout-v2.
-            root / "shared" / "checkout" / "sources" / task_name.split("/", 1)[-1],
-        ]
-    )
-    for directory in candidates:
-        if not directory.resolve().is_relative_to(root):
-            continue
-        try:
-            task = tomllib.loads((directory / "task.toml").read_text())
-        except (OSError, tomllib.TOMLDecodeError):
-            continue
-        if task.get("task", {}).get("name") == task_name:
-            return task.get("metadata", {})
-    return {}
+    authored = [
+        root / "tasks" / task_name,
+        # Discover tasks are authored sources since checkout-v2.
+        root / "shared" / "checkout" / "sources" / task_name.split("/", 1)[-1],
+    ]
+    if task_path:
+        staged = root / task_path
+        metadata = read_task_metadata(root, staged, task_name)
+        if metadata is not None:
+            return metadata, "staged"
+        # A staged snapshot that exists but is another task is never replaced.
+        if (staged / "task.toml").exists():
+            return {}, ""
+    for directory in authored:
+        metadata = read_task_metadata(root, directory, task_name)
+        if metadata is not None:
+            # The name check keeps a missing snapshot from becoming another task.
+            return metadata, "working_copy_fallback" if task_path else "working_copy"
+    return {}, ""
+
+
+def checkout_task_metadata(task_name: str, task_path: str = "") -> JsonObject:
+    """Read native task fields, preferring the task snapshot used by the run.
+
+    When the staged snapshot is gone, the task of the same name in this
+    checkout stands in for it.
+    """
+    return checkout_task_source(task_name, task_path)[0]
 
 
 def checkout_classification(
@@ -418,8 +546,24 @@ def checkout_classification(
     }
 
 
+def tidy_number(value: float) -> float | int:
+    """A whole float as an int, so token and turn totals export without .0."""
+    return int(value) if float(value).is_integer() else float(value)
+
+
+def clean_trials(frame: pd.DataFrame) -> pd.Series:
+    """Trials the rates count: every one but infrastructure errors."""
+    if "outcome" not in frame:
+        return pd.Series(True, index=frame.index)
+    return frame["outcome"].ne("execution_error")
+
+
 def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
     """Pass rates per model and family, plus "all".
+
+    Rates, pass^5 and telemetry count clean trials only: infrastructure errors
+    are rerun, not the agent's results. n_trials keeps every trial, n_clean
+    the ones counted and n_errors the rest.
 
     rail_weighted_pass_rate averages each rail's own pass rate, so a rail with
     more tasks in the family counts no more than one with fewer.
@@ -429,6 +573,13 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
         return []
     frame = pd.DataFrame(rows)
     frame["_passed"] = frame["passed"].astype(int)
+    frame["_clean"] = clean_trials(frame)
+    for metric in CHECKOUT_TELEMETRY:
+        frame[f"_{metric}"] = (
+            pd.to_numeric(frame[metric], errors="coerce")
+            if metric in frame
+            else float("nan")
+        )
     # Prompt conditions and MPP client profiles never share an average.
     for column in ("prompt_condition", "mpp_client_profile"):
         frame[column] = frame[column].fillna("").astype(str) if column in frame else ""
@@ -442,14 +593,9 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
             data = (
                 group if family == "all" else group[group["checkout_family"] == family]
             )
-            per_rail = data.groupby("checkout_rail")["_passed"].mean()
+            clean = data[data["_clean"]]
+            per_rail = clean.groupby("checkout_rail")["_passed"].mean()
             # pass^5 and pass@5 per task, averaged with each task weighted equally.
-            # Infrastructure errors are rerun, not counted as the agent's results.
-            clean = (
-                data[data["outcome"] != "execution_error"]
-                if "outcome" in data
-                else data
-            )
             # A task with no clean trial leaves the score blank, not dropped.
             per_task = [
                 pass_at_k(
@@ -460,42 +606,42 @@ def summarize_checkout_families(rows: list[JsonObject]) -> list[JsonObject]:
             ]
             known = [value for value in per_task if value[0] != ""]
             complete = bool(per_task) and len(known) == len(per_task)
-            results.append(
-                {
-                    "run_id": data["run_id"].iloc[0],
-                    "job_name": data["job_name"].iloc[0],
-                    "model": model,
-                    "agent": agent,
-                    "profile": profile,
-                    "prompt_condition": condition,
-                    "mpp_client_profile": client,
-                    "checkout_family": family,
-                    "n_rails": int(per_rail.size),
-                    "n_tasks": int(data["task_name"].nunique()),
-                    "n_trials": int(len(data)),
-                    "n_passed": int(data["_passed"].sum()),
-                    "pass_rate": float(data["_passed"].mean()),
-                    "rail_weighted_pass_rate": float(per_rail.mean()),
-                    "pass_5": (
-                        sum(value[0] for value in known) / len(known)
-                        if complete
-                        else ""
-                    ),
-                    "pass_at_5": (
-                        sum(value[1] for value in known) / len(known)
-                        if complete
-                        else ""
-                    ),
-                    "n_errors": (
-                        int((data["outcome"] == "execution_error").sum())
-                        if "outcome" in data
-                        else 0
-                    ),
-                    "outcome_labels": json.dumps(
-                        dict(sorted(data["outcome_label"].value_counts().items()))
-                    ),
-                }
-            )
+            row = {
+                "run_id": data["run_id"].iloc[0],
+                "job_name": data["job_name"].iloc[0],
+                "model": model,
+                "agent": agent,
+                "profile": profile,
+                "prompt_condition": condition,
+                "mpp_client_profile": client,
+                "checkout_family": family,
+                "n_rails": int(data["checkout_rail"].nunique()),
+                "n_tasks": int(data["task_name"].nunique()),
+                "n_trials": int(len(data)),
+                "n_clean": int(len(clean)),
+                "n_passed": int(clean["_passed"].sum()),
+                "pass_rate": float(clean["_passed"].mean()) if len(clean) else "",
+                "rail_weighted_pass_rate": (
+                    float(per_rail.mean()) if per_rail.size else ""
+                ),
+                "pass_5": (
+                    sum(value[0] for value in known) / len(known) if complete else ""
+                ),
+                "pass_at_5": (
+                    sum(value[1] for value in known) / len(known) if complete else ""
+                ),
+                "n_errors": int(len(data) - len(clean)),
+                "outcome_labels": json.dumps(
+                    dict(sorted(data["outcome_label"].value_counts().items()))
+                ),
+                "n_with_cost": int(clean["_cost_usd"].notna().sum()),
+                "n_with_tokens": int(clean["_input_tokens"].notna().sum()),
+            }
+            for metric in CHECKOUT_TELEMETRY:
+                values = clean[f"_{metric}"].dropna()
+                row[f"{metric}_sum"] = tidy_number(values.sum()) if len(values) else ""
+                row[f"{metric}_mean"] = float(values.mean()) if len(values) else ""
+            results.append(row)
     return results
 
 
@@ -926,6 +1072,10 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
     if type(start_count) is not int or start_count < 0:
         start_count = ""
     docs_source = result_docs_source(result, task["profile"], context)
+    git_sha = context["git_sha"] or trial_git_sha(result)
+    task_path = as_string(
+        as_object(as_object(result.get("config")).get("task")).get("path")
+    )
     rewards = extract_rewards(result)
     reward = primary_reward(rewards)
     tokens = token_totals(result)
@@ -978,6 +1128,7 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "run_id": context["run_id"],
         "pair_id": pair_id_from_trial(result),
         "job_name": context["job_name"],
+        "source_job": context.get("source_job", context["job_name"]),
         "trial_name": result["trial_name"],
         "task_name": result["task_name"],
         "task_family": task["task_family"],
@@ -1025,31 +1176,23 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
         "mcp_latency_ms": trace["latency"],
         "cost_usd": tokens["cost"],
         "task_checksum": as_string(result.get("task_checksum")),
-        "git_sha": context["git_sha"],
+        "git_sha": git_sha,
+        "dataset_digest": dataset_digest(result["task_name"], git_sha),
+        "harbor_version": context.get("harbor_version", ""),
+        "agent_version": as_string(agent_info.get("version")),
         "docs_source": docs_source,
         "mcp_target_id": context["mcp_target_id"] or trace["target_id"],
         "result_path": str(file_path),
         "rewards": rewards,
         **(
             {
-                **checkout_prompt_metadata(
-                    result["task_name"],
-                    as_string(
-                        as_object(as_object(result.get("config")).get("task")).get(
-                            "path"
-                        )
-                    ),
-                ),
+                **checkout_prompt_metadata(result["task_name"], task_path),
                 **checkout_classification(
-                    result["task_name"],
-                    as_string(
-                        as_object(as_object(result.get("config")).get("task")).get(
-                            "path"
-                        )
-                    ),
-                    passing_reward,
-                    checkout_details,
+                    result["task_name"], task_path, passing_reward, checkout_details
                 ),
+                "task_metadata_source": checkout_task_source(
+                    result["task_name"], task_path
+                )[1],
                 "observed_method": as_string(checkout_details.get("observed_method")),
                 "observed_methods": json.dumps(
                     checkout_details.get("observed_methods", [])
@@ -1107,8 +1250,11 @@ def parse_trial_result(file_path: Path, context: JsonObject) -> JsonObject | Non
 
 
 def assign_attempt_indexes(rows: list[JsonObject]) -> list[JsonObject]:
+    """Number each task's attempts in start order; trial names are opaque."""
     counts: dict[str, int] = {}
-    sorted_rows = sorted(rows, key=lambda row: str(row["trial_name"]))
+    sorted_rows = sorted(
+        rows, key=lambda row: (str(row.get("started_at", "")), str(row["trial_name"]))
+    )
     for row in sorted_rows:
         key = "\0".join(
             str(row.get(field, ""))
@@ -1119,6 +1265,28 @@ def assign_attempt_indexes(rows: list[JsonObject]) -> list[JsonObject]:
         counts[key] = counts.get(key, 0) + 1
         row["attempt_index"] = counts[key]
     return sorted_rows
+
+
+def replace_errored_trials(rows: list[JsonObject]) -> list[JsonObject]:
+    """Drop execution errors that a clean trial of the same task replaces.
+
+    A clean trial is one whose outcome is not execution_error, from any job,
+    for the same task, agent, model and profile; reruns by hand replace the
+    errored trials they rerun.
+    """
+
+    def key(row: JsonObject) -> tuple[str, ...]:
+        return tuple(
+            str(row.get(field, ""))
+            for field in ("task_name", "agent", "model", "profile")
+        )
+
+    clean = {key(row) for row in rows if row.get("outcome") != "execution_error"}
+    return [
+        row
+        for row in rows
+        if row.get("outcome") != "execution_error" or key(row) not in clean
+    ]
 
 
 def reward_columns(rows: list[JsonObject]) -> list[str]:
@@ -1158,8 +1326,6 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
         return []
 
     frame = pd.DataFrame(rows)
-    frame["_reward"] = pd.to_numeric(frame["reward"], errors="coerce")
-    frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
     frame["_passed"] = frame["passed"].astype(int)
     frame["_eligible"] = frame["eligible"].astype(int)
     frame["_error"] = frame["exception_type"].astype(bool).astype(int)
@@ -1167,8 +1333,13 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
     frame.loc[checkout_mask, "_error"] = (
         frame.loc[checkout_mask, "outcome"].eq("execution_error").astype(int)
     )
-    # Passes outside infrastructure errors, for pass^k over the agent's results.
-    frame["_clean_passed"] = frame["_passed"] * (1 - frame["_error"])
+    # Checkout rates and quality count clean trials only: infrastructure errors
+    # are rerun, not the agent's results. Other suites count every trial.
+    counted = ~checkout_mask | frame["_error"].eq(0)
+    frame["_counted"] = counted.astype(int)
+    frame["_passed_counted"] = frame["_passed"] * frame["_counted"]
+    frame["_reward"] = pd.to_numeric(frame["reward"], errors="coerce").where(counted)
+    frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce").where(counted)
     checkout_columns = [key for key in CHECKOUT_SUMMARY_COLUMNS if key in frame]
     frame[checkout_columns] = frame[checkout_columns].fillna("")
     telemetry_columns = [
@@ -1200,10 +1371,10 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             run_id=("run_id", "first"),
             job_name=("job_name", "first"),
             n_trials=("trial_name", "size"),
-            n_passed=("_passed", "sum"),
+            n_clean=("_counted", "sum"),
+            n_passed=("_passed_counted", "sum"),
             n_eligible=("_eligible", "sum"),
             n_errors=("_error", "sum"),
-            _clean_passed=("_clean_passed", "sum"),
             mean_reward=("_reward", "mean"),
             n_quality_scored=("_quality", "count"),
             mean_quality=("_quality", "mean"),
@@ -1223,36 +1394,42 @@ def summarize_rows(rows: list[JsonObject]) -> list[JsonObject]:
             },
         )
         .assign(
-            pass_rate=lambda data: data["n_passed"] / data["n_trials"],
+            pass_rate=lambda data: (
+                data["n_passed"] / data["n_clean"].replace(0, float("nan"))
+            ),
             eligible_rate=lambda data: data["n_eligible"] / data["n_trials"],
-            quality_coverage=lambda data: data["n_quality_scored"] / data["n_trials"],
+            quality_coverage=lambda data: (
+                data["n_quality_scored"] / data["n_clean"].replace(0, float("nan"))
+            ),
         )
         .sort_values(["model", "task_name", "profile"], kind="stable")
     )
-    summary["mean_reward"] = summary["mean_reward"].where(
-        summary["mean_reward"].notna(),
-        "",
-    )
-    for column in ("mean_quality", "median_quality", "quality_at_k"):
-        summary[column] = summary[column].where(summary[column].notna(), "")
+    for column in (
+        "pass_rate",
+        "quality_coverage",
+        "mean_reward",
+        "mean_quality",
+        "median_quality",
+        "quality_at_k",
+    ):
+        summary[column] = (
+            summary[column].astype(object).where(summary[column].notna(), "")
+        )
     checkout = summary["task_family"].str.startswith(CHECKOUT_PREFIXES)
     for column in telemetry_columns:
         complete = summary[f"_known_{column}"] == summary["n_trials"]
         # A partial total is not the total for the checkout group.
         summary[column] = summary[column].where(~checkout | complete, "")
-    results = summary[[*SUMMARY_COLUMNS, *checkout_columns, "_clean_passed"]].to_dict(
-        "records"
-    )
+    results = summary[[*SUMMARY_COLUMNS, *checkout_columns]].to_dict("records")
     for result in results:
-        clean_passed = int(result.pop("_clean_passed"))
         if str(result["task_family"]).startswith(CHECKOUT_PREFIXES):
-            n_trials = int(result["n_trials"])
+            n_clean = int(result["n_clean"])
             # Infrastructure errors are rerun, not counted as the agent's results.
             result["pass_5"], result["pass_at_5"] = pass_at_k(
-                n_trials - int(result["n_errors"]), clean_passed
+                n_clean, int(result["n_passed"])
             )
             # Do not average failures with zero quality while omitting unscored passes.
-            if result["n_quality_scored"] < n_trials:
+            if result["n_quality_scored"] < n_clean:
                 for column in ("mean_quality", "median_quality", "quality_at_k"):
                     result[column] = ""
     return results
@@ -1263,8 +1440,11 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
         return []
 
     frame = pd.DataFrame(rows)
-    frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce")
     frame["_checkout"] = frame["task_family"].str.startswith(CHECKOUT_PREFIXES)
+    # Checkout quality counts clean trials only, as its pass rates do.
+    counted = ~frame["_checkout"] | clean_trials(frame)
+    frame["_counted"] = counted.astype(int)
+    frame["_quality"] = pd.to_numeric(frame["quality"], errors="coerce").where(counted)
     group_columns = ["run_id", "job_name", "model", "agent", "profile"]
     columns = QUALITY_SUMMARY_COLUMNS
     if frame["_checkout"].any():
@@ -1284,6 +1464,7 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
         .agg(
             n_tasks=("task_family", "nunique"),
             n_trials=("trial_name", "size"),
+            n_clean=("_counted", "sum"),
             n_quality_scored=("_quality", "count"),
             mean_quality=("_quality", "mean"),
             median_quality=("_quality", "median"),
@@ -1298,21 +1479,31 @@ def summarize_quality(rows: list[JsonObject]) -> list[JsonObject]:
             validate="one_to_one",
         )
         .assign(
-            quality_coverage=lambda data: data["n_quality_scored"] / data["n_trials"]
+            quality_coverage=lambda data: (
+                data["n_quality_scored"] / data["n_clean"].replace(0, float("nan"))
+            )
         )
     )
+    incomplete = summary["_checkout"] & (
+        summary["n_quality_scored"] < summary["n_clean"]
+    )
     for column in ("mean_quality", "median_quality", "quality_at_k"):
-        summary[column] = summary[column].where(
-            summary[column].notna()
-            & ~(summary["_checkout"] & (summary["quality_coverage"] < 1)),
-            "",
+        summary[column] = (
+            summary[column]
+            .astype(object)
+            .where(summary[column].notna() & ~incomplete, "")
         )
+    summary["quality_coverage"] = (
+        summary["quality_coverage"]
+        .astype(object)
+        .where(summary["quality_coverage"].notna(), "")
+    )
     return summary[columns].to_dict("records")
 
 
 def write_summary_json(
     file_path: Path,
-    job_dir: Path,
+    job_dirs: list[Path],
     run_id: str,
     trials: list[JsonObject],
     summary: list[JsonObject],
@@ -1325,7 +1516,8 @@ def write_summary_json(
                 {
                     'schema_version': 1,
                     'run_id': run_id,
-                    'job_dir': str(job_dir),
+                    'job_dir': str(job_dirs[0]),
+                    'job_dirs': [str(job_dir) for job_dir in job_dirs],
                     'exported_at': datetime.now().astimezone().isoformat(),
                     'n_trials': len(trials),
                     'reward_keys': reward_keys,
@@ -1339,28 +1531,69 @@ def write_summary_json(
 
 
 def export_results(
-    job_dir: str | Path,
+    job_dir: str | Path | Sequence[str | Path],
     run_id: str | None = None,
     out_dir: str | Path | None = None,
+    replace_errors: bool = False,
 ) -> dict[str, Any]:
-    job_path = Path(job_dir).resolve()
-    if not job_path.exists():
-        msg = f"Job directory not found: {job_path}"
-        raise FileNotFoundError(msg)
+    """Export one or more Harbor jobs as one result set.
 
-    metadata = read_metadata(job_path)
-    effective_run_id = run_id or default_run_id(job_path, metadata)
-    out_path = (
-        Path(out_dir).resolve() if out_dir else default_out_dir(job_path).resolve()
+    With several jobs, trials keep their own job in source_job and share one
+    run_id and job_name, so reruns group with the trials they rerun. With
+    replace_errors, an execution error is dropped when a clean trial of the
+    same task, agent, model and profile exists in any of the jobs.
+    """
+    job_dirs = [job_dir] if isinstance(job_dir, str | Path) else list(job_dir)
+    if not job_dirs:
+        msg = "At least one job directory is required"
+        raise ValueError(msg)
+    job_paths = [Path(path).resolve() for path in job_dirs]
+    for job_path in job_paths:
+        if not job_path.exists():
+            msg = f"Job directory not found: {job_path}"
+            raise FileNotFoundError(msg)
+
+    metadatas = [read_metadata(job_path) for job_path in job_paths]
+    run_ids = [
+        default_run_id(job_path, metadata)
+        for job_path, metadata in zip(job_paths, metadatas, strict=True)
+    ]
+    effective_run_id = run_id or "+".join(dict.fromkeys(run_ids))
+    combined_job_name = (
+        job_paths[0].name
+        if len(job_paths) == 1
+        else "+".join(dict.fromkeys(source_job_name(path) for path in job_paths))
     )
-    context = build_context(job_path, effective_run_id, metadata)
-    trials = assign_attempt_indexes(
-        [
+    out_path = (
+        Path(out_dir).resolve() if out_dir else default_out_dir(job_paths[0]).resolve()
+    )
+    rows: list[JsonObject] = []
+    for job_path, metadata in zip(job_paths, metadatas, strict=True):
+        context = {
+            **build_context(job_path, effective_run_id, metadata),
+            "job_name": combined_job_name,
+        }
+        rows.extend(
             row
             for file_path in result_files(job_path)
             if (row := parse_trial_result(file_path, context)) is not None
-        ],
+        )
+    fallback = sorted(
+        {
+            row["task_name"]
+            for row in rows
+            if row.get("task_metadata_source") == "working_copy_fallback"
+        }
     )
+    if fallback:
+        print(
+            f"warning: {len(fallback)} staged task snapshot(s) are missing; "
+            "read their metadata from tasks/<task_name>/task.toml in this checkout",
+            file=sys.stderr,
+        )
+    if replace_errors:
+        rows = replace_errored_trials(rows)
+    trials = assign_attempt_indexes(rows)
     summary = summarize_rows(trials)
     quality_summary = summarize_quality(trials)
     family_summary = summarize_checkout_families(trials)
@@ -1416,7 +1649,7 @@ def export_results(
     )
     write_summary_json(
         out_path / "summary.json",
-        job_path,
+        job_paths,
         effective_run_id,
         trials,
         summary,
@@ -1440,8 +1673,20 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--job",
+        action="append",
         required=True,
-        help="Harbor job directory, for example jobs/<job-name>",
+        help=(
+            "Harbor job directory, for example jobs/<job-name>; repeat to export "
+            "several jobs, such as a run and its reruns, as one result set"
+        ),
+    )
+    parser.add_argument(
+        "--replace-errors",
+        action="store_true",
+        help=(
+            "Drop an execution_error trial when a clean trial of the same task, "
+            "agent, model and profile exists in any --job"
+        ),
     )
     parser.add_argument("--run-id", help="Run id to write into exports")
     parser.add_argument("--out-dir", help="Output directory")
@@ -1450,7 +1695,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    result = export_results(args.job, run_id=args.run_id, out_dir=args.out_dir)
+    result = export_results(
+        args.job,
+        run_id=args.run_id,
+        out_dir=args.out_dir,
+        replace_errors=args.replace_errors,
+    )
     print(f"Exported {len(result['trials'])} trials to {result['out_dir']}")
 
 

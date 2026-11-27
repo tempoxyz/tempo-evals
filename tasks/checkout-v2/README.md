@@ -588,11 +588,14 @@ stays blank rather than becoming zero or a perfect score.
   Summary totals, including MCP latency and denials, stay blank if any trial in
   the group lacks the metric.
 - Quality aggregates (`quality`, `mean_quality`, `quality_coverage`) stay blank
-  unless every trial in the group has quality. `pass_5` is blank below five
+  unless every clean trial in the group has quality. `pass_5` is blank below five
   trials; otherwise it is the fraction of five-trial subsets where every
   checkout passed.
 - Exports prefer the trial's staged task metadata and group by `profile`,
   `prompt_condition` and `mpp_client_profile` (`prepared` for every current task).
+  When the staged snapshot is gone, the export reads `tasks/<task_name>/task.toml`
+  from this checkout if its `[task].name` matches, records
+  `task_metadata_source = working_copy_fallback` and prints one warning.
 - The merchant collection hook retries a failed snapshot read once; missing or
   unreadable evidence (`missing_merchant_snapshot`, `invalid_payment_evidence`,
   `missing_card_attempts`) exports as an ineligible `execution_error` with
@@ -602,6 +605,25 @@ stays blank rather than becoming zero or a perfect score.
 - `pass_at_5` beside `pass_5` is the fraction of five-trial subsets with at least
   one pass. Both leave out infrastructure errors, which are rerun instead. `checkout_summary.csv` adds both per family and for `all`, averaged
   with each task weighted equally, and `n_errors`.
+- Pass rates (`pass_rate`, `rail_weighted_pass_rate`, `n_passed`), `mean_reward`
+  and quality coverage and means count only clean trials: those whose outcome
+  is not `execution_error`. `n_trials` keeps every trial, `n_clean` counts the
+  clean ones and `n_errors` the rest, so quality means stay filled when every
+  clean trial has quality.
+- `checkout_summary.csv` also rolls up telemetry per model and family, including
+  `all`: `<metric>_sum` and `<metric>_mean` over clean trials that report
+  `cost_usd`, `input_tokens`, `cache_tokens`, `output_tokens`,
+  `efficiency_model_turns`, `agent_execution_duration_sec` and `duration_sec`,
+  with `n_with_cost` and `n_with_tokens` counting the trials behind them.
+- Pass `--job` more than once to export a run and its reruns together;
+  `source_job` keeps each trial's job. `--replace-errors` drops an
+  `execution_error` trial when a clean trial of the same task, agent, model and
+  profile exists. `attempt_index` follows `started_at`.
+- Provenance: `git_sha` comes from the job's `metadata.json`, else the trial's
+  `TEMPO_EVALS_SHA`; `dataset_digest` is the task's digest in
+  `tasks/checkout-v2/dataset.toml` at that SHA (the working copy when git does
+  not have it); `harbor_version` comes from the job's `lock.json` and
+  `agent_version` from Harbor's agent info.
 
 v2 is unpublished, and runs from before the published dataset digest are not
 comparable with it: task amounts, pass rules and the task set changed while it
