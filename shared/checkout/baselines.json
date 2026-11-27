@@ -1,5 +1,5 @@
 {
-  "_comment": "Half the median turns and half the median seconds of each task's passing trials in the checkout-v2 final calibration run (claude-opus-5-5 and gpt-6.1-sol at 0ba86bf, on Daytona); a task with no pass takes its family's median. Regenerate with scripts/checkout_baselines.py.",
+  "_comment": "Half the median turns and half the median seconds of each task's passing trials in the checkout-v2 final calibration run (claude-opus-5-5 and gpt-6.1-sol at 0ba86bf, on Daytona); a task with no pass borrows its family peers' baselines, scaled by rail, and takes their median. Regenerate with scripts/checkout_baselines.py.",
   "tasks": {
     "braintree-mismatch": {
       "turns": 3.462,

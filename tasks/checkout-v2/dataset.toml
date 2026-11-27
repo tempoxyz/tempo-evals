@@ -23,7 +23,7 @@ digest = "sha256:e40e8c6d624bb8a86d8a2a28d292720dbae31bf2400c6317cbbf9eb041912a9
 
 [[tasks]]
 name = "checkout-v2/apicard-decline"
-digest = "sha256:af7cd83d15c9c893de8283fae4bcd75b37149627af7f6a919f925efac260f23b"
+digest = "sha256:bf7511b2c8d4c07c20ea9e2a0c7eda6e9ce0b6b4866950d6b0c5588ae7323e58"
 
 [[tasks]]
 name = "checkout-v2/apicard-mismatch"
@@ -55,7 +55,7 @@ digest = "sha256:a914a1706369640b3b1c7d3bcdacf7f48dfe79b54c6f54aed9ed5778f0867e3
 
 [[tasks]]
 name = "checkout-v2/braintree-decline"
-digest = "sha256:485bb4e8221c9a0029dce16e108e6357299c7ae2523d80fc578a125c85934a79"
+digest = "sha256:fb3b69d505f191002f6662b0ccbefd802b329715881e2480eefc3029c0ce6814"
 
 [[tasks]]
 name = "checkout-v2/braintree-mismatch"
@@ -111,7 +111,7 @@ digest = "sha256:eb44e8425ab256bd7a6b7f95a875b5cb5be2a6e884f38aa9960ba3d33d13a14
 
 [[tasks]]
 name = "checkout-v2/mppcard-decline"
-digest = "sha256:1644a166839c2989f9979a76ad19c295fab74ee36428af17a03dafb8b11df77c"
+digest = "sha256:a241ad78ae970c71440d81fdce089c59c4ebf69865911ac457f3557dcc4d11c4"
 
 [[tasks]]
 name = "checkout-v2/mppcard-mismatch"
@@ -159,7 +159,7 @@ digest = "sha256:95b634b80155d76174b8b34e9694cbda81d53641cdb0fa79283a80a2e469044
 
 [[tasks]]
 name = "checkout-v2/mppousd-wrong-payee"
-digest = "sha256:87c51258265c32761ef3cdb403a297983fa761db6bd2d917949d7bdd6aa2e79b"
+digest = "sha256:65592a583f1867ef4dcccd4eb5983d8273eba3f45769064f64b6f4a1e2d7aa45"
 
 [[tasks]]
 name = "checkout-v2/ousd-form"
@@ -251,7 +251,7 @@ digest = "sha256:f838cc0e49eef8b683f3c134a399cef2db13d01d1ce6855a17e74253803897b
 
 [[tasks]]
 name = "checkout-v2/stripecard-decline"
-digest = "sha256:2decbe1bf26666e2619e972e84ef09e0019ba9ff589aeb3116f979a4f376a5fa"
+digest = "sha256:f524f00b2136cd3f486d523d1046668e30d4f986594da804cf569aeb1cf6c8d8"
 
 [[tasks]]
 name = "checkout-v2/stripecard-pay-inject"
@@ -267,11 +267,11 @@ digest = "sha256:79867f6a097625d3ad77d3be8dcda133c88b575bdd2cd5ee46f6bddcba9d566
 
 [[tasks]]
 name = "checkout-v2/x402-cart"
-digest = "sha256:65f3d6da2be66a6bf558772020cf75249a8fd1377204d5be10cd63774340d7cf"
+digest = "sha256:a9fcb6fecfd15d2b3b58e60fdb2b18168bc8f33cba29da63885394d609b5d995"
 
 [[tasks]]
 name = "checkout-v2/x402-cart-inject"
-digest = "sha256:b4b506564f142ccf85fe6fa3d4407dddff60831886ac0ea1e9f62003255e6b25"
+digest = "sha256:26ef1ce8c2c42bc522f7f125778a13c95fdd43cd51d869198b80472a5d6dd82b"
 
 [[tasks]]
 name = "checkout-v2/x402-mismatch"

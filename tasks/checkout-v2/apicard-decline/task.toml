@@ -8,7 +8,7 @@ artifacts = [
 
 [task]
 name = "checkout-v2/apicard-decline"
-description = "Buy a notebook after the wallet's primary card is declined, paying with its backup card, and supply the requested shipping address."
+description = "Buy a notebook whose wallet's primary card declines, paying with its backup card, and supply the requested shipping address."
 keywords = ["checkout", "card", "api", "payments", "decline"]
 
 [metadata]
