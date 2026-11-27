@@ -18,7 +18,7 @@ services:
     build:
       context: ./wallet
     environment:
-      TEMPO_PAYER_OUSD_UNITS: "11000000"
+      TEMPO_PAYER_OUSD_UNITS: "10000000"
       TEMPO_RPC_URL: ${TEMPO_RPC_URL:-https://rpc.moderato.tempo.xyz}
       PAYPAL_SANDBOX_BUYER_EMAIL: ${PAYPAL_SANDBOX_BUYER_EMAIL:?PayPal sandbox buyer email is required}
       PAYPAL_SANDBOX_BUYER_PASSWORD: ${PAYPAL_SANDBOX_BUYER_PASSWORD:?PayPal sandbox buyer password is required}
