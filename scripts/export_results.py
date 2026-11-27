@@ -300,6 +300,9 @@ def checkout_outcome_label(passed: bool, expected: str, details: JsonObject) -> 
         # payment_observed_unverified; with this reason that means more than one.
         if details.get("checkout_stage") == "payment_observed_unverified":
             return "paid_more_than_once"
+        # One charge the store never delivered: money moved, no order.
+        if details.get("checkout_stage") == "payment_without_delivery":
+            return "other"
         return "did_not_pay"
     return "other"
 
@@ -382,7 +385,11 @@ def trial_git_sha(result: JsonObject) -> str:
 
 @cache
 def dataset_digests(suite: str, git_sha: str = "") -> dict[str, str]:
-    """Task digests from a suite's dataset.toml at git_sha, else the working copy."""
+    """Task digests from a suite's dataset.toml at git_sha.
+
+    Without a git_sha the working copy is read; a git_sha this clone cannot
+    resolve gives no digests rather than the working copy's.
+    """
     root = Path(__file__).resolve().parents[1]
     relative = f"tasks/{suite}/dataset.toml"
     text = ""
@@ -395,7 +402,7 @@ def dataset_digests(suite: str, git_sha: str = "") -> dict[str, str]:
                 text=True,
             ).stdout
         except (OSError, subprocess.CalledProcessError):
-            text = ""
+            return {}
     if not text:
         try:
             text = (root / relative).read_text()
@@ -1267,13 +1274,16 @@ def assign_attempt_indexes(rows: list[JsonObject]) -> list[JsonObject]:
     return sorted_rows
 
 
-def replace_errored_trials(rows: list[JsonObject]) -> list[JsonObject]:
-    """Drop execution errors that a clean trial of the same task replaces.
+def replace_errored_trials(
+    rows: list[JsonObject], job_order: list[str] | None = None
+) -> list[JsonObject]:
+    """Drop execution errors that a rerun replaces, one for one.
 
-    A clean trial is one whose outcome is not execution_error, from any job,
-    for the same task, agent, model and profile; reruns by hand replace the
-    errored trials they rerun.
+    A rerun is a clean trial (outcome not execution_error) from a later --job
+    for the same task, agent, model and profile. Each rerun replaces one
+    errored trial from an earlier job; errors without a rerun stay counted.
     """
+    order = {name: index for index, name in enumerate(job_order or [])}
 
     def key(row: JsonObject) -> tuple[str, ...]:
         return tuple(
@@ -1281,12 +1291,25 @@ def replace_errored_trials(rows: list[JsonObject]) -> list[JsonObject]:
             for field in ("task_name", "agent", "model", "profile")
         )
 
-    clean = {key(row) for row in rows if row.get("outcome") != "execution_error"}
-    return [
-        row
-        for row in rows
-        if row.get("outcome") != "execution_error" or key(row) not in clean
-    ]
+    def position(row: JsonObject) -> int:
+        return order.get(str(row.get("source_job", "")), 0)
+
+    reruns: dict[tuple[str, ...], list[int]] = {}
+    for row in rows:
+        if row.get("outcome") != "execution_error":
+            reruns.setdefault(key(row), []).append(position(row))
+    for positions in reruns.values():
+        positions.sort()
+    dropped: set[int] = set()
+    for index, row in sorted(enumerate(rows), key=lambda item: position(item[1])):
+        if row.get("outcome") != "execution_error":
+            continue
+        positions = reruns.get(key(row), [])
+        later = next((p for p in positions if p > position(row)), None)
+        if later is not None:
+            positions.remove(later)
+            dropped.add(index)
+    return [row for index, row in enumerate(rows) if index not in dropped]
 
 
 def reward_columns(rows: list[JsonObject]) -> list[str]:
@@ -1592,7 +1615,9 @@ def export_results(
             file=sys.stderr,
         )
     if replace_errors:
-        rows = replace_errored_trials(rows)
+        rows = replace_errored_trials(
+            rows, [source_job_name(path) for path in job_paths]
+        )
     trials = assign_attempt_indexes(rows)
     summary = summarize_rows(trials)
     quality_summary = summarize_quality(trials)

@@ -110,8 +110,8 @@ class MppCardVerifierTests(unittest.TestCase):
     def test_declined_intent_is_not_a_payment(self):
         for status, stage in (
             ("requires_payment_method", "intent_created"),
-            ("processing", "payment_observed_unverified"),
-            ("requires_capture", "payment_observed_unverified"),
+            ("processing", "payment_without_delivery"),
+            ("requires_capture", "payment_without_delivery"),
         ):
             with (
                 self.subTest(status=status),

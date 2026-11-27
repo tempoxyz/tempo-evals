@@ -104,6 +104,8 @@ def main() -> None:
         "checkout_stage": "verified"
         if passed
         else "payment_observed_unverified"
+        if len(deliveries) + sum(map(moved_money, payments)) > 1
+        else "payment_without_delivery"
         if deliveries or any(map(moved_money, payments))
         else "intent_created"
         if payments

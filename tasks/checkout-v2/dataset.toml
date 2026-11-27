@@ -11,35 +11,35 @@ name = "Tempo Labs"
 
 [[tasks]]
 name = "checkout-v2/apicard"
-digest = "sha256:327091c773462d06dd651ef783ac21e100eba5764c633cc4c7981d0fb14102b5"
+digest = "sha256:7a20af80d765ca4d1d9acbe9d89aa9b9f982023ebe5a5b802b9d6525099d4879"
 
 [[tasks]]
 name = "checkout-v2/apicard-cart"
-digest = "sha256:5b16a5232e5aa8cfc89d5fb2cbca30dca567051c92a1596acbdff08fdef0ae5f"
+digest = "sha256:7bab3615d56c843b19ea1756f5a7aec60841f43c89ae35e97918b45e622b0938"
 
 [[tasks]]
 name = "checkout-v2/apicard-cart-inject"
-digest = "sha256:e40e8c6d624bb8a86d8a2a28d292720dbae31bf2400c6317cbbf9eb041912a99"
+digest = "sha256:f839791a7ce90dd4152f3e925a460e44e06832370331649313c3dd84be7e36ea"
 
 [[tasks]]
 name = "checkout-v2/apicard-decline"
-digest = "sha256:bf7511b2c8d4c07c20ea9e2a0c7eda6e9ce0b6b4866950d6b0c5588ae7323e58"
+digest = "sha256:25615000e9202d0e2fcb6f026b14418d6753a6ad31eb7877a8d30a4ee696a65d"
 
 [[tasks]]
 name = "checkout-v2/apicard-mismatch"
-digest = "sha256:737467e4ee71abfd6726221976f181cafb0979cdbba11a49060f1b28509da2b8"
+digest = "sha256:b9f5b177f464de03f79833b64b1fa9b5bab2bfcdf6631d2c8e43edb9176556e8"
 
 [[tasks]]
 name = "checkout-v2/apicard-pay-inject"
-digest = "sha256:4929c2b04fb4e6c24c9e8160f966e8f9369c4e0d584d6d24a4fbdc112113a264"
+digest = "sha256:5fcbeabc7bbaa02b3ea028912f5c8474ba6e6ce24074c40bbb9fe15301b7ddf8"
 
 [[tasks]]
 name = "checkout-v2/apicard-price-change"
-digest = "sha256:4aa1d4246010251e83a87fdcfdb0c6d9515b1ecf8bcd14963429ff60d9a9db96"
+digest = "sha256:54572cbbc91e956774f8c6d7d636146277a7465fa4f45fef1cc10b9bc3e4949b"
 
 [[tasks]]
 name = "checkout-v2/apicard-refuse"
-digest = "sha256:a142e099522074f0f7f6877cc7f14557224add8e896b0b75a5478292d866a491"
+digest = "sha256:766fb21f84cf1355f67e7108226fed993ab863a208e7f5b9149e46d575791207"
 
 [[tasks]]
 name = "checkout-v2/braintree-card"
@@ -95,7 +95,7 @@ digest = "sha256:54eff74ffdfa6a6ff618aa113aa5e58df7744aa51f173df881b9e851728dbb7
 
 [[tasks]]
 name = "checkout-v2/mpp-card"
-digest = "sha256:0e54e6b61fb67f058b27ffcc7ec057a242dd3ab45edccf5fe6b790d12dc451c9"
+digest = "sha256:ac4a53699987fc5b97f70a8e072d3e2a57ea1e76300a3209c866084d78fc7de2"
 
 [[tasks]]
 name = "checkout-v2/mpp-ousd"
@@ -103,31 +103,31 @@ digest = "sha256:2bb47ad4c893f3e0ff55ce22ff6b41ccd363c0272e679031eeda7e3ada21304
 
 [[tasks]]
 name = "checkout-v2/mppcard-cart"
-digest = "sha256:512af8f75aaa88a018a83d075f61050f0443519463377e349ab247ac7e99099b"
+digest = "sha256:256eb002b20e77d4af22a8536457f914ab8204a07a4e9af1f77d1c6c4e2e8c40"
 
 [[tasks]]
 name = "checkout-v2/mppcard-cart-inject"
-digest = "sha256:eb44e8425ab256bd7a6b7f95a875b5cb5be2a6e884f38aa9960ba3d33d13a140"
+digest = "sha256:caf40f9e7131adcccb4db38ef945b65563bc0b2b265566fead5eae6833099f11"
 
 [[tasks]]
 name = "checkout-v2/mppcard-decline"
-digest = "sha256:a241ad78ae970c71440d81fdce089c59c4ebf69865911ac457f3557dcc4d11c4"
+digest = "sha256:b649bb5120e74e2249244cb60577439a576fcb267ab71323ac301e135cf9f2ae"
 
 [[tasks]]
 name = "checkout-v2/mppcard-mismatch"
-digest = "sha256:ee628593950c62ef76550c376593648cfa22b3a186ca518e8c7c6874512363d4"
+digest = "sha256:e883946341b00befe1fdd99bfcfc32341a83f6980bc7d9ea18d0a9298d7ed4fd"
 
 [[tasks]]
 name = "checkout-v2/mppcard-pay-inject"
-digest = "sha256:a42097ab92574b21ef3ad243e22e18bc2647bcb16bce666960d35f46a947ad03"
+digest = "sha256:2ee5c6f3e255b4b63fd888c0405632dc68acea42e85880d3086868e3ad288f2c"
 
 [[tasks]]
 name = "checkout-v2/mppcard-price-change"
-digest = "sha256:68c488c2bfbe82e0eafdb20db47dfb0cac32366fa8012b7a1694cbb58ee19a48"
+digest = "sha256:2c6c31145e0aebc2791d194311bc22bfbedc4399b96cad90238f5fa356867ea2"
 
 [[tasks]]
 name = "checkout-v2/mppcard-refuse"
-digest = "sha256:dbee03720fc453f80dede9f82f955800879bd371b7ef23b9fb46085b75765108"
+digest = "sha256:9f23fd3060fe589fb1c3cf66ac64ca26b7f89a1f69882661ab238c2b9967ac8a"
 
 [[tasks]]
 name = "checkout-v2/mppousd-cart"

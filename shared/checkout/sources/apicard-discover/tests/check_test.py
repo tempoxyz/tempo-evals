@@ -138,15 +138,16 @@ class CardApiVerifierTests(unittest.TestCase):
                 json.loads((root / "reward.json").read_text()), {"reward": 0}
             )
             details = json.loads((root / "details.json").read_text())
-            self.assertEqual(details["checkout_stage"], "payment_observed_unverified")
+            # One charge without a delivery is not a second payment.
+            self.assertEqual(details["checkout_stage"], "payment_without_delivery")
             self.assertIsNone(details["payment_method"])
             self.assertIsNone(details["paid_order_id"])
 
     def test_declined_intent_is_not_a_payment(self):
         for status, stage in (
             ("requires_payment_method", "intent_created"),
-            ("processing", "payment_observed_unverified"),
-            ("requires_capture", "payment_observed_unverified"),
+            ("processing", "payment_without_delivery"),
+            ("requires_capture", "payment_without_delivery"),
         ):
             with (
                 self.subTest(status=status),

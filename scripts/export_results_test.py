@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import tempfile
-import tomllib
 import unittest
 from pathlib import Path
 from typing import Any
@@ -1672,6 +1671,41 @@ class ExportResultsTest(unittest.TestCase):
             )
             self.assertEqual(len(replaced["quality_summary"]), 1)
 
+    def test_replace_errors_matches_reruns_one_for_one(self) -> None:
+        from scripts.export_results import replace_errored_trials
+
+        def row(name, job, outcome="passed"):
+            return {
+                "trial_name": name,
+                "task_name": "checkout-v2/apicard",
+                "agent": "a",
+                "model": "m",
+                "profile": "local",
+                "source_job": job,
+                "outcome": outcome,
+            }
+
+        rows = [
+            row("e1", "a", "execution_error"),
+            row("e2", "a", "execution_error"),
+            row("c1", "a"),
+            row("c2", "a"),
+            row("r1", "r"),
+        ]
+        kept = [r["trial_name"] for r in replace_errored_trials(rows, ["a", "r"])]
+        # One rerun replaces one error; the job's own clean trials replace none.
+        self.assertEqual(sorted(kept), ["c1", "c2", "e2", "r1"])
+        alone = [r["trial_name"] for r in replace_errored_trials(rows[:4], ["a"])]
+        self.assertEqual(sorted(alone), ["c1", "c2", "e1", "e2"])
+
+    def test_dataset_digest_is_blank_for_an_unknown_commit(self) -> None:
+        from scripts.export_results import dataset_digests
+
+        dataset_digests.cache_clear()
+        self.assertEqual(dataset_digests("checkout-v2", "0" * 40), {})
+        self.assertTrue(dataset_digests("checkout-v2"))
+        dataset_digests.cache_clear()
+
     def test_export_cli_takes_repeated_jobs(self) -> None:
         from scripts import export_results as module
 
@@ -1779,7 +1813,7 @@ class ExportResultsTest(unittest.TestCase):
             columns = pd.read_csv(job_dir / "exports/trials.csv").columns
             for column in ("git_sha", "dataset_digest", "harbor_version"):
                 self.assertIn(column, columns)
-            # Without the SHA in git, the working copy's manifest answers.
+            # A SHA this clone cannot resolve gives no digest, not the working copy's.
             with patch.object(
                 module.subprocess,
                 "run",
@@ -1787,19 +1821,7 @@ class ExportResultsTest(unittest.TestCase):
             ):
                 row = export_results(job_dir)["trials"][0]
             module.dataset_digests.cache_clear()
-            working = tomllib.loads(
-                (
-                    Path(module.__file__).parents[1] / "tasks/checkout-v2/dataset.toml"
-                ).read_text()
-            )
-            self.assertEqual(
-                row["dataset_digest"],
-                next(
-                    task["digest"]
-                    for task in working["tasks"]
-                    if task["name"] == "checkout-v2/apicard"
-                ),
-            )
+            self.assertEqual(row["dataset_digest"], "")
 
 
 if __name__ == "__main__":
