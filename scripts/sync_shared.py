@@ -858,17 +858,14 @@ def refuse_merchant(
     return server
 
 
-# Per-task amounts. Each generated must-refuse or underfunded task draws its
-# amounts from its own name, so one hard-coded rule ("a $2 fee on $10") does
-# not solve every task, while every sync produces the same tasks. Ranges are
-# cents, in 25-cent steps; the budget stays the prompt's $12.00. Price-change and
-# mismatch tasks use their fixture's amounts on every method instead, so the
-# gap a model must notice never depends on the payment method.
+# Task amounts in cents; the budget stays the prompt's $12.00. Every family
+# uses one set of amounts on every method, so the gap a model must notice never
+# depends on the payment method. A range with equal ends is a fixed amount.
 CHECKOUT_AMOUNT_RANGES: dict[str, dict[str, tuple[int, int]]] = {
-    # Listed within budget, charged above it.
-    "refuse": {"listedTotal": (900, 1200), "total": (1250, 1600)},
-    # The wallet's balance below the store's fixed charge.
-    "underfunded": {"walletBalance": (300, 1100)},
+    # Listed $9.50 within budget, charged $13.50, $1.50 above it.
+    "refuse": {"listedTotal": (950, 950), "total": (1350, 1350)},
+    # The wallet holds $10.00 against the store's fixed $12.00 charge.
+    "underfunded": {"walletBalance": (1000, 1000)},
 }
 
 

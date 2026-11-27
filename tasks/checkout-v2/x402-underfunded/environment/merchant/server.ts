@@ -13,7 +13,7 @@ import { balanceOf, facilitatorClient, retryingFetch, transfer, usdc } from './x
 
 // Every order is charged its order total. The buyer is funded with only the
 // wallet balance, less than the charge; the snapshot returns it.
-const amount = BigInt(975) * 10_000n; // USDC has 6 decimals
+const amount = BigInt(1000) * 10_000n; // USDC has 6 decimals
 const fundingKey = process.env.X402_FUNDING_PRIVATE_KEY as `0x${string}`;
 if (!/^0x[0-9a-fA-F]{64}$/.test(fundingKey || '')) throw new Error('X402_FUNDING_PRIVATE_KEY is required');
 // Payments return to the funding wallet, so successful trials refill it.
