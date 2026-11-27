@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
@@ -76,6 +77,29 @@ class RunBenchmarkTest(unittest.TestCase):
         # delete the trial the agent acted in.
         for kept in ("ApiOverloadedError", "NonZeroAgentExitCodeError"):
             self.assertIn(kept, excluded)
+        # So are verifier-phase failures, which also come after the agent ran.
+        for kept in (
+            "AddTestsDirError",
+            "DownloadVerifierDirError",
+            "VerifierOutputParseError",
+            "RewardFileNotFoundError",
+            "RewardFileEmptyError",
+        ):
+            self.assertIn(kept, excluded)
+        # Every excluded name is a Harbor exception type, or nothing matches it.
+        harbor = {
+            name
+            for module in (
+                "harbor.trial.errors",
+                "harbor.verifier.verifier",
+                "harbor.llms.base",
+                "harbor.agents.installed.base",
+                "harbor.auth.errors",
+            )
+            for name in dir(importlib.import_module(module))
+            if name.endswith("Error")
+        }
+        self.assertEqual(excluded - harbor, set())
         for retried in (
             "RuntimeError",
             "SandboxBuildFailedError",

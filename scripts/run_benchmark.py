@@ -53,27 +53,23 @@ CHECKOUT_PROFILES = {
 CHECKOUT_PROFILE_OVERLAYS = Path("shared/checkout/browser/profiles")
 
 
-# Checkout retries a trial that failed for anything but the agent's own result:
-# sandbox, image pulls, model APIs and the network, whatever exception type
-# they surface as (an image-pull rate limit is a plain RuntimeError). Outcomes
-# the agent or verifier owns are kept, and so are configuration errors a retry
-# cannot fix.
+# Checkout retries a trial only for failures before the agent starts: sandbox
+# and image builds, image pulls and agent setup, whatever exception type they
+# surface as (an image-pull rate limit is a plain RuntimeError). Harbor deletes
+# a retried trial's directory, so anything raised once the agent has started
+# acting is kept and rerun by hand instead (export with --replace-errors): the
+# agent's and verifier's own outcomes, model API errors during the run and
+# verifier-phase failures. Configuration errors a retry cannot fix are kept too.
+# Matched by exact type name, so every subclass is listed.
 CHECKOUT_NO_RETRY_EXCEPTIONS = (
     "AgentTimeoutError",
     "ContextLengthExceededError",
     "OutputLengthExceededError",
-    "VerifierTimeoutError",
-    "VerifierOutputParseError",
-    "RewardFileNotFoundError",
-    "RewardFileEmptyError",
     "ApiKeyRejectedError",
     "ApiUsageLimitError",
     "AuthenticationError",
     "NotAuthenticatedError",
-    # Raised after the agent has started acting. Harbor deletes a retried
-    # trial's directory, so retrying these would discard what the agent did;
-    # they are kept and rerun by hand instead.
-    # Matched by exact type name, so every subclass is listed.
+    # Raised while the agent runs.
     "NonZeroAgentExitCodeError",
     "ApiError",
     "ApiRateLimitError",
@@ -82,6 +78,17 @@ CHECKOUT_NO_RETRY_EXCEPTIONS = (
     "ApiConnectionClosedError",
     "UnknownApiError",
     "NetworkConnectionError",
+    # Raised in the verifier phase, after the agent ran. A separate verifier
+    # environment that does not start in time surfaces as VerifierTimeoutError.
+    # One that fails to build or pass its healthcheck raises the same
+    # SandboxBuildFailedError, HealthcheckError or RuntimeError as the agent
+    # environment, so those stay retried: the type cannot tell the phases apart.
+    "VerifierTimeoutError",
+    "VerifierOutputParseError",
+    "RewardFileNotFoundError",
+    "RewardFileEmptyError",
+    "AddTestsDirError",
+    "DownloadVerifierDirError",
 )
 
 
