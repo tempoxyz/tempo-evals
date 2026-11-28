@@ -17,6 +17,7 @@ TEMPO_DOCS_ORIGINS = (
     ("docs.tempo.xyz", "/"),
     ("developers.tempo.xyz", "/docs"),
     ("accounts.tempo.xyz", "/docs"),
+    ("accounts.tempo.com", "/docs"),
     ("tips.sh", "/"),
 )
 REWARD_COMPONENTS = (
