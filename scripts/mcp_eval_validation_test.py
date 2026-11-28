@@ -147,12 +147,14 @@ class McpEvalValidationTest(unittest.TestCase):
             "https://docs.tempo.xyz",
             "https://developers.tempo.xyz/docs",
             "https://accounts.tempo.xyz/docs",
+            "https://accounts.tempo.com/docs",
             "https://tips.sh",
             "https://docs.tempo.xyz/guide/payments",
         ):
             with self.subTest(source=source):
                 self.assertTrue(is_tempo_docs_url(source))
         self.assertFalse(is_tempo_docs_url("https://docs.tempo.xyz.example.com"))
+        self.assertFalse(is_tempo_docs_url("https://accounts.tempo.com.example.com"))
         self.assertFalse(is_tempo_docs_url("https://developers.tempo.xyz/other"))
 
     def test_docs_evidence_is_a_warning_when_data_evidence_is_trace_backed(
